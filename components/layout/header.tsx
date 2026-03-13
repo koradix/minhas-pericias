@@ -1,11 +1,13 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import { Menu, Bell, Search, ChevronRight } from 'lucide-react'
+import { signOut } from 'next-auth/react'
+import { Menu, Bell, Search, ChevronRight, LogOut } from 'lucide-react'
 import { navigation } from '@/lib/constants/nav'
 
 interface HeaderProps {
   onMenuClick: () => void
+  user: { name: string; email: string; role: string }
 }
 
 const allNavItems = navigation.flatMap((s) => s.items)
@@ -26,7 +28,11 @@ function getPageSection(pathname: string): string | null {
   return null
 }
 
-export default function Header({ onMenuClick }: HeaderProps) {
+function getInitials(name: string): string {
+  return name.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase()
+}
+
+export default function Header({ onMenuClick, user }: HeaderProps) {
   const pathname = usePathname()
   const title = getPageTitle(pathname)
   const section = getPageSection(pathname)
@@ -72,8 +78,28 @@ export default function Header({ onMenuClick }: HeaderProps) {
           <span className="absolute right-2 top-2 flex h-2 w-2 rounded-full bg-blue-600 ring-2 ring-white" />
         </button>
 
-        <div className="ml-1 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-blue-600 text-white text-xs font-bold cursor-pointer select-none ring-2 ring-blue-100">
-          MP
+        <div className="relative ml-1 group">
+          <button
+            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-blue-600 text-white text-xs font-bold cursor-pointer select-none ring-2 ring-blue-100"
+            title={user.name}
+          >
+            {getInitials(user.name)}
+          </button>
+
+          {/* Dropdown */}
+          <div className="absolute right-0 top-full mt-2 w-48 rounded-xl border border-slate-200 bg-white py-1 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50">
+            <div className="px-3 py-2 border-b border-slate-100">
+              <p className="text-xs font-semibold text-slate-900 truncate">{user.name}</p>
+              <p className="text-[11px] text-slate-400 truncate">{user.email}</p>
+            </div>
+            <button
+              onClick={() => signOut({ callbackUrl: '/login' })}
+              className="flex w-full items-center gap-2 px-3 py-2 text-xs text-slate-600 hover:bg-red-50 hover:text-red-600 transition-colors"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              Sair
+            </button>
+          </div>
         </div>
       </div>
     </header>
