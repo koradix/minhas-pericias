@@ -30,3 +30,75 @@ model Parceiro {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
+model ModeloBase {
+  id          String   @id @default(cuid())
+  nome        String
+  tipo        String   // LAUDO | PROPOSTA_HONORARIOS | PARECER_TECNICO | RESPOSTA_QUESITOS
+  descricao   String?
+  area        String?
+  nomeArquivo String?
+  caminhoArq  String?
+  status      String   @default("ativo")
+  totalUsos   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model DocumentoGerado {
+  id         String   @id @default(cuid())
+  tipo       String   // LAUDO | PROPOSTA_HONORARIOS | PARECER_TECNICO | RESPOSTA_QUESITOS
+  titulo     String
+  periciaNum String?  // ex: "PRC-2024-001"
+  modeloId   String?  // ex: "MOD-001"
+  status     String   @default("gerado")
+  conteudo   String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model PeritoPerfil {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  telefone      String?
+  formacao      String?
+  registro      String?  // registro profissional (ex: CREA, CRC, CRM)
+  especialidades String  @default("[]") // JSON array de strings
+  cursos        String   @default("[]") // JSON array de strings
+  tribunais     String   @default("[]") // JSON array de siglas (ex: ["TJRJ","TRT-1"])
+  estados       String   @default("[]") // JSON array de UFs (ex: ["RJ","SP"])
+  cidade        String?
+  estado        String?
+  areaAtuacao   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model DemandaParceiro {
+  id        String   @id @default(cuid())
+  titulo    String
+  descricao String?
+  tipo      String   // especialidade: Avaliação de Imóvel, Perícia Trabalhista, etc.
+  cidade    String
+  uf        String
+  valor     Float
+  prazo     String?
+  status    String   @default("aberta") // aberta | em_andamento | concluida | cancelada
+  userId    String   // User.id do parceiro dono da demanda
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Proposta {
+  id            String   @id @default(cuid())
+  demandaId     String
+  demandaTitulo String
+  peritoId      String   // ID do perito mock (ex: "PRT-001")
+  peritoNome    String
+  status        String   @default("enviada") // enviada | visualizada | aceita | recusada | em_negociacao | concluida
+  mensagem      String?
+  valorProposto Float?
+  userId        String   // User.id do parceiro que criou a proposta
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}

@@ -18,6 +18,7 @@ export default function AppShell({ children, user }: AppShellProps) {
       <Sidebar
         mobileOpen={mobileOpen}
         collapsed={collapsed}
+        role={user.role}
         onMobileClose={() => setMobileOpen(false)}
         onToggleCollapse={() => setCollapsed((c) => !c)}
       />

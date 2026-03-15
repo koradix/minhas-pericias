@@ -22,7 +22,7 @@ const features = [
     title: 'Gestão de Perícias',
     description:
       'Centralize todos os processos periciais: prazos, documentos, laudos e acompanhamento de status em um só lugar.',
-    color: 'bg-blue-50 text-blue-600',
+    color: 'bg-lime-50 text-lime-600',
   },
   {
     icon: Radar,
@@ -115,10 +115,10 @@ export default function LandingPage() {
       <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/90 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-sm font-bold text-white select-none">
-              P
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-lime-500 text-xs font-bold text-slate-900 select-none">
+              PL
             </div>
-            <span className="text-lg font-bold tracking-tight text-slate-900">PERIX</span>
+            <span className="text-lg font-bold tracking-tight text-slate-900">PeriLaB</span>
           </Link>
 
           <nav className="hidden items-center gap-6 md:flex">
@@ -135,7 +135,7 @@ export default function LandingPage() {
 
           <Link
             href="/login"
-            className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-lime-500 px-4 text-sm font-semibold text-slate-900 transition-colors hover:bg-lime-600"
           >
             Entrar
             <ArrowRight className="h-3.5 w-3.5" />
@@ -156,18 +156,18 @@ export default function LandingPage() {
         />
         {/* glow */}
         <div className="pointer-events-none absolute inset-x-0 -top-40 flex justify-center">
-          <div className="h-[600px] w-[600px] rounded-full bg-blue-600/20 blur-[120px]" />
+          <div className="h-[600px] w-[600px] rounded-full bg-lime-500/20 blur-[120px]" />
         </div>
 
         <div className="relative mx-auto max-w-4xl px-4 text-center sm:px-6">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-1.5 text-sm font-medium text-blue-300">
-            <Star className="h-3.5 w-3.5 fill-blue-400 text-blue-400" />
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-lime-500/30 bg-lime-500/10 px-4 py-1.5 text-sm font-medium text-lime-300">
+            <Star className="h-3.5 w-3.5 fill-lime-400 text-lime-400" />
             Plataforma para Peritos Judiciais
           </div>
 
           <h1 className="mb-6 text-4xl font-extrabold leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl">
             Organize suas perícias e{' '}
-            <span className="bg-gradient-to-r from-blue-400 via-blue-300 to-indigo-400 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-lime-400 via-lime-300 to-emerald-400 bg-clip-text text-transparent">
               conquiste novos trabalhos
             </span>
           </h1>
@@ -180,7 +180,7 @@ export default function LandingPage() {
           <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <Link
               href="/login"
-              className="inline-flex h-12 items-center gap-2 rounded-xl bg-blue-600 px-8 text-base font-semibold text-white shadow-lg shadow-blue-600/30 transition-all hover:bg-blue-500 hover:shadow-blue-500/40"
+              className="inline-flex h-12 items-center gap-2 rounded-xl bg-lime-500 px-8 text-base font-semibold text-slate-900 shadow-lg shadow-lime-500/30 transition-all hover:bg-lime-400 hover:shadow-lime-400/40"
             >
               Entrar no sistema
               <ArrowRight className="h-4 w-4" />
@@ -212,7 +212,7 @@ export default function LandingPage() {
       <section id="funcionalidades" className="py-20 sm:py-28">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="mb-14 text-center">
-            <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-blue-600">
+            <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-lime-600">
               Funcionalidades
             </p>
             <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
@@ -249,15 +249,15 @@ export default function LandingPage() {
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="grid items-center gap-12 lg:grid-cols-2">
             <div>
-              <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-blue-600">
+              <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-lime-600">
                 Módulo de Prospecção
               </p>
               <h2 className="mb-5 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
                 Conquiste novos clientes{' '}
-                <span className="text-blue-600">no piloto automático</span>
+                <span className="text-lime-600">no piloto automático</span>
               </h2>
               <p className="mb-8 text-base leading-relaxed text-slate-500">
-                O Perix automatiza a prospecção de advogados, escritórios e seguradoras. Envie
+                O PeriLaB automatiza a prospecção de advogados, escritórios e seguradoras. Envie
                 e-mails personalizados, propostas e currículo de forma organizada e escalável —
                 enquanto você foca nas perícias.
               </p>
@@ -266,8 +266,8 @@ export default function LandingPage() {
                   const Icon = item.icon
                   return (
                     <li key={item.text} className="flex items-start gap-3">
-                      <div className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md bg-blue-100">
-                        <Icon className="h-3.5 w-3.5 text-blue-600" />
+                      <div className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md bg-lime-100">
+                        <Icon className="h-3.5 w-3.5 text-lime-600" />
                       </div>
                       <span className="text-sm text-slate-700">{item.text}</span>
                     </li>
@@ -277,7 +277,7 @@ export default function LandingPage() {
               <div className="mt-10">
                 <a
                   href="#planos"
-                  className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+                  className="inline-flex items-center gap-2 text-sm font-semibold text-lime-600 hover:text-lime-700 transition-colors"
                 >
                   Disponível nos planos Profissional e Premium
                   <ArrowRight className="h-4 w-4" />
@@ -297,7 +297,7 @@ export default function LandingPage() {
               <div className="space-y-3">
                 {[
                   { nome: 'Dr. Ricardo Alves', status: 'Respondeu', color: 'bg-emerald-50 text-emerald-700' },
-                  { nome: 'Escritório Martins & Assoc.', status: 'Abriu e-mail', color: 'bg-blue-50 text-blue-700' },
+                  { nome: 'Escritório Martins & Assoc.', status: 'Abriu e-mail', color: 'bg-amber-50 text-amber-700' },
                   { nome: 'Dra. Camila Santos', status: 'Enviado', color: 'bg-slate-100 text-slate-600' },
                   { nome: 'Braz Advogados', status: 'Enviado', color: 'bg-slate-100 text-slate-600' },
                   { nome: 'Dr. Fernando Costa', status: 'Agendou reunião', color: 'bg-violet-50 text-violet-700' },
@@ -339,7 +339,7 @@ export default function LandingPage() {
       <section id="planos" className="py-20 sm:py-28">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="mb-14 text-center">
-            <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-blue-600">
+            <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-lime-600">
               Planos
             </p>
             <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
@@ -356,7 +356,7 @@ export default function LandingPage() {
                 key={plan.name}
                 className={`relative flex flex-col rounded-2xl border p-8 shadow-sm transition-shadow hover:shadow-md ${
                   plan.highlight
-                    ? 'border-blue-200 bg-blue-600 text-white'
+                    ? 'border-lime-300 bg-lime-500 text-slate-900'
                     : 'border-slate-200 bg-white text-slate-900'
                 }`}
               >
@@ -369,16 +369,16 @@ export default function LandingPage() {
                 )}
 
                 <div className="mb-6">
-                  <p className={`mb-1 text-sm font-semibold ${plan.highlight ? 'text-blue-200' : 'text-slate-500'}`}>
+                  <p className={`mb-1 text-sm font-semibold ${plan.highlight ? 'text-lime-900' : 'text-slate-500'}`}>
                     {plan.name}
                   </p>
                   <div className="flex items-baseline gap-1">
                     <span className="text-4xl font-extrabold">{plan.price}</span>
-                    <span className={`text-sm ${plan.highlight ? 'text-blue-200' : 'text-slate-400'}`}>
+                    <span className={`text-sm ${plan.highlight ? 'text-lime-900' : 'text-slate-400'}`}>
                       {plan.period}
                     </span>
                   </div>
-                  <p className={`mt-2 text-sm ${plan.highlight ? 'text-blue-100' : 'text-slate-500'}`}>
+                  <p className={`mt-2 text-sm ${plan.highlight ? 'text-lime-900' : 'text-slate-500'}`}>
                     {plan.description}
                   </p>
                 </div>
@@ -388,10 +388,10 @@ export default function LandingPage() {
                     <li key={feat} className="flex items-start gap-2.5 text-sm">
                       <CheckCircle2
                         className={`mt-0.5 h-4 w-4 flex-shrink-0 ${
-                          plan.highlight ? 'text-blue-200' : 'text-emerald-500'
+                          plan.highlight ? 'text-lime-900' : 'text-emerald-500'
                         }`}
                       />
-                      <span className={plan.highlight ? 'text-blue-50' : 'text-slate-700'}>{feat}</span>
+                      <span className={plan.highlight ? 'text-lime-950' : 'text-slate-700'}>{feat}</span>
                     </li>
                   ))}
                 </ul>
@@ -400,7 +400,7 @@ export default function LandingPage() {
                   href="/login"
                   className={`inline-flex h-11 items-center justify-center rounded-xl text-sm font-semibold transition-all ${
                     plan.highlight
-                      ? 'bg-white text-blue-600 hover:bg-blue-50'
+                      ? 'bg-white text-lime-700 hover:bg-lime-50'
                       : 'bg-slate-900 text-white hover:bg-slate-700'
                   }`}
                 >
@@ -420,19 +420,19 @@ export default function LandingPage() {
       <section className="bg-slate-950 py-16">
         <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
           <div className="mb-4 inline-flex items-center gap-2 text-sm text-slate-400">
-            <Shield className="h-4 w-4 text-blue-400" />
+            <Shield className="h-4 w-4 text-lime-400" />
             Dados seguros · LGPD compliant
           </div>
           <h2 className="mb-4 text-2xl font-bold text-white sm:text-3xl">
             Pronto para profissionalizar sua atuação?
           </h2>
           <p className="mb-8 text-base text-slate-400">
-            Junte-se a centenas de peritos que já usam o Perix para organizar processos e
+            Junte-se a centenas de peritos que já usam o PeriLaB para organizar processos e
             conquistar novos trabalhos.
           </p>
           <Link
             href="/login"
-            className="inline-flex h-12 items-center gap-2 rounded-xl bg-blue-600 px-8 text-base font-semibold text-white shadow-lg shadow-blue-600/30 transition-all hover:bg-blue-500"
+            className="inline-flex h-12 items-center gap-2 rounded-xl bg-lime-500 px-8 text-base font-semibold text-slate-900 shadow-lg shadow-lime-500/30 transition-all hover:bg-lime-400"
           >
             Entrar no sistema
             <ArrowRight className="h-4 w-4" />
@@ -444,13 +444,13 @@ export default function LandingPage() {
       <footer className="border-t border-slate-800 bg-slate-950 py-10">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 sm:flex-row sm:px-6">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-blue-600 text-xs font-bold text-white select-none">
-              P
+            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-lime-500 text-[10px] font-bold text-slate-900 select-none">
+              PL
             </div>
-            <span className="text-sm font-semibold text-slate-300">PERIX</span>
+            <span className="text-sm font-semibold text-slate-300">PeriLaB</span>
           </div>
           <p className="text-xs text-slate-500">
-            © {new Date().getFullYear()} PERIX. Todos os direitos reservados.
+            © {new Date().getFullYear()} PeriLaB. Todos os direitos reservados.
           </p>
           <div className="flex gap-5 text-xs text-slate-500">
             <a href="#" className="hover:text-slate-300 transition-colors">Termos de uso</a>

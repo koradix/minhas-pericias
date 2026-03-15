@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import {
-  Map,
   MapPin,
   Clock,
   Banknote,
@@ -18,6 +17,7 @@ import { Button } from '@/components/ui/button'
 import { cn, formatCurrency } from '@/lib/utils'
 import type { Rota, TipoPontoRota } from '@/lib/types/rotas'
 import type { Metadata } from 'next'
+import RouteMapDynamic from '@/components/maps/route-map-dynamic'
 
 export const metadata: Metadata = { title: 'Rotas de Prospecção' }
 
@@ -111,26 +111,24 @@ export default function RotasProspeccaoPage() {
         }
       />
 
-      {/* Map placeholder */}
-      <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/60 py-10 text-center">
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 mb-3">
-          <Map className="h-6 w-6 text-slate-400" />
-        </div>
-        <p className="text-sm font-semibold text-slate-600">Visualização de Mapa</p>
-        <p className="text-xs text-slate-400 mt-1 max-w-sm">
-          Integração com OpenStreetMap prevista para a próxima fase. Os pontos da rota serão exibidos no mapa.
-        </p>
-        <div className="mt-3 flex items-center gap-4 text-[10px] text-slate-400">
-          {Object.entries(pontoConfig).map(([tipo, conf]) => {
-            const Icon = conf.icon
-            return (
-              <span key={tipo} className="flex items-center gap-1">
-                <Icon className={cn('h-3 w-3', conf.color)} />
-                {conf.label}
-              </span>
-            )
-          })}
-        </div>
+      {/* Mapa real */}
+      <div className="h-[420px] w-full overflow-hidden rounded-xl border border-slate-200 shadow-sm">
+        <RouteMapDynamic
+          routes={rotas.map((r) => ({ id: r.id, pontos: r.pontos }))}
+        />
+      </div>
+
+      {/* Legenda */}
+      <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
+        {Object.entries(pontoConfig).map(([tipo, conf]) => {
+          const Icon = conf.icon
+          return (
+            <span key={tipo} className="flex items-center gap-1.5">
+              <Icon className={cn('h-3.5 w-3.5', conf.color)} />
+              {conf.label}
+            </span>
+          )
+        })}
       </div>
 
       {/* Route cards */}

@@ -28,7 +28,46 @@ async function main() {
     },
   })
 
-  console.log('Seed concluido: perito@demo.com / admin@demo.com — senha: senha123')
+  // ─── Usuários demo de parceiros ───────────────────────────────────────────
+  await prisma.user.upsert({
+    where: { email: 'escritorio@demo.perix.com.br' },
+    update: {},
+    create: {
+      email: 'escritorio@demo.perix.com.br',
+      name: 'Carvalho & Menezes Advocacia',
+      passwordHash: hash,
+      role: 'parceiro',
+    },
+  })
+
+  await prisma.user.upsert({
+    where: { email: 'seguradora@demo.perix.com.br' },
+    update: {},
+    create: {
+      email: 'seguradora@demo.perix.com.br',
+      name: 'Caixa Seguradora RJ',
+      passwordHash: hash,
+      role: 'parceiro',
+    },
+  })
+
+  await prisma.user.upsert({
+    where: { email: 'originador@demo.perix.com.br' },
+    update: {},
+    create: {
+      email: 'originador@demo.perix.com.br',
+      name: 'Rio Perícias Originações',
+      passwordHash: hash,
+      role: 'parceiro',
+    },
+  })
+
+  console.log('=== Seed concluido ===')
+  console.log('perito@demo.com       — senha123 — perito')
+  console.log('admin@demo.com        — senha123 — admin')
+  console.log('escritorio@demo.perix.com.br — senha123 — parceiro')
+  console.log('seguradora@demo.perix.com.br — senha123 — parceiro')
+  console.log('originador@demo.perix.com.br — senha123 — parceiro')
 }
 
 main()

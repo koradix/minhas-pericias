@@ -121,10 +121,12 @@ export default function RotasPage() {
         title="Rotas"
         description="Planejamento de rotas de prospecção e execução de perícias"
         actions={
-          <Button size="sm">
-            <Plus className="h-3.5 w-3.5" />
-            Nova Rota
-          </Button>
+          <Link href="/rotas/prospeccao">
+            <Button size="sm">
+              <Plus className="h-3.5 w-3.5" />
+              Nova Rota
+            </Button>
+          </Link>
         }
       />
 
@@ -231,9 +233,11 @@ export default function RotasPage() {
                     <Banknote className="h-3 w-3 text-slate-400" />
                     {formatCurrency(rota.custoEstimado)}
                   </span>
-                  <Button size="sm" variant="outline" className="ml-auto h-7 text-xs">
-                    Ver detalhes
-                  </Button>
+                  <Link href={rota.tipo === 'PROSPECCAO' ? '/rotas/prospeccao' : '/rotas/pericias'}>
+                    <Button size="sm" variant="outline" className="ml-auto h-7 text-xs">
+                      Ver detalhes
+                    </Button>
+                  </Link>
                 </div>
               </div>
             )

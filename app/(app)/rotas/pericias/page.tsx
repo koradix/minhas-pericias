@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import {
-  Map,
   MapPin,
   Clock,
   Banknote,
@@ -16,6 +15,7 @@ import { Button } from '@/components/ui/button'
 import { cn, formatCurrency } from '@/lib/utils'
 import type { Rota } from '@/lib/types/rotas'
 import type { Metadata } from 'next'
+import RouteMapDynamic from '@/components/maps/route-map-dynamic'
 
 export const metadata: Metadata = { title: 'Rotas de Perícias' }
 
@@ -96,15 +96,11 @@ export default function RotasPericiasPage() {
         }
       />
 
-      {/* Map placeholder */}
-      <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/60 py-10 text-center">
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 mb-3">
-          <Map className="h-6 w-6 text-emerald-500" />
-        </div>
-        <p className="text-sm font-semibold text-slate-600">Visualização de Mapa</p>
-        <p className="text-xs text-slate-400 mt-1 max-w-sm">
-          Integração com OpenStreetMap prevista para a próxima fase. Os locais de vistoria serão exibidos no mapa.
-        </p>
+      {/* Mapa real */}
+      <div className="h-[420px] w-full overflow-hidden rounded-xl border border-slate-200 shadow-sm">
+        <RouteMapDynamic
+          routes={rotas.map((r) => ({ id: r.id, pontos: r.pontos }))}
+        />
       </div>
 
       {/* Route cards */}

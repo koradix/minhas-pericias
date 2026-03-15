@@ -1,91 +1,110 @@
+'use client'
+
+import { useState, useMemo } from 'react'
+import Link from 'next/link'
 import { Bell, BellDot, FileText, Clock, CheckCircle2, AlertTriangle, Info } from 'lucide-react'
 import { PageHeader } from '@/components/shared/page-header'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import type { Metadata } from 'next'
-
-export const metadata: Metadata = { title: 'Alertas de Nomeações' }
 
 type AlertTipo = 'nomeacao' | 'prazo' | 'honorario' | 'sistema'
 
-const alertas = [
+const ALERTAS_INICIAIS = [
   {
     id: 1,
     tipo: 'nomeacao' as AlertTipo,
     titulo: 'Nova Nomeação Recebida',
-    descricao: 'Você foi nomeado perito no processo 0078901-23.2024.8.26.0001 — 7ª Vara Cível TJSP.',
+    descricao: 'Você foi nomeado perito no processo 0045678-32.2024.8.19.0001 — 3ª Vara Cível da Comarca da Capital — TJRJ.',
     data: 'Hoje, 09:15',
-    lido: false,
     prioridade: 'alta',
+    link: '/pericias',
+    linkLabel: 'Abrir Processo',
   },
   {
     id: 2,
     tipo: 'prazo' as AlertTipo,
     titulo: 'Prazo Vencendo em 3 dias',
-    descricao: 'PRC-2024-005 — Perícia de Engenharia Civil. Entrega do laudo até 15/12/2024.',
+    descricao: 'PRC-2024-001 — Avaliação de Imóvel Residencial. Entrega do laudo até 15/03/2026.',
     data: 'Hoje, 08:00',
-    lido: false,
     prioridade: 'alta',
+    link: '/pericias',
+    linkLabel: 'Ver Perícia',
   },
   {
     id: 3,
     tipo: 'nomeacao' as AlertTipo,
     titulo: 'Nova Nomeação Recebida',
-    descricao: 'Você foi nomeado perito no processo 0067890-12.2024.4.03.6100 — 1ª Vara Federal.',
+    descricao: 'Você foi nomeado perito no processo 0012345-67.2024.5.01.0001 — 1ª Vara do Trabalho do Rio de Janeiro — TRT-1.',
     data: 'Ontem, 14:30',
-    lido: false,
     prioridade: 'alta',
+    link: '/pericias',
+    linkLabel: 'Abrir Processo',
   },
   {
     id: 4,
     tipo: 'honorario' as AlertTipo,
     titulo: 'Honorário em Atraso',
-    descricao: 'PRC-2024-000 — Honorários de R$ 15.000 vencidos há 7 dias. Cliente: Banco Invest S.A.',
+    descricao: 'PRC-2024-004 — Honorários de R$ 12.000 vencidos há 7 dias. Vara: 5ª Vara Cível de Niterói — TJRJ.',
     data: 'Ontem, 10:00',
-    lido: true,
     prioridade: 'media',
+    link: '/recebimentos',
+    linkLabel: 'Ver Recebimento',
   },
   {
     id: 5,
     tipo: 'prazo' as AlertTipo,
     titulo: 'Prazo em 7 dias',
-    descricao: 'PRC-2024-002 — Perícia Trabalhista. Entrega do laudo até 20/12/2024.',
-    data: '10 Dez, 08:00',
-    lido: true,
+    descricao: 'PRC-2024-002 — Apuração de Haveres Societários. Entrega do laudo até 20/03/2026.',
+    data: '10 Mar, 08:00',
     prioridade: 'media',
+    link: '/pericias',
+    linkLabel: 'Ver Perícia',
   },
   {
     id: 6,
     tipo: 'sistema' as AlertTipo,
-    titulo: 'Visita Confirmada',
-    descricao: 'Visita técnica agendada para PRC-2024-001 confirmada para hoje às 14:00.',
-    data: '09 Dez, 16:45',
-    lido: true,
+    titulo: 'Visita Técnica Confirmada',
+    descricao: 'Visita técnica agendada para PRC-2024-003 (Av. Rio Branco, 156 — Centro/RJ) confirmada para hoje às 14:00.',
+    data: '09 Mar, 16:45',
     prioridade: 'baixa',
+    link: '/visitas',
+    linkLabel: 'Ver Visita',
+  },
+  {
+    id: 7,
+    tipo: 'nomeacao' as AlertTipo,
+    titulo: 'Nova Nomeação Recebida',
+    descricao: 'Você foi nomeado perito no processo 5001234-89.2024.4.02.5101 — 3ª Vara Federal do Rio de Janeiro — JFRJ.',
+    data: '08 Mar, 11:20',
+    prioridade: 'alta',
+    link: '/pericias',
+    linkLabel: 'Abrir Processo',
+  },
+  {
+    id: 8,
+    tipo: 'honorario' as AlertTipo,
+    titulo: 'Depósito Recebido',
+    descricao: 'PRC-2024-005 — Depósito de honorários no valor de R$ 8.500 recebido. 2ª Vara Cível de Duque de Caxias — TJRJ.',
+    data: '07 Mar, 09:00',
+    prioridade: 'baixa',
+    link: '/recebimentos',
+    linkLabel: 'Ver Recebimento',
   },
 ]
 
+const FILTROS = [
+  { key: 'todos', label: 'Todos' },
+  { key: 'nomeacao', label: 'Nomeações' },
+  { key: 'prazo', label: 'Prazos' },
+  { key: 'honorario', label: 'Honorários' },
+  { key: 'sistema', label: 'Sistema' },
+]
+
 const tipoConfig: Record<AlertTipo, { icon: typeof Bell; color: string; label: string }> = {
-  nomeacao: {
-    icon: BellDot,
-    color: 'bg-blue-50 text-blue-600',
-    label: 'Nomeação',
-  },
-  prazo: {
-    icon: Clock,
-    color: 'bg-amber-50 text-amber-600',
-    label: 'Prazo',
-  },
-  honorario: {
-    icon: AlertTriangle,
-    color: 'bg-rose-50 text-rose-600',
-    label: 'Honorário',
-  },
-  sistema: {
-    icon: Info,
-    color: 'bg-slate-50 text-slate-500',
-    label: 'Sistema',
-  },
+  nomeacao: { icon: BellDot, color: 'bg-blue-50 text-blue-600', label: 'Nomeação' },
+  prazo: { icon: Clock, color: 'bg-amber-50 text-amber-600', label: 'Prazo' },
+  honorario: { icon: AlertTriangle, color: 'bg-rose-50 text-rose-600', label: 'Honorário' },
+  sistema: { icon: Info, color: 'bg-slate-50 text-slate-500', label: 'Sistema' },
 }
 
 const prioridadeMap = {
@@ -95,7 +114,34 @@ const prioridadeMap = {
 }
 
 export default function AlertasNomenacoesPage() {
-  const naoLidos = alertas.filter((a) => !a.lido).length
+  const [filtroAtivo, setFiltroAtivo] = useState('todos')
+  const [lidos, setLidos] = useState<Set<number>>(new Set([4, 5, 6, 8]))
+
+  const alertasFiltrados = useMemo(
+    () => ALERTAS_INICIAIS.filter((a) => filtroAtivo === 'todos' || a.tipo === filtroAtivo),
+    [filtroAtivo],
+  )
+
+  const naoLidos = useMemo(
+    () => ALERTAS_INICIAIS.filter((a) => !lidos.has(a.id)).length,
+    [lidos],
+  )
+
+  const countByTipo = useMemo(() => {
+    const c: Record<string, number> = {}
+    ALERTAS_INICIAIS.forEach((a) => {
+      if (!lidos.has(a.id)) c[a.tipo] = (c[a.tipo] ?? 0) + 1
+    })
+    return c
+  }, [lidos])
+
+  function marcarComoLido(id: number) {
+    setLidos((prev) => new Set([...prev, id]))
+  }
+
+  function marcarTodosLidos() {
+    setLidos(new Set(ALERTAS_INICIAIS.map((a) => a.id)))
+  }
 
   return (
     <div className="space-y-6">
@@ -103,7 +149,7 @@ export default function AlertasNomenacoesPage() {
         title="Alertas de Nomeações"
         description="Acompanhe nomeações, prazos e avisos importantes"
         actions={
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={marcarTodosLidos} disabled={naoLidos === 0}>
             <CheckCircle2 className="h-4 w-4" />
             Marcar todos como lidos
           </Button>
@@ -122,38 +168,54 @@ export default function AlertasNomenacoesPage() {
 
       {/* Filters */}
       <div className="flex gap-2 flex-wrap">
-        {['Todos', 'Nomeações', 'Prazos', 'Honorários', 'Sistema'].map((f) => (
-          <button
-            key={f}
-            className={`h-8 px-3 rounded-full text-xs font-medium transition-colors ${
-              f === 'Todos'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
-            }`}
-          >
-            {f}
-          </button>
-        ))}
+        {FILTROS.map((f) => {
+          const count = f.key === 'todos' ? naoLidos : (countByTipo[f.key] ?? 0)
+          const isActive = filtroAtivo === f.key
+          return (
+            <button
+              key={f.key}
+              onClick={() => setFiltroAtivo(f.key)}
+              className={`h-8 px-3 rounded-full text-xs font-medium transition-colors flex items-center gap-1.5 ${
+                isActive
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              {f.label}
+              {count > 0 && (
+                <span
+                  className={`inline-flex items-center justify-center h-4 min-w-[1rem] rounded-full px-1 text-[10px] font-bold ${
+                    isActive ? 'bg-white/30 text-white' : 'bg-blue-100 text-blue-700'
+                  }`}
+                >
+                  {count}
+                </span>
+              )}
+            </button>
+          )
+        })}
       </div>
 
       {/* Alerts list */}
       <div className="space-y-3">
-        {alertas.map((alerta) => {
+        {alertasFiltrados.map((alerta) => {
           const config = tipoConfig[alerta.tipo]
           const Icon = config.icon
           const prioridade = prioridadeMap[alerta.prioridade as keyof typeof prioridadeMap]
+          const isLido = lidos.has(alerta.id)
 
           return (
             <div
               key={alerta.id}
+              onClick={() => marcarComoLido(alerta.id)}
               className={`relative flex gap-4 rounded-xl border p-4 cursor-pointer transition-all hover:shadow-sm ${
-                alerta.lido
+                isLido
                   ? 'border-slate-200 bg-white'
                   : 'border-blue-200 bg-blue-50/40 hover:bg-blue-50/70'
               }`}
             >
               {/* Unread dot */}
-              {!alerta.lido && (
+              {!isLido && (
                 <div className="absolute right-4 top-4 h-2 w-2 rounded-full bg-blue-600" />
               )}
 
@@ -165,11 +227,7 @@ export default function AlertasNomenacoesPage() {
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-3 flex-wrap">
-                  <p
-                    className={`text-sm font-semibold ${
-                      alerta.lido ? 'text-slate-700' : 'text-slate-900'
-                    }`}
-                  >
+                  <p className={`text-sm font-semibold ${isLido ? 'text-slate-700' : 'text-slate-900'}`}>
                     {alerta.titulo}
                   </p>
                   <div className="flex items-center gap-2 flex-shrink-0">
@@ -188,17 +246,25 @@ export default function AlertasNomenacoesPage() {
                 </div>
               </div>
 
-              {alerta.tipo === 'nomeacao' && (
-                <div className="flex-shrink-0">
+              <div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                <Link href={alerta.link}>
                   <Button size="sm" variant="outline">
                     <FileText className="h-3.5 w-3.5" />
-                    Abrir Processo
+                    {alerta.linkLabel}
                   </Button>
-                </div>
-              )}
+                </Link>
+              </div>
             </div>
           )
         })}
+
+        {alertasFiltrados.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <Bell className="h-10 w-10 text-slate-300 mb-3" />
+            <p className="text-sm font-medium text-slate-500">Nenhum alerta neste filtro</p>
+            <p className="text-xs text-slate-400 mt-1">Tente selecionar outro tipo de alerta</p>
+          </div>
+        )}
       </div>
     </div>
   )

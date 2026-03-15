@@ -2,18 +2,16 @@ import {
   LayoutDashboard,
   FileText,
   Users,
-  Calendar,
   TrendingUp,
   ArrowDownCircle,
-  BarChart3,
-  Bell,
-  Plug,
   Settings,
   Inbox,
   Navigation,
   Radar,
-  ScrollText,
   Handshake,
+  Send,
+  Search,
+  ScrollText,
   type LucideIcon,
 } from "lucide-react"
 
@@ -29,18 +27,18 @@ export interface NavSection {
   items: NavItem[]
 }
 
+// ─── Perito ───────────────────────────────────────────────────────────────────
+
 export const navigation: NavSection[] = [
   {
     title: "Principal",
     items: [
       { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
       { title: "Péricias", href: "/pericias", icon: FileText },
-      { title: "Documentos", href: "/documentos", icon: ScrollText },
       { title: "Demandas", href: "/demandas", icon: Inbox },
+      { title: "Visitas e Rotas", href: "/rotas", icon: Navigation },
       { title: "Contatos", href: "/contatos", icon: Users },
       { title: "Parceiros", href: "/parceiros", icon: Handshake },
-      { title: "Visitas", href: "/visitas", icon: Calendar },
-      { title: "Rotas", href: "/rotas", icon: Navigation },
     ],
   },
   {
@@ -51,16 +49,32 @@ export const navigation: NavSection[] = [
     ],
   },
   {
-    title: "Gestão",
+    title: "Inteligência",
     items: [
-      { title: "Relatórios", href: "/relatorios", icon: BarChart3 },
-      { title: "Alertas", href: "/alertas-nomeacoes", icon: Bell, badge: 3 },
-      { title: "Radar de Nomeações", href: "/nomeacoes", icon: Radar },
-      { title: "Integrações", href: "/integracoes", icon: Plug },
+      { title: "Radar", href: "/nomeacoes", icon: Radar },
+      { title: "Modelos", href: "/documentos/modelos", icon: ScrollText },
     ],
   },
 ]
 
 export const bottomNavigation: NavItem[] = [
+  { title: "Configurações", href: "/configuracoes", icon: Settings },
+]
+
+// ─── Parceiro ─────────────────────────────────────────────────────────────────
+
+export const navigationParceiro: NavSection[] = [
+  {
+    title: "Principal",
+    items: [
+      { title: "Dashboard", href: "/parceiro/dashboard", icon: LayoutDashboard },
+      { title: "Minhas Demandas", href: "/parceiro/demandas", icon: Inbox },
+      { title: "Buscar Peritos", href: "/parceiro/peritos", icon: Search },
+      { title: "Propostas", href: "/parceiro/propostas", icon: Send },
+    ],
+  },
+]
+
+export const bottomNavigationParceiro: NavItem[] = [
   { title: "Configurações", href: "/configuracoes", icon: Settings },
 ]
