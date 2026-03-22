@@ -1,10 +1,12 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider     = "sqlite"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
 }
 
 model User {
@@ -15,6 +17,9 @@ model User {
   role         String   @default("perito")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  // Relations
+  varas        TribunalVara[]
 }
 
 model Parceiro {
@@ -58,20 +63,68 @@ model DocumentoGerado {
 }
 
 model PeritoPerfil {
-  id            String   @id @default(cuid())
-  userId        String   @unique
-  telefone      String?
-  formacao      String?
-  registro      String?  // registro profissional (ex: CREA, CRC, CRM)
-  especialidades String  @default("[]") // JSON array de strings
-  cursos        String   @default("[]") // JSON array de strings
-  tribunais     String   @default("[]") // JSON array de siglas (ex: ["TJRJ","TRT-1"])
-  estados       String   @default("[]") // JSON array de UFs (ex: ["RJ","SP"])
-  cidade        String?
-  estado        String?
-  areaAtuacao   String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  cpf              String?  // CPF para busca precisa no Escavador (ex: "123.456.789-00")
+  telefone         String?
+  formacao         String?
+  formacaoCustom   String?  // texto livre quando formacao = "Outra formação"
+  registro         String?  // registro profissional (ex: CREA, CRC, CRM)
+  especialidades   String   @default("[]") // JSON array de strings (legado)
+  cursos           String   @default("[]") // JSON array de strings
+  tribunais        String   @default("[]") // JSON array de siglas (ex: ["TJRJ","TRT-1"])
+  estados          String   @default("[]") // JSON array de UFs (ex: ["RJ","SP"])
+  cidade           String?
+  estado           String?
+  areaAtuacao      String?
+  // ── Taxonomia nova ──────────────────────────────────────────────────────────
+  areaPrincipal    String?  // AreaPrincipalId (ex: "engenharia")
+  areasSecundarias String   @default("[]") // JSON AreaPrincipalId[]
+  especialidades2  String   @default("[]") // JSON string[] — especialidades da taxonomia
+  keywords         String   @default("[]") // JSON string[] — palavras-chave livres
+  perfilCompleto   Boolean  @default(false)
+  sincronizadoEm   DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+// ─── VARAS DOS TRIBUNAIS (sincronizado via Escavador) ─────────────────────────
+
+model TribunalVara {
+  id             String   @id @default(cuid())
+  peritoId       String   // User.id
+  tribunalSigla  String   // ex: "TJRJ"
+  tribunalNome   String   // ex: "Tribunal de Justiça do Rio de Janeiro"
+  varaNome       String   // ex: "1ª Vara Cível de Niterói"
+  varaId         String?  // Escavador external ID
+  cidade         String?
+  uf             String?
+  ativa          Boolean   @default(true)
+  totalNomeacoes Int       @default(0)
+  enderecoTexto  String?   // endereço completo do tribunal
+  latitude       Float?    // coordenada para mapa
+  longitude      Float?    // coordenada para mapa
+  sincronizadoEm DateTime? // última sincronização com Escavador
+  criadoEm       DateTime  @default(now())
+
+  // Relations
+  user           User     @relation(fields: [peritoId], references: [id])
+  nomeacoes      NomeacaoCitacao[]
+
+  @@unique([peritoId, tribunalSigla, varaNome])
+}
+
+// ─── ESTATÍSTICAS GLOBAIS DE VARAS (acumulado da plataforma) ─────────────────
+
+model VaraStats {
+  id                    String   @id @default(cuid())
+  tribunalSigla         String
+  varaNome              String
+  totalPeritosSugeridos Int      @default(0)
+  totalNomeacoes        Int      @default(0)
+  atualizadoEm          DateTime @updatedAt
+
+  @@unique([tribunalSigla, varaNome])
 }
 
 model DemandaParceiro {
@@ -101,4 +154,131 @@ model Proposta {
   userId        String   // User.id do parceiro que criou a proposta
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+}
+
+// ─── ENDERECO OVERRIDE (patch sobre mocks de péricia) ────────────────────────
+
+model PericiaEnderecoOverride {
+  id        String   @id @default(cuid())
+  pericoId  String   // mock Pericia.id como string (ex: "1")
+  userId    String   // User.id do perito
+  endereco  String
+  updatedAt DateTime @updatedAt
+
+  @@unique([pericoId, userId])
+}
+
+// ─── STATUS OVERRIDE (patch sobre mocks de péricia) ──────────────────────────
+
+model PericiaStatusOverride {
+  id        String   @id @default(cuid())
+  pericoId  String   // mock Pericia.id como string (ex: "6")
+  userId    String   // User.id do perito
+  status    String   // status efetivo
+  updatedAt DateTime @updatedAt
+
+  @@unique([pericoId, userId])
+}
+
+// ─── PROPOSTA DE HONORÁRIOS ───────────────────────────────────────────────────
+
+model PropostaHonorarios {
+  id                 String   @id @default(cuid())
+  // ── Dados do processo (desnormalizados do mock) ──────────────────────────────
+  pericoId           String   // mock Pericia.id como string (ex: "6")
+  pericoNumero       String   // ex: "PRC-2024-006"
+  pericoAssunto      String
+  pericoProcesso     String
+  pericoVara         String
+  pericoPartes       String
+  // ── Proposta ─────────────────────────────────────────────────────────────────
+  status             String   @default("rascunho") // rascunho | finalizada
+  dataProposta       String   @default("")          // "YYYY-MM-DD"
+  peritoNome         String   @default("")
+  peritoQualificacao String   @default("")
+  descricaoServicos  String   @default("")
+  valorHonorarios    Float?
+  prazoEstimado      String   @default("")
+  observacoes        String   @default("")
+  // ── Opcionais ────────────────────────────────────────────────────────────────
+  custoDeslocamento  Float?
+  horasTecnicas      Float?
+  complexidadeNota   String   @default("")
+  // ── Controle ─────────────────────────────────────────────────────────────────
+  userId             String   // User.id do perito
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@unique([pericoId, userId]) // um rascunho por processo por usuário
+}
+
+// ─── RADAR DE NOMEAÇÕES ───────────────────────────────────────────────────────
+
+model RadarConfig {
+  id                   String    @id @default(cuid())
+  peritoId             String    @unique  // User.id
+  tribunaisMonitorados String    // JSON string[] — siglas from PeritoPerfil
+  tribunaisResolvidos  String    @default("[]") // JSON TribunalRadarInfo[]
+  tribunaisIgnorados   String    @default("[]") // JSON string[] — no busca_nome support
+  monitoramentoExtId   String?   // Escavador monitoramento id
+  ultimaBusca          DateTime?
+  totalCitacoes        Int       @default(0)
+  saldoUltimaVerif     Float?    // last known credit balance
+  criadoEm             DateTime  @default(now())
+  atualizadoEm         DateTime  @updatedAt
+}
+
+model NomeacaoCitacao {
+  id             String        @id @default(cuid())
+  peritoId       String        // User.id
+  externalId     String
+  diarioSigla    String
+  diarioNome     String
+  diarioData     DateTime
+  snippet        String
+  numeroProcesso String?
+  linkCitacao    String
+  visualizado    Boolean       @default(false)
+  fonte          String        @default("escavador") // escavador | manual
+  tribunalVaraId String?       // TribunalVara.id (nullable)
+  criadoEm       DateTime      @default(now())
+
+  // Relation
+  tribunalVara   TribunalVara? @relation(fields: [tribunalVaraId], references: [id])
+
+  @@unique([peritoId, externalId])
+}
+
+// ─── ROTAS / CHECKPOINTS ─────────────────────────────────────────────────────
+
+model RotaPericia {
+  id           String   @id @default(cuid())
+  peritoId     String   // User.id
+  titulo       String
+  status       String   @default("em_andamento") // em_andamento | concluida | cancelada
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+}
+
+model Checkpoint {
+  id        String    @id @default(cuid())
+  rotaId    String    // RotaPericia.id (plain string — no FK enforced in SQLite)
+  ordem     Int
+  titulo    String
+  endereco  String?
+  lat       Float?
+  lng       Float?
+  status    String    @default("pendente") // pendente | chegou | concluido
+  chegadaEm DateTime?
+  criadoEm  DateTime  @default(now())
+}
+
+model CheckpointMidia {
+  id           String   @id @default(cuid())
+  checkpointId String   // Checkpoint.id (plain string — no FK enforced in SQLite)
+  tipo         String   // foto | audio | texto | documento
+  url          String?  // base64 data URI or file path
+  texto        String?  // for tipo=texto
+  descricao    String?  // optional caption for foto/audio
+  criadoEm     DateTime @default(now())
 }
