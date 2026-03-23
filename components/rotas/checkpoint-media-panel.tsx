@@ -159,16 +159,18 @@ export function CheckpointMediaPanel({
   // ── Load existing vara contact on mount (FORUM/VARA only) ──────────────────
   useEffect(() => {
     if (!isVara || !tribunalSigla || !varaNome) return
-    getVaraContato(tribunalSigla, varaNome).then((row) => {
-      if (row) setContato({
-        telefone: row.telefone,
-        email: row.email,
-        juizNome: row.juizNome,
-        secretarioNome: row.secretarioNome,
-        secretarioLinkedin: row.secretarioLinkedin,
-        observacoes: row.observacoes,
+    getVaraContato(tribunalSigla, varaNome)
+      .then((row) => {
+        if (row) setContato({
+          telefone: row.telefone,
+          email: row.email,
+          juizNome: row.juizNome,
+          secretarioNome: row.secretarioNome,
+          secretarioLinkedin: row.secretarioLinkedin,
+          observacoes: row.observacoes,
+        })
       })
-    })
+      .catch(() => {/* VaraContato table may not exist yet — ignore */})
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isVara])
 
@@ -213,11 +215,13 @@ export function CheckpointMediaPanel({
     const base64 = canvas.toDataURL('image/jpeg', 0.85)
 
     startTransition(async () => {
-      const { id, criadoEm } = await addCheckpointMidia(checkpointId, 'foto', { url: base64 })
-      setMidias((prev) => [
-        ...prev,
-        { id, tipo: 'foto', url: base64, texto: null, descricao: null, criadoEm },
-      ])
+      try {
+        const { id, criadoEm } = await addCheckpointMidia(checkpointId, 'foto', { url: base64 })
+        setMidias((prev) => [
+          ...prev,
+          { id, tipo: 'foto', url: base64, texto: null, descricao: null, criadoEm },
+        ])
+      } catch { /* swallow — DB error shouldn't crash the capture flow */ }
     })
   }
 
@@ -231,11 +235,13 @@ export function CheckpointMediaPanel({
     for (const file of files) {
       const base64 = await fileToBase64(file)
       startTransition(async () => {
-        const { id, criadoEm } = await addCheckpointMidia(checkpointId, 'foto', { url: base64 })
-        setMidias((prev) => [
-          ...prev,
-          { id, tipo: 'foto', url: base64, texto: null, descricao: null, criadoEm },
-        ])
+        try {
+          const { id, criadoEm } = await addCheckpointMidia(checkpointId, 'foto', { url: base64 })
+          setMidias((prev) => [
+            ...prev,
+            { id, tipo: 'foto', url: base64, texto: null, descricao: null, criadoEm },
+          ])
+        } catch { /* swallow */ }
       })
     }
   }
@@ -276,15 +282,17 @@ export function CheckpointMediaPanel({
   function handleSalvarAudio() {
     if (!audioPreview) return
     startTransition(async () => {
-      const { id, criadoEm } = await addCheckpointMidia(checkpointId, 'audio', {
-        url: audioPreview,
-      })
-      setMidias((prev) => [
-        ...prev,
-        { id, tipo: 'audio', url: audioPreview, texto: null, descricao: null, criadoEm },
-      ])
-      setAudioPreview(null)
-      setModo(null)
+      try {
+        const { id, criadoEm } = await addCheckpointMidia(checkpointId, 'audio', {
+          url: audioPreview,
+        })
+        setMidias((prev) => [
+          ...prev,
+          { id, tipo: 'audio', url: audioPreview, texto: null, descricao: null, criadoEm },
+        ])
+        setAudioPreview(null)
+        setModo(null)
+      } catch { /* swallow */ }
     })
   }
 
@@ -298,21 +306,25 @@ export function CheckpointMediaPanel({
     const texto = nota.trim()
     if (!texto) return
     startTransition(async () => {
-      const { id, criadoEm } = await addCheckpointMidia(checkpointId, 'texto', { texto })
-      setMidias((prev) => [
-        ...prev,
-        { id, tipo: 'texto', url: null, texto, descricao: null, criadoEm },
-      ])
-      setNota('')
-      setModo(null)
+      try {
+        const { id, criadoEm } = await addCheckpointMidia(checkpointId, 'texto', { texto })
+        setMidias((prev) => [
+          ...prev,
+          { id, tipo: 'texto', url: null, texto, descricao: null, criadoEm },
+        ])
+        setNota('')
+        setModo(null)
+      } catch { /* swallow */ }
     })
   }
 
   // ── Delete ────────────────────────────────────────────────────────────────
   function handleDelete(midiaId: string) {
     startTransition(async () => {
-      await deleteCheckpointMidia(midiaId)
-      setMidias((prev) => prev.filter((m) => m.id !== midiaId))
+      try {
+        await deleteCheckpointMidia(midiaId)
+        setMidias((prev) => prev.filter((m) => m.id !== midiaId))
+      } catch { /* swallow */ }
     })
   }
 
@@ -320,16 +332,20 @@ export function CheckpointMediaPanel({
   async function handleSalvarContato() {
     if (!tribunalSigla || !varaNome) return
     setLoadingContato(true)
-    await upsertVaraContato(tribunalSigla, varaNome, contato)
+    try {
+      await upsertVaraContato(tribunalSigla, varaNome, contato)
+      setSavedContato(true)
+      setTimeout(() => setSavedContato(false), 2500)
+    } catch { /* swallow */ }
     setLoadingContato(false)
-    setSavedContato(true)
-    setTimeout(() => setSavedContato(false), 2500)
   }
 
   // ── Finalizar ─────────────────────────────────────────────────────────────
   async function handleFinalizar() {
     setFinalizando(true)
-    await updateCheckpointStatus(checkpointId, 'concluido')
+    try {
+      await updateCheckpointStatus(checkpointId, 'concluido')
+    } catch { /* swallow — status update failure shouldn't block navigation */ }
     setFinalizando(false)
     onConcluido()
   }

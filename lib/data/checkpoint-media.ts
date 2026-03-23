@@ -1,5 +1,11 @@
 import { prisma } from '@/lib/prisma'
 
+function toISO(d: Date | string | null | undefined): string {
+  if (!d) return new Date().toISOString()
+  if (d instanceof Date) return d.toISOString()
+  return new Date(d as string).toISOString()
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface CheckpointMidiaDado {
@@ -121,7 +127,7 @@ export async function getMidiasByPericiaId(
     url: m.url,
     texto: m.texto,
     descricao: m.descricao,
-    criadoEm: m.criadoEm.toISOString(),
+    criadoEm: toISO(m.criadoEm),
   }))
 }
 

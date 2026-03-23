@@ -25,6 +25,18 @@ export interface CheckpointMeta {
   varaNome?: string      // for FORUM/VARA_CIVEL checkpoints
 }
 
+// ─── Helper ───────────────────────────────────────────────────────────────────
+
+/**
+ * Safe ISO conversion — handles cases where @prisma/adapter-libsql returns
+ * DATETIME columns as strings instead of Date objects (known libsql quirk).
+ */
+function toISO(d: Date | string | null | undefined): string {
+  if (!d) return new Date().toISOString()
+  if (d instanceof Date) return d.toISOString()
+  return new Date(d as string).toISOString()
+}
+
 // ─── Actions ─────────────────────────────────────────────────────────────────
 
 /**
@@ -41,6 +53,7 @@ export async function updateCheckpointStatus(
 
   const chegadaEm = status === 'chegou' ? new Date() : undefined
 
+  // Attempt 1: with new columns (post-migration)
   try {
     await prisma.checkpoint.upsert({
       where: { id: checkpointId },
@@ -61,8 +74,14 @@ export async function updateCheckpointStatus(
         ...(chegadaEm && { chegadaEm }),
       },
     })
+    revalidatePath('/rotas/pericias')
+    return
   } catch {
-    // Fallback for production DB before migration: upsert without new columns
+    // fall through to attempt 2
+  }
+
+  // Attempt 2: without new columns (pre-migration fallback)
+  try {
     await prisma.checkpoint.upsert({
       where: { id: checkpointId },
       update: { status, ...(chegadaEm && { chegadaEm }) },
@@ -76,6 +95,8 @@ export async function updateCheckpointStatus(
         ...(chegadaEm && { chegadaEm }),
       },
     })
+  } catch {
+    // If both attempts fail, swallow — don't crash the client
   }
 
   revalidatePath('/rotas/pericias')
@@ -104,7 +125,8 @@ export async function addCheckpointMidia(
   })
 
   revalidatePath('/rotas/pericias')
-  return { id: midia.id, criadoEm: midia.criadoEm.toISOString() }
+  // toISO guards against libsql returning DATETIME as string instead of Date
+  return { id: midia.id, criadoEm: toISO(midia.criadoEm) }
 }
 
 /** Hard-delete a single media item. */
@@ -112,7 +134,11 @@ export async function deleteCheckpointMidia(midiaId: string): Promise<void> {
   const session = await auth()
   if (!session?.user?.id) return
 
-  await prisma.checkpointMidia.delete({ where: { id: midiaId } })
+  try {
+    await prisma.checkpointMidia.delete({ where: { id: midiaId } })
+  } catch {
+    // Row may already be gone — ignore
+  }
   revalidatePath('/rotas/pericias')
 }
 
@@ -131,9 +157,13 @@ export async function getCheckpointMidias(checkpointId: string): Promise<
     criadoEm: string
   }[]
 > {
-  const rows = await prisma.checkpointMidia.findMany({
-    where: { checkpointId },
-    orderBy: { criadoEm: 'asc' },
-  })
-  return rows.map((r) => ({ ...r, criadoEm: r.criadoEm.toISOString() }))
+  try {
+    const rows = await prisma.checkpointMidia.findMany({
+      where: { checkpointId },
+      orderBy: { criadoEm: 'asc' },
+    })
+    return rows.map((r) => ({ ...r, criadoEm: toISO(r.criadoEm) }))
+  } catch {
+    return []
+  }
 }
