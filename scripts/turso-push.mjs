@@ -35,7 +35,9 @@ const statements = [
   `CREATE UNIQUE INDEX IF NOT EXISTS "RadarConfig_peritoId_key" ON "RadarConfig"("peritoId")`,
   `CREATE TABLE IF NOT EXISTS "NomeacaoCitacao" ("id" TEXT NOT NULL PRIMARY KEY, "peritoId" TEXT NOT NULL, "externalId" TEXT NOT NULL, "diarioSigla" TEXT NOT NULL, "diarioNome" TEXT NOT NULL, "diarioData" DATETIME NOT NULL, "snippet" TEXT NOT NULL, "numeroProcesso" TEXT, "linkCitacao" TEXT NOT NULL, "visualizado" BOOLEAN NOT NULL DEFAULT false, "fonte" TEXT NOT NULL DEFAULT 'escavador', "tribunalVaraId" TEXT, "criadoEm" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
   `CREATE UNIQUE INDEX IF NOT EXISTS "NomeacaoCitacao_peritoId_externalId_key" ON "NomeacaoCitacao"("peritoId", "externalId")`,
-  `CREATE TABLE IF NOT EXISTS "RotaPericia" ("id" TEXT NOT NULL PRIMARY KEY, "peritoId" TEXT NOT NULL, "titulo" TEXT NOT NULL, "status" TEXT NOT NULL DEFAULT 'em_andamento', "criadoEm" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, "atualizadoEm" DATETIME NOT NULL)`,
+  `CREATE TABLE IF NOT EXISTS "RotaPericia" ("id" TEXT NOT NULL PRIMARY KEY, "peritoId" TEXT NOT NULL, "pericoId" TEXT, "titulo" TEXT NOT NULL, "status" TEXT NOT NULL DEFAULT 'em_andamento', "criadoEm" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, "atualizadoEm" DATETIME NOT NULL)`,
+  // Migration: add pericoId column to existing RotaPericia table (safe — ignored if column already exists)
+  `ALTER TABLE "RotaPericia" ADD COLUMN "pericoId" TEXT`,
   `CREATE TABLE IF NOT EXISTS "Checkpoint" ("id" TEXT NOT NULL PRIMARY KEY, "rotaId" TEXT NOT NULL, "ordem" INTEGER NOT NULL, "titulo" TEXT NOT NULL, "endereco" TEXT, "lat" REAL, "lng" REAL, "status" TEXT NOT NULL DEFAULT 'pendente', "chegadaEm" DATETIME, "criadoEm" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
   `CREATE TABLE IF NOT EXISTS "CheckpointMidia" ("id" TEXT NOT NULL PRIMARY KEY, "checkpointId" TEXT NOT NULL, "tipo" TEXT NOT NULL, "url" TEXT, "texto" TEXT, "descricao" TEXT, "criadoEm" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
 ]
@@ -62,7 +64,11 @@ const req = https.request(apiUrl, options, (res) => {
   res.on('end', () => {
     if (res.statusCode === 200) {
       const parsed = JSON.parse(data)
-      const errors = parsed.results?.filter(r => r.type === 'error')
+      // Ignore "duplicate column name" — ALTER TABLE on a fresh DB already has the column
+      const errors = parsed.results?.filter(r =>
+        r.type === 'error' &&
+        !r.error?.message?.toLowerCase().includes('duplicate column name')
+      )
       if (errors?.length) {
         console.error('Errors:', JSON.stringify(errors, null, 2))
         process.exit(1)

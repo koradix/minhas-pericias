@@ -66,6 +66,54 @@ export async function getRotaComCheckpoints(rotaId: string): Promise<RotaComChec
   return { ...rota, checkpoints }
 }
 
+// ─── Serializable DTO for client components ───────────────────────────────────
+
+export interface MidiaDaPericia {
+  id: string
+  tipo: string
+  url: string | null
+  texto: string | null
+  descricao: string | null
+  criadoEm: string // ISO string
+}
+
+/**
+ * All media (fotos, áudios, notas) captured in any checkpoint of any rota
+ * linked to a specific pericia. Used by the pericias/[id] detail page.
+ */
+export async function getMidiasByPericiaId(
+  pericoId: string,
+  peritoId: string,
+): Promise<MidiaDaPericia[]> {
+  const rotas = await prisma.rotaPericia.findMany({
+    where: { pericoId, peritoId },
+    select: { id: true },
+  })
+  if (!rotas.length) return []
+
+  const rotaIds = rotas.map((r) => r.id)
+  const checkpoints = await prisma.checkpoint.findMany({
+    where: { rotaId: { in: rotaIds } },
+    select: { id: true },
+  })
+  if (!checkpoints.length) return []
+
+  const cpIds = checkpoints.map((c) => c.id)
+  const midias = await prisma.checkpointMidia.findMany({
+    where: { checkpointId: { in: cpIds } },
+    orderBy: { criadoEm: 'desc' },
+  })
+
+  return midias.map((m) => ({
+    id: m.id,
+    tipo: m.tipo,
+    url: m.url,
+    texto: m.texto,
+    descricao: m.descricao,
+    criadoEm: m.criadoEm.toISOString(),
+  }))
+}
+
 /**
  * Flat list of all media attached to every checkpoint in a rota.
  * Used by the laudo generation flow to pre-populate document content.

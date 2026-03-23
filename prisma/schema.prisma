@@ -254,6 +254,7 @@ model NomeacaoCitacao {
 model RotaPericia {
   id           String   @id @default(cuid())
   peritoId     String   // User.id
+  pericoId     String?  // pericia mock id (string) — links rota to a pericia process
   titulo       String
   status       String   @default("em_andamento") // em_andamento | concluida | cancelada
   criadoEm     DateTime @default(now())

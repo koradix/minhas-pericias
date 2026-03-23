@@ -22,7 +22,9 @@ import { auth } from '@/auth'
 import { pericias } from '@/lib/mocks/pericias'
 import { getStatusOverrides } from '@/lib/data/pericias-status'
 import { getEnderecoOverride } from '@/lib/data/pericias-endereco'
+import { getMidiasByPericiaId } from '@/lib/data/checkpoint-media'
 import { EnderecoEdit } from '@/components/pericias/endereco-edit'
+import { PericiaMediaSection } from '@/components/pericias/pericia-media-section'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import type { Metadata } from 'next'
@@ -177,6 +179,8 @@ export default async function PericiasDetailPage({ params }: { params: Promise<{
   const enderecoOverride = userId ? await getEnderecoOverride(String(p.id), userId) : null
   const effectiveEndereco = enderecoOverride ?? p.endereco ?? null
 
+  const midias = userId ? await getMidiasByPericiaId(String(p.id), userId) : []
+
   const detail = MOCK_DETAILS[p.id] ?? {
     resumo: '',
     proposta: { status: 'nao_gerada' as PropostaStatus },
@@ -320,49 +324,18 @@ export default async function PericiasDetailPage({ params }: { params: Promise<{
 
           {/* Registros e fotos */}
           <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-              <div className="flex items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50">
-                  <Camera className="h-3.5 w-3.5 text-blue-600" />
-                </div>
-                <h2 className="text-sm font-semibold text-slate-800">Registros e fotos da perícia</h2>
+            <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50">
+                <Camera className="h-3.5 w-3.5 text-blue-600" />
               </div>
-              <Link
-                href="/rotas"
-                className="text-xs font-semibold text-lime-700 bg-lime-50 border border-lime-200 rounded-lg px-3 py-1.5 hover:bg-lime-100 transition-colors"
-              >
-                + Adicionar via Rota
-              </Link>
+              <h2 className="text-sm font-semibold text-slate-800">Registros e fotos da perícia</h2>
+              {midias.length > 0 && (
+                <span className="ml-auto text-[11px] font-semibold text-slate-400 bg-slate-50 border border-slate-100 rounded-full px-2 py-0.5">
+                  {midias.length}
+                </span>
+              )}
             </div>
-
-            {detail.registros.length === 0 ? (
-              <div className="px-5 py-8 text-center">
-                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-50">
-                  <Camera className="h-5 w-5 text-slate-400" />
-                </div>
-                <p className="text-sm font-medium text-slate-600">Nenhum registro ainda</p>
-                <p className="text-xs text-slate-400 mt-1">
-                  Realize uma vistoria via <Link href="/rotas" className="text-lime-600 hover:underline">Rotas</Link> para capturar fotos e notas deste processo.
-                </p>
-              </div>
-            ) : (
-              <div className="divide-y divide-slate-100">
-                {detail.registros.map((r) => (
-                  <div key={r.id} className="px-5 py-4 flex gap-4">
-                    <div className="flex flex-col items-center gap-1 flex-shrink-0 pt-1">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50">
-                        <FileText className="h-3.5 w-3.5 text-blue-600" />
-                      </div>
-                      <p className="text-[10px] text-slate-400 tabular-nums">{r.data}</p>
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-slate-800 mb-1">{r.titulo}</p>
-                      <p className="text-sm text-slate-500 leading-relaxed">{r.texto}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            <PericiaMediaSection pericoId={String(p.id)} midias={midias} />
           </section>
 
           {/* Laudo pericial */}

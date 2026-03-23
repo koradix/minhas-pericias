@@ -15,6 +15,8 @@ import {
   FileText,
   MapPin,
   Loader2,
+  SwitchCamera,
+  ZapOff,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -98,14 +100,19 @@ export function CheckpointMediaPanel({
   const [midias, setMidias] = useState<MidiaItem[]>([])
   const [loadingMidias, setLoadingMidias] = useState(true)
 
-  // active input mode: null | 'nota' | 'audio'
-  const [modo, setModo] = useState<null | 'nota' | 'audio'>(null)
+  // active input mode: null | 'nota' | 'audio' | 'camera'
+  const [modo, setModo] = useState<null | 'nota' | 'audio' | 'camera'>(null)
   const [nota, setNota] = useState('')
   const [gravando, setGravando] = useState(false)
   const [audioPreview, setAudioPreview] = useState<string | null>(null)
   const [audioError, setAudioError] = useState<string | null>(null)
+  const [cameraError, setCameraError] = useState<string | null>(null)
+  const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment')
 
   const fotoInputRef = useRef<HTMLInputElement>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const streamRef = useRef<MediaStream | null>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
 
@@ -118,6 +125,69 @@ export function CheckpointMediaPanel({
       .then((rows) => setMidias(rows))
       .finally(() => setLoadingMidias(false))
   }, [checkpointId])
+
+  // ── Camera — attach stream to video element after modo='camera' renders ───
+  useEffect(() => {
+    if (modo === 'camera' && videoRef.current && streamRef.current) {
+      videoRef.current.srcObject = streamRef.current
+    }
+  }, [modo])
+
+  // ── Cleanup stream on unmount ──────────────────────────────────────────────
+  useEffect(() => {
+    return () => {
+      streamRef.current?.getTracks().forEach((t) => t.stop())
+    }
+  }, [])
+
+  async function handleAbrirCamera(facing: 'environment' | 'user' = facingMode) {
+    setCameraError(null)
+    // Stop any existing stream before opening new one
+    streamRef.current?.getTracks().forEach((t) => t.stop())
+    streamRef.current = null
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: facing } },
+      })
+      streamRef.current = stream
+      setFacingMode(facing)
+      setModo('camera')
+    } catch {
+      // Fallback to file input when camera not available / permission denied
+      fotoInputRef.current?.click()
+    }
+  }
+
+  function handleFecharCamera() {
+    streamRef.current?.getTracks().forEach((t) => t.stop())
+    streamRef.current = null
+    setModo(null)
+  }
+
+  function handleVirarCamera() {
+    const novoFacing = facingMode === 'environment' ? 'user' : 'environment'
+    handleAbrirCamera(novoFacing)
+  }
+
+  async function handleCapturar() {
+    const video = videoRef.current
+    const canvas = canvasRef.current
+    if (!video || !canvas) return
+
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+    canvas.getContext('2d')?.drawImage(video, 0, 0)
+    const base64 = canvas.toDataURL('image/jpeg', 0.85)
+
+    startTransition(async () => {
+      const { id, criadoEm } = await addCheckpointMidia(checkpointId, 'foto', { url: base64 })
+      setMidias((prev) => [
+        ...prev,
+        { id, tipo: 'foto', url: base64, texto: null, descricao: null, criadoEm },
+      ])
+    })
+  }
 
   // ── Foto ───────────────────────────────────────────────────────────────────
   async function handleFotoChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -261,29 +331,33 @@ export function CheckpointMediaPanel({
 
           {/* Action row */}
           <div className="flex gap-2">
-            {/* Foto */}
-            <>
-              <input
-                ref={fotoInputRef}
-                type="file"
-                accept="image/*"
-                multiple
-                className="hidden"
-                onChange={handleFotoChange}
-              />
-              <button
-                onClick={() => fotoInputRef.current?.click()}
-                disabled={isPending}
-                className="flex flex-1 flex-col items-center gap-1.5 rounded-xl border border-slate-200 bg-white py-3 text-slate-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 transition-all disabled:opacity-50"
-              >
-                <Camera className="h-5 w-5" />
-                <span className="text-[11px] font-medium">Foto</span>
-              </button>
-            </>
+            {/* Hidden file input — fallback when camera unavailable */}
+            <input
+              ref={fotoInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={handleFotoChange}
+            />
+
+            {/* Câmera */}
+            <button
+              onClick={() => handleAbrirCamera()}
+              disabled={isPending}
+              className={`flex flex-1 flex-col items-center gap-1.5 rounded-xl border py-3 transition-all disabled:opacity-50 ${
+                modo === 'camera'
+                  ? 'border-blue-400 bg-blue-50 text-blue-700'
+                  : 'border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700'
+              }`}
+            >
+              <Camera className="h-5 w-5" />
+              <span className="text-[11px] font-medium">Câmera</span>
+            </button>
 
             {/* Áudio */}
             <button
-              onClick={() => setModo(modo === 'audio' ? null : 'audio')}
+              onClick={() => { handleFecharCamera(); setModo(modo === 'audio' ? null : 'audio') }}
               className={`flex flex-1 flex-col items-center gap-1.5 rounded-xl border py-3 transition-all ${
                 modo === 'audio'
                   ? 'border-violet-300 bg-violet-50 text-violet-700'
@@ -296,7 +370,7 @@ export function CheckpointMediaPanel({
 
             {/* Nota */}
             <button
-              onClick={() => setModo(modo === 'nota' ? null : 'nota')}
+              onClick={() => { handleFecharCamera(); setModo(modo === 'nota' ? null : 'nota') }}
               className={`flex flex-1 flex-col items-center gap-1.5 rounded-xl border py-3 transition-all ${
                 modo === 'nota'
                   ? 'border-lime-400 bg-lime-50 text-lime-700'
@@ -307,6 +381,60 @@ export function CheckpointMediaPanel({
               <span className="text-[11px] font-medium">Nota</span>
             </button>
           </div>
+
+          {/* Camera viewfinder */}
+          {modo === 'camera' && (
+            <div className="rounded-xl border border-blue-200 bg-slate-900 overflow-hidden space-y-0">
+              {cameraError && (
+                <p className="text-xs text-red-400 bg-red-950/50 px-3 py-2 flex items-center gap-1.5">
+                  <ZapOff className="h-3.5 w-3.5 flex-shrink-0" />
+                  {cameraError}
+                </p>
+              )}
+              {/* Viewfinder */}
+              <div className="relative aspect-[4/3] bg-black">
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="w-full h-full object-cover"
+                />
+                <canvas ref={canvasRef} className="hidden" />
+                {/* Flip camera button */}
+                <button
+                  onClick={handleVirarCamera}
+                  className="absolute top-2 right-2 rounded-full bg-black/50 p-2 text-white hover:bg-black/70 transition-colors"
+                  title="Virar câmera"
+                >
+                  <SwitchCamera className="h-4 w-4" />
+                </button>
+              </div>
+              {/* Controls */}
+              <div className="flex items-center gap-2 p-3 bg-slate-800">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-slate-300 hover:text-white hover:bg-slate-700"
+                  onClick={handleFecharCamera}
+                >
+                  Fechar
+                </Button>
+                <Button
+                  size="sm"
+                  className="flex-1 bg-white hover:bg-slate-100 text-slate-900 font-semibold gap-1.5"
+                  onClick={handleCapturar}
+                  disabled={isPending}
+                >
+                  {isPending ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <><Camera className="h-3.5 w-3.5" /> Tirar foto</>
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* Nota input */}
           {modo === 'nota' && (
