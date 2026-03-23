@@ -262,16 +262,40 @@ model RotaPericia {
 }
 
 model Checkpoint {
-  id        String    @id @default(cuid())
-  rotaId    String    // RotaPericia.id (plain string — no FK enforced in SQLite)
-  ordem     Int
-  titulo    String
-  endereco  String?
-  lat       Float?
-  lng       Float?
-  status    String    @default("pendente") // pendente | chegou | concluido
-  chegadaEm DateTime?
-  criadoEm  DateTime  @default(now())
+  id            String    @id @default(cuid())
+  rotaId        String    // RotaPericia.id (plain string — no FK enforced in SQLite)
+  ordem         Int
+  titulo        String
+  endereco      String?
+  lat           Float?
+  lng           Float?
+  status        String    @default("pendente") // pendente | chegou | concluido
+  chegadaEm     DateTime?
+  criadoEm      DateTime  @default(now())
+  // ── Ligação direta com pericia / vara ───────────────────────────────────────
+  pericoId      String?   // pericia mock id — allows direct media lookup by pericia
+  tribunalSigla String?   // for FORUM/VARA_CIVEL checkpoints
+  varaNome      String?   // for FORUM/VARA_CIVEL checkpoints
+}
+
+// ─── CONTATOS DE VARAS (base de relacionamento) ───────────────────────────────
+
+model VaraContato {
+  id                 String   @id @default(cuid())
+  peritoId           String   // User.id
+  tribunalSigla      String
+  varaNome           String
+  // Contatos
+  telefone           String?
+  email              String?
+  juizNome           String?
+  secretarioNome     String?
+  secretarioLinkedin String?
+  observacoes        String?
+  updatedAt          DateTime @updatedAt
+  criadoEm           DateTime @default(now())
+
+  @@unique([peritoId, tribunalSigla, varaNome])
 }
 
 model CheckpointMidia {

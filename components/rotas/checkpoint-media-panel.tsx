@@ -17,6 +17,8 @@ import {
   Loader2,
   SwitchCamera,
   ZapOff,
+  Users,
+  Save,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -27,6 +29,7 @@ import {
   getCheckpointMidias,
   updateCheckpointStatus,
 } from '@/lib/actions/checkpoint-media'
+import { getVaraContato, upsertVaraContato, type VaraContatoData } from '@/lib/actions/vara-contato'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -43,6 +46,9 @@ interface Props {
   checkpointId: string
   checkpointTitulo: string
   endereco?: string
+  tipo?: 'FORUM' | 'VARA_CIVEL' | 'ESCRITORIO' | 'PERICIA'
+  tribunalSigla?: string
+  varaNome?: string
   onClose: () => void
   onConcluido: () => void
 }
@@ -94,14 +100,24 @@ export function CheckpointMediaPanel({
   checkpointId,
   checkpointTitulo,
   endereco,
+  tipo,
+  tribunalSigla,
+  varaNome,
   onClose,
   onConcluido,
 }: Props) {
+  const isVara = tipo === 'FORUM' || tipo === 'VARA_CIVEL'
+
   const [midias, setMidias] = useState<MidiaItem[]>([])
   const [loadingMidias, setLoadingMidias] = useState(true)
 
-  // active input mode: null | 'nota' | 'audio' | 'camera'
-  const [modo, setModo] = useState<null | 'nota' | 'audio' | 'camera'>(null)
+  // active input mode: null | 'nota' | 'audio' | 'camera' | 'contato'
+  const [modo, setModo] = useState<null | 'nota' | 'audio' | 'camera' | 'contato'>(null)
+
+  // Contato state
+  const [contato, setContato] = useState<VaraContatoData>({})
+  const [loadingContato, setLoadingContato] = useState(false)
+  const [savedContato, setSavedContato] = useState(false)
   const [nota, setNota] = useState('')
   const [gravando, setGravando] = useState(false)
   const [audioPreview, setAudioPreview] = useState<string | null>(null)
@@ -139,6 +155,22 @@ export function CheckpointMediaPanel({
       streamRef.current?.getTracks().forEach((t) => t.stop())
     }
   }, [])
+
+  // ── Load existing vara contact on mount (FORUM/VARA only) ──────────────────
+  useEffect(() => {
+    if (!isVara || !tribunalSigla || !varaNome) return
+    getVaraContato(tribunalSigla, varaNome).then((row) => {
+      if (row) setContato({
+        telefone: row.telefone,
+        email: row.email,
+        juizNome: row.juizNome,
+        secretarioNome: row.secretarioNome,
+        secretarioLinkedin: row.secretarioLinkedin,
+        observacoes: row.observacoes,
+      })
+    })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isVara])
 
   async function handleAbrirCamera(facing: 'environment' | 'user' = facingMode) {
     setCameraError(null)
@@ -284,6 +316,16 @@ export function CheckpointMediaPanel({
     })
   }
 
+  // ── Contato ───────────────────────────────────────────────────────────────
+  async function handleSalvarContato() {
+    if (!tribunalSigla || !varaNome) return
+    setLoadingContato(true)
+    await upsertVaraContato(tribunalSigla, varaNome, contato)
+    setLoadingContato(false)
+    setSavedContato(true)
+    setTimeout(() => setSavedContato(false), 2500)
+  }
+
   // ── Finalizar ─────────────────────────────────────────────────────────────
   async function handleFinalizar() {
     setFinalizando(true)
@@ -380,6 +422,21 @@ export function CheckpointMediaPanel({
               <Type className="h-5 w-5" />
               <span className="text-[11px] font-medium">Nota</span>
             </button>
+
+            {/* Contato — only for FORUM/VARA_CIVEL */}
+            {isVara && (
+              <button
+                onClick={() => { handleFecharCamera(); setModo(modo === 'contato' ? null : 'contato') }}
+                className={`flex flex-1 flex-col items-center gap-1.5 rounded-xl border py-3 transition-all ${
+                  modo === 'contato'
+                    ? 'border-violet-400 bg-violet-50 text-violet-700'
+                    : 'border-slate-200 bg-white text-slate-600 hover:border-violet-400 hover:bg-violet-50 hover:text-violet-700'
+                }`}
+              >
+                <Users className="h-5 w-5" />
+                <span className="text-[11px] font-medium">Contato</span>
+              </button>
+            )}
           </div>
 
           {/* Camera viewfinder */}
@@ -515,6 +572,101 @@ export function CheckpointMediaPanel({
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Contato form — FORUM/VARA only */}
+          {modo === 'contato' && (
+            <div className="rounded-xl border border-violet-200 bg-violet-50 p-3 space-y-3">
+              <p className="text-xs font-semibold text-violet-800 flex items-center gap-1.5">
+                <Users className="h-3.5 w-3.5" />
+                Contatos da Vara / Fórum
+              </p>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Telefone</label>
+                  <input
+                    type="tel"
+                    value={contato.telefone ?? ''}
+                    onChange={(e) => setContato((p) => ({ ...p, telefone: e.target.value }))}
+                    placeholder="(11) 9999-9999"
+                    className="mt-0.5 w-full h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-400"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">E-mail</label>
+                  <input
+                    type="email"
+                    value={contato.email ?? ''}
+                    onChange={(e) => setContato((p) => ({ ...p, email: e.target.value }))}
+                    placeholder="vara@tjsp.jus.br"
+                    className="mt-0.5 w-full h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-400"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Nome do Juiz</label>
+                <input
+                  type="text"
+                  value={contato.juizNome ?? ''}
+                  onChange={(e) => setContato((p) => ({ ...p, juizNome: e.target.value }))}
+                  placeholder="Dr. João Silva"
+                  className="mt-0.5 w-full h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-400"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Secretário(a)</label>
+                  <input
+                    type="text"
+                    value={contato.secretarioNome ?? ''}
+                    onChange={(e) => setContato((p) => ({ ...p, secretarioNome: e.target.value }))}
+                    placeholder="Maria Costa"
+                    className="mt-0.5 w-full h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-400"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">LinkedIn</label>
+                  <input
+                    type="url"
+                    value={contato.secretarioLinkedin ?? ''}
+                    onChange={(e) => setContato((p) => ({ ...p, secretarioLinkedin: e.target.value }))}
+                    placeholder="linkedin.com/in/..."
+                    className="mt-0.5 w-full h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-400"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Observações</label>
+                <textarea
+                  value={contato.observacoes ?? ''}
+                  onChange={(e) => setContato((p) => ({ ...p, observacoes: e.target.value }))}
+                  placeholder="Horário de atendimento, preferências..."
+                  rows={2}
+                  className="mt-0.5 w-full resize-none rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-400"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2">
+                {savedContato && (
+                  <span className="text-xs text-emerald-700 font-medium flex items-center gap-1">
+                    <CheckCircle2 className="h-3.5 w-3.5" /> Salvo
+                  </span>
+                )}
+                <Button
+                  size="sm"
+                  className="bg-violet-600 hover:bg-violet-700 text-white gap-1.5"
+                  onClick={handleSalvarContato}
+                  disabled={loadingContato}
+                >
+                  {loadingContato ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                  Salvar contato
+                </Button>
+              </div>
             </div>
           )}
 

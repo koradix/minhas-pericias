@@ -35,9 +35,9 @@ const rotas: Rota[] = [
     tempoEstimadoMin: 90,
     custoEstimado: 45,
     pontos: [
-      { id: 'P1', rotaId: 'RT-001', nome: 'Fórum João Mendes', latitude: -23.548, longitude: -46.636, tipo: 'FORUM', ordem: 1, endereco: 'Praça João Mendes s/n, Centro' },
-      { id: 'P2', rotaId: 'RT-001', nome: '1ª Vara Cível Central', latitude: -23.547, longitude: -46.637, tipo: 'VARA_CIVEL', ordem: 2, endereco: 'Praça João Mendes s/n, Centro' },
-      { id: 'P3', rotaId: 'RT-001', nome: '3ª Vara Cível Central', latitude: -23.546, longitude: -46.638, tipo: 'VARA_CIVEL', ordem: 3, endereco: 'Praça João Mendes s/n, Centro' },
+      { id: 'P1', rotaId: 'RT-001', nome: 'Fórum João Mendes', latitude: -23.548, longitude: -46.636, tipo: 'FORUM', ordem: 1, endereco: 'Praça João Mendes s/n, Centro', tribunalSigla: 'TJSP', varaNome: 'Fórum João Mendes' },
+      { id: 'P2', rotaId: 'RT-001', nome: '1ª Vara Cível Central', latitude: -23.547, longitude: -46.637, tipo: 'VARA_CIVEL', ordem: 2, endereco: 'Praça João Mendes s/n, Centro', tribunalSigla: 'TJSP', varaNome: '1ª Vara Cível Central' },
+      { id: 'P3', rotaId: 'RT-001', nome: '3ª Vara Cível Central', latitude: -23.546, longitude: -46.638, tipo: 'VARA_CIVEL', ordem: 3, endereco: 'Praça João Mendes s/n, Centro', tribunalSigla: 'TJSP', varaNome: '3ª Vara Cível Central' },
       { id: 'P4', rotaId: 'RT-001', nome: 'Lima & Associados', latitude: -23.560, longitude: -46.650, tipo: 'ESCRITORIO', ordem: 4, endereco: 'Av. Paulista, 1000' },
     ],
   },
@@ -66,8 +66,8 @@ const rotas: Rota[] = [
     tempoEstimadoMin: 180,
     custoEstimado: 60,
     pontos: [
-      { id: 'P11', rotaId: 'RT-004', nome: 'Imóvel PRC-2024-001', latitude: -23.570, longitude: -46.660, tipo: 'PERICIA', ordem: 1, endereco: 'Rua das Flores, 123, Jardins' },
-      { id: 'P12', rotaId: 'RT-004', nome: 'Estabelecimento PRC-2024-004', latitude: -23.575, longitude: -46.655, tipo: 'PERICIA', ordem: 2, endereco: 'Av. Paulista, 1000' },
+      { id: 'P11', rotaId: 'RT-004', nome: 'Imóvel PRC-2024-001', latitude: -23.570, longitude: -46.660, tipo: 'PERICIA', ordem: 1, endereco: 'Rua das Flores, 123, Jardins', pericoId: '1' },
+      { id: 'P12', rotaId: 'RT-004', nome: 'Estabelecimento PRC-2024-004', latitude: -23.575, longitude: -46.655, tipo: 'PERICIA', ordem: 2, endereco: 'Av. Paulista, 1000', pericoId: '4' },
     ],
   },
   {
@@ -80,7 +80,7 @@ const rotas: Rota[] = [
     tempoEstimadoMin: 90,
     custoEstimado: 30,
     pontos: [
-      { id: 'P13', rotaId: 'RT-005', nome: 'Local PRC-2024-006', latitude: -23.548, longitude: -46.636, tipo: 'PERICIA', ordem: 1, endereco: 'Rua do Comércio, 45, Centro' },
+      { id: 'P13', rotaId: 'RT-005', nome: 'Local PRC-2024-006', latitude: -23.548, longitude: -46.636, tipo: 'PERICIA', ordem: 1, endereco: 'Rua do Comércio, 45, Centro', pericoId: '6' },
     ],
   },
 ]

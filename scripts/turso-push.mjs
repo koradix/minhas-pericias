@@ -38,8 +38,14 @@ const statements = [
   `CREATE TABLE IF NOT EXISTS "RotaPericia" ("id" TEXT NOT NULL PRIMARY KEY, "peritoId" TEXT NOT NULL, "pericoId" TEXT, "titulo" TEXT NOT NULL, "status" TEXT NOT NULL DEFAULT 'em_andamento', "criadoEm" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, "atualizadoEm" DATETIME NOT NULL)`,
   // Migration: add pericoId column to existing RotaPericia table (safe — ignored if column already exists)
   `ALTER TABLE "RotaPericia" ADD COLUMN "pericoId" TEXT`,
-  `CREATE TABLE IF NOT EXISTS "Checkpoint" ("id" TEXT NOT NULL PRIMARY KEY, "rotaId" TEXT NOT NULL, "ordem" INTEGER NOT NULL, "titulo" TEXT NOT NULL, "endereco" TEXT, "lat" REAL, "lng" REAL, "status" TEXT NOT NULL DEFAULT 'pendente', "chegadaEm" DATETIME, "criadoEm" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
+  `CREATE TABLE IF NOT EXISTS "Checkpoint" ("id" TEXT NOT NULL PRIMARY KEY, "rotaId" TEXT NOT NULL, "ordem" INTEGER NOT NULL, "titulo" TEXT NOT NULL, "endereco" TEXT, "lat" REAL, "lng" REAL, "status" TEXT NOT NULL DEFAULT 'pendente', "chegadaEm" DATETIME, "criadoEm" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, "pericoId" TEXT, "tribunalSigla" TEXT, "varaNome" TEXT)`,
+  // Migrations: add new columns to existing Checkpoint table (ignored if already exists)
+  `ALTER TABLE "Checkpoint" ADD COLUMN "pericoId" TEXT`,
+  `ALTER TABLE "Checkpoint" ADD COLUMN "tribunalSigla" TEXT`,
+  `ALTER TABLE "Checkpoint" ADD COLUMN "varaNome" TEXT`,
   `CREATE TABLE IF NOT EXISTS "CheckpointMidia" ("id" TEXT NOT NULL PRIMARY KEY, "checkpointId" TEXT NOT NULL, "tipo" TEXT NOT NULL, "url" TEXT, "texto" TEXT, "descricao" TEXT, "criadoEm" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
+  `CREATE TABLE IF NOT EXISTS "VaraContato" ("id" TEXT NOT NULL PRIMARY KEY, "peritoId" TEXT NOT NULL, "tribunalSigla" TEXT NOT NULL, "varaNome" TEXT NOT NULL, "telefone" TEXT, "email" TEXT, "juizNome" TEXT, "secretarioNome" TEXT, "secretarioLinkedin" TEXT, "observacoes" TEXT, "updatedAt" DATETIME NOT NULL, "criadoEm" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS "VaraContato_peritoId_tribunalSigla_varaNome_key" ON "VaraContato"("peritoId", "tribunalSigla", "varaNome")`,
 ]
 
 const requests = [

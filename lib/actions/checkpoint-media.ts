@@ -20,6 +20,9 @@ export interface CheckpointMeta {
   ordem?: number
   titulo?: string
   endereco?: string
+  pericoId?: string      // pericia mock id — direct link to process
+  tribunalSigla?: string // for FORUM/VARA_CIVEL checkpoints
+  varaNome?: string      // for FORUM/VARA_CIVEL checkpoints
 }
 
 // ─── Actions ─────────────────────────────────────────────────────────────────
@@ -50,6 +53,9 @@ export async function updateCheckpointStatus(
       ordem: meta?.ordem ?? 1,
       titulo: meta?.titulo ?? 'Checkpoint',
       endereco: meta?.endereco ?? null,
+      pericoId: meta?.pericoId ?? null,
+      tribunalSigla: meta?.tribunalSigla ?? null,
+      varaNome: meta?.varaNome ?? null,
       status,
       ...(chegadaEm && { chegadaEm }),
     },

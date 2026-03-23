@@ -22,8 +22,8 @@ const rotas: Rota[] = [
     tempoEstimadoMin: 180,
     custoEstimado: 60,
     pontos: [
-      { id: 'P11', rotaId: 'RT-004', nome: 'Imóvel PRC-2024-001 — Jardins', latitude: -23.570, longitude: -46.660, tipo: 'PERICIA', ordem: 1, endereco: 'Rua das Flores, 123, Jardins' },
-      { id: 'P12', rotaId: 'RT-004', nome: 'Estabelecimento PRC-2024-004 — Bela Vista', latitude: -23.575, longitude: -46.655, tipo: 'PERICIA', ordem: 2, endereco: 'Av. Paulista, 1000, Bela Vista' },
+      { id: 'P11', rotaId: 'RT-004', nome: 'Imóvel PRC-2024-001 — Jardins', latitude: -23.570, longitude: -46.660, tipo: 'PERICIA', ordem: 1, endereco: 'Rua das Flores, 123, Jardins', pericoId: '1' },
+      { id: 'P12', rotaId: 'RT-004', nome: 'Estabelecimento PRC-2024-004 — Bela Vista', latitude: -23.575, longitude: -46.655, tipo: 'PERICIA', ordem: 2, endereco: 'Av. Paulista, 1000, Bela Vista', pericoId: '4' },
     ],
   },
   {
@@ -36,7 +36,7 @@ const rotas: Rota[] = [
     tempoEstimadoMin: 90,
     custoEstimado: 30,
     pontos: [
-      { id: 'P13', rotaId: 'RT-005', nome: 'Local Perícia PRC-2024-006', latitude: -23.548, longitude: -46.636, tipo: 'PERICIA', ordem: 1, endereco: 'Rua do Comércio, 45, Centro' },
+      { id: 'P13', rotaId: 'RT-005', nome: 'Local Perícia PRC-2024-006', latitude: -23.548, longitude: -46.636, tipo: 'PERICIA', ordem: 1, endereco: 'Rua do Comércio, 45, Centro', pericoId: '6' },
     ],
   },
   {
@@ -49,7 +49,7 @@ const rotas: Rota[] = [
     tempoEstimadoMin: 120,
     custoEstimado: 40,
     pontos: [
-      { id: 'P14', rotaId: 'RT-006', nome: 'TRT-2 — Entrevista Testemunha', latitude: -23.525, longitude: -46.675, tipo: 'PERICIA', ordem: 1, endereco: 'Rua Boa Vista, 83, Barra Funda' },
+      { id: 'P14', rotaId: 'RT-006', nome: 'TRT-2 — Entrevista Testemunha', latitude: -23.525, longitude: -46.675, tipo: 'PERICIA', ordem: 1, endereco: 'Rua Boa Vista, 83, Barra Funda', pericoId: '2' },
     ],
   },
 ]

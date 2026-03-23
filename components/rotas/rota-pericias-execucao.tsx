@@ -14,6 +14,10 @@ export interface CheckpointItem {
   titulo: string
   endereco?: string
   ordem: number
+  pericoId?: string
+  tipo?: 'FORUM' | 'VARA_CIVEL' | 'ESCRITORIO' | 'PERICIA'
+  tribunalSigla?: string
+  varaNome?: string
 }
 
 interface Props {
@@ -41,6 +45,9 @@ export function RotaPericiasExecucao({ rotaId, checkpoints }: Props) {
         ordem: cp.ordem,
         titulo: cp.titulo,
         endereco: cp.endereco,
+        pericoId: cp.pericoId,
+        tribunalSigla: cp.tribunalSigla,
+        varaNome: cp.varaNome,
       })
       setStatusMap((prev) => ({ ...prev, [cp.id]: 'chegou' }))
       setActiveCheckpoint(cp)
@@ -177,6 +184,9 @@ export function RotaPericiasExecucao({ rotaId, checkpoints }: Props) {
           checkpointId={activeCheckpoint.id}
           checkpointTitulo={activeCheckpoint.titulo}
           endereco={activeCheckpoint.endereco}
+          tipo={activeCheckpoint.tipo}
+          tribunalSigla={activeCheckpoint.tribunalSigla}
+          varaNome={activeCheckpoint.varaNome}
           onClose={() => setActiveCheckpoint(null)}
           onConcluido={handleConcluido}
         />

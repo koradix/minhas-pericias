@@ -11,6 +11,10 @@ export interface PontoRota {
   tipo: TipoPontoRota
   ordem: number
   endereco?: string
+  // ── Ligação com processo / vara ─────────────────────────────────────────────
+  pericoId?:      string // para tipo PERICIA — liga ao processo
+  tribunalSigla?: string // para tipo FORUM / VARA_CIVEL
+  varaNome?:      string // para tipo FORUM / VARA_CIVEL
 }
 
 export interface Rota {

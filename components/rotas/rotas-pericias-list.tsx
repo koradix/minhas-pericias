@@ -83,6 +83,10 @@ export function RotasPericiasListClient({ rotas }: { rotas: Rota[] }) {
                       titulo: p.nome,
                       endereco: p.endereco,
                       ordem: p.ordem,
+                      pericoId: p.pericoId,
+                      tipo: p.tipo,
+                      tribunalSigla: p.tribunalSigla,
+                      varaNome: p.varaNome,
                     }))}
                   />
                 ) : (

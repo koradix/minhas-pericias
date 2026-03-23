@@ -79,26 +79,33 @@ export interface MidiaDaPericia {
 
 /**
  * All media (fotos, áudios, notas) captured in any checkpoint of any rota
- * linked to a specific pericia. Used by the pericias/[id] detail page.
+ * linked to a specific pericia. Uses dual path:
+ * 1. Via RotaPericia.pericoId → Checkpoint (created via PericiaMediaSection)
+ * 2. Via Checkpoint.pericoId directly (created via rota execution checkpoints)
  */
 export async function getMidiasByPericiaId(
   pericoId: string,
   peritoId: string,
 ): Promise<MidiaDaPericia[]> {
+  // Path 1: checkpoints linked via RotaPericia
   const rotas = await prisma.rotaPericia.findMany({
     where: { pericoId, peritoId },
     select: { id: true },
   })
-  if (!rotas.length) return []
-
   const rotaIds = rotas.map((r) => r.id)
-  const checkpoints = await prisma.checkpoint.findMany({
-    where: { rotaId: { in: rotaIds } },
-    select: { id: true },
-  })
-  if (!checkpoints.length) return []
 
-  const cpIds = checkpoints.map((c) => c.id)
+  // Collect checkpoint IDs from both paths
+  const [cpFromRota, cpDirect] = await Promise.all([
+    rotaIds.length
+      ? prisma.checkpoint.findMany({ where: { rotaId: { in: rotaIds } }, select: { id: true } })
+      : Promise.resolve([]),
+    // Path 2: checkpoints with direct pericoId reference
+    prisma.checkpoint.findMany({ where: { pericoId }, select: { id: true } }),
+  ])
+
+  const cpIds = [...new Set([...cpFromRota.map((c) => c.id), ...cpDirect.map((c) => c.id)])]
+  if (!cpIds.length) return []
+
   const midias = await prisma.checkpointMidia.findMany({
     where: { checkpointId: { in: cpIds } },
     orderBy: { criadoEm: 'desc' },
