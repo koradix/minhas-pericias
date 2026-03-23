@@ -144,12 +144,19 @@ export default function LandingPage() {
       <section className="border-b border-slate-100 bg-white py-24 sm:py-32 lg:py-36">
         <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
 
-          <h1 className="mb-7 text-[2.6rem] font-bold leading-[1.08] tracking-tight text-slate-900 sm:text-5xl lg:text-[3.25rem]">
+          {/* Announcement Pill */}
+          <div className="mb-8 inline-flex cursor-pointer items-center gap-2 rounded-full border border-lime-200 bg-lime-50 px-3.5 py-1 text-xs font-semibold text-lime-700 transition-all hover:bg-lime-100 ring-1 ring-lime-200/60">
+            <span className="flex h-1.5 w-1.5 rounded-full bg-lime-500"></span>
+            Novo Radar de Nomeações V2.0
+            <ArrowRight className="h-3 w-3 ml-0.5" />
+          </div>
+
+          <h1 className="mb-6 text-[2.75rem] font-bold leading-[1.06] tracking-[-0.03em] text-slate-900 sm:text-5xl lg:text-[3.5rem]">
             Gestão pericial completa,{' '}
             <span className="text-lime-500">do processo ao laudo.</span>
           </h1>
 
-          <p className="mx-auto mb-10 max-w-[500px] text-[1.05rem] leading-relaxed text-slate-500">
+          <p className="mx-auto mb-10 max-w-[520px] text-[1.05rem] leading-relaxed text-slate-500">
             O PeriLaB centraliza suas péricias, monitora nomeações em varas estratégicas
             e gera documentos profissionais.
           </p>
@@ -157,14 +164,14 @@ export default function LandingPage() {
           <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
             <Link
               href="/login"
-              className="inline-flex h-11 items-center gap-2 rounded-lg bg-lime-500 px-7 text-sm font-semibold text-slate-900 transition-all hover:bg-lime-400"
+              className="inline-flex h-11 items-center gap-2 rounded-xl bg-lime-500 px-7 text-sm font-bold text-slate-900 shadow-sm shadow-lime-300/50 transition-all hover:bg-lime-400 hover:shadow-md hover:shadow-lime-300/60"
             >
               Acessar a plataforma
               <ArrowRight className="h-4 w-4" />
             </Link>
             <a
               href="#planos"
-              className="inline-flex h-11 items-center gap-2 rounded-lg border border-slate-200 px-7 text-sm font-semibold text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900"
+              className="inline-flex h-11 items-center gap-2 rounded-xl border border-slate-200 px-7 text-sm font-semibold text-slate-600 transition-all hover:border-slate-300 hover:bg-slate-50/80 hover:text-slate-900"
             >
               Ver planos
             </a>
@@ -178,8 +185,8 @@ export default function LandingPage() {
               { value: '12.000+', label: 'Documentos gerados' },
             ].map((s) => (
               <div key={s.label} className="text-center">
-                <p className="text-2xl font-bold text-slate-900 tabular-nums">{s.value}</p>
-                <p className="mt-1 text-[11px] text-slate-400 leading-snug">{s.label}</p>
+                <p className="text-2xl font-bold tracking-tight text-slate-900 tabular-nums">{s.value}</p>
+                <p className="mt-1 text-[11px] font-medium uppercase tracking-wide text-slate-400">{s.label}</p>
               </div>
             ))}
           </div>
