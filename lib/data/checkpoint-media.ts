@@ -95,13 +95,17 @@ export async function getMidiasByPericiaId(
   const rotaIds = rotas.map((r) => r.id)
 
   // Collect checkpoint IDs from both paths
-  const [cpFromRota, cpDirect] = await Promise.all([
-    rotaIds.length
-      ? prisma.checkpoint.findMany({ where: { rotaId: { in: rotaIds } }, select: { id: true } })
-      : Promise.resolve([]),
-    // Path 2: checkpoints with direct pericoId reference
-    prisma.checkpoint.findMany({ where: { pericoId }, select: { id: true } }),
-  ])
+  const cpFromRota = rotaIds.length
+    ? await prisma.checkpoint.findMany({ where: { rotaId: { in: rotaIds } }, select: { id: true } })
+    : []
+
+  // Path 2: checkpoints with direct pericoId reference (column may not exist yet in production)
+  let cpDirect: { id: string }[] = []
+  try {
+    cpDirect = await prisma.checkpoint.findMany({ where: { pericoId }, select: { id: true } })
+  } catch {
+    // Column pericoId not yet migrated in production DB — skip path 2 gracefully
+  }
 
   const cpIds = [...new Set([...cpFromRota.map((c) => c.id), ...cpDirect.map((c) => c.id)])]
   if (!cpIds.length) return []

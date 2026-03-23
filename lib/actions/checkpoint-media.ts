@@ -41,25 +41,42 @@ export async function updateCheckpointStatus(
 
   const chegadaEm = status === 'chegou' ? new Date() : undefined
 
-  await prisma.checkpoint.upsert({
-    where: { id: checkpointId },
-    update: {
-      status,
-      ...(chegadaEm && { chegadaEm }),
-    },
-    create: {
-      id: checkpointId,
-      rotaId: meta?.rotaId ?? checkpointId, // fallback: use self-id so FK-less insert works
-      ordem: meta?.ordem ?? 1,
-      titulo: meta?.titulo ?? 'Checkpoint',
-      endereco: meta?.endereco ?? null,
-      pericoId: meta?.pericoId ?? null,
-      tribunalSigla: meta?.tribunalSigla ?? null,
-      varaNome: meta?.varaNome ?? null,
-      status,
-      ...(chegadaEm && { chegadaEm }),
-    },
-  })
+  try {
+    await prisma.checkpoint.upsert({
+      where: { id: checkpointId },
+      update: {
+        status,
+        ...(chegadaEm && { chegadaEm }),
+      },
+      create: {
+        id: checkpointId,
+        rotaId: meta?.rotaId ?? checkpointId,
+        ordem: meta?.ordem ?? 1,
+        titulo: meta?.titulo ?? 'Checkpoint',
+        endereco: meta?.endereco ?? null,
+        pericoId: meta?.pericoId ?? null,
+        tribunalSigla: meta?.tribunalSigla ?? null,
+        varaNome: meta?.varaNome ?? null,
+        status,
+        ...(chegadaEm && { chegadaEm }),
+      },
+    })
+  } catch {
+    // Fallback for production DB before migration: upsert without new columns
+    await prisma.checkpoint.upsert({
+      where: { id: checkpointId },
+      update: { status, ...(chegadaEm && { chegadaEm }) },
+      create: {
+        id: checkpointId,
+        rotaId: meta?.rotaId ?? checkpointId,
+        ordem: meta?.ordem ?? 1,
+        titulo: meta?.titulo ?? 'Checkpoint',
+        endereco: meta?.endereco ?? null,
+        status,
+        ...(chegadaEm && { chegadaEm }),
+      },
+    })
+  }
 
   revalidatePath('/rotas/pericias')
 }
