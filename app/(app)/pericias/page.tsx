@@ -1,91 +1,86 @@
-'use client'
-
-import { useState, useMemo } from 'react'
+import { auth } from '@/auth'
+import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { FileText, Search, SlidersHorizontal, ScrollText, List, Kanban } from 'lucide-react'
-// Nova Perícia button removed — perícias arrive via nomeações or parceiro proposals only
-import { PageHeader } from '@/components/shared/page-header'
-import { Button } from '@/components/ui/button'
+import { Navigation, Plus, CheckCircle2 } from 'lucide-react'
+import { prisma } from '@/lib/prisma'
 import { Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/shared/empty-state'
-import { pericias, statusMapPericias } from '@/lib/mocks/pericias'
+import { PageHeader } from '@/components/shared/page-header'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
+import type { Metadata } from 'next'
 
-export default function PericiasPage() {
-  const router = useRouter()
-  const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState('')
+export const metadata: Metadata = { title: 'Péricias' }
 
-  const filtered = useMemo(() => {
-    return pericias.filter((p) => {
-      const matchSearch =
-        !search ||
-        p.assunto.toLowerCase().includes(search.toLowerCase()) ||
-        p.numero.toLowerCase().includes(search.toLowerCase()) ||
-        p.cliente.toLowerCase().includes(search.toLowerCase())
-      const matchStatus = !statusFilter || p.status === statusFilter
-      return matchSearch && matchStatus
+function toISO(d: Date | string | null | undefined): string {
+  if (!d) return new Date().toISOString()
+  if (d instanceof Date) return d.toISOString()
+  return new Date(d as string).toISOString()
+}
+
+export default async function PericiasPage() {
+  const session = await auth()
+  if (!session?.user?.id) redirect('/login')
+  const userId = session.user.id
+
+  type RotaRow = {
+    id: string
+    titulo: string
+    status: string
+    criadoEm: string
+    concluidos: number
+    total: number
+  }
+
+  let rotas: RotaRow[] = []
+  try {
+    const dbRotas = await prisma.rotaPericia.findMany({
+      where: { peritoId: userId },
+      orderBy: { criadoEm: 'desc' },
     })
-  }, [search, statusFilter])
+    if (dbRotas.length > 0) {
+      const rotaIds = dbRotas.map((r) => r.id)
+      const cps = await prisma.checkpoint.findMany({
+        where: { rotaId: { in: rotaIds } },
+        select: { rotaId: true, status: true },
+      })
+      rotas = dbRotas.map((rota) => {
+        const mine = cps.filter((c) => c.rotaId === rota.id)
+        return {
+          id: rota.id,
+          titulo: rota.titulo,
+          status: rota.status,
+          criadoEm: toISO(rota.criadoEm),
+          concluidos: mine.filter((c) => c.status === 'concluido').length,
+          total: mine.length,
+        }
+      })
+    }
+  } catch { /* DB not ready — empty state */ }
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Perícias"
-        description="Gerencie todos os seus processos periciais"
+        title="Péricias"
+        description={
+          rotas.length > 0
+            ? `${rotas.length} processo${rotas.length !== 1 ? 's' : ''} periciais`
+            : 'Gerencie seus processos periciais'
+        }
         actions={
-          <div className="flex items-center gap-2">
-            <div className="flex items-center rounded-lg border border-slate-200 overflow-hidden text-xs font-medium">
-              <span className="flex items-center gap-1.5 px-3 py-1.5 bg-lime-50 text-lime-700 border-r border-slate-200">
-                <List className="h-3.5 w-3.5" />
-                Lista
-              </span>
-              <Link
-                href="/pericias/kanban"
-                className="flex items-center gap-1.5 px-3 py-1.5 text-slate-500 hover:bg-slate-50 transition-colors"
-              >
-                <Kanban className="h-3.5 w-3.5" />
-                Kanban
-              </Link>
-            </div>
-            <Button variant="outline" size="sm">
-              <SlidersHorizontal className="h-3.5 w-3.5" />
-              Filtros
+          <Link href="/rotas/nova">
+            <Button size="sm" className="bg-lime-500 hover:bg-lime-600 text-slate-900 gap-1.5">
+              <Plus className="h-3.5 w-3.5" /> Nova rota
             </Button>
-          </div>
+          </Link>
         }
       />
 
-      {/* Search + filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-          <input
-            type="text"
-            placeholder="Buscar por número, assunto ou parte..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full h-9 rounded-lg border border-slate-300 bg-white pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-          />
-        </div>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-        >
-          <option value="">Todos os status</option>
-          <option value="em_andamento">Em andamento</option>
-          <option value="aguardando">Aguardando</option>
-          <option value="concluida">Concluída</option>
-          <option value="nomeado">Nomeado</option>
-        </select>
-      </div>
-
-      {filtered.length === 0 ? (
+      {rotas.length === 0 ? (
         <EmptyState
-          icon={FileText}
-          title="Nenhuma perícia encontrada"
-          description="Tente ajustar os filtros ou o termo de busca."
+          icon={Navigation}
+          title="Nenhuma perícia ainda"
+          description="Crie uma rota de vistoria ou prospecção para registrar sua primeira perícia."
         />
       ) : (
         <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
@@ -94,83 +89,85 @@ export default function PericiasPage() {
               <thead>
                 <tr className="bg-slate-50">
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    Número / Assunto
+                    Processo / Rota
                   </th>
                   <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    Partes
-                  </th>
-                  <th className="hidden lg:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    Vara
+                    Progresso
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
                     Status
                   </th>
                   <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    Prazo
-                  </th>
-                  <th className="hidden xl:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    Valor
-                  </th>
-                  <th className="hidden xl:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    Doc.
+                    Criado em
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filtered.map((p) => {
-                  const status = statusMapPericias[p.status]
-                  return (
-                    <tr
-                      key={p.id}
-                      onClick={() => router.push(`/pericias/${p.id}`)}
-                      className="hover:bg-slate-50 cursor-pointer transition-colors group"
-                    >
-                      <td className="px-4 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-blue-50 group-hover:bg-blue-100 transition-colors">
-                            <FileText className="h-4 w-4 text-blue-600" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-semibold text-slate-900">{p.assunto}</p>
-                            <p className="text-xs text-slate-400">
-                              {p.numero} · {p.processo}
-                            </p>
-                          </div>
+                {rotas.map((rota) => (
+                  <tr
+                    key={rota.id}
+                    className="hover:bg-slate-50 cursor-pointer transition-colors group"
+                  >
+                    <td className="px-4 py-4">
+                      <Link href={`/pericias/${rota.id}`} className="flex items-center gap-3">
+                        <div
+                          className={cn(
+                            'flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg',
+                            rota.status === 'concluida' ? 'bg-emerald-50' : 'bg-lime-50',
+                          )}
+                        >
+                          {rota.status === 'concluida' ? (
+                            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                          ) : (
+                            <Navigation className="h-4 w-4 text-lime-600" />
+                          )}
                         </div>
-                      </td>
-                      <td className="hidden sm:table-cell px-4 py-4">
-                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-0.5">Autor</p>
-                        <span className="text-sm text-slate-700">{p.cliente}</span>
-                      </td>
-                      <td className="hidden lg:table-cell px-4 py-4">
-                        <span className="text-xs text-slate-500">{p.vara}</span>
-                      </td>
-                      <td className="px-4 py-4">
-                        <Badge variant={status.variant}>{status.label}</Badge>
-                      </td>
-                      <td className="hidden md:table-cell px-4 py-4">
-                        <span className="text-sm text-slate-600">{p.prazo}</span>
-                      </td>
-                      <td className="hidden xl:table-cell px-4 py-4">
-                        <span className="text-sm font-semibold text-slate-900">{p.valor}</span>
-                      </td>
-                      <td className="hidden xl:table-cell px-4 py-4" onClick={(e) => e.stopPropagation()}>
-                        <Link href="/documentos">
-                          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-violet-600 hover:text-violet-700 hover:bg-violet-50">
-                            <ScrollText className="h-3.5 w-3.5" />
-                            Gerar
-                          </Button>
-                        </Link>
-                      </td>
-                    </tr>
-                  )
-                })}
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-slate-900 truncate">{rota.titulo}</p>
+                          <p className="text-xs text-slate-400 font-mono">{rota.id.slice(-8).toUpperCase()}</p>
+                        </div>
+                      </Link>
+                    </td>
+                    <td className="hidden sm:table-cell px-4 py-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-24 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-lime-400"
+                            style={{
+                              width:
+                                rota.total > 0
+                                  ? `${Math.round((rota.concluidos / rota.total) * 100)}%`
+                                  : '0%',
+                            }}
+                          />
+                        </div>
+                        <span className="text-xs text-slate-500 tabular-nums">
+                          {rota.concluidos}/{rota.total}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      {rota.status === 'concluida' ? (
+                        <Badge variant="success">Concluída</Badge>
+                      ) : rota.status === 'cancelada' ? (
+                        <Badge variant="warning">Cancelada</Badge>
+                      ) : (
+                        <Badge variant="info">Em andamento</Badge>
+                      )}
+                    </td>
+                    <td className="hidden md:table-cell px-4 py-4">
+                      <span className="text-sm text-slate-500">
+                        {new Date(rota.criadoEm).toLocaleDateString('pt-BR')}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
-          <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-4 py-3">
+          <div className="border-t border-slate-200 bg-slate-50 px-4 py-3">
             <p className="text-xs text-slate-500">
-              {filtered.length} de {pericias.length} perícias
+              {rotas.length} processo{rotas.length !== 1 ? 's' : ''}
             </p>
           </div>
         </div>

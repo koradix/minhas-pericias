@@ -249,6 +249,38 @@ model NomeacaoCitacao {
   @@unique([peritoId, externalId])
 }
 
+// ─── DATAJUD — Processos e Nomeações ─────────────────────────────────────────
+
+model Processo {
+  id               String   @id @default(cuid())
+  numeroProcesso   String   @unique          // CNJ NNNNNNN-DD.AAAA.J.TT.OOOO
+  tribunal         String                    // sigla ex: "TJRJ"
+  classe           String?
+  assunto          String?
+  orgaoJulgador    String?
+  dataDistribuicao String?                   // ISO date "YYYY-MM-DD"
+  dataUltimaAtu    String?                   // ISO date
+  partes           String   @default("[]")   // JSON { nome, tipo }[]
+  criadoEm         DateTime @default(now())
+  atualizadoEm     DateTime @updatedAt
+
+  nomeacoes        Nomeacao[]
+}
+
+model Nomeacao {
+  id           String   @id @default(cuid())
+  peritoId     String                        // User.id
+  processoId   String                        // Processo.id
+  status       String   @default("novo")     // novo | proposta | em_andamento | laudo | entregue | arquivado
+  scoreMatch   Int      @default(0)          // 0–90+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  processo     Processo @relation(fields: [processoId], references: [id])
+
+  @@unique([peritoId, processoId])
+}
+
 // ─── ROTAS / CHECKPOINTS ─────────────────────────────────────────────────────
 
 model RotaPericia {
