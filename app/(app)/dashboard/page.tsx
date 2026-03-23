@@ -125,6 +125,16 @@ export default async function DashboardPage() {
     } catch { /* DB not ready — renders empty state */ }
   }
 
+  // ── Laudos pendentes (rotas concluídas = evidências coletadas, laudo pendente) ─
+  let laudosPendentes = 0
+  if (userId) {
+    try {
+      laudosPendentes = await prisma.rotaPericia.count({
+        where: { peritoId: userId, status: 'concluida' },
+      })
+    } catch { /* DB not ready */ }
+  }
+
   // ──────────────────────────────────────────────────────────────────────────
 
   return (
@@ -214,13 +224,14 @@ export default async function DashboardPage() {
           />
         </Link>
 
-        <Link href="/documentos" className="group">
+        <Link href="/documentos/modelos" className="group">
           <KPICard
             title="Laudos Pendentes"
-            value="—"
-            subtitle="Em breve"
+            value={laudosPendentes}
+            subtitle={laudosPendentes > 0 ? 'Rotas concluídas' : 'Nenhum pendente'}
             icon={ScrollText}
-            accent="slate"
+            accent={laudosPendentes > 0 ? 'amber' : 'slate'}
+            highlight={laudosPendentes > 0}
             className="h-full cursor-pointer group-hover:shadow-md transition-all"
           />
         </Link>
