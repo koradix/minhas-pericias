@@ -5,6 +5,18 @@ const prisma = new PrismaClient()
 
 async function main() {
   const hash = await bcrypt.hash('senha123', 12)
+  const hashMm = await bcrypt.hash('123456', 10)
+
+  await prisma.user.upsert({
+    where: { email: 'mmbonassi@gmail.com' },
+    update: {},
+    create: {
+      email: 'mmbonassi@gmail.com',
+      name: 'M. Bonassi',
+      passwordHash: hashMm,
+      role: 'perito',
+    },
+  })
 
   await prisma.user.upsert({
     where: { email: 'perito@demo.com' },
@@ -63,6 +75,7 @@ async function main() {
   })
 
   console.log('=== Seed concluido ===')
+  console.log('mmbonassi@gmail.com   — 123456  — perito')
   console.log('perito@demo.com       — senha123 — perito')
   console.log('admin@demo.com        — senha123 — admin')
   console.log('escritorio@demo.perix.com.br — senha123 — parceiro')
