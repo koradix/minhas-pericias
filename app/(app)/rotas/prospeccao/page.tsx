@@ -82,7 +82,12 @@ export default async function RotasProspeccaoPage() {
   if (!session?.user?.id) redirect('/login')
   const userId = session.user.id
 
-  const varas = await getVarasByPerito(userId)
+  let varas: Awaited<ReturnType<typeof getVarasByPerito>> = []
+  try {
+    varas = await getVarasByPerito(userId)
+  } catch {
+    // DB error — render page with empty varas instead of crashing
+  }
   const comNomeacoes = varas.filter((v) => v.totalNomeacoes > 0).length
   const semNomeacoes = varas.filter((v) => v.totalNomeacoes === 0).length
 
