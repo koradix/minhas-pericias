@@ -214,6 +214,31 @@ export async function syncVarasFromSignup(
   }
 }
 
+// ─── Action 3b — Salvar tribunais e estados ───────────────────────────────────
+
+export async function saveTribunaisEstados(
+  siglas: string[],
+  estados: string[],
+): Promise<{ ok: boolean; error?: string }> {
+  const session = await auth()
+  if (!session?.user?.id) return { ok: false, error: 'Não autenticado' }
+  const userId = session.user.id
+
+  try {
+    await prisma.peritoPerfil.upsert({
+      where: { userId },
+      create: { userId, tribunais: JSON.stringify(siglas), estados: JSON.stringify(estados) },
+      update: { tribunais: JSON.stringify(siglas), estados: JSON.stringify(estados) },
+    })
+    revalidatePath('/nomeacoes')
+    revalidatePath('/configuracoes')
+    revalidatePath('/dashboard')
+    return { ok: true }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Erro ao salvar' }
+  }
+}
+
 // ─── Action 4 — Preview vara count (no auth needed, cached FREE call) ─────────
 
 export async function previewVarasCount(
