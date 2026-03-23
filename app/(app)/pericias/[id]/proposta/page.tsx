@@ -56,29 +56,29 @@ export default async function PropostaHonorariosPage({ params }: { params: Promi
     <div className="space-y-6 pb-10 max-w-2xl mx-auto">
 
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-xs text-zinc-500">
-        <Link href="/pericias" className="hover:text-zinc-300 transition-colors">
+      <div className="flex items-center gap-2 text-xs text-slate-400">
+        <Link href="/pericias" className="hover:text-slate-700 transition-colors">
           Péricias
         </Link>
         <ChevronRight className="h-3 w-3" />
-        <Link href={`/pericias/${id}`} className="hover:text-zinc-300 transition-colors truncate max-w-[120px]">
+        <Link href={`/pericias/${id}`} className="hover:text-slate-700 transition-colors truncate max-w-[120px]">
           {rota.titulo}
         </Link>
         <ChevronRight className="h-3 w-3" />
-        <span className="text-zinc-400 font-medium">Proposta de Honorários</span>
+        <span className="text-slate-600 font-medium">Proposta de Honorários</span>
       </div>
 
       {/* Heading */}
       <div className="flex items-center gap-3">
         <Link
           href={`/pericias/${id}`}
-          className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-card text-zinc-400 hover:bg-muted transition-colors"
+          className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
         </Link>
         <div>
-          <h1 className="text-lg font-bold text-foreground">Proposta de Honorários</h1>
-          <p className="text-xs text-zinc-500">
+          <h1 className="text-lg font-bold text-slate-900">Proposta de Honorários</h1>
+          <p className="text-xs text-slate-400">
             {draft ? 'Rascunho salvo · edite e salve novamente para atualizar' : 'Preencha os campos e salve como rascunho'}
           </p>
         </div>
@@ -87,7 +87,7 @@ export default async function PropostaHonorariosPage({ params }: { params: Promi
             <PropostaStatusBadge status={draft.status} />
             <Link
               href={`/pericias/${id}/proposta/preview`}
-              className="flex items-center gap-1.5 rounded-lg border border-border bg-card hover:bg-muted text-zinc-400 font-medium text-xs px-3 py-1.5 transition-colors"
+              className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-medium text-xs px-3 py-1.5 transition-colors"
             >
               <Eye className="h-3.5 w-3.5" />
               Visualizar

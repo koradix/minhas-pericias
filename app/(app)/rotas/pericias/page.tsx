@@ -73,7 +73,7 @@ export default function RotasPericiasPage() {
       />
 
       {/* Mapa real */}
-      <div className="isolate h-[420px] w-full overflow-hidden rounded-xl border border-border shadow-saas">
+      <div className="isolate h-[420px] w-full overflow-hidden rounded-xl border border-slate-200 shadow-sm">
         <RouteMapDynamic
           routes={rotas.map((r) => ({ id: r.id, pontos: r.pontos }))}
         />

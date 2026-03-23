@@ -51,13 +51,13 @@ export default function DocumentosPage() {
             {recentes.map((doc) => {
               const st = statusMapDocumentos[doc.status]
               return (
-                <div key={doc.id} className="flex items-center gap-3 rounded-lg px-2 py-2.5 hover:bg-muted transition-colors cursor-pointer">
+                <div key={doc.id} className="flex items-center gap-3 rounded-lg px-2 py-2.5 hover:bg-slate-50 transition-colors cursor-pointer">
                   <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md bg-violet-50">
                     <FileText className="h-3.5 w-3.5 text-violet-600" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-foreground truncate">{doc.titulo}</p>
-                    <p className="text-[11px] text-zinc-500">{tipoDocumentoLabels[doc.tipo]} · {doc.dataCriacao}</p>
+                    <p className="text-xs font-semibold text-slate-800 truncate">{doc.titulo}</p>
+                    <p className="text-[11px] text-slate-400">{tipoDocumentoLabels[doc.tipo]} · {doc.dataCriacao}</p>
                   </div>
                   <Badge variant={st.variant}>{st.label}</Badge>
                 </div>
@@ -79,13 +79,13 @@ export default function DocumentosPage() {
           </CardHeader>
           <CardContent className="pt-4 space-y-3">
             {modelos.slice(0, 4).map((m) => (
-              <div key={m.id} className="flex items-center gap-3 rounded-xl border border-border p-3 hover:bg-muted transition-colors cursor-pointer group">
+              <div key={m.id} className="flex items-center gap-3 rounded-xl border border-slate-100 p-3 hover:bg-slate-50 transition-colors cursor-pointer group">
                 <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-blue-50">
                   <BookOpen className="h-3.5 w-3.5 text-blue-600" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-foreground truncate">{m.nome}</p>
-                  <p className="text-[11px] text-zinc-500">{tipoDocumentoLabels[m.tipo]} · {m.totalUsos} usos</p>
+                  <p className="text-xs font-semibold text-slate-800 truncate">{m.nome}</p>
+                  <p className="text-[11px] text-slate-400">{tipoDocumentoLabels[m.tipo]} · {m.totalUsos} usos</p>
                 </div>
                 <Link href="/documentos/modelos">
                   <Button variant="ghost" size="sm" className="h-7 px-2 text-xs opacity-0 group-hover:opacity-100 text-violet-600">Usar</Button>
@@ -104,15 +104,15 @@ export default function DocumentosPage() {
         ].map((item) => {
           const Icon = item.icon
           return (
-            <Link key={item.href} href={item.href} className="flex items-center gap-3 rounded-xl border border-border bg-card p-4 hover:shadow-md hover:border-border transition-all group">
+            <Link key={item.href} href={item.href} className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 hover:shadow-md hover:border-slate-300 transition-all group">
               <div className={item.color + " flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg"}>
                 <Icon className="h-4 w-4" />
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-foreground">{item.title}</p>
-                <p className="text-xs text-zinc-400 truncate">{item.desc}</p>
+                <p className="text-sm font-semibold text-slate-900">{item.title}</p>
+                <p className="text-xs text-slate-500 truncate">{item.desc}</p>
               </div>
-              <ChevronRight className="ml-auto h-4 w-4 text-zinc-600 group-hover:text-zinc-400 transition-colors" />
+              <ChevronRight className="ml-auto h-4 w-4 text-slate-300 group-hover:text-slate-500 transition-colors" />
             </Link>
           )
         })}

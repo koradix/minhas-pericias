@@ -91,8 +91,8 @@ const juizes = [
 ]
 
 const tendenciaConfig = {
-  alta:   { label: '↑ Alta',   class: 'text-brand-400    bg-brand-500/10'   },
-  estavel:{ label: '→ Estável',class: 'text-zinc-400   bg-zinc-900/50' },
+  alta:   { label: '↑ Alta',   class: 'text-lime-700    bg-lime-50'   },
+  estavel:{ label: '→ Estável',class: 'text-slate-500   bg-slate-100' },
   queda:  { label: '↓ Queda', class: 'text-rose-600    bg-rose-50'   },
 }
 
@@ -108,55 +108,55 @@ export default function NomeacoesJuizesPage() {
 
       {/* Search */}
       <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 pointer-events-none" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
         <input
           type="text"
           placeholder="Buscar juiz ou vara..."
-          className="w-full h-9 rounded-lg border border-border bg-card pl-9 pr-3 text-sm placeholder:text-zinc-500 focus:border-lime-500 focus:outline-none focus:ring-1 focus:ring-lime-500"
+          className="w-full h-9 rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm placeholder:text-slate-400 focus:border-lime-500 focus:outline-none focus:ring-1 focus:ring-lime-500"
         />
       </div>
 
       {/* Table */}
-      <div className="rounded-xl border border-border bg-card shadow-saas overflow-hidden">
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border bg-muted/80">
-                <th className="pl-4 pr-2 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-zinc-500 w-6">#</th>
-                <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Magistrado</th>
-                <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Vara / Tribunal</th>
-                <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Especialidades</th>
-                <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Última Nomeação</th>
-                <th className="px-4 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Nomeações</th>
-                <th className="px-4 py-3 text-center text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Tendência</th>
+              <tr className="border-b border-slate-100 bg-slate-50/80">
+                <th className="pl-4 pr-2 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-400 w-6">#</th>
+                <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-400">Magistrado</th>
+                <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-400">Vara / Tribunal</th>
+                <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-400">Especialidades</th>
+                <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-400">Última Nomeação</th>
+                <th className="px-4 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-slate-400">Nomeações</th>
+                <th className="px-4 py-3 text-center text-[10px] font-semibold uppercase tracking-wider text-slate-400">Tendência</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {juizes.map((j, i) => {
                 const tend = tendenciaConfig[j.tendencia]
                 return (
-                  <tr key={j.nome} className="hover:bg-muted/60 transition-colors cursor-pointer">
-                    <td className="pl-4 pr-2 py-3 text-xs font-medium text-zinc-500 tabular-nums">{i + 1}</td>
+                  <tr key={j.nome} className="hover:bg-slate-50/60 transition-colors cursor-pointer">
+                    <td className="pl-4 pr-2 py-3 text-xs font-medium text-slate-400 tabular-nums">{i + 1}</td>
                     <td className="px-4 py-3">
-                      <p className="text-sm font-semibold text-foreground">{j.nome}</p>
-                      <p className="text-xs text-zinc-500">{j.comarca}</p>
+                      <p className="text-sm font-semibold text-slate-800">{j.nome}</p>
+                      <p className="text-xs text-slate-400">{j.comarca}</p>
                     </td>
                     <td className="px-4 py-3">
-                      <p className="text-xs font-medium text-zinc-300">{j.vara}</p>
-                      <p className="text-[11px] text-zinc-500">{j.tribunal}</p>
+                      <p className="text-xs font-medium text-slate-700">{j.vara}</p>
+                      <p className="text-[11px] text-slate-400">{j.tribunal}</p>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
                         {j.especialidades.map((e) => (
-                          <span key={e} className="inline-flex items-center rounded-md bg-zinc-900/50 px-1.5 py-0.5 text-[10px] font-medium text-zinc-400">
+                          <span key={e} className="inline-flex items-center rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">
                             {e}
                           </span>
                         ))}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-xs text-zinc-400">{j.ultimaNomeacao}</td>
+                    <td className="px-4 py-3 text-xs text-slate-500">{j.ultimaNomeacao}</td>
                     <td className="px-4 py-3 text-right">
-                      <span className="text-sm font-bold text-foreground tabular-nums">{j.totalNomeacoes}</span>
+                      <span className="text-sm font-bold text-slate-800 tabular-nums">{j.totalNomeacoes}</span>
                     </td>
                     <td className="px-4 py-3 text-center">
                       <span className={cn('inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold', tend.class)}>
@@ -171,7 +171,7 @@ export default function NomeacoesJuizesPage() {
         </div>
       </div>
 
-      <p className="text-xs text-zinc-500 text-center">
+      <p className="text-xs text-slate-400 text-center">
         {juizes.length} magistrados mapeados · Dados de demonstração
       </p>
     </div>

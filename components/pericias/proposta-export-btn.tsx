@@ -293,7 +293,7 @@ export function PropostaExportBtn({ draft }: PropostaExportBtnProps) {
     <div className="flex items-center gap-2">
       <button
         onClick={handlePrint}
-        className="flex items-center gap-1.5 rounded-xl border border-border bg-card hover:bg-muted text-zinc-300 font-medium text-sm px-4 py-2.5 transition-colors"
+        className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium text-sm px-4 py-2.5 transition-colors"
       >
         <Printer className="h-4 w-4" />
         Imprimir / PDF

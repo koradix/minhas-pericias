@@ -36,7 +36,7 @@ export default function LoginForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-xl border border-border bg-card p-6 shadow-saas space-y-4">
+    <form onSubmit={handleSubmit} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
       {error && (
         <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
           {error}
@@ -44,7 +44,7 @@ export default function LoginForm() {
       )}
 
       <div className="space-y-1.5">
-        <label className="text-sm font-medium text-zinc-300" htmlFor="email">E-mail</label>
+        <label className="text-sm font-medium text-slate-700" htmlFor="email">E-mail</label>
         <input
           id="email"
           type="email"
@@ -53,12 +53,12 @@ export default function LoginForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="seu@email.com"
-          className="w-full h-10 rounded-lg border border-border bg-card px-3 text-sm placeholder:text-zinc-500 focus:border-lime-500 focus:outline-none focus:ring-1 focus:ring-lime-500"
+          className="w-full h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm placeholder:text-slate-400 focus:border-lime-500 focus:outline-none focus:ring-1 focus:ring-lime-500"
         />
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-sm font-medium text-zinc-300" htmlFor="password">Senha</label>
+        <label className="text-sm font-medium text-slate-700" htmlFor="password">Senha</label>
         <div className="relative">
           <input
             id="password"
@@ -68,12 +68,12 @@ export default function LoginForm() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••"
-            className="w-full h-10 rounded-lg border border-border bg-card px-3 pr-10 text-sm placeholder:text-zinc-500 focus:border-lime-500 focus:outline-none focus:ring-1 focus:ring-lime-500"
+            className="w-full h-10 rounded-lg border border-slate-300 bg-white px-3 pr-10 text-sm placeholder:text-slate-400 focus:border-lime-500 focus:outline-none focus:ring-1 focus:ring-lime-500"
           />
           <button
             type="button"
             onClick={() => setShowPassword((v) => !v)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-400"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
             tabIndex={-1}
           >
             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -81,7 +81,7 @@ export default function LoginForm() {
         </div>
       </div>
 
-      <Button type="submit" className="w-full bg-brand-500 hover:bg-lime-600 text-foreground font-semibold" disabled={loading}>
+      <Button type="submit" className="w-full bg-lime-500 hover:bg-lime-600 text-slate-900 font-semibold" disabled={loading}>
         {loading ? (
           <span className="flex items-center gap-2">
             <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />

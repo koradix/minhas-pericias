@@ -27,14 +27,14 @@ export default async function EditarParceiroPage({ params }: Props) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-1.5 text-sm text-zinc-500">
-        <Link href="/parceiros" className="hover:text-zinc-400 transition-colors">Parceiros</Link>
+      <div className="flex items-center gap-1.5 text-sm text-slate-400">
+        <Link href="/parceiros" className="hover:text-slate-600 transition-colors">Parceiros</Link>
         <ChevronRight className="h-3.5 w-3.5" />
-        <Link href={`/parceiros/${parceiro.id}`} className="hover:text-zinc-400 transition-colors truncate max-w-xs">
+        <Link href={`/parceiros/${parceiro.id}`} className="hover:text-slate-600 transition-colors truncate max-w-xs">
           {parceiro.nome}
         </Link>
         <ChevronRight className="h-3.5 w-3.5" />
-        <span className="text-zinc-400">Editar</span>
+        <span className="text-slate-600">Editar</span>
       </div>
 
       <PageHeader title="Editar Parceiro" description={parceiro.nome} />

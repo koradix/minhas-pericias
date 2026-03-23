@@ -92,10 +92,10 @@ export default function RelatoriosPage() {
           return (
             <div
               key={r.id}
-              className={`rounded-xl border bg-card p-5 transition-all ${
+              className={`rounded-xl border bg-white p-5 transition-all ${
                 r.disponivel
-                  ? 'border-border hover:shadow-md hover:border-blue-200 cursor-pointer group'
-                  : 'border-border opacity-60'
+                  ? 'border-slate-200 hover:shadow-md hover:border-blue-200 cursor-pointer group'
+                  : 'border-slate-200 opacity-60'
               }`}
             >
               <div className="flex items-start justify-between mb-4">
@@ -109,22 +109,22 @@ export default function RelatoriosPage() {
                 )}
               </div>
 
-              <h3 className="text-sm font-semibold text-foreground mb-1">{r.titulo}</h3>
-              <p className="text-xs text-zinc-400 leading-relaxed mb-4">{r.descricao}</p>
+              <h3 className="text-sm font-semibold text-slate-900 mb-1">{r.titulo}</h3>
+              <p className="text-xs text-slate-500 leading-relaxed mb-4">{r.descricao}</p>
 
               <div className="flex items-center justify-between">
                 <div className="flex gap-1.5 flex-wrap">
                   {r.tags.map((tag) => (
                     <span
                       key={tag}
-                      className="inline-flex items-center rounded-md bg-zinc-900/50 px-2 py-0.5 text-[10px] font-medium text-zinc-400"
+                      className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600"
                     >
                       {tag}
                     </span>
                   ))}
                 </div>
                 {r.disponivel && (
-                  <ArrowRight className="h-4 w-4 text-zinc-600 group-hover:text-blue-500 transition-colors flex-shrink-0" />
+                  <ArrowRight className="h-4 w-4 text-slate-300 group-hover:text-blue-500 transition-colors flex-shrink-0" />
                 )}
               </div>
             </div>

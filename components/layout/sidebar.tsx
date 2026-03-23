@@ -39,7 +39,7 @@ export default function Sidebar({
   return (
     <aside
       className={cn(
-        'fixed inset-y-0 left-0 z-30 flex flex-col bg-card border-r border-border/80 transition-all duration-300',
+        'fixed inset-y-0 left-0 z-30 flex flex-col bg-white border-r border-slate-200/80 transition-all duration-300',
         collapsed ? 'w-16' : 'w-[220px]',
         mobileOpen ? 'translate-x-0' : '-translate-x-full',
         'lg:translate-x-0',
@@ -48,7 +48,7 @@ export default function Sidebar({
       {/* ── Logo ── */}
       <div
         className={cn(
-          'flex h-14 flex-shrink-0 items-center border-b border-border',
+          'flex h-14 flex-shrink-0 items-center border-b border-slate-100',
           collapsed ? 'justify-center px-2' : 'justify-between px-4',
         )}
       >
@@ -63,7 +63,7 @@ export default function Sidebar({
             </Link>
             <button
               onClick={onMobileClose}
-              className="lg:hidden flex h-7 w-7 items-center justify-center rounded-md text-zinc-500 hover:text-zinc-400 hover:bg-zinc-900/50 transition-colors"
+              className="lg:hidden flex h-7 w-7 items-center justify-center rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -77,11 +77,11 @@ export default function Sidebar({
           <div key={section.title}>
             {/* Section label */}
             {!collapsed && (
-              <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500/80">
+              <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400/80">
                 {section.title}
               </p>
             )}
-            {collapsed && <div className="mx-3 mb-2 border-t border-border" />}
+            {collapsed && <div className="mx-3 mb-2 border-t border-slate-100" />}
 
             <ul className="space-y-0.5">
               {section.items.map((item) => {
@@ -98,13 +98,13 @@ export default function Sidebar({
                         collapsed
                           ? cn(
                               'justify-center h-9 w-9 mx-auto',
-                              active ? 'bg-brand-500/10 text-brand-400' : 'text-zinc-500 hover:bg-muted hover:text-zinc-400',
+                              active ? 'bg-lime-50 text-lime-700' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600',
                             )
                           : cn(
                               'gap-2.5 py-2 w-full pl-2.5 pr-3 border-l-2',
                               active
-                                ? 'border-l-lime-500 bg-brand-500/10 text-brand-400'
-                                : 'border-l-transparent text-zinc-400 hover:bg-muted hover:text-zinc-300',
+                                ? 'border-l-lime-500 bg-lime-50 text-lime-700'
+                                : 'border-l-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-700',
                             ),
                       )}
                     >
@@ -112,14 +112,14 @@ export default function Sidebar({
                         className={cn(
                           'flex-shrink-0',
                           collapsed ? 'h-[17px] w-[17px]' : 'h-4 w-4',
-                          active ? 'text-brand-500' : 'text-zinc-500',
+                          active ? 'text-lime-600' : 'text-slate-400',
                         )}
                       />
                       {!collapsed && (
                         <>
                           <span className="flex-1 text-[13px] font-medium">{item.title}</span>
                           {item.badge != null && (
-                            <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-500 px-1 text-[10px] font-bold text-white">
+                            <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-lime-500 px-1 text-[10px] font-bold text-white">
                               {item.badge}
                             </span>
                           )}
@@ -135,7 +135,7 @@ export default function Sidebar({
       </nav>
 
       {/* ── Bottom ── */}
-      <div className="flex-shrink-0 border-t border-border p-2 space-y-0.5">
+      <div className="flex-shrink-0 border-t border-slate-100 p-2 space-y-0.5">
         {activeBottom.map((item) => {
           const active = isActive(item.href)
           const Icon = item.icon
@@ -149,13 +149,13 @@ export default function Sidebar({
                 collapsed
                   ? cn(
                       'justify-center h-9 w-9 mx-auto',
-                      active ? 'bg-brand-500/10 text-brand-400' : 'text-zinc-500 hover:bg-muted hover:text-zinc-400',
+                      active ? 'bg-lime-50 text-lime-700' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600',
                     )
                   : cn(
                       'gap-2.5 px-3 py-2 w-full',
                       active
-                        ? 'bg-brand-500/10 text-brand-400'
-                        : 'text-zinc-400 hover:bg-muted hover:text-zinc-300',
+                        ? 'bg-lime-50 text-lime-700'
+                        : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700',
                     ),
               )}
             >
@@ -163,7 +163,7 @@ export default function Sidebar({
                 className={cn(
                   'flex-shrink-0',
                   collapsed ? 'h-[17px] w-[17px]' : 'h-4 w-4',
-                  active ? 'text-brand-500' : 'text-zinc-500',
+                  active ? 'text-lime-600' : 'text-slate-400',
                 )}
               />
               {!collapsed && <span className="text-[13px] font-medium">{item.title}</span>}
@@ -176,7 +176,7 @@ export default function Sidebar({
           onClick={onToggleCollapse}
           title={collapsed ? 'Expandir menu' : 'Recolher menu'}
           className={cn(
-            'hidden lg:flex items-center rounded-md transition-colors duration-150 text-zinc-500 hover:bg-muted hover:text-zinc-400',
+            'hidden lg:flex items-center rounded-md transition-colors duration-150 text-slate-400 hover:bg-slate-50 hover:text-slate-600',
             collapsed ? 'justify-center h-9 w-9 mx-auto' : 'gap-2.5 px-3 py-2 w-full',
           )}
         >

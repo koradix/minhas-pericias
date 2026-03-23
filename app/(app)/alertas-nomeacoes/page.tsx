@@ -104,7 +104,7 @@ const tipoConfig: Record<AlertTipo, { icon: typeof Bell; color: string; label: s
   nomeacao: { icon: BellDot, color: 'bg-blue-50 text-blue-600', label: 'Nomeação' },
   prazo: { icon: Clock, color: 'bg-amber-50 text-amber-600', label: 'Prazo' },
   honorario: { icon: AlertTriangle, color: 'bg-rose-50 text-rose-600', label: 'Honorário' },
-  sistema: { icon: Info, color: 'bg-muted text-zinc-400', label: 'Sistema' },
+  sistema: { icon: Info, color: 'bg-slate-50 text-slate-500', label: 'Sistema' },
 }
 
 const prioridadeMap = {
@@ -178,14 +178,14 @@ export default function AlertasNomenacoesPage() {
               className={`h-8 px-3 rounded-full text-xs font-medium transition-colors flex items-center gap-1.5 ${
                 isActive
                   ? 'bg-blue-600 text-white'
-                  : 'bg-card border border-border text-zinc-400 hover:bg-muted'
+                  : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
               }`}
             >
               {f.label}
               {count > 0 && (
                 <span
                   className={`inline-flex items-center justify-center h-4 min-w-[1rem] rounded-full px-1 text-[10px] font-bold ${
-                    isActive ? 'bg-card/30 text-white' : 'bg-blue-100 text-blue-700'
+                    isActive ? 'bg-white/30 text-white' : 'bg-blue-100 text-blue-700'
                   }`}
                 >
                   {count}
@@ -208,9 +208,9 @@ export default function AlertasNomenacoesPage() {
             <div
               key={alerta.id}
               onClick={() => marcarComoLido(alerta.id)}
-              className={`relative flex gap-4 rounded-xl border p-4 cursor-pointer transition-all hover:shadow-saas ${
+              className={`relative flex gap-4 rounded-xl border p-4 cursor-pointer transition-all hover:shadow-sm ${
                 isLido
-                  ? 'border-border bg-card'
+                  ? 'border-slate-200 bg-white'
                   : 'border-blue-200 bg-blue-50/40 hover:bg-blue-50/70'
               }`}
             >
@@ -227,20 +227,20 @@ export default function AlertasNomenacoesPage() {
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-3 flex-wrap">
-                  <p className={`text-sm font-semibold ${isLido ? 'text-zinc-300' : 'text-foreground'}`}>
+                  <p className={`text-sm font-semibold ${isLido ? 'text-slate-700' : 'text-slate-900'}`}>
                     {alerta.titulo}
                   </p>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <Badge variant={prioridade.variant}>{prioridade.label}</Badge>
                   </div>
                 </div>
-                <p className="mt-1 text-sm text-zinc-400 leading-relaxed">{alerta.descricao}</p>
+                <p className="mt-1 text-sm text-slate-500 leading-relaxed">{alerta.descricao}</p>
                 <div className="mt-2 flex items-center gap-3">
-                  <span className="flex items-center gap-1 text-xs text-zinc-500">
+                  <span className="flex items-center gap-1 text-xs text-slate-400">
                     <Clock className="h-3 w-3" />
                     {alerta.data}
                   </span>
-                  <span className="inline-flex items-center rounded-md bg-zinc-900/50 px-2 py-0.5 text-[10px] font-medium text-zinc-400">
+                  <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500">
                     {config.label}
                   </span>
                 </div>
@@ -260,9 +260,9 @@ export default function AlertasNomenacoesPage() {
 
         {alertasFiltrados.length === 0 && (
           <div className="flex flex-col items-center justify-center py-12 text-center">
-            <Bell className="h-10 w-10 text-zinc-600 mb-3" />
-            <p className="text-sm font-medium text-zinc-400">Nenhum alerta neste filtro</p>
-            <p className="text-xs text-zinc-500 mt-1">Tente selecionar outro tipo de alerta</p>
+            <Bell className="h-10 w-10 text-slate-300 mb-3" />
+            <p className="text-sm font-medium text-slate-500">Nenhum alerta neste filtro</p>
+            <p className="text-xs text-slate-400 mt-1">Tente selecionar outro tipo de alerta</p>
           </div>
         )}
       </div>

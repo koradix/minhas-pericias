@@ -17,8 +17,8 @@ export function PageHeader({ title, description, actions, className }: PageHeade
       )}
     >
       <div>
-        <h1 className="text-2xl font-bold text-foreground tracking-tight">{title}</h1>
-        {description && <p className="mt-1 text-sm text-zinc-400">{description}</p>}
+        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{title}</h1>
+        {description && <p className="mt-1 text-sm text-slate-500">{description}</p>}
       </div>
       {actions && (
         <div className="flex items-center gap-2 mt-3 sm:mt-0 flex-wrap">{actions}</div>

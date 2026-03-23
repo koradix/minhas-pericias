@@ -93,11 +93,11 @@ export function VarasByState({ varasDoPerito }: Props) {
   const semEndereco = varas.filter((v) => !v.enderecoTexto)
 
   return (
-    <div className="rounded-xl border border-border bg-card p-5 shadow-saas space-y-4">
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
       {/* Header */}
       <div>
-        <p className="text-sm font-semibold text-foreground">Varas por Estado</p>
-        <p className="text-xs text-zinc-500 mt-0.5">
+        <p className="text-sm font-semibold text-slate-900">Varas por Estado</p>
+        <p className="text-xs text-slate-400 mt-0.5">
           Explore varas disponíveis no Escavador e crie rotas de prospecção
         </p>
       </div>
@@ -107,7 +107,7 @@ export function VarasByState({ varasDoPerito }: Props) {
         <select
           value={uf}
           onChange={(e) => handleUfChange(e.target.value)}
-          className="flex h-9 w-full max-w-[160px] items-center rounded-xl border border-border bg-card px-3 text-sm text-foreground shadow-saas focus:outline-none focus:ring-2 focus:ring-lime-400"
+          className="flex h-9 w-full max-w-[160px] items-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-lime-400"
         >
           <option value="">Selecione o estado</option>
           {ESTADOS_DISPONIVEIS.map((estado) => (
@@ -120,7 +120,7 @@ export function VarasByState({ varasDoPerito }: Props) {
             variant="outline"
             size="sm"
             onClick={toggleAll}
-            className="gap-1.5 text-xs border-border text-zinc-400 h-9"
+            className="gap-1.5 text-xs border-slate-200 text-slate-600 h-9"
           >
             {selected.size === varas.length ? (
               <><CheckSquare className="h-3.5 w-3.5" />Desmarcar todas</>
@@ -133,17 +133,17 @@ export function VarasByState({ varasDoPerito }: Props) {
 
       {/* Loading */}
       {isPending && (
-        <div className="flex items-center gap-2 text-sm text-zinc-400 py-2">
-          <Loader2 className="h-4 w-4 animate-spin text-brand-500" />
+        <div className="flex items-center gap-2 text-sm text-slate-500 py-2">
+          <Loader2 className="h-4 w-4 animate-spin text-lime-500" />
           Carregando varas do estado…
         </div>
       )}
 
       {/* Results */}
       {!isPending && loaded && varas.length === 0 && (
-        <div className="flex items-center gap-3 rounded-xl border border-dashed border-border px-4 py-4">
-          <AlertCircle className="h-4 w-4 text-zinc-500 flex-shrink-0" />
-          <p className="text-xs text-zinc-400">
+        <div className="flex items-center gap-3 rounded-xl border border-dashed border-slate-200 px-4 py-4">
+          <AlertCircle className="h-4 w-4 text-slate-400 flex-shrink-0" />
+          <p className="text-xs text-slate-500">
             Nenhuma vara encontrada para {uf} na API Escavador.
           </p>
         </div>
@@ -152,8 +152,8 @@ export function VarasByState({ varasDoPerito }: Props) {
       {!isPending && varas.length > 0 && (
         <>
           {/* Summary */}
-          <div className="flex items-center gap-3 text-xs text-zinc-400">
-            <span className="font-medium text-zinc-300">{varas.length} varas</span>
+          <div className="flex items-center gap-3 text-xs text-slate-500">
+            <span className="font-medium text-slate-700">{varas.length} varas</span>
             <span>·</span>
             <span className="text-emerald-600">{comEndereco.length} com endereço</span>
             {semEndereco.length > 0 && (
@@ -177,17 +177,17 @@ export function VarasByState({ varasDoPerito }: Props) {
                     'flex items-start gap-3 rounded-xl border px-3 py-2.5 transition-colors',
                     dbVara
                       ? isSelected
-                        ? 'border-brand-500/50 bg-brand-500/10 cursor-pointer'
-                        : 'border-border hover:border-border hover:bg-muted/50 cursor-pointer'
-                      : 'border-border bg-muted/30 cursor-default opacity-60',
+                        ? 'border-lime-300 bg-lime-50 cursor-pointer'
+                        : 'border-slate-100 hover:border-slate-200 hover:bg-slate-50/50 cursor-pointer'
+                      : 'border-slate-100 bg-slate-50/30 cursor-default opacity-60',
                   )}
                 >
                   {/* Checkbox */}
                   <div className="flex-shrink-0 mt-0.5">
                     {dbVara ? (
                       isSelected
-                        ? <CheckSquare className="h-4 w-4 text-brand-500" />
-                        : <Square className="h-4 w-4 text-zinc-600" />
+                        ? <CheckSquare className="h-4 w-4 text-lime-600" />
+                        : <Square className="h-4 w-4 text-slate-300" />
                     ) : (
                       <Square className="h-4 w-4 text-slate-200" />
                     )}
@@ -195,17 +195,17 @@ export function VarasByState({ varasDoPerito }: Props) {
 
                   {/* Icon */}
                   <div className={cn('flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg',
-                    v.enderecoTexto ? 'bg-violet-50' : 'bg-zinc-900/50')}>
-                    <Landmark className={cn('h-4 w-4', v.enderecoTexto ? 'text-violet-600' : 'text-zinc-500')} />
+                    v.enderecoTexto ? 'bg-violet-50' : 'bg-slate-100')}>
+                    <Landmark className={cn('h-4 w-4', v.enderecoTexto ? 'text-violet-600' : 'text-slate-400')} />
                   </div>
 
                   {/* Info */}
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-semibold text-foreground truncate">{v.varaNome}</p>
-                    <p className="text-[10px] text-zinc-500 mt-0.5">{v.tribunalSigla}</p>
+                    <p className="text-xs font-semibold text-slate-800 truncate">{v.varaNome}</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">{v.tribunalSigla}</p>
                     {v.enderecoTexto && (
-                      <p className="text-[10px] text-zinc-400 mt-0.5 flex items-start gap-1">
-                        <MapPin className="h-3 w-3 flex-shrink-0 mt-0.5 text-zinc-500" />
+                      <p className="text-[10px] text-slate-500 mt-0.5 flex items-start gap-1">
+                        <MapPin className="h-3 w-3 flex-shrink-0 mt-0.5 text-slate-400" />
                         <span className="truncate">{v.enderecoTexto}</span>
                       </p>
                     )}
@@ -217,12 +217,12 @@ export function VarasByState({ varasDoPerito }: Props) {
                   {/* Badges */}
                   <div className="flex flex-col gap-1 items-end flex-shrink-0">
                     {noDb && (
-                      <span className="text-[9px] bg-brand-500/20 text-brand-400 rounded px-1.5 py-0.5 font-semibold">
+                      <span className="text-[9px] bg-lime-100 text-lime-700 rounded px-1.5 py-0.5 font-semibold">
                         No radar
                       </span>
                     )}
                     {v.dadosFicticios && v.enderecoTexto && (
-                      <span className="text-[9px] bg-zinc-900/50 text-zinc-400 rounded px-1.5 py-0.5">
+                      <span className="text-[9px] bg-slate-100 text-slate-500 rounded px-1.5 py-0.5">
                         Endereço aprox.
                       </span>
                     )}
@@ -243,9 +243,9 @@ export function VarasByState({ varasDoPerito }: Props) {
 
       {/* Sticky CTA */}
       {selected.size > 0 && (
-        <div className="sticky bottom-0 pt-2 border-t border-border bg-card">
+        <div className="sticky bottom-0 pt-2 border-t border-slate-100 bg-white">
           <Button
-            className="w-full bg-brand-500 hover:bg-lime-600 text-foreground font-semibold gap-2"
+            className="w-full bg-lime-500 hover:bg-lime-600 text-slate-900 font-semibold gap-2"
             onClick={handleCriarRota}
             disabled={isCreating}
           >

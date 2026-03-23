@@ -37,7 +37,7 @@ export function SincronizarVarasBtn() {
         <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
         {loading ? 'Sincronizando...' : 'Sincronizar varas'}
       </Button>
-      {msg && <span className="text-xs text-zinc-400">{msg}</span>}
+      {msg && <span className="text-xs text-slate-500">{msg}</span>}
     </div>
   )
 }

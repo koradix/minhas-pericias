@@ -144,10 +144,10 @@ export default async function NomeacoesPage() {
 
       {/* [3] Tribunais monitorados */}
       {siglas.length > 0 && (
-        <div className="rounded-xl border border-border bg-card p-5 shadow-saas space-y-3">
-          <p className="text-sm font-semibold text-foreground">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
+          <p className="text-sm font-semibold text-slate-900">
             Tribunais monitorados via DataJud
-            <span className="ml-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-500/20 px-1.5 text-[10px] font-bold text-brand-400">
+            <span className="ml-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-lime-100 px-1.5 text-[10px] font-bold text-lime-700">
               {suportados.length}
             </span>
           </p>
@@ -157,9 +157,9 @@ export default async function NomeacoesPage() {
               <div
                 key={t.sigla}
                 title={t.nome}
-                className="flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2 shadow-saas"
+                className="flex items-center gap-1.5 rounded-xl border border-slate-100 bg-white px-3 py-2 shadow-sm"
               >
-                <span className="text-xs font-bold text-foreground">{t.sigla}</span>
+                <span className="text-xs font-bold text-slate-900">{t.sigla}</span>
                 {t.uf && (
                   <span className={cn('text-[10px] px-1.5 py-0.5 rounded-md font-medium', tipoCor[t.tipo])}>
                     {t.uf}
@@ -168,7 +168,7 @@ export default async function NomeacoesPage() {
               </div>
             ))}
             {suportados.length === 0 && (
-              <p className="text-xs text-zinc-500">
+              <p className="text-xs text-slate-400">
                 Nenhum tribunal compatível com o DataJud.{' '}
                 <Link href="/perfil" className="underline hover:no-underline">
                   Adicione tribunais no perfil.
@@ -194,26 +194,26 @@ export default async function NomeacoesPage() {
       )}
 
       {/* [4] CTA — buscar nomeações */}
-      <div className="rounded-xl border border-brand-500/30 bg-brand-500/10/30 p-5 space-y-3">
+      <div className="rounded-2xl border border-lime-200 bg-lime-50/30 p-5 space-y-3">
         <div className="flex items-center gap-2 mb-1">
-          <Radar className="h-4 w-4 text-brand-400" />
-          <p className="text-sm font-semibold text-foreground">Buscar Nomeações</p>
+          <Radar className="h-4 w-4 text-lime-700" />
+          <p className="text-sm font-semibold text-slate-900">Buscar Nomeações</p>
           {kpis.novas > 0 && (
-            <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-500 text-white text-[10px] font-bold px-1.5">
+            <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-lime-500 text-white text-[10px] font-bold px-1.5">
               {kpis.novas}
             </span>
           )}
-          <span className="ml-auto text-[11px] text-zinc-500">Gratuito · via DataJud CNJ</span>
+          <span className="ml-auto text-[11px] text-slate-400">Gratuito · via DataJud CNJ</span>
         </div>
         <RadarBuscarBtn novas={kpis.novas} siglas={siglas} />
       </div>
 
       {/* [5] Nomeações list */}
       <div className="space-y-3">
-        <p className="text-sm font-semibold text-foreground">
+        <p className="text-sm font-semibold text-slate-900">
           Processos compatíveis
           {nomeacoes.length > 0 && (
-            <span className="ml-2 text-xs font-normal text-zinc-500">({nomeacoes.length})</span>
+            <span className="ml-2 text-xs font-normal text-slate-400">({nomeacoes.length})</span>
           )}
         </p>
 
@@ -224,11 +224,11 @@ export default async function NomeacoesPage() {
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border bg-muted py-12">
-            <SearchX className="h-8 w-8 text-zinc-600" />
+          <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-slate-200 bg-slate-50 py-12">
+            <SearchX className="h-8 w-8 text-slate-300" />
             <div className="text-center">
-              <p className="text-sm font-medium text-zinc-400">Nenhuma nomeação encontrada</p>
-              <p className="text-xs text-zinc-500 mt-1">
+              <p className="text-sm font-medium text-slate-500">Nenhuma nomeação encontrada</p>
+              <p className="text-xs text-slate-400 mt-1">
                 Clique em &ldquo;Buscar Nomeações&rdquo; para encontrar processos nos seus tribunais
               </p>
             </div>
@@ -239,9 +239,9 @@ export default async function NomeacoesPage() {
       {/* [6] Escavador citações — legado, oculto por padrão */}
       {escavadorEnabled && citacoes.length > 0 && (
         <div className="space-y-3">
-          <p className="text-sm font-semibold text-foreground">
+          <p className="text-sm font-semibold text-slate-900">
             Citações Escavador
-            <span className="ml-2 text-xs font-normal text-zinc-500">({citacoes.length})</span>
+            <span className="ml-2 text-xs font-normal text-slate-400">({citacoes.length})</span>
           </p>
           <CitacoesList citacoes={citacoes} />
         </div>
@@ -259,8 +259,8 @@ function SubPagesLinks() {
   return (
     <div className="grid sm:grid-cols-3 gap-4">
       {[
-        { href: '/nomeacoes/varas',      icon: Building2, title: 'Varas',      desc: 'Ranking por volume de nomeações',   color: 'bg-brand-500/10 text-brand-500'      },
-        { href: '/nomeacoes/juizes',     icon: Users,     title: 'Juízes',     desc: 'Histórico por magistrado',          color: 'bg-zinc-900/50 text-zinc-400'   },
+        { href: '/nomeacoes/varas',      icon: Building2, title: 'Varas',      desc: 'Ranking por volume de nomeações',   color: 'bg-lime-50 text-lime-600'      },
+        { href: '/nomeacoes/juizes',     icon: Users,     title: 'Juízes',     desc: 'Histórico por magistrado',          color: 'bg-slate-100 text-slate-500'   },
         { href: '/nomeacoes/estrategia', icon: Radar,     title: 'Estratégia', desc: 'Gerar rota de prospecção',          color: 'bg-emerald-50 text-emerald-600' },
       ].map((item) => {
         const Icon = item.icon
@@ -268,16 +268,16 @@ function SubPagesLinks() {
           <Link
             key={item.href}
             href={item.href}
-            className="flex items-center gap-3 rounded-xl border border-border bg-card p-4 hover:shadow-saas hover:border-border transition-all group"
+            className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 hover:shadow-sm hover:border-slate-300 transition-all group"
           >
             <div className={cn('flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl', item.color)}>
               <Icon className="h-4 w-4" />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-foreground">{item.title}</p>
-              <p className="text-xs text-zinc-400 truncate">{item.desc}</p>
+              <p className="text-sm font-semibold text-slate-900">{item.title}</p>
+              <p className="text-xs text-slate-500 truncate">{item.desc}</p>
             </div>
-            <ChevronRight className="ml-auto h-4 w-4 text-zinc-600 group-hover:text-zinc-500 transition-colors flex-shrink-0" />
+            <ChevronRight className="ml-auto h-4 w-4 text-slate-300 group-hover:text-slate-400 transition-colors flex-shrink-0" />
           </Link>
         )
       })}

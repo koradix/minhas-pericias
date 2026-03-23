@@ -32,13 +32,13 @@ function formatCurrency(value: number | null): string {
 // ── Layout helpers ────────────────────────────────────────────────────────────
 
 function DocDivider() {
-  return <hr className="border-border" />
+  return <hr className="border-slate-200" />
 }
 
 function DocSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="space-y-3">
-      <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">{title}</h3>
+      <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{title}</h3>
       {children}
     </section>
   )
@@ -47,8 +47,8 @@ function DocSection({ title, children }: { title: string; children: React.ReactN
 function DocRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex gap-2">
-      <span className="w-40 flex-shrink-0 text-xs text-zinc-500">{label}</span>
-      <span className="text-sm text-foreground font-medium leading-snug">{value || '—'}</span>
+      <span className="w-40 flex-shrink-0 text-xs text-slate-400">{label}</span>
+      <span className="text-sm text-slate-800 font-medium leading-snug">{value || '—'}</span>
     </div>
   )
 }
@@ -94,27 +94,27 @@ export default async function PreviewPropostaPage({ params }: { params: Promise<
     <div className="space-y-4 pb-10 max-w-3xl mx-auto">
 
       {/* ── Breadcrumb ─────────────────────────────────────────────────────── */}
-      <div className="print:hidden flex items-center gap-2 text-xs text-zinc-500">
-        <Link href="/pericias" className="hover:text-zinc-300 transition-colors">Péricias</Link>
+      <div className="print:hidden flex items-center gap-2 text-xs text-slate-400">
+        <Link href="/pericias" className="hover:text-slate-700 transition-colors">Péricias</Link>
         <ChevronRight className="h-3 w-3" />
-        <Link href={`/pericias/${p.id}`} className="hover:text-zinc-300 transition-colors">{p.numero}</Link>
+        <Link href={`/pericias/${p.id}`} className="hover:text-slate-700 transition-colors">{p.numero}</Link>
         <ChevronRight className="h-3 w-3" />
-        <Link href={`/pericias/${p.id}/proposta`} className="hover:text-zinc-300 transition-colors">Proposta</Link>
+        <Link href={`/pericias/${p.id}/proposta`} className="hover:text-slate-700 transition-colors">Proposta</Link>
         <ChevronRight className="h-3 w-3" />
-        <span className="text-zinc-400 font-medium">Visualizar</span>
+        <span className="text-slate-600 font-medium">Visualizar</span>
       </div>
 
       {/* ── Toolbar ────────────────────────────────────────────────────────── */}
       <div className="print:hidden flex items-center gap-3">
         <Link
           href={`/pericias/${p.id}/proposta`}
-          className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-card text-zinc-400 hover:bg-muted transition-colors"
+          className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
         </Link>
         <div>
-          <h1 className="text-lg font-bold text-foreground">Visualizar Proposta</h1>
-          <p className="text-xs text-zinc-500">
+          <h1 className="text-lg font-bold text-slate-900">Visualizar Proposta</h1>
+          <p className="text-xs text-slate-400">
             {draft.status === 'enviada' ? 'Proposta enviada ao juízo' : 'Exportação em PDF disponível em breve'}
           </p>
         </div>
@@ -122,14 +122,14 @@ export default async function PreviewPropostaPage({ params }: { params: Promise<
       </div>
 
       {/* ══ Document card ═══════════════════════════════════════════════════ */}
-      <div className="rounded-xl border border-border bg-card shadow-saas overflow-hidden">
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
 
         {/* ── Document header ────────────────────────────────────────────── */}
-        <div className="px-8 pt-8 pb-6 border-b border-border text-center space-y-1">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
+        <div className="px-8 pt-8 pb-6 border-b border-slate-100 text-center space-y-1">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
             Proposta de Honorários Periciais
           </p>
-          <p className="text-xs text-zinc-500">
+          <p className="text-xs text-slate-400">
             {p.numero} · {formatDate(draft.dataProposta)}
           </p>
         </div>
@@ -163,11 +163,11 @@ export default async function PreviewPropostaPage({ params }: { params: Promise<
           {/* 3. Descrição */}
           <DocSection title="III — Descrição dos serviços periciais">
             {draft.descricaoServicos ? (
-              <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">
+              <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
                 {draft.descricaoServicos}
               </p>
             ) : (
-              <p className="text-sm text-zinc-500 italic">Não informado.</p>
+              <p className="text-sm text-slate-400 italic">Não informado.</p>
             )}
           </DocSection>
 
@@ -175,35 +175,35 @@ export default async function PreviewPropostaPage({ params }: { params: Promise<
 
           {/* 4. Honorários */}
           <DocSection title="IV — Honorários propostos">
-            <div className="rounded-xl border border-border bg-muted overflow-hidden">
+            <div className="rounded-xl border border-slate-100 bg-slate-50 overflow-hidden">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-border">
-                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-zinc-400">Item</th>
-                    <th className="px-4 py-2.5 text-right text-xs font-semibold text-zinc-400">Valor</th>
+                  <tr className="border-b border-slate-200">
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-500">Item</th>
+                    <th className="px-4 py-2.5 text-right text-xs font-semibold text-slate-500">Valor</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   <tr>
-                    <td className="px-4 py-2.5 text-zinc-300">Honorários periciais</td>
-                    <td className="px-4 py-2.5 text-right font-medium text-foreground">
+                    <td className="px-4 py-2.5 text-slate-700">Honorários periciais</td>
+                    <td className="px-4 py-2.5 text-right font-medium text-slate-800">
                       {formatCurrency(draft.valorHonorarios)}
                     </td>
                   </tr>
                   {draft.custoDeslocamento != null && (
                     <tr>
-                      <td className="px-4 py-2.5 text-zinc-300">Custo de deslocamento</td>
-                      <td className="px-4 py-2.5 text-right font-medium text-foreground">
+                      <td className="px-4 py-2.5 text-slate-700">Custo de deslocamento</td>
+                      <td className="px-4 py-2.5 text-right font-medium text-slate-800">
                         {formatCurrency(draft.custoDeslocamento)}
                       </td>
                     </tr>
                   )}
                   {draft.horasTecnicas != null && (
                     <tr>
-                      <td className="px-4 py-2.5 text-zinc-400 text-xs">
+                      <td className="px-4 py-2.5 text-slate-500 text-xs">
                         Horas técnicas estimadas
                       </td>
-                      <td className="px-4 py-2.5 text-right text-xs text-zinc-400">
+                      <td className="px-4 py-2.5 text-right text-xs text-slate-500">
                         {draft.horasTecnicas}h
                       </td>
                     </tr>
@@ -211,8 +211,8 @@ export default async function PreviewPropostaPage({ params }: { params: Promise<
                 </tbody>
                 {(draft.valorHonorarios != null || draft.custoDeslocamento != null) && (
                   <tfoot>
-                    <tr className="border-t-2 border-border bg-card">
-                      <td className="px-4 py-3 text-sm font-bold text-foreground">Total</td>
+                    <tr className="border-t-2 border-slate-200 bg-white">
+                      <td className="px-4 py-3 text-sm font-bold text-slate-900">Total</td>
                       <td className="px-4 py-3 text-right text-base font-bold text-emerald-700">
                         {formatCurrency(totalHonorarios)}
                       </td>
@@ -227,7 +227,7 @@ export default async function PreviewPropostaPage({ params }: { params: Promise<
 
           {/* 5. Prazo */}
           <DocSection title="V — Prazo estimado">
-            <p className="text-sm text-zinc-300">
+            <p className="text-sm text-slate-700">
               {draft.prazoEstimado || '—'}
             </p>
           </DocSection>
@@ -237,7 +237,7 @@ export default async function PreviewPropostaPage({ params }: { params: Promise<
             <>
               <DocDivider />
               <DocSection title="VI — Observações">
-                <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">
+                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
                   {draft.observacoes}
                 </p>
               </DocSection>
@@ -249,7 +249,7 @@ export default async function PreviewPropostaPage({ params }: { params: Promise<
             <>
               <DocDivider />
               <DocSection title="Nota de complexidade">
-                <p className="text-sm text-zinc-300">{draft.complexidadeNota}</p>
+                <p className="text-sm text-slate-700">{draft.complexidadeNota}</p>
               </DocSection>
             </>
           )}
@@ -258,18 +258,18 @@ export default async function PreviewPropostaPage({ params }: { params: Promise<
 
           {/* 8. Signature block */}
           <div className="pt-2 space-y-8">
-            <p className="text-xs text-zinc-400 text-center">
+            <p className="text-xs text-slate-500 text-center">
               O signatário declara que as informações acima são verídicas e propõe os honorários indicados
               para a realização dos serviços periciais descritos neste documento.
             </p>
             <div className="flex justify-center">
               <div className="text-center space-y-1 min-w-[260px]">
                 <div className="border-b border-slate-400 pb-1 mt-10" />
-                <p className="text-sm font-semibold text-foreground">{draft.peritoNome || '___________________________'}</p>
+                <p className="text-sm font-semibold text-slate-800">{draft.peritoNome || '___________________________'}</p>
                 {draft.peritoQualificacao && (
-                  <p className="text-xs text-zinc-400">{draft.peritoQualificacao}</p>
+                  <p className="text-xs text-slate-500">{draft.peritoQualificacao}</p>
                 )}
-                <p className="text-xs text-zinc-500">
+                <p className="text-xs text-slate-400">
                   {formatDate(draft.dataProposta)}
                 </p>
               </div>
@@ -279,8 +279,8 @@ export default async function PreviewPropostaPage({ params }: { params: Promise<
         </div>
 
         {/* ── Document footer ────────────────────────────────────────────── */}
-        <div className="px-8 py-4 border-t border-border bg-muted flex items-center justify-between">
-          <p className="text-[10px] text-zinc-500">
+        <div className="px-8 py-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
+          <p className="text-[10px] text-slate-400">
             Gerado via PeriLaB · {new Date().toLocaleDateString('pt-BR')}
           </p>
           {(() => {
@@ -299,7 +299,7 @@ export default async function PreviewPropostaPage({ params }: { params: Promise<
       <div className="print:hidden flex flex-wrap items-center gap-3 pt-1">
         <Link
           href={`/pericias/${p.id}/proposta`}
-          className="flex items-center gap-2 rounded-xl border border-border bg-card hover:bg-muted text-zinc-400 font-medium text-sm px-4 py-2.5 transition-colors"
+          className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-medium text-sm px-4 py-2.5 transition-colors"
         >
           <Pencil className="h-4 w-4" />
           Editar proposta

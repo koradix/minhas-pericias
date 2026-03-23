@@ -27,8 +27,8 @@ const AREAS = [
 ]
 
 const inputCls =
-  'w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground ' +
-  'placeholder:text-zinc-500 focus:border-violet-500 focus:outline-none focus:ring-1 ' +
+  'w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 ' +
+  'placeholder:text-slate-400 focus:border-violet-500 focus:outline-none focus:ring-1 ' +
   'focus:ring-violet-500 disabled:opacity-50'
 
 export default function NovoModeloPage() {
@@ -55,7 +55,7 @@ export default function NovoModeloPage() {
           <form action={formAction} className="space-y-5" encType="multipart/form-data">
             {/* Nome */}
             <div>
-              <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+              <label className="block text-xs font-medium text-slate-700 mb-1.5">
                 Nome do Modelo <span className="text-red-500">*</span>
               </label>
               <input
@@ -73,7 +73,7 @@ export default function NovoModeloPage() {
 
             {/* Tipo */}
             <div>
-              <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+              <label className="block text-xs font-medium text-slate-700 mb-1.5">
                 Tipo de Documento <span className="text-red-500">*</span>
               </label>
               <select name="tipo" className={inputCls} disabled={isPending} required>
@@ -91,7 +91,7 @@ export default function NovoModeloPage() {
 
             {/* Área */}
             <div>
-              <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+              <label className="block text-xs font-medium text-slate-700 mb-1.5">
                 Área / Especialização
               </label>
               <select name="area" className={inputCls} disabled={isPending}>
@@ -106,7 +106,7 @@ export default function NovoModeloPage() {
 
             {/* Descrição */}
             <div>
-              <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+              <label className="block text-xs font-medium text-slate-700 mb-1.5">
                 Descrição
               </label>
               <textarea
@@ -120,18 +120,18 @@ export default function NovoModeloPage() {
 
             {/* Arquivo */}
             <div>
-              <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+              <label className="block text-xs font-medium text-slate-700 mb-1.5">
                 Arquivo de Referência
               </label>
               <div
-                className="relative flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-muted p-8 text-center hover:border-violet-300 hover:bg-violet-50/30 transition-colors cursor-pointer"
+                className="relative flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 p-8 text-center hover:border-violet-300 hover:bg-violet-50/30 transition-colors cursor-pointer"
                 onClick={() => fileRef.current?.click()}
               >
-                <Upload className="h-8 w-8 text-zinc-600" />
-                <p className="text-sm font-medium text-zinc-400">
+                <Upload className="h-8 w-8 text-slate-300" />
+                <p className="text-sm font-medium text-slate-500">
                   Clique para selecionar ou arraste o arquivo
                 </p>
-                <p className="text-xs text-zinc-500">PDF ou DOCX · máx 10 MB</p>
+                <p className="text-xs text-slate-400">PDF ou DOCX · máx 10 MB</p>
                 <input
                   ref={fileRef}
                   name="arquivo"
@@ -147,7 +147,7 @@ export default function NovoModeloPage() {
                   }}
                 />
               </div>
-              <p className="mt-1.5 text-[11px] text-zinc-500">
+              <p className="mt-1.5 text-[11px] text-slate-400">
                 O arquivo será usado como referência estrutural para geração de documentos.
               </p>
             </div>

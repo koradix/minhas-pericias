@@ -33,13 +33,13 @@ export function StatsCard({
   className,
 }: StatsCardProps) {
   return (
-    <div className={cn("rounded-xl border border-border bg-card p-6 shadow-saas", className)}>
+    <div className={cn("rounded-xl border border-slate-200 bg-white p-6 shadow-sm", className)}>
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-zinc-400 truncate">{title}</p>
-          <p className="mt-2 text-3xl font-bold text-foreground tracking-tight">{value}</p>
+          <p className="text-sm font-medium text-slate-500 truncate">{title}</p>
+          <p className="mt-2 text-3xl font-bold text-slate-900 tracking-tight">{value}</p>
           {description && (
-            <p className="mt-1 text-xs text-zinc-500">{description}</p>
+            <p className="mt-1 text-xs text-slate-400">{description}</p>
           )}
           {trend && (
             <p

@@ -30,8 +30,8 @@ const TIPO_LABEL: Record<TipoTribunal, string> = {
 
 // ─── Input styles ─────────────────────────────────────────────────────────────
 
-const inputCls = "w-full h-10 rounded-lg border border-border bg-card px-3 text-sm text-foreground placeholder:text-zinc-500 focus:border-lime-500 focus:outline-none focus:ring-1 focus:ring-lime-500"
-const labelCls = "block text-xs font-medium text-zinc-300 mb-1.5"
+const inputCls = "w-full h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-lime-500 focus:outline-none focus:ring-1 focus:ring-lime-500"
+const labelCls = "block text-xs font-medium text-slate-700 mb-1.5"
 
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
@@ -72,7 +72,6 @@ export default function SignupPage() {
 
   // ─── Preview vara count when tribunal selection changes ─────────────────
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (tribunaisSel.length === 0) { setVaraPreview(null); return }
     if (varaPreviewTimer.current) clearTimeout(varaPreviewTimer.current)
     varaPreviewTimer.current = setTimeout(async () => {
@@ -173,7 +172,7 @@ export default function SignupPage() {
   const stepLabels = ['Conta', 'Perfil', 'Atuação']
 
   return (
-    <div className="min-h-screen bg-muted flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
       {/* Logo */}
       <div className="mb-8 flex flex-col items-center">
         <Image src="/logo.svg" alt="PeriLaB" width={180} height={68} priority />
@@ -190,13 +189,13 @@ export default function SignupPage() {
               <div key={n} className="flex items-center">
                 <div className="flex flex-col items-center gap-1">
                   <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-colors ${
-                    done ? 'bg-brand-500 text-foreground' :
+                    done ? 'bg-lime-500 text-slate-900' :
                     active ? 'bg-slate-900 text-white' :
-                    'bg-slate-200 text-zinc-400'
+                    'bg-slate-200 text-slate-500'
                   }`}>
                     {done ? <Check className="h-3.5 w-3.5" /> : n}
                   </div>
-                  <span className={`text-[10px] font-medium ${active ? 'text-foreground' : 'text-zinc-500'}`}>{label}</span>
+                  <span className={`text-[10px] font-medium ${active ? 'text-slate-800' : 'text-slate-400'}`}>{label}</span>
                 </div>
                 {i < stepLabels.length - 1 && (
                   <div className={`w-16 h-px mx-2 mb-4 ${step > n ? 'bg-lime-400' : 'bg-slate-200'}`} />
@@ -207,14 +206,14 @@ export default function SignupPage() {
         </div>
 
         {/* Card */}
-        <div className="rounded-xl border border-border bg-card shadow-saas p-6 space-y-5">
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6 space-y-5">
 
           {/* ── STEP 1 — Conta ────────────────────────────────────────────── */}
           {step === 1 && (
             <>
               <div>
-                <h1 className="text-lg font-semibold text-foreground">Crie sua conta</h1>
-                <p className="text-xs text-zinc-400 mt-0.5">Dados de acesso à plataforma</p>
+                <h1 className="text-lg font-semibold text-slate-900">Crie sua conta</h1>
+                <p className="text-xs text-slate-500 mt-0.5">Dados de acesso à plataforma</p>
               </div>
               <div className="space-y-4">
                 <div>
@@ -237,7 +236,7 @@ export default function SignupPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className={labelCls}>CPF <span className="text-zinc-500 font-normal">(para nomeações)</span></label>
+                    <label className={labelCls}>CPF <span className="text-slate-400 font-normal">(para nomeações)</span></label>
                     <input
                       className={inputCls}
                       placeholder="000.000.000-00"
@@ -246,7 +245,7 @@ export default function SignupPage() {
                     />
                   </div>
                   <div>
-                    <label className={labelCls}>Telefone <span className="text-zinc-500 font-normal">(opcional)</span></label>
+                    <label className={labelCls}>Telefone <span className="text-slate-400 font-normal">(opcional)</span></label>
                     <input className={inputCls} placeholder="(11) 9 0000-0000" value={telefone} onChange={(e) => setTelefone(e.target.value)} />
                   </div>
                 </div>
@@ -258,8 +257,8 @@ export default function SignupPage() {
           {step === 2 && (
             <>
               <div>
-                <h1 className="text-lg font-semibold text-foreground">Perfil profissional</h1>
-                <p className="text-xs text-zinc-400 mt-0.5">Personaliza seu dashboard e as demandas sugeridas</p>
+                <h1 className="text-lg font-semibold text-slate-900">Perfil profissional</h1>
+                <p className="text-xs text-slate-500 mt-0.5">Personaliza seu dashboard e as demandas sugeridas</p>
               </div>
               <PerfilProfissionalForm
                 value={perfil}
@@ -275,8 +274,8 @@ export default function SignupPage() {
           {step === 3 && (
             <>
               <div>
-                <h1 className="text-lg font-semibold text-foreground">Área de atuação</h1>
-                <p className="text-xs text-zinc-400 mt-0.5">Define quais estados e tribunais você monitora</p>
+                <h1 className="text-lg font-semibold text-slate-900">Área de atuação</h1>
+                <p className="text-xs text-slate-500 mt-0.5">Define quais estados e tribunais você monitora</p>
               </div>
               <div className="space-y-5">
 
@@ -285,7 +284,7 @@ export default function SignupPage() {
                   <label className={labelCls}>
                     Estados de atuação
                     {estadosSel.length > 0 && (
-                      <span className="ml-2 inline-flex items-center justify-center rounded-full bg-brand-500/20 text-brand-400 text-[10px] font-bold px-1.5 py-0.5">
+                      <span className="ml-2 inline-flex items-center justify-center rounded-full bg-lime-100 text-lime-700 text-[10px] font-bold px-1.5 py-0.5">
                         {estadosSel.length}
                       </span>
                     )}
@@ -301,7 +300,7 @@ export default function SignupPage() {
                           className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold border transition-colors ${
                             active
                               ? 'bg-slate-900 border-slate-900 text-white'
-                              : 'border-border text-zinc-400 hover:border-slate-400 bg-card'
+                              : 'border-slate-300 text-slate-600 hover:border-slate-400 bg-white'
                           }`}
                         >
                           {active && <Check className="h-3 w-3" />}
@@ -316,16 +315,16 @@ export default function SignupPage() {
                 {estadosSel.length > 0 && (
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <label className="block text-xs font-medium text-zinc-300">
+                      <label className="block text-xs font-medium text-slate-700">
                         Tribunais de interesse
-                        <span className="ml-2 inline-flex items-center justify-center rounded-full bg-brand-500/20 text-brand-400 text-[10px] font-bold px-1.5 py-0.5">
+                        <span className="ml-2 inline-flex items-center justify-center rounded-full bg-lime-100 text-lime-700 text-[10px] font-bold px-1.5 py-0.5">
                           {tribunaisSel.length}/{tribunaisDisponiveis.length}
                         </span>
                       </label>
                       <button
                         type="button"
                         onClick={() => setTribunaisSel(tribunaisDisponiveis.map((t) => t.sigla))}
-                        className="text-[10px] text-brand-500 hover:text-brand-400 font-medium"
+                        className="text-[10px] text-lime-600 hover:text-lime-700 font-medium"
                       >
                         Selecionar todos
                       </button>
@@ -334,7 +333,7 @@ export default function SignupPage() {
                     <div className="space-y-3">
                       {tribunaisPorEstado.map(({ uf, tribunais }) => (
                         <div key={uf}>
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-1.5">{uf}</p>
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">{uf}</p>
                           <div className="flex flex-wrap gap-1.5">
                             {tribunais.map((t) => {
                               const active = tribunaisSel.includes(t.sigla)
@@ -346,8 +345,8 @@ export default function SignupPage() {
                                   title={t.nome}
                                   className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold border transition-colors ${
                                     active
-                                      ? 'bg-brand-500 border-lime-500 text-foreground'
-                                      : `border-border text-zinc-400 hover:border-brand-500/50 ${tipoCor[t.tipo]}`
+                                      ? 'bg-lime-500 border-lime-500 text-slate-900'
+                                      : `border-slate-200 text-slate-500 hover:border-lime-300 ${tipoCor[t.tipo]}`
                                   }`}
                                 >
                                   {active && <Check className="h-2.5 w-2.5" />}
@@ -361,7 +360,7 @@ export default function SignupPage() {
                     </div>
 
                     {/* Legenda */}
-                    <div className="flex flex-wrap gap-3 mt-3 pt-3 border-t border-border">
+                    <div className="flex flex-wrap gap-3 mt-3 pt-3 border-t border-slate-100">
                       {(['estadual','trabalho','federal','eleitoral'] as TipoTribunal[]).map((tipo) => (
                         <span key={tipo} className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-medium ${tipoCor[tipo]}`}>
                           {TIPO_LABEL[tipo]}
@@ -373,8 +372,8 @@ export default function SignupPage() {
 
                 {/* Vara preview */}
                 {varaPreview !== null && varaPreview.varas > 0 && (
-                  <div className="flex items-center gap-2 rounded-xl border border-brand-500/30 bg-brand-500/10 px-3 py-2.5">
-                    <Building2 className="h-4 w-4 text-brand-500 flex-shrink-0" />
+                  <div className="flex items-center gap-2 rounded-xl border border-lime-200 bg-lime-50 px-3 py-2.5">
+                    <Building2 className="h-4 w-4 text-lime-600 flex-shrink-0" />
                     <p className="text-xs text-lime-800">
                       <span className="font-semibold">{varaPreview.varas} varas</span> encontradas em{' '}
                       <span className="font-semibold">{varaPreview.tribunais} tribunal(is)</span> — serão sincronizadas no seu radar
@@ -388,10 +387,10 @@ export default function SignupPage() {
                   <input className={inputCls} placeholder="São Paulo, Rio de Janeiro..." value={cidade} onChange={(e) => setCidade(e.target.value)} />
                 </div>
                 <div>
-                  <label className={labelCls}>Área de atuação <span className="text-zinc-500 font-normal">(descrição livre)</span></label>
+                  <label className={labelCls}>Área de atuação <span className="text-slate-400 font-normal">(descrição livre)</span></label>
                   <textarea
                     rows={2}
-                    className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-zinc-500 focus:border-lime-500 focus:outline-none focus:ring-1 focus:ring-lime-500 resize-none"
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-lime-500 focus:outline-none focus:ring-1 focus:ring-lime-500 resize-none"
                     placeholder="Ex: Perícias cíveis e trabalhistas na região metropolitana..."
                     value={areaAtuacao}
                     onChange={(e) => setAreaAtuacao(e.target.value)}
@@ -412,7 +411,7 @@ export default function SignupPage() {
               <button
                 type="button"
                 onClick={() => { setError(''); setStep((s) => s - 1) }}
-                className="flex items-center gap-1 h-10 px-4 rounded-lg border border-border text-sm text-zinc-400 hover:bg-muted transition-colors"
+                className="flex items-center gap-1 h-10 px-4 rounded-lg border border-slate-300 text-sm text-slate-600 hover:bg-slate-50 transition-colors"
               >
                 <ChevronLeft className="h-4 w-4" />
                 Voltar
@@ -422,7 +421,7 @@ export default function SignupPage() {
               <button
                 type="button"
                 onClick={handleNext}
-                className="flex-1 flex items-center justify-center gap-1.5 h-10 rounded-lg bg-brand-500 hover:bg-lime-600 text-foreground text-sm font-semibold transition-colors"
+                className="flex-1 flex items-center justify-center gap-1.5 h-10 rounded-lg bg-lime-500 hover:bg-lime-600 text-slate-900 text-sm font-semibold transition-colors"
               >
                 Próximo
                 <ChevronRight className="h-4 w-4" />
@@ -432,7 +431,7 @@ export default function SignupPage() {
                 type="button"
                 onClick={handleSubmit}
                 disabled={loading}
-                className="flex-1 flex items-center justify-center gap-1.5 h-10 rounded-lg bg-brand-500 hover:bg-lime-600 disabled:opacity-60 text-foreground text-sm font-semibold transition-colors"
+                className="flex-1 flex items-center justify-center gap-1.5 h-10 rounded-lg bg-lime-500 hover:bg-lime-600 disabled:opacity-60 text-slate-900 text-sm font-semibold transition-colors"
               >
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                 {loading ? 'Criando conta...' : 'Criar conta'}
@@ -441,9 +440,9 @@ export default function SignupPage() {
           </div>
         </div>
 
-        <p className="mt-4 text-center text-xs text-zinc-400">
+        <p className="mt-4 text-center text-xs text-slate-500">
           Já tem conta?{' '}
-          <a href="/login" className="font-medium text-brand-500 hover:text-brand-400">
+          <a href="/login" className="font-medium text-lime-600 hover:text-lime-700">
             Entrar
           </a>
         </p>

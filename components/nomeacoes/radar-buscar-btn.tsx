@@ -82,7 +82,7 @@ export function RadarBuscarBtn({ novas, siglas }: Props) {
               </button>
             )}
           </div>
-          <button onClick={clearToast} className="flex-shrink-0 text-zinc-500 hover:text-zinc-400">
+          <button onClick={clearToast} className="flex-shrink-0 text-slate-400 hover:text-slate-600">
             <X className="h-3.5 w-3.5" />
           </button>
         </div>
@@ -91,7 +91,7 @@ export function RadarBuscarBtn({ novas, siglas }: Props) {
       {/* Buttons */}
       <div className="flex flex-wrap items-center gap-3">
         <Button
-          className="bg-brand-500 hover:bg-lime-600 text-foreground font-semibold gap-2 shadow-saas"
+          className="bg-lime-500 hover:bg-lime-600 text-slate-900 font-semibold gap-2 shadow-sm"
           onClick={handleBuscar}
           disabled={isPending}
         >
@@ -116,7 +116,7 @@ export function RadarBuscarBtn({ novas, siglas }: Props) {
         <Button
           variant="outline"
           size="sm"
-          className="gap-1.5 text-zinc-400"
+          className="gap-1.5 text-slate-600"
           onClick={() => setShowManualForm(true)}
         >
           <Plus className="h-3.5 w-3.5" />

@@ -46,7 +46,7 @@ export default function NovaDemandaPage() {
       <form action={formAction} className="space-y-5">
         {/* Título */}
         <div>
-          <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+          <label className="block text-xs font-medium text-slate-700 mb-1.5">
             Título da Demanda <span className="text-red-500">*</span>
           </label>
           <input
@@ -54,7 +54,7 @@ export default function NovaDemandaPage() {
             type="text"
             placeholder="Ex: Avaliação de Imóvel para Sinistro"
             disabled={isPending}
-            className="w-full h-10 rounded-lg border border-border bg-card px-3 text-sm text-foreground placeholder:text-zinc-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
+            className="w-full h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
           />
           {state.errors?.titulo && (
             <p className="mt-1 text-xs text-red-500">{state.errors.titulo[0]}</p>
@@ -63,13 +63,13 @@ export default function NovaDemandaPage() {
 
         {/* Tipo / Especialidade */}
         <div>
-          <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+          <label className="block text-xs font-medium text-slate-700 mb-1.5">
             Especialidade Requerida <span className="text-red-500">*</span>
           </label>
           <select
             name="tipo"
             disabled={isPending}
-            className="w-full h-10 rounded-lg border border-border bg-card px-3 text-sm text-foreground focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
+            className="w-full h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
           >
             <option value="">Selecione...</option>
             {ESPECIALIDADES.map((e) => (
@@ -84,7 +84,7 @@ export default function NovaDemandaPage() {
         {/* Localização */}
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+            <label className="block text-xs font-medium text-slate-700 mb-1.5">
               Cidade <span className="text-red-500">*</span>
             </label>
             <input
@@ -92,20 +92,20 @@ export default function NovaDemandaPage() {
               type="text"
               placeholder="Ex: Rio de Janeiro"
               disabled={isPending}
-              className="w-full h-10 rounded-lg border border-border bg-card px-3 text-sm text-foreground placeholder:text-zinc-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
+              className="w-full h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
             />
             {state.errors?.cidade && (
               <p className="mt-1 text-xs text-red-500">{state.errors.cidade[0]}</p>
             )}
           </div>
           <div>
-            <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+            <label className="block text-xs font-medium text-slate-700 mb-1.5">
               Estado (UF) <span className="text-red-500">*</span>
             </label>
             <select
               name="uf"
               disabled={isPending}
-              className="w-full h-10 rounded-lg border border-border bg-card px-3 text-sm text-foreground focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
+              className="w-full h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
             >
               <option value="">UF</option>
               {UFS.map((uf) => (
@@ -121,7 +121,7 @@ export default function NovaDemandaPage() {
         {/* Valor e Prazo */}
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+            <label className="block text-xs font-medium text-slate-700 mb-1.5">
               Valor Estimado (R$)
             </label>
             <input
@@ -131,11 +131,11 @@ export default function NovaDemandaPage() {
               step="0.01"
               placeholder="0,00"
               disabled={isPending}
-              className="w-full h-10 rounded-lg border border-border bg-card px-3 text-sm text-foreground placeholder:text-zinc-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
+              className="w-full h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+            <label className="block text-xs font-medium text-slate-700 mb-1.5">
               Prazo Desejado
             </label>
             <input
@@ -143,22 +143,22 @@ export default function NovaDemandaPage() {
               type="text"
               placeholder="Ex: 30/04/2026"
               disabled={isPending}
-              className="w-full h-10 rounded-lg border border-border bg-card px-3 text-sm text-foreground placeholder:text-zinc-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
+              className="w-full h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
             />
           </div>
         </div>
 
         {/* Descrição */}
         <div>
-          <label className="block text-xs font-medium text-zinc-300 mb-1.5">
-            Descrição <span className="text-zinc-500 font-normal">(opcional)</span>
+          <label className="block text-xs font-medium text-slate-700 mb-1.5">
+            Descrição <span className="text-slate-400 font-normal">(opcional)</span>
           </label>
           <textarea
             name="descricao"
             rows={4}
             placeholder="Descreva os detalhes da perícia necessária..."
             disabled={isPending}
-            className="w-full resize-none rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-zinc-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
+            className="w-full resize-none rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
           />
         </div>
 

@@ -102,10 +102,10 @@ export default function IntegracoesPage() {
           return (
             <div
               key={integracao.id}
-              className={`rounded-xl border bg-card p-5 flex flex-col gap-4 transition-all ${
+              className={`rounded-xl border bg-white p-5 flex flex-col gap-4 transition-all ${
                 isAvailable
-                  ? 'border-border hover:shadow-md hover:border-blue-200 cursor-pointer'
-                  : 'border-border'
+                  ? 'border-slate-200 hover:shadow-md hover:border-blue-200 cursor-pointer'
+                  : 'border-slate-200'
               } ${!isAvailable && !isConnected ? 'opacity-70' : ''}`}
             >
               <div className="flex items-start justify-between">
@@ -116,19 +116,19 @@ export default function IntegracoesPage() {
                     {integracao.logo}
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-foreground truncate">
+                    <p className="text-sm font-semibold text-slate-900 truncate">
                       {integracao.nome}
                     </p>
-                    <span className="inline-flex items-center rounded-md bg-zinc-900/50 px-1.5 py-0.5 text-[10px] font-medium text-zinc-400">
+                    <span className="inline-flex items-center rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">
                       {integracao.categoria}
                     </span>
                   </div>
                 </div>
               </div>
 
-              <p className="text-xs text-zinc-400 leading-relaxed flex-1">{integracao.descricao}</p>
+              <p className="text-xs text-slate-500 leading-relaxed flex-1">{integracao.descricao}</p>
 
-              <div className="flex items-center justify-between pt-2 border-t border-border">
+              <div className="flex items-center justify-between pt-2 border-t border-slate-100">
                 <Badge variant={config.variant}>
                   <StatusIcon className="h-3 w-3 mr-1" />
                   {config.label}
@@ -140,7 +140,7 @@ export default function IntegracoesPage() {
                   </Button>
                 )}
                 {isConnected && (
-                  <Button size="sm" variant="ghost" className="text-xs text-zinc-400">
+                  <Button size="sm" variant="ghost" className="text-xs text-slate-500">
                     Gerenciar
                   </Button>
                 )}
@@ -157,7 +157,7 @@ export default function IntegracoesPage() {
 
       {/* Footer */}
       <div className="flex items-center justify-center py-4">
-        <p className="text-xs text-zinc-500 text-center max-w-md">
+        <p className="text-xs text-slate-400 text-center max-w-md">
           Precisa de uma integração específica?{' '}
           <button className="text-blue-600 hover:underline font-medium">
             Solicite aqui

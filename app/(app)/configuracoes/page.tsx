@@ -31,7 +31,7 @@ export default async function ConfiguracoesPage() {
         description="Gerencie seus tribunais e preferências de monitoramento"
       />
 
-      <div className="rounded-xl border border-border bg-card p-6 shadow-saas">
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <TribunaisForm
           initialEstados={estados}
           initialTribunais={tribunais}

@@ -139,29 +139,29 @@ export default function RotasHistoricoPage() {
       />
 
       {/* Table */}
-      <div className="rounded-xl border border-border bg-card shadow-saas overflow-hidden">
+      <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border bg-muted">
-                <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Rota</th>
-                <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Tipo</th>
-                <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Data</th>
-                <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Paradas</th>
-                <th className="px-4 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Km</th>
-                <th className="px-4 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Tempo</th>
-                <th className="px-4 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Custo</th>
-                <th className="px-4 py-3 text-center text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Status</th>
+              <tr className="border-b border-slate-100 bg-slate-50">
+                <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-400">Rota</th>
+                <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-400">Tipo</th>
+                <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-400">Data</th>
+                <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-400">Paradas</th>
+                <th className="px-4 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-slate-400">Km</th>
+                <th className="px-4 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-slate-400">Tempo</th>
+                <th className="px-4 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-slate-400">Custo</th>
+                <th className="px-4 py-3 text-center text-[10px] font-semibold uppercase tracking-wider text-slate-400">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {rotas.map((rota) => {
                 const st = statusMap[rota.status]
                 return (
-                  <tr key={rota.id} className="hover:bg-muted transition-colors cursor-pointer">
+                  <tr key={rota.id} className="hover:bg-slate-50 transition-colors cursor-pointer">
                     <td className="px-4 py-3">
-                      <p className="text-sm font-medium text-foreground max-w-xs truncate">{rota.titulo}</p>
-                      <p className="text-xs text-zinc-500">{rota.id}</p>
+                      <p className="text-sm font-medium text-slate-900 max-w-xs truncate">{rota.titulo}</p>
+                      <p className="text-xs text-slate-400">{rota.id}</p>
                     </td>
                     <td className="px-4 py-3">
                       <span className={cn(
@@ -171,7 +171,7 @@ export default function RotasHistoricoPage() {
                         {rota.tipo === 'PROSPECCAO' ? 'Prospecção' : 'Perícia'}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-xs text-zinc-400">{rota.data}</td>
+                    <td className="px-4 py-3 text-xs text-slate-600">{rota.data}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
                         {rota.pontos.slice(0, 4).map((p) => {
@@ -179,19 +179,19 @@ export default function RotasHistoricoPage() {
                           return <Icon key={p.id} className={cn('h-3.5 w-3.5', pontoColors[p.tipo])} />
                         })}
                         {rota.pontos.length > 4 && (
-                          <span className="text-[10px] text-zinc-500">+{rota.pontos.length - 4}</span>
+                          <span className="text-[10px] text-slate-400">+{rota.pontos.length - 4}</span>
                         )}
-                        <span className="ml-1 text-xs text-zinc-500">{rota.pontos.length}</span>
+                        <span className="ml-1 text-xs text-slate-400">{rota.pontos.length}</span>
                       </div>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <span className="text-xs font-medium text-zinc-300 tabular-nums">{rota.distanciaKm} km</span>
+                      <span className="text-xs font-medium text-slate-700 tabular-nums">{rota.distanciaKm} km</span>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <span className="text-xs text-zinc-400 tabular-nums">{formatTempo(rota.tempoEstimadoMin)}</span>
+                      <span className="text-xs text-slate-600 tabular-nums">{formatTempo(rota.tempoEstimadoMin)}</span>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <span className="text-xs font-semibold text-zinc-300 tabular-nums">{formatCurrency(rota.custoEstimado)}</span>
+                      <span className="text-xs font-semibold text-slate-700 tabular-nums">{formatCurrency(rota.custoEstimado)}</span>
                     </td>
                     <td className="px-4 py-3 text-center">
                       <Badge variant={st.variant}>{st.label}</Badge>
@@ -201,15 +201,15 @@ export default function RotasHistoricoPage() {
               })}
             </tbody>
             <tfoot>
-              <tr className="border-t border-border bg-muted/80">
-                <td colSpan={4} className="px-4 py-3 text-xs font-semibold text-zinc-400">Total</td>
-                <td className="px-4 py-3 text-right text-xs font-bold text-zinc-300 tabular-nums">
+              <tr className="border-t border-slate-200 bg-slate-50/80">
+                <td colSpan={4} className="px-4 py-3 text-xs font-semibold text-slate-500">Total</td>
+                <td className="px-4 py-3 text-right text-xs font-bold text-slate-700 tabular-nums">
                   {rotas.reduce((s, r) => s + r.distanciaKm, 0)} km
                 </td>
-                <td className="px-4 py-3 text-right text-xs font-bold text-zinc-300 tabular-nums">
+                <td className="px-4 py-3 text-right text-xs font-bold text-slate-700 tabular-nums">
                   {formatTempo(rotas.reduce((s, r) => s + r.tempoEstimadoMin, 0))}
                 </td>
-                <td className="px-4 py-3 text-right text-xs font-bold text-zinc-300 tabular-nums">
+                <td className="px-4 py-3 text-right text-xs font-bold text-slate-700 tabular-nums">
                   {formatCurrency(rotas.reduce((s, r) => s + r.custoEstimado, 0))}
                 </td>
                 <td />

@@ -73,7 +73,7 @@ export function RotaPericiasExecucao({ rotaId, checkpoints }: Props) {
         <span className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
           Em campo
         </span>
-        <span className="text-[10px] text-zinc-500">
+        <span className="text-[10px] text-slate-400">
           {checkpoints.filter((c) => statusMap[c.id] === 'concluido').length}/{checkpoints.length} checkpoints
         </span>
       </div>
@@ -92,7 +92,7 @@ export function RotaPericiasExecucao({ rotaId, checkpoints }: Props) {
                   ? 'border-emerald-100 bg-emerald-50/60 opacity-75'
                   : status === 'chegou'
                     ? 'border-amber-200 bg-amber-50'
-                    : 'border-border bg-card'
+                    : 'border-slate-100 bg-white'
               }`}
             >
               {/* Ordem badge */}
@@ -102,7 +102,7 @@ export function RotaPericiasExecucao({ rotaId, checkpoints }: Props) {
                     ? 'bg-emerald-100 text-emerald-700'
                     : status === 'chegou'
                       ? 'bg-amber-200 text-amber-800'
-                      : 'bg-zinc-900/50 text-zinc-400'
+                      : 'bg-slate-100 text-slate-500'
                 }`}
               >
                 {status === 'concluido' ? (
@@ -114,9 +114,9 @@ export function RotaPericiasExecucao({ rotaId, checkpoints }: Props) {
 
               {/* Info */}
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-foreground truncate">{cp.titulo}</p>
+                <p className="text-xs font-semibold text-slate-900 truncate">{cp.titulo}</p>
                 {cp.endereco && (
-                  <p className="flex items-center gap-1 text-[10px] text-zinc-400 mt-0.5">
+                  <p className="flex items-center gap-1 text-[10px] text-slate-500 mt-0.5">
                     <MapPin className="h-2.5 w-2.5 flex-shrink-0" />
                     <span className="truncate">{cp.endereco}</span>
                   </p>

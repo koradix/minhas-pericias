@@ -57,12 +57,12 @@ export function UsarModeloButton({ modelo, iaAtiva = false }: Props) {
             if (e.target === e.currentTarget) setOpen(false)
           }}
         >
-          <div className="relative w-full max-w-lg rounded-xl bg-card shadow-2xl">
+          <div className="relative w-full max-w-lg rounded-xl bg-white shadow-2xl">
             {/* Header */}
-            <div className="flex items-start justify-between border-b border-border p-5">
+            <div className="flex items-start justify-between border-b border-slate-100 p-5">
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <h2 className="text-base font-semibold text-foreground">Gerar documento</h2>
+                  <h2 className="text-base font-semibold text-slate-900">Gerar documento</h2>
                   {iaAtiva && (
                     <span className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold text-violet-700">
                       <Sparkles className="h-2.5 w-2.5" />
@@ -70,15 +70,15 @@ export function UsarModeloButton({ modelo, iaAtiva = false }: Props) {
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-zinc-400">
-                  <span className="font-medium text-zinc-300">{modelo.nome}</span>
+                <p className="text-xs text-slate-500">
+                  <span className="font-medium text-slate-700">{modelo.nome}</span>
                   {' · '}
                   <span>{tipoDocumentoLabels[modelo.tipo]}</span>
                 </p>
               </div>
               <button
                 onClick={() => setOpen(false)}
-                className="ml-4 rounded-lg p-1 text-zinc-500 hover:bg-zinc-900/50 hover:text-zinc-400 transition-colors"
+                className="ml-4 rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -88,13 +88,13 @@ export function UsarModeloButton({ modelo, iaAtiva = false }: Props) {
             <div className="p-5 space-y-4">
               {/* Seleção de perícia */}
               <div>
-                <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+                <label className="block text-xs font-medium text-slate-700 mb-1.5">
                   Selecionar perícia <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={periciaNum}
                   onChange={(e) => setPericiaNum(e.target.value)}
-                  className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500 disabled:opacity-50"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500 disabled:opacity-50"
                   disabled={isPending}
                 >
                   <option value="">Selecione uma perícia...</option>
@@ -105,7 +105,7 @@ export function UsarModeloButton({ modelo, iaAtiva = false }: Props) {
                   ))}
                 </select>
                 {periciaSelected && (
-                  <p className="mt-1.5 text-[11px] text-zinc-500">
+                  <p className="mt-1.5 text-[11px] text-slate-400">
                     {periciaSelected.vara} · Proc. {periciaSelected.processo}
                   </p>
                 )}
@@ -113,9 +113,9 @@ export function UsarModeloButton({ modelo, iaAtiva = false }: Props) {
 
               {/* Instrução extra */}
               <div>
-                <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+                <label className="block text-xs font-medium text-slate-700 mb-1.5">
                   Instrução para o documento{' '}
-                  <span className="text-zinc-500 font-normal">(opcional)</span>
+                  <span className="text-slate-400 font-normal">(opcional)</span>
                 </label>
                 <textarea
                   value={instrucao}
@@ -126,7 +126,7 @@ export function UsarModeloButton({ modelo, iaAtiva = false }: Props) {
                       ? 'Ex: Incluir cláusula de adiantamento de 30%, prazo de 45 dias...'
                       : 'Ex: Enfatizar metodologia ABNT NBR 14653, incluir análise comparativa...'
                   }
-                  className="w-full resize-none rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-zinc-500 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500 disabled:opacity-50"
+                  className="w-full resize-none rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500 disabled:opacity-50"
                   disabled={isPending}
                 />
               </div>
@@ -154,7 +154,7 @@ export function UsarModeloButton({ modelo, iaAtiva = false }: Props) {
             </div>
 
             {/* Footer */}
-            <div className="flex gap-2 border-t border-border px-5 py-4">
+            <div className="flex gap-2 border-t border-slate-100 px-5 py-4">
               <Button
                 variant="outline"
                 size="sm"

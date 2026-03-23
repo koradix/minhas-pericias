@@ -68,19 +68,19 @@ export default function ParceirosListClient({ parceiros }: ParceirosListClientPr
 
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 pointer-events-none" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
           <input
             type="text"
             placeholder="Buscar por nome ou e-mail..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full h-9 rounded-lg border border-border bg-card pl-9 pr-3 text-sm placeholder:text-zinc-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="w-full h-9 rounded-lg border border-slate-300 bg-white pl-9 pr-3 text-sm placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
         </div>
         <select
           value={tipoFilter}
           onChange={(e) => setTipoFilter(e.target.value)}
-          className="h-9 rounded-lg border border-border bg-card px-3 text-sm text-zinc-300 focus:border-blue-500 focus:outline-none"
+          className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 focus:border-blue-500 focus:outline-none"
         >
           <option value="">Todos os tipos</option>
           <option value="advogado">Advogado(a)</option>
@@ -92,7 +92,7 @@ export default function ParceirosListClient({ parceiros }: ParceirosListClientPr
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="h-9 rounded-lg border border-border bg-card px-3 text-sm text-zinc-300 focus:border-blue-500 focus:outline-none"
+          className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 focus:border-blue-500 focus:outline-none"
         >
           <option value="">Todos os status</option>
           <option value="ativo">Ativo</option>
@@ -123,14 +123,14 @@ export default function ParceirosListClient({ parceiros }: ParceirosListClientPr
             {filtered.map((p, i) => {
               const tipo = TIPO_MAP[p.tipo] ?? TIPO_MAP.outro
               return (
-                <Link key={p.id} href={`/parceiros/${p.id}`} className="block rounded-xl border border-border bg-card p-5 hover:shadow-md transition-shadow cursor-pointer group">
+                <Link key={p.id} href={`/parceiros/${p.id}`} className="block rounded-xl border border-slate-200 bg-white p-5 hover:shadow-md transition-shadow cursor-pointer group">
                   <div className="flex items-start gap-4">
                     <div className={AVATAR_COLORS[i % AVATAR_COLORS.length] + ' flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold'}>
                       {getInitials(p.nome)}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-2">
-                        <p className="text-sm font-semibold text-foreground truncate group-hover:text-blue-700 transition-colors">{p.nome}</p>
+                        <p className="text-sm font-semibold text-slate-900 truncate group-hover:text-blue-700 transition-colors">{p.nome}</p>
                         <div className="flex flex-col items-end gap-1 flex-shrink-0">
                           <Badge variant={tipo.variant}>{tipo.label}</Badge>
                           {p.status === 'inativo' && (
@@ -143,33 +143,33 @@ export default function ParceirosListClient({ parceiros }: ParceirosListClientPr
 
                   <div className="mt-4 space-y-1.5">
                     {p.email && (
-                      <div className="flex items-center gap-2 text-xs text-zinc-400">
-                        <Mail className="h-3.5 w-3.5 text-zinc-500 flex-shrink-0" />
+                      <div className="flex items-center gap-2 text-xs text-slate-500">
+                        <Mail className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
                         <span className="truncate">{p.email}</span>
                       </div>
                     )}
                     {p.telefone && (
-                      <div className="flex items-center gap-2 text-xs text-zinc-400">
-                        <Phone className="h-3.5 w-3.5 text-zinc-500 flex-shrink-0" />
+                      <div className="flex items-center gap-2 text-xs text-slate-500">
+                        <Phone className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
                         <span>{p.telefone}</span>
                       </div>
                     )}
                     {(p.cidade || p.estado) && (
-                      <div className="flex items-center gap-2 text-xs text-zinc-400">
-                        <MapPin className="h-3.5 w-3.5 text-zinc-500 flex-shrink-0" />
+                      <div className="flex items-center gap-2 text-xs text-slate-500">
+                        <MapPin className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
                         <span>{[p.cidade, p.estado].filter(Boolean).join(' — ')}</span>
                       </div>
                     )}
                   </div>
 
-                  <div className="mt-4 pt-4 border-t border-border">
+                  <div className="mt-4 pt-4 border-t border-slate-100">
                     <span className="text-xs text-blue-600 font-medium group-hover:underline">Ver detalhes →</span>
                   </div>
                 </Link>
               )
             })}
           </div>
-          <p className="text-xs text-zinc-400">
+          <p className="text-xs text-slate-500">
             {filtered.length} parceiro{filtered.length !== 1 ? 's' : ''} encontrado{filtered.length !== 1 ? 's' : ''}
           </p>
         </>

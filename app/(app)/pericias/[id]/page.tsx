@@ -64,7 +64,7 @@ const ROTA_STATUS: Record<string, { label: string; variant: 'success' | 'warning
 const CP_STATUS_ICON: Record<string, React.ReactNode> = {
   concluido: <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0" />,
   chegou:    <AlertCircle  className="h-4 w-4 text-amber-500  flex-shrink-0" />,
-  pendente:  <Circle       className="h-4 w-4 text-zinc-600  flex-shrink-0" />,
+  pendente:  <Circle       className="h-4 w-4 text-slate-300  flex-shrink-0" />,
 }
 
 // ─── Metadata ─────────────────────────────────────────────────────────────────
@@ -102,24 +102,24 @@ async function MockPericiaView({ id, userId }: { id: string; userId: string }) {
     <div className="space-y-6 pb-10 max-w-5xl mx-auto">
 
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-xs text-zinc-500">
-        <Link href="/pericias" className="flex items-center gap-1 hover:text-zinc-300 transition-colors">
+      <div className="flex items-center gap-2 text-xs text-slate-400">
+        <Link href="/pericias" className="flex items-center gap-1 hover:text-slate-700 transition-colors">
           <ArrowLeft className="h-3.5 w-3.5" />
           Péricias
         </Link>
         <ChevronRight className="h-3 w-3" />
-        <span className="text-zinc-400 font-medium truncate max-w-xs">{p.assunto}</span>
+        <span className="text-slate-600 font-medium truncate max-w-xs">{p.assunto}</span>
       </div>
 
       {/* Header card */}
-      <div className="rounded-xl border border-border bg-card shadow-saas overflow-hidden">
-        <div className="px-6 pt-5 pb-4 border-b border-border">
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div className="px-6 pt-5 pb-4 border-b border-slate-100">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-xs font-semibold text-zinc-500 uppercase tracking-widest mb-1">
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">
                 {p.numero} · Prazo: {p.prazo}
               </p>
-              <h1 className="text-xl font-bold text-foreground leading-snug">{p.assunto}</h1>
+              <h1 className="text-xl font-bold text-slate-900 leading-snug">{p.assunto}</h1>
             </div>
             {st && (
               <Badge variant={st.variant} className="flex-shrink-0 text-sm px-3 py-1">
@@ -132,22 +132,22 @@ async function MockPericiaView({ id, userId }: { id: string; userId: string }) {
         {/* Stats bar */}
         <div className="grid grid-cols-3 divide-x divide-slate-100">
           <div className="px-5 py-4 flex flex-col gap-1">
-            <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+            <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
               <FileText className="h-3 w-3" /> Processo
             </p>
-            <p className="text-sm font-semibold text-foreground font-mono truncate">{p.processo}</p>
+            <p className="text-sm font-semibold text-slate-800 font-mono truncate">{p.processo}</p>
           </div>
           <div className="px-5 py-4 flex flex-col gap-1">
-            <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+            <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
               <Camera className="h-3 w-3" /> Registros
             </p>
-            <p className="text-sm font-semibold text-foreground">{midias.length} arquivos</p>
+            <p className="text-sm font-semibold text-slate-800">{midias.length} arquivos</p>
           </div>
           <div className="px-5 py-4 flex flex-col gap-1">
-            <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+            <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
               <MapPin className="h-3 w-3" /> Honorários
             </p>
-            <p className="text-sm font-semibold text-foreground">{p.valor}</p>
+            <p className="text-sm font-semibold text-slate-800">{p.valor}</p>
           </div>
         </div>
       </div>
@@ -159,29 +159,29 @@ async function MockPericiaView({ id, userId }: { id: string; userId: string }) {
         <div className="lg:col-span-2 space-y-5">
 
           {/* Vara / detalhes */}
-          <section className="rounded-xl border border-border bg-card shadow-saas">
-            <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-zinc-900/50">
-                <FileText className="h-3.5 w-3.5 text-zinc-400" />
+          <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100">
+                <FileText className="h-3.5 w-3.5 text-slate-600" />
               </div>
-              <h2 className="text-sm font-semibold text-foreground">Detalhes do processo</h2>
+              <h2 className="text-sm font-semibold text-slate-800">Detalhes do processo</h2>
             </div>
             <div className="divide-y divide-slate-50">
               <div className="grid grid-cols-2 gap-0">
                 <div className="px-5 py-3.5">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-1">Vara</p>
-                  <p className="text-sm text-foreground leading-snug">{p.vara}</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Vara</p>
+                  <p className="text-sm text-slate-800 leading-snug">{p.vara}</p>
                 </div>
                 <div className="px-5 py-3.5">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-1">Parte</p>
-                  <p className="text-sm text-foreground">{p.cliente}</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Parte</p>
+                  <p className="text-sm text-slate-800">{p.cliente}</p>
                 </div>
               </div>
               {p.endereco && (
                 <div className="px-5 py-3.5">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-1">Local da vistoria</p>
-                  <p className="text-sm text-foreground flex items-start gap-1.5">
-                    <MapPin className="h-3.5 w-3.5 text-zinc-500 flex-shrink-0 mt-0.5" />
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Local da vistoria</p>
+                  <p className="text-sm text-slate-800 flex items-start gap-1.5">
+                    <MapPin className="h-3.5 w-3.5 text-slate-400 flex-shrink-0 mt-0.5" />
                     {p.endereco}
                   </p>
                 </div>
@@ -190,14 +190,14 @@ async function MockPericiaView({ id, userId }: { id: string; userId: string }) {
           </section>
 
           {/* Media gallery */}
-          <section className="rounded-xl border border-border bg-card shadow-saas">
-            <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
+          <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50">
                 <Camera className="h-3.5 w-3.5 text-blue-600" />
               </div>
-              <h2 className="text-sm font-semibold text-foreground">Registros e fotos</h2>
+              <h2 className="text-sm font-semibold text-slate-800">Registros e fotos</h2>
               {midias.length > 0 && (
-                <span className="ml-auto text-[11px] font-semibold text-zinc-500 bg-muted border border-border rounded-full px-2 py-0.5">
+                <span className="ml-auto text-[11px] font-semibold text-slate-400 bg-slate-50 border border-slate-100 rounded-full px-2 py-0.5">
                   {midias.length}
                 </span>
               )}
@@ -211,33 +211,33 @@ async function MockPericiaView({ id, userId }: { id: string; userId: string }) {
         <div className="space-y-5">
 
           {/* Executar rota */}
-          <section className="rounded-xl border border-border bg-card shadow-saas">
-            <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-500/10">
-                <Play className="h-3.5 w-3.5 text-brand-500" />
+          <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-lime-50">
+                <Play className="h-3.5 w-3.5 text-lime-600" />
               </div>
-              <h2 className="text-sm font-semibold text-foreground">Execução</h2>
+              <h2 className="text-sm font-semibold text-slate-800">Execução</h2>
             </div>
             <div className="px-5 py-4 space-y-3">
               <Link href={`/rotas/pericias`}>
-                <button className="w-full flex items-center justify-center gap-2 rounded-xl bg-brand-500 hover:bg-lime-600 text-white font-semibold text-sm px-4 py-2.5 transition-colors">
+                <button className="w-full flex items-center justify-center gap-2 rounded-xl bg-lime-500 hover:bg-lime-600 text-white font-semibold text-sm px-4 py-2.5 transition-colors">
                   <Navigation className="h-4 w-4" />
                   Executar rota
                 </button>
               </Link>
-              <p className="text-xs text-zinc-500">
+              <p className="text-xs text-slate-400">
                 Planeje e execute uma rota de vistoria para este processo.
               </p>
             </div>
           </section>
 
           {/* Laudo */}
-          <section className="rounded-xl border border-border bg-card shadow-saas">
-            <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
+          <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-50">
                 <ScrollText className="h-3.5 w-3.5 text-violet-600" />
               </div>
-              <h2 className="text-sm font-semibold text-foreground">Laudo pericial</h2>
+              <h2 className="text-sm font-semibold text-slate-800">Laudo pericial</h2>
             </div>
             <div className="px-5 py-4 space-y-3">
               {p.status === 'concluida' ? (
@@ -257,12 +257,12 @@ async function MockPericiaView({ id, userId }: { id: string; userId: string }) {
           </section>
 
           {/* Proposta */}
-          <section className="rounded-xl border border-border bg-card shadow-saas">
-            <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
+          <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50">
                 <FileText className="h-3.5 w-3.5 text-emerald-600" />
               </div>
-              <h2 className="text-sm font-semibold text-foreground">Proposta</h2>
+              <h2 className="text-sm font-semibold text-slate-800">Proposta</h2>
             </div>
             <div className="px-5 py-4">
               <Link href={`/pericias/${id}/proposta`}>
@@ -275,8 +275,8 @@ async function MockPericiaView({ id, userId }: { id: string; userId: string }) {
           </section>
 
           {/* Info */}
-          <div className="rounded-xl border border-border bg-muted px-5 py-4 space-y-1.5">
-            <div className="flex items-center gap-2 text-xs text-zinc-400">
+          <div className="rounded-2xl border border-slate-100 bg-slate-50 px-5 py-4 space-y-1.5">
+            <div className="flex items-center gap-2 text-xs text-slate-500">
               <Calendar className="h-3.5 w-3.5 flex-shrink-0" />
               <span>Prazo: {p.prazo}</span>
             </div>
@@ -355,24 +355,24 @@ export default async function PericiaDetailPage({ params }: { params: Promise<{ 
     <div className="space-y-6 pb-10 max-w-5xl mx-auto">
 
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-xs text-zinc-500">
-        <Link href="/pericias" className="flex items-center gap-1 hover:text-zinc-300 transition-colors">
+      <div className="flex items-center gap-2 text-xs text-slate-400">
+        <Link href="/pericias" className="flex items-center gap-1 hover:text-slate-700 transition-colors">
           <ArrowLeft className="h-3.5 w-3.5" />
           Péricias
         </Link>
         <ChevronRight className="h-3 w-3" />
-        <span className="text-zinc-400 font-medium truncate max-w-xs">{rota.titulo}</span>
+        <span className="text-slate-600 font-medium truncate max-w-xs">{rota.titulo}</span>
       </div>
 
       {/* Header card */}
-      <div className="rounded-xl border border-border bg-card shadow-saas overflow-hidden">
-        <div className="px-6 pt-5 pb-4 border-b border-border">
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div className="px-6 pt-5 pb-4 border-b border-slate-100">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-xs font-semibold text-zinc-500 uppercase tracking-widest mb-1">
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">
                 Criada em {criadoEm}
               </p>
-              <h1 className="text-xl font-bold text-foreground leading-snug">{rota.titulo}</h1>
+              <h1 className="text-xl font-bold text-slate-900 leading-snug">{rota.titulo}</h1>
             </div>
             <Badge variant={rotaStatus.variant} className="flex-shrink-0 text-sm px-3 py-1">
               {rotaStatus.label}
@@ -383,30 +383,30 @@ export default async function PericiaDetailPage({ params }: { params: Promise<{ 
         {/* Stats bar */}
         <div className="grid grid-cols-3 divide-x divide-slate-100">
           <div className="px-5 py-4 flex flex-col gap-1">
-            <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+            <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
               <MapPin className="h-3 w-3" /> Checkpoints
             </p>
-            <p className="text-sm font-semibold text-foreground">{total} paradas</p>
+            <p className="text-sm font-semibold text-slate-800">{total} paradas</p>
           </div>
           <div className="px-5 py-4 flex flex-col gap-1">
-            <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+            <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
               <CheckCircle2 className="h-3 w-3" /> Progresso
             </p>
-            <p className="text-sm font-semibold text-foreground">{concluidos}/{total} ({pct}%)</p>
+            <p className="text-sm font-semibold text-slate-800">{concluidos}/{total} ({pct}%)</p>
           </div>
           <div className="px-5 py-4 flex flex-col gap-1">
-            <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+            <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
               <Camera className="h-3 w-3" /> Registros
             </p>
-            <p className="text-sm font-semibold text-foreground">{midias.length} arquivos</p>
+            <p className="text-sm font-semibold text-slate-800">{midias.length} arquivos</p>
           </div>
         </div>
 
         {/* Progress bar */}
         {total > 0 && (
           <div className="px-6 pb-4">
-            <div className="h-1.5 rounded-full bg-zinc-900/50 overflow-hidden">
-              <div className="h-full rounded-full bg-brand-500 transition-all" style={{ width: `${pct}%` }} />
+            <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
+              <div className="h-full rounded-full bg-lime-500 transition-all" style={{ width: `${pct}%` }} />
             </div>
           </div>
         )}
@@ -419,14 +419,14 @@ export default async function PericiaDetailPage({ params }: { params: Promise<{ 
         <div className="lg:col-span-2 space-y-5">
 
           {/* Checkpoints list */}
-          <section className="rounded-xl border border-border bg-card shadow-saas">
-            <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-zinc-900/50">
-                <MapPin className="h-3.5 w-3.5 text-zinc-400" />
+          <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100">
+                <MapPin className="h-3.5 w-3.5 text-slate-600" />
               </div>
-              <h2 className="text-sm font-semibold text-foreground">Checkpoints</h2>
+              <h2 className="text-sm font-semibold text-slate-800">Checkpoints</h2>
               {total > 0 && (
-                <span className="ml-auto text-[11px] font-semibold text-zinc-500 bg-muted border border-border rounded-full px-2 py-0.5">
+                <span className="ml-auto text-[11px] font-semibold text-slate-400 bg-slate-50 border border-slate-100 rounded-full px-2 py-0.5">
                   {concluidos}/{total}
                 </span>
               )}
@@ -435,9 +435,9 @@ export default async function PericiaDetailPage({ params }: { params: Promise<{ 
               {checkpoints.length === 0 ? (
                 <div className="px-5 py-8 text-center">
                   <MapPin className="h-8 w-8 text-slate-200 mx-auto mb-2" />
-                  <p className="text-sm text-zinc-500">Nenhum checkpoint nesta rota.</p>
+                  <p className="text-sm text-slate-400">Nenhum checkpoint nesta rota.</p>
                   <Link href="/rotas/pericias">
-                    <button className="mt-3 text-xs font-semibold text-brand-500 hover:text-brand-400">
+                    <button className="mt-3 text-xs font-semibold text-lime-600 hover:text-lime-700">
                       Planejar rota
                     </button>
                   </Link>
@@ -449,12 +449,12 @@ export default async function PericiaDetailPage({ params }: { params: Promise<{ 
                     <div className="flex-1 min-w-0">
                       <p className={cn(
                         'text-sm font-medium leading-snug',
-                        cp.status === 'concluido' ? 'text-zinc-400 line-through' : 'text-foreground',
+                        cp.status === 'concluido' ? 'text-slate-500 line-through' : 'text-slate-800',
                       )}>
                         {cp.titulo}
                       </p>
                       {cp.endereco && (
-                        <p className="text-xs text-zinc-500 mt-0.5 truncate">{cp.endereco}</p>
+                        <p className="text-xs text-slate-400 mt-0.5 truncate">{cp.endereco}</p>
                       )}
                     </div>
                     {cp.midiaCount > 0 && (
@@ -470,14 +470,14 @@ export default async function PericiaDetailPage({ params }: { params: Promise<{ 
           </section>
 
           {/* Media gallery */}
-          <section className="rounded-xl border border-border bg-card shadow-saas">
-            <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
+          <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50">
                 <Camera className="h-3.5 w-3.5 text-blue-600" />
               </div>
-              <h2 className="text-sm font-semibold text-foreground">Registros e fotos</h2>
+              <h2 className="text-sm font-semibold text-slate-800">Registros e fotos</h2>
               {midias.length > 0 && (
-                <span className="ml-auto text-[11px] font-semibold text-zinc-500 bg-muted border border-border rounded-full px-2 py-0.5">
+                <span className="ml-auto text-[11px] font-semibold text-slate-400 bg-slate-50 border border-slate-100 rounded-full px-2 py-0.5">
                   {midias.length}
                 </span>
               )}
@@ -491,12 +491,12 @@ export default async function PericiaDetailPage({ params }: { params: Promise<{ 
         <div className="space-y-5">
 
           {/* Executar rota */}
-          <section className="rounded-xl border border-border bg-card shadow-saas">
-            <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-500/10">
-                <Play className="h-3.5 w-3.5 text-brand-500" />
+          <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-lime-50">
+                <Play className="h-3.5 w-3.5 text-lime-600" />
               </div>
-              <h2 className="text-sm font-semibold text-foreground">Execução</h2>
+              <h2 className="text-sm font-semibold text-slate-800">Execução</h2>
             </div>
             <div className="px-5 py-4 space-y-3">
               {rota.status === 'concluida' ? (
@@ -506,13 +506,13 @@ export default async function PericiaDetailPage({ params }: { params: Promise<{ 
                 </div>
               ) : (
                 <Link href={`/rotas/pericias`}>
-                  <button className="w-full flex items-center justify-center gap-2 rounded-xl bg-brand-500 hover:bg-lime-600 text-white font-semibold text-sm px-4 py-2.5 transition-colors">
+                  <button className="w-full flex items-center justify-center gap-2 rounded-xl bg-lime-500 hover:bg-lime-600 text-white font-semibold text-sm px-4 py-2.5 transition-colors">
                     <MapPin className="h-4 w-4" />
                     Executar rota
                   </button>
                 </Link>
               )}
-              <p className="text-xs text-zinc-500">
+              <p className="text-xs text-slate-400">
                 {rota.status === 'em_andamento'
                   ? 'Continue a execução desta rota registrando chegadas e coletando evidências.'
                   : 'Acesse o módulo de Visitas e Rotas para continuar.'}
@@ -521,12 +521,12 @@ export default async function PericiaDetailPage({ params }: { params: Promise<{ 
           </section>
 
           {/* Laudo pericial */}
-          <section className="rounded-xl border border-border bg-card shadow-saas">
-            <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
+          <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-50">
                 <ScrollText className="h-3.5 w-3.5 text-violet-600" />
               </div>
-              <h2 className="text-sm font-semibold text-foreground">Laudo pericial</h2>
+              <h2 className="text-sm font-semibold text-slate-800">Laudo pericial</h2>
             </div>
             <div className="px-5 py-4 space-y-3">
               {rota.status === 'concluida' ? (
@@ -542,19 +542,19 @@ export default async function PericiaDetailPage({ params }: { params: Promise<{ 
                   Conclua a rota antes de gerar o laudo
                 </div>
               )}
-              <p className="text-xs text-zinc-500">
+              <p className="text-xs text-slate-400">
                 Use um modelo para gerar o laudo com os registros e fotos desta perícia.
               </p>
             </div>
           </section>
 
           {/* Proposta de honorários */}
-          <section className="rounded-xl border border-border bg-card shadow-saas">
-            <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
+          <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50">
                 <FileText className="h-3.5 w-3.5 text-emerald-600" />
               </div>
-              <h2 className="text-sm font-semibold text-foreground">Proposta</h2>
+              <h2 className="text-sm font-semibold text-slate-800">Proposta</h2>
             </div>
             <div className="px-5 py-4">
               <Link href={`/pericias/${id}/proposta`}>
@@ -567,12 +567,12 @@ export default async function PericiaDetailPage({ params }: { params: Promise<{ 
           </section>
 
           {/* Timeline info */}
-          <div className="rounded-xl border border-border bg-muted px-5 py-4 space-y-1.5">
-            <div className="flex items-center gap-2 text-xs text-zinc-400">
+          <div className="rounded-2xl border border-slate-100 bg-slate-50 px-5 py-4 space-y-1.5">
+            <div className="flex items-center gap-2 text-xs text-slate-500">
               <Calendar className="h-3.5 w-3.5 flex-shrink-0" />
               <span>Criada em {criadoEm}</span>
             </div>
-            <div className="flex items-center gap-2 text-xs text-zinc-400">
+            <div className="flex items-center gap-2 text-xs text-slate-500">
               <Clock className="h-3.5 w-3.5 flex-shrink-0" />
               <span>Atualizada em {formatDate(toISO(rota.atualizadoEm))}</span>
             </div>

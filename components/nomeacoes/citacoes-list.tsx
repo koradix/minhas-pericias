@@ -36,8 +36,8 @@ function CitacaoCard({ citacao }: { citacao: CitacaoSerializada }) {
   return (
     <div
       className={cn(
-        'rounded-xl border p-4 transition-all',
-        lida ? 'border-border bg-card' : 'border-brand-500/30 bg-brand-500/10/40',
+        'rounded-2xl border p-4 transition-all',
+        lida ? 'border-slate-100 bg-white' : 'border-lime-200 bg-lime-50/40',
       )}
     >
       {/* Header row */}
@@ -45,7 +45,7 @@ function CitacaoCard({ citacao }: { citacao: CitacaoSerializada }) {
         {/* Unread dot */}
         <div className="flex-shrink-0 pt-1.5">
           {!lida ? (
-            <span className="block h-2 w-2 rounded-full bg-brand-500" />
+            <span className="block h-2 w-2 rounded-full bg-lime-500" />
           ) : (
             <span className="block h-2 w-2 rounded-full bg-slate-200" />
           )}
@@ -59,7 +59,7 @@ function CitacaoCard({ citacao }: { citacao: CitacaoSerializada }) {
             </span>
 
             {/* Date */}
-            <span className="text-xs text-zinc-400">{dataFormatada}</span>
+            <span className="text-xs text-slate-500">{dataFormatada}</span>
 
             {/* Manual badge */}
             {citacao.fonte === 'manual' && (
@@ -70,11 +70,11 @@ function CitacaoCard({ citacao }: { citacao: CitacaoSerializada }) {
           </div>
 
           {/* Snippet */}
-          <p className="text-xs text-zinc-300 leading-relaxed">{snippet}</p>
+          <p className="text-xs text-slate-700 leading-relaxed">{snippet}</p>
           {isLong && (
             <button
               onClick={() => setExpanded(!expanded)}
-              className="mt-1 text-[11px] font-medium text-brand-400 hover:text-lime-800"
+              className="mt-1 text-[11px] font-medium text-lime-700 hover:text-lime-800"
             >
               {expanded ? 'Ver menos' : 'Ver mais'}
             </button>
@@ -94,7 +94,7 @@ function CitacaoCard({ citacao }: { citacao: CitacaoSerializada }) {
                 href={citacao.linkCitacao}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1 text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors"
+                className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-slate-700 transition-colors"
               >
                 <ExternalLink className="h-3 w-3" />
                 Ver no diário
@@ -105,7 +105,7 @@ function CitacaoCard({ citacao }: { citacao: CitacaoSerializada }) {
               <button
                 onClick={handleMarcarLida}
                 disabled={isPending}
-                className="ml-auto flex items-center gap-1 text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors disabled:opacity-40"
+                className="ml-auto flex items-center gap-1 text-[11px] text-slate-400 hover:text-slate-700 transition-colors disabled:opacity-40"
               >
                 <Eye className="h-3 w-3" />
                 Marcar como lida
@@ -137,10 +137,10 @@ export function CitacoesList({ citacoes }: Props) {
     <div className="space-y-2">
       {naoLidas > 0 && (
         <div className="flex items-center gap-2 mb-1">
-          <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-500/20 px-1.5 text-[10px] font-bold text-brand-400">
+          <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-lime-100 px-1.5 text-[10px] font-bold text-lime-700">
             {naoLidas}
           </span>
-          <span className="text-xs text-zinc-400">não lida{naoLidas > 1 ? 's' : ''}</span>
+          <span className="text-xs text-slate-500">não lida{naoLidas > 1 ? 's' : ''}</span>
         </div>
       )}
       {citacoes.map((c) => (

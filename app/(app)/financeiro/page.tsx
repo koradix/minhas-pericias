@@ -50,48 +50,48 @@ export default function FinanceiroPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground tracking-tight">Financeiro</h1>
-        <p className="mt-1 text-sm text-zinc-400">Visão geral das suas finanças periciais</p>
+        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Financeiro</h1>
+        <p className="mt-1 text-sm text-slate-500">Visão geral das suas finanças periciais</p>
       </div>
 
       {/* Summary */}
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="rounded-xl border border-border bg-card p-6 shadow-saas">
+        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between mb-3">
-            <p className="text-sm font-medium text-zinc-400">Recebido (Dezembro)</p>
+            <p className="text-sm font-medium text-slate-500">Recebido (Dezembro)</p>
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50">
               <TrendingUp className="h-5 w-5 text-emerald-600" />
             </div>
           </div>
-          <p className="text-2xl font-bold text-foreground">{formatCurrency(8000)}</p>
+          <p className="text-2xl font-bold text-slate-900">{formatCurrency(8000)}</p>
           <p className="mt-1 text-xs text-emerald-600 font-medium">↑ 22% vs. novembro</p>
         </div>
 
-        <div className="rounded-xl border border-border bg-card p-6 shadow-saas">
+        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between mb-3">
-            <p className="text-sm font-medium text-zinc-400">A Receber</p>
+            <p className="text-sm font-medium text-slate-500">A Receber</p>
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50">
               <Clock className="h-5 w-5 text-amber-600" />
             </div>
           </div>
-          <p className="text-2xl font-bold text-foreground">{formatCurrency(48500)}</p>
-          <p className="mt-1 text-xs text-zinc-500">12 recebimentos em aberto</p>
+          <p className="text-2xl font-bold text-slate-900">{formatCurrency(48500)}</p>
+          <p className="mt-1 text-xs text-slate-400">12 recebimentos em aberto</p>
         </div>
       </div>
 
       {/* Quick action */}
       <Link
         href="/recebimentos"
-        className="flex items-center gap-4 rounded-xl border border-border bg-card p-5 hover:shadow-md hover:border-blue-200 transition-all group"
+        className="flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-5 hover:shadow-md hover:border-blue-200 transition-all group"
       >
         <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-emerald-50 group-hover:bg-emerald-100 transition-colors">
           <ArrowDownCircle className="h-6 w-6 text-emerald-600" />
         </div>
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-foreground">Recebimentos</p>
-          <p className="text-xs text-zinc-400 mt-0.5">Honorários e valores a receber</p>
+          <p className="text-sm font-semibold text-slate-900">Recebimentos</p>
+          <p className="text-xs text-slate-500 mt-0.5">Honorários e valores a receber</p>
         </div>
-        <span className="ml-auto text-zinc-600 group-hover:text-blue-500 transition-colors text-lg">
+        <span className="ml-auto text-slate-300 group-hover:text-blue-500 transition-colors text-lg">
           →
         </span>
       </Link>
@@ -114,8 +114,8 @@ export default function FinanceiroPage() {
                   <ArrowDownCircle className="h-4 w-4 text-emerald-600" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{m.descricao}</p>
-                  <p className="text-xs text-zinc-500">{m.data}</p>
+                  <p className="text-sm font-medium text-slate-900 truncate">{m.descricao}</p>
+                  <p className="text-xs text-slate-400">{m.data}</p>
                 </div>
                 <div className="flex items-center gap-3 flex-shrink-0">
                   <span className="text-sm font-semibold text-emerald-600">

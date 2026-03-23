@@ -54,7 +54,7 @@ export function RotasProspeccaoListClient({ rotas }: { rotas: Rota[] }) {
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 mb-1.5">
                     <Badge variant={st.variant}>{st.label}</Badge>
-                    <span className="text-xs text-zinc-500">{rota.data}</span>
+                    <span className="text-xs text-slate-400">{rota.data}</span>
                   </div>
                   <CardTitle className="text-base">{rota.titulo}</CardTitle>
                 </div>
@@ -102,7 +102,7 @@ export function RotasProspeccaoListClient({ rotas }: { rotas: Rota[] }) {
                     const Icon = conf.icon
                     return (
                       <div key={p.id} className="flex items-center gap-3">
-                        <span className="text-[10px] font-bold text-zinc-500 w-4 text-right">
+                        <span className="text-[10px] font-bold text-slate-400 w-4 text-right">
                           {p.ordem}
                         </span>
                         <div
@@ -114,9 +114,9 @@ export function RotasProspeccaoListClient({ rotas }: { rotas: Rota[] }) {
                           <Icon className={cn('h-3 w-3', conf.color)} />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-xs font-medium text-foreground">{p.nome}</p>
+                          <p className="text-xs font-medium text-slate-800">{p.nome}</p>
                           {p.endereco && (
-                            <p className="text-[10px] text-zinc-500">{p.endereco}</p>
+                            <p className="text-[10px] text-slate-400">{p.endereco}</p>
                           )}
                         </div>
                         <span
@@ -134,20 +134,20 @@ export function RotasProspeccaoListClient({ rotas }: { rotas: Rota[] }) {
                 )}
               </div>
 
-              <div className="flex items-center gap-5 pt-3 border-t border-border text-xs text-zinc-400">
+              <div className="flex items-center gap-5 pt-3 border-t border-slate-100 text-xs text-slate-500">
                 <span className="flex items-center gap-1.5">
-                  <MapPin className="h-3.5 w-3.5 text-zinc-500" />
+                  <MapPin className="h-3.5 w-3.5 text-slate-400" />
                   {rota.distanciaKm} km
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <Clock className="h-3.5 w-3.5 text-zinc-500" />
+                  <Clock className="h-3.5 w-3.5 text-slate-400" />
                   {formatTempo(rota.tempoEstimadoMin)}
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <Banknote className="h-3.5 w-3.5 text-zinc-500" />
+                  <Banknote className="h-3.5 w-3.5 text-slate-400" />
                   {formatCurrency(rota.custoEstimado)}
                 </span>
-                <span className="flex items-center gap-1.5 text-zinc-500">
+                <span className="flex items-center gap-1.5 text-slate-400">
                   {rota.pontos.length} paradas
                 </span>
               </div>

@@ -38,9 +38,9 @@ export function EnderecoEdit({ pericoId, endereco }: Props) {
   }
 
   return (
-    <div className="flex items-center justify-between gap-3 border-t border-border px-5 py-3">
+    <div className="flex items-center justify-between gap-3 border-t border-slate-100 px-5 py-3">
       <div className="flex items-center gap-2 min-w-0 flex-1">
-        <MapPin className="h-3.5 w-3.5 flex-shrink-0 text-zinc-500" />
+        <MapPin className="h-3.5 w-3.5 flex-shrink-0 text-slate-400" />
 
         {editing ? (
           <input
@@ -49,12 +49,12 @@ export function EnderecoEdit({ pericoId, endereco }: Props) {
             onChange={(e) => setValue(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Ex: Rua das Flores, 123, Jardins — São Paulo, SP"
-            className="flex-1 min-w-0 rounded-lg border border-brand-500/50 bg-card px-2.5 py-1 text-xs text-foreground placeholder:text-zinc-500 focus:border-brand-400 focus:outline-none focus:ring-1 focus:ring-lime-400"
+            className="flex-1 min-w-0 rounded-lg border border-lime-300 bg-white px-2.5 py-1 text-xs text-slate-800 placeholder:text-slate-400 focus:border-lime-400 focus:outline-none focus:ring-1 focus:ring-lime-400"
           />
         ) : value ? (
-          <p className="text-xs text-zinc-400 truncate">{value}</p>
+          <p className="text-xs text-slate-600 truncate">{value}</p>
         ) : (
-          <p className="text-xs text-zinc-500 italic">Endereço do local não informado</p>
+          <p className="text-xs text-slate-400 italic">Endereço do local não informado</p>
         )}
       </div>
 
@@ -64,7 +64,7 @@ export function EnderecoEdit({ pericoId, endereco }: Props) {
             <button
               onClick={handleSave}
               disabled={isPending}
-              className="flex items-center gap-1 rounded-lg bg-brand-500 hover:bg-lime-600 px-2.5 py-1.5 text-[11px] font-semibold text-white transition-colors disabled:opacity-50"
+              className="flex items-center gap-1 rounded-lg bg-lime-500 hover:bg-lime-600 px-2.5 py-1.5 text-[11px] font-semibold text-white transition-colors disabled:opacity-50"
             >
               {isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
               Salvar
@@ -72,7 +72,7 @@ export function EnderecoEdit({ pericoId, endereco }: Props) {
             <button
               onClick={handleCancel}
               disabled={isPending}
-              className="flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-[11px] font-semibold text-zinc-400 hover:bg-muted transition-colors"
+              className="flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-[11px] font-semibold text-slate-500 hover:bg-slate-50 transition-colors"
             >
               <X className="h-3 w-3" />
             </button>
@@ -81,14 +81,14 @@ export function EnderecoEdit({ pericoId, endereco }: Props) {
           <>
             <button
               onClick={() => setEditing(true)}
-              className="flex items-center gap-1.5 rounded-lg border border-border bg-muted px-2.5 py-1.5 text-[11px] font-semibold text-zinc-400 hover:border-border hover:text-zinc-300 transition-colors"
+              className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[11px] font-semibold text-slate-500 hover:border-slate-300 hover:text-slate-700 transition-colors"
             >
               <Pencil className="h-3 w-3" />
               Editar
             </button>
             <Link
               href="/rotas/pericias"
-              className="flex items-center gap-1.5 rounded-lg border border-border bg-muted px-2.5 py-1.5 text-[11px] font-semibold text-zinc-400 hover:border-brand-500/50 hover:bg-brand-500/10 hover:text-brand-400 transition-colors"
+              className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 hover:border-lime-300 hover:bg-lime-50 hover:text-lime-700 transition-colors"
             >
               <MapPin className="h-3 w-3" />
               Criar rota

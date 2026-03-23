@@ -65,11 +65,11 @@ export function NomeacaoCard({ nomeacao }: Props) {
 
   return (
     <div className={cn(
-      'rounded-xl border bg-card shadow-saas overflow-hidden transition-all',
-      isNovo      ? 'border-brand-500/30' :
-      isArquivado ? 'border-border opacity-60' :
+      'rounded-2xl border bg-white shadow-sm overflow-hidden transition-all',
+      isNovo      ? 'border-lime-200' :
+      isArquivado ? 'border-slate-100 opacity-60' :
       isEntregue  ? 'border-emerald-200' :
-                    'border-border',
+                    'border-slate-200',
     )}>
       {/* Header */}
       <div className="px-5 pt-4 pb-3 flex flex-wrap items-start gap-3">
@@ -88,15 +88,15 @@ export function NomeacaoCard({ nomeacao }: Props) {
             </span>
             <span className={cn(
               'inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-medium',
-              isNovo      ? 'bg-brand-500/20 text-brand-400'    :
+              isNovo      ? 'bg-lime-100 text-lime-700'    :
               isEntregue  ? 'bg-emerald-100 text-emerald-700' :
-              isArquivado ? 'bg-zinc-900/50 text-zinc-400'  :
+              isArquivado ? 'bg-slate-100 text-slate-500'  :
                             'bg-blue-100 text-blue-700',
             )}>
               {STATUS_LABELS[status] ?? status}
             </span>
           </div>
-          <div className="flex items-center gap-1.5 text-xs text-zinc-400">
+          <div className="flex items-center gap-1.5 text-xs text-slate-500">
             <Hash className="h-3 w-3 flex-shrink-0" />
             <span className="font-mono truncate">{processo.numeroProcesso}</span>
           </div>
@@ -105,7 +105,7 @@ export function NomeacaoCard({ nomeacao }: Props) {
         {/* Expand/collapse */}
         <button
           onClick={() => setExpanded((v) => !v)}
-          className="flex-shrink-0 rounded-lg border border-border p-1.5 text-zinc-500 hover:text-zinc-400 hover:bg-muted transition-colors"
+          className="flex-shrink-0 rounded-lg border border-slate-200 p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors"
         >
           {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
         </button>
@@ -114,13 +114,13 @@ export function NomeacaoCard({ nomeacao }: Props) {
       {/* Process info */}
       <div className="px-5 pb-3 space-y-1">
         {processo.classe && (
-          <p className="text-sm font-semibold text-foreground leading-snug">{processo.classe}</p>
+          <p className="text-sm font-semibold text-slate-800 leading-snug">{processo.classe}</p>
         )}
         {processo.assunto && (
-          <p className="text-xs text-zinc-400 leading-snug">{processo.assunto}</p>
+          <p className="text-xs text-slate-500 leading-snug">{processo.assunto}</p>
         )}
         {processo.orgaoJulgador && (
-          <p className="text-xs text-zinc-500">{processo.orgaoJulgador}</p>
+          <p className="text-xs text-slate-400">{processo.orgaoJulgador}</p>
         )}
       </div>
 
@@ -129,23 +129,23 @@ export function NomeacaoCard({ nomeacao }: Props) {
         <div className="px-5 pb-4 space-y-2 border-t border-slate-50 pt-3">
           {partes.length > 0 && (
             <div className="space-y-1">
-              <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+              <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                 <Users className="h-3 w-3" /> Partes
               </p>
               {partes.map((parte, i) => (
-                <div key={i} className="flex items-center gap-2 text-xs text-zinc-400">
-                  <span className="text-[10px] font-medium text-zinc-500 w-14 flex-shrink-0 uppercase">
+                <div key={i} className="flex items-center gap-2 text-xs text-slate-600">
+                  <span className="text-[10px] font-medium text-slate-400 w-14 flex-shrink-0 uppercase">
                     {parte.tipo || 'Parte'}
                   </span>
                   <span className="truncate">{parte.nome}</span>
                 </div>
               ))}
               {isLonga && (
-                <p className="text-[10px] text-zinc-500">+{processo.partes.length - 3} partes</p>
+                <p className="text-[10px] text-slate-400">+{processo.partes.length - 3} partes</p>
               )}
             </div>
           )}
-          <div className="flex items-center gap-4 text-xs text-zinc-500 pt-1">
+          <div className="flex items-center gap-4 text-xs text-slate-400 pt-1">
             <span>Distribuído: {formatDate(processo.dataDistribuicao)}</span>
             <span>Atualizado: {formatDate(processo.dataUltimaAtu)}</span>
           </div>
@@ -155,14 +155,14 @@ export function NomeacaoCard({ nomeacao }: Props) {
       {/* Actions */}
       {!isArquivado && !isEntregue && (
         <div className="px-5 py-3 border-t border-slate-50 flex flex-wrap items-center gap-2">
-          {isPending && <Loader2 className="h-3.5 w-3.5 animate-spin text-zinc-500" />}
+          {isPending && <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-400" />}
 
           {status === 'novo' && (
             <>
               <button
                 onClick={() => handleStatus('proposta')}
                 disabled={isPending}
-                className="flex items-center gap-1.5 rounded-xl bg-brand-500 hover:bg-lime-600 text-foreground font-semibold text-xs px-3 py-1.5 transition-colors disabled:opacity-50"
+                className="flex items-center gap-1.5 rounded-xl bg-lime-500 hover:bg-lime-600 text-slate-900 font-semibold text-xs px-3 py-1.5 transition-colors disabled:opacity-50"
               >
                 <FileText className="h-3.5 w-3.5" />
                 Aceitar e gerar proposta
@@ -170,7 +170,7 @@ export function NomeacaoCard({ nomeacao }: Props) {
               <button
                 onClick={() => handleStatus('arquivado')}
                 disabled={isPending}
-                className="flex items-center gap-1.5 rounded-xl border border-border hover:bg-muted text-zinc-400 text-xs px-3 py-1.5 transition-colors disabled:opacity-50"
+                className="flex items-center gap-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-500 text-xs px-3 py-1.5 transition-colors disabled:opacity-50"
               >
                 <Archive className="h-3.5 w-3.5" />
                 Arquivar
@@ -181,7 +181,7 @@ export function NomeacaoCard({ nomeacao }: Props) {
           {status === 'proposta' && (
             <>
               <Link href="/pericias">
-                <button className="flex items-center gap-1.5 rounded-xl border border-border hover:bg-muted text-zinc-400 font-medium text-xs px-3 py-1.5 transition-colors">
+                <button className="flex items-center gap-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 font-medium text-xs px-3 py-1.5 transition-colors">
                   <FileText className="h-3.5 w-3.5" />
                   Ver proposta
                 </button>
@@ -200,7 +200,7 @@ export function NomeacaoCard({ nomeacao }: Props) {
           {status === 'em_andamento' && (
             <>
               <Link href="/pericias">
-                <button className="flex items-center gap-1.5 rounded-xl border border-border hover:bg-muted text-zinc-400 font-medium text-xs px-3 py-1.5 transition-colors">
+                <button className="flex items-center gap-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 font-medium text-xs px-3 py-1.5 transition-colors">
                   <Play className="h-3.5 w-3.5" />
                   Ver perícia
                 </button>

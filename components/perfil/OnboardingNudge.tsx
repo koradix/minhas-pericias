@@ -59,7 +59,7 @@ export function OnboardingNudge() {
   return (
     <>
       {/* ── Banner ──────────────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50/60 px-5 py-3.5">
+      <div className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50/60 px-5 py-3.5">
         <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-amber-100">
           <AlertTriangle className="h-4 w-4 text-amber-600" />
         </span>
@@ -98,19 +98,19 @@ export function OnboardingNudge() {
           />
 
           {/* Panel */}
-          <div className="relative z-10 w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-xl border border-border bg-card shadow-2xl">
+          <div className="relative z-10 w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-2xl">
             {/* Header */}
-            <div className="sticky top-0 flex items-center justify-between border-b border-border bg-card px-6 py-4">
+            <div className="sticky top-0 flex items-center justify-between border-b border-slate-100 bg-white px-6 py-4">
               <div>
-                <h2 className="text-base font-semibold text-foreground">Perfil profissional</h2>
-                <p className="text-xs text-zinc-400 mt-0.5">
+                <h2 className="text-base font-semibold text-slate-900">Perfil profissional</h2>
+                <p className="text-xs text-slate-500 mt-0.5">
                   Esses dados personalizam suas demandas sugeridas
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-900/50 transition-colors"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 transition-colors"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -140,7 +140,7 @@ export function OnboardingNudge() {
 
             {/* Footer */}
             {!saved && (
-              <div className="sticky bottom-0 flex items-center justify-end gap-3 border-t border-border bg-card px-6 py-4">
+              <div className="sticky bottom-0 flex items-center justify-end gap-3 border-t border-slate-100 bg-white px-6 py-4">
                 <Button
                   size="sm"
                   variant="outline"
@@ -153,7 +153,7 @@ export function OnboardingNudge() {
                   size="sm"
                   onClick={handleSave}
                   disabled={isPending}
-                  className="h-9 bg-brand-500 hover:bg-lime-600 text-foreground font-semibold gap-1.5"
+                  className="h-9 bg-lime-500 hover:bg-lime-600 text-slate-900 font-semibold gap-1.5"
                 >
                   {isPending ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />

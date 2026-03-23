@@ -41,14 +41,14 @@ function SetupView({
   })
 
   return (
-    <div className="rounded-xl border border-border bg-card shadow-saas overflow-hidden">
-      <div className="flex items-center gap-4 border-b border-border bg-muted px-6 py-5">
-        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-brand-500/20">
-          <Radar className="h-6 w-6 text-brand-400" />
+    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+      <div className="flex items-center gap-4 border-b border-slate-100 bg-slate-50 px-6 py-5">
+        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-lime-100">
+          <Radar className="h-6 w-6 text-lime-700" />
         </div>
         <div>
-          <p className="text-base font-semibold text-foreground">Configurar Radar de Nomeações</p>
-          <p className="text-sm text-zinc-400 mt-0.5">
+          <p className="text-base font-semibold text-slate-900">Configurar Radar de Nomeações</p>
+          <p className="text-sm text-slate-500 mt-0.5">
             Monitore seus tribunais registrados nos diários oficiais
           </p>
         </div>
@@ -62,7 +62,7 @@ function SetupView({
         </div>
 
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 mb-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-3">
             Tribunais a monitorar ({siglas.length})
           </p>
           {siglas.length === 0 ? (
@@ -77,9 +77,9 @@ function SetupView({
               {enriched.map((t) => (
                 <div
                   key={t.sigla}
-                  className="flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2 shadow-saas"
+                  className="flex items-center gap-1.5 rounded-xl border border-slate-100 bg-white px-3 py-2 shadow-sm"
                 >
-                  <span className="text-xs font-bold text-foreground">{t.sigla}</span>
+                  <span className="text-xs font-bold text-slate-900">{t.sigla}</span>
                   <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium ${tipoCor[t.tipo]}`}>
                     {t.tipo}
                   </span>
@@ -90,7 +90,7 @@ function SetupView({
         </div>
 
         <Button
-          className="w-full bg-brand-500 hover:bg-lime-600 text-foreground font-semibold gap-2"
+          className="w-full bg-lime-500 hover:bg-lime-600 text-slate-900 font-semibold gap-2"
           onClick={onSetup}
           disabled={isPending || siglas.length === 0}
         >
@@ -131,14 +131,14 @@ function ConfiguredView({
   }
 
   return (
-    <div className="rounded-xl border border-brand-500/30 bg-card shadow-saas overflow-hidden">
-      <div className="flex items-center gap-4 border-b border-lime-100 bg-brand-500/10/50 px-6 py-5">
-        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-brand-500/20">
-          <CheckCircle2 className="h-6 w-6 text-brand-400" />
+    <div className="rounded-2xl border border-lime-200 bg-white shadow-sm overflow-hidden">
+      <div className="flex items-center gap-4 border-b border-lime-100 bg-lime-50/50 px-6 py-5">
+        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-lime-100">
+          <CheckCircle2 className="h-6 w-6 text-lime-700" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-base font-semibold text-foreground">Radar ativo</p>
-          <p className="text-sm text-zinc-400 mt-0.5">
+          <p className="text-base font-semibold text-slate-900">Radar ativo</p>
+          <p className="text-sm text-slate-500 mt-0.5">
             Monitorando {siglas.length} tribunal{siglas.length !== 1 ? 'is' : ''}
           </p>
         </div>
@@ -151,13 +151,13 @@ function ConfiguredView({
           </div>
         )}
         {searchResult && (
-          <div className="flex items-center gap-2 rounded-xl bg-muted border border-border px-4 py-3">
-            <Info className="h-4 w-4 text-zinc-500 flex-shrink-0" />
-            <p className="text-xs text-zinc-400">{searchResult}</p>
+          <div className="flex items-center gap-2 rounded-xl bg-slate-50 border border-slate-200 px-4 py-3">
+            <Info className="h-4 w-4 text-slate-400 flex-shrink-0" />
+            <p className="text-xs text-slate-600">{searchResult}</p>
           </div>
         )}
         <Button
-          className="w-full bg-brand-500 hover:bg-lime-600 text-foreground font-semibold gap-2 text-base py-5"
+          className="w-full bg-lime-500 hover:bg-lime-600 text-slate-900 font-semibold gap-2 text-base py-5"
           onClick={handleBuscar}
           disabled={isPending}
         >
@@ -167,7 +167,7 @@ function ConfiguredView({
             <><Search className="h-5 w-5" />Buscar Nomeações Agora</>
           )}
         </Button>
-        <p className="text-center text-[11px] text-zinc-500">
+        <p className="text-center text-[11px] text-slate-400">
           Busca manual · R$ 3,00 por chamada
         </p>
       </div>
@@ -183,7 +183,7 @@ function ErrorView({
   onRetry: () => void
 }) {
   return (
-    <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 space-y-4">
+    <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 space-y-4">
       <div className="flex items-start gap-3">
         <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
         <div>

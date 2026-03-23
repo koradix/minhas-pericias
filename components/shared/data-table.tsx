@@ -45,19 +45,19 @@ export function DataTable<T>({
   className,
 }: DataTableProps<T>) {
   return (
-    <div className={cn('rounded-lg border border-border bg-card overflow-hidden', className)}>
+    <div className={cn('rounded-lg border border-slate-200 bg-white overflow-hidden', className)}>
       <div className="overflow-x-auto">
         <table className="w-full min-w-full table-fixed">
 
           {/* Header */}
           <thead>
-            <tr className="border-b border-border bg-muted">
+            <tr className="border-b border-slate-200 bg-slate-50">
               {columns.map((col) => (
                 <th
                   key={col.key}
                   style={col.width ? { width: col.width } : undefined}
                   className={cn(
-                    'px-4 py-3 text-[11px] font-semibold uppercase tracking-wide text-zinc-500',
+                    'px-4 py-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400',
                     alignClass[col.align ?? 'left'],
                     col.hidden ? hiddenClass[col.hidden] : '',
                   )}
@@ -74,7 +74,7 @@ export function DataTable<T>({
               <tr>
                 <td colSpan={columns.length} className="px-4 py-10">
                   {emptyState ?? (
-                    <p className="text-center text-sm text-zinc-500">Nenhum resultado</p>
+                    <p className="text-center text-sm text-slate-400">Nenhum resultado</p>
                   )}
                 </td>
               </tr>
@@ -86,15 +86,15 @@ export function DataTable<T>({
                   className={cn(
                     'transition-colors',
                     onRowClick
-                      ? 'cursor-pointer hover:bg-muted'
-                      : 'hover:bg-muted/60',
+                      ? 'cursor-pointer hover:bg-slate-50'
+                      : 'hover:bg-slate-50/60',
                   )}
                 >
                   {columns.map((col) => (
                     <td
                       key={col.key}
                       className={cn(
-                        'px-4 py-3 text-sm text-zinc-300',
+                        'px-4 py-3 text-sm text-slate-700',
                         alignClass[col.align ?? 'left'],
                         col.hidden ? hiddenClass[col.hidden] : '',
                       )}
@@ -111,7 +111,7 @@ export function DataTable<T>({
 
       {/* Footer */}
       {footer && (
-        <div className="border-t border-border px-4 py-3 bg-card">
+        <div className="border-t border-slate-100 px-4 py-3 bg-white">
           {footer}
         </div>
       )}
