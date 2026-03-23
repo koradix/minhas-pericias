@@ -76,7 +76,7 @@ function blobToBase64(blob: Blob): Promise<string> {
 const tipoBadgeClass: Record<string, string> = {
   foto: 'bg-blue-50 text-blue-700',
   audio: 'bg-violet-50 text-violet-700',
-  texto: 'bg-slate-100 text-slate-700',
+  texto: 'bg-zinc-900/50 text-zinc-300',
   documento: 'bg-amber-50 text-amber-700',
 }
 
@@ -362,23 +362,23 @@ export function CheckpointMediaPanel({
       />
 
       {/* Slide-over panel */}
-      <div className="fixed inset-y-0 right-0 z-[1001] flex w-full max-w-md flex-col bg-white shadow-2xl sm:border-l sm:border-slate-200">
+      <div className="fixed inset-y-0 right-0 z-[1001] flex w-full max-w-md flex-col bg-card shadow-2xl sm:border-l sm:border-border">
 
         {/* Header */}
-        <div className="flex items-start gap-3 border-b border-slate-100 bg-slate-50 px-5 py-4">
-          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-lime-100">
-            <MapPin className="h-5 w-5 text-lime-700" />
+        <div className="flex items-start gap-3 border-b border-border bg-muted px-5 py-4">
+          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-brand-500/20">
+            <MapPin className="h-5 w-5 text-brand-400" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-slate-900 truncate">{checkpointTitulo}</p>
+            <p className="text-sm font-semibold text-foreground truncate">{checkpointTitulo}</p>
             {endereco && (
-              <p className="text-xs text-slate-500 mt-0.5 truncate">{endereco}</p>
+              <p className="text-xs text-zinc-400 mt-0.5 truncate">{endereco}</p>
             )}
             <Badge className="mt-1.5" variant="warning">Você chegou</Badge>
           </div>
           <button
             onClick={onClose}
-            className="flex-shrink-0 rounded-lg p-1.5 text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition-colors"
+            className="flex-shrink-0 rounded-lg p-1.5 text-zinc-500 hover:bg-slate-200 hover:text-zinc-300 transition-colors"
           >
             <X className="h-4 w-4" />
           </button>
@@ -406,7 +406,7 @@ export function CheckpointMediaPanel({
               className={`flex flex-1 flex-col items-center gap-1.5 rounded-xl border py-3 transition-all disabled:opacity-50 ${
                 modo === 'camera'
                   ? 'border-blue-400 bg-blue-50 text-blue-700'
-                  : 'border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700'
+                  : 'border-border bg-card text-zinc-400 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700'
               }`}
             >
               <Camera className="h-5 w-5" />
@@ -419,7 +419,7 @@ export function CheckpointMediaPanel({
               className={`flex flex-1 flex-col items-center gap-1.5 rounded-xl border py-3 transition-all ${
                 modo === 'audio'
                   ? 'border-violet-300 bg-violet-50 text-violet-700'
-                  : 'border-slate-200 bg-white text-slate-600 hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700'
+                  : 'border-border bg-card text-zinc-400 hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700'
               }`}
             >
               <Mic className="h-5 w-5" />
@@ -431,8 +431,8 @@ export function CheckpointMediaPanel({
               onClick={() => { handleFecharCamera(); setModo(modo === 'nota' ? null : 'nota') }}
               className={`flex flex-1 flex-col items-center gap-1.5 rounded-xl border py-3 transition-all ${
                 modo === 'nota'
-                  ? 'border-lime-400 bg-lime-50 text-lime-700'
-                  : 'border-slate-200 bg-white text-slate-600 hover:border-lime-400 hover:bg-lime-50 hover:text-lime-700'
+                  ? 'border-brand-400 bg-brand-500/10 text-brand-400'
+                  : 'border-border bg-card text-zinc-400 hover:border-brand-400 hover:bg-brand-500/10 hover:text-brand-400'
               }`}
             >
               <Type className="h-5 w-5" />
@@ -446,7 +446,7 @@ export function CheckpointMediaPanel({
                 className={`flex flex-1 flex-col items-center gap-1.5 rounded-xl border py-3 transition-all ${
                   modo === 'contato'
                     ? 'border-violet-400 bg-violet-50 text-violet-700'
-                    : 'border-slate-200 bg-white text-slate-600 hover:border-violet-400 hover:bg-violet-50 hover:text-violet-700'
+                    : 'border-border bg-card text-zinc-400 hover:border-violet-400 hover:bg-violet-50 hover:text-violet-700'
                 }`}
               >
                 <Users className="h-5 w-5" />
@@ -488,14 +488,14 @@ export function CheckpointMediaPanel({
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="text-slate-300 hover:text-white hover:bg-slate-700"
+                  className="text-zinc-600 hover:text-white hover:bg-slate-700"
                   onClick={handleFecharCamera}
                 >
                   Fechar
                 </Button>
                 <Button
                   size="sm"
-                  className="flex-1 bg-white hover:bg-slate-100 text-slate-900 font-semibold gap-1.5"
+                  className="flex-1 bg-card hover:bg-zinc-900/50 text-foreground font-semibold gap-1.5"
                   onClick={handleCapturar}
                   disabled={isPending}
                 >
@@ -511,13 +511,13 @@ export function CheckpointMediaPanel({
 
           {/* Nota input */}
           {modo === 'nota' && (
-            <div className="rounded-xl border border-lime-200 bg-lime-50 p-3 space-y-2">
+            <div className="rounded-xl border border-brand-500/30 bg-brand-500/10 p-3 space-y-2">
               <textarea
                 value={nota}
                 onChange={(e) => setNota(e.target.value)}
                 placeholder="Descreva o que observou neste local..."
                 rows={4}
-                className="w-full resize-none rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-lime-400 focus:outline-none focus:ring-1 focus:ring-lime-400"
+                className="w-full resize-none rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-zinc-500 focus:border-brand-400 focus:outline-none focus:ring-1 focus:ring-lime-400"
               />
               <div className="flex gap-2 justify-end">
                 <Button size="sm" variant="ghost" onClick={() => { setNota(''); setModo(null) }}>
@@ -525,7 +525,7 @@ export function CheckpointMediaPanel({
                 </Button>
                 <Button
                   size="sm"
-                  className="bg-lime-500 hover:bg-lime-600 text-slate-900 font-semibold"
+                  className="bg-brand-500 hover:bg-lime-600 text-foreground font-semibold"
                   onClick={handleSalvarNota}
                   disabled={!nota.trim() || isPending}
                 >
@@ -601,69 +601,69 @@ export function CheckpointMediaPanel({
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Telefone</label>
+                  <label className="text-[10px] font-medium text-zinc-400 uppercase tracking-wide">Telefone</label>
                   <input
                     type="tel"
                     value={contato.telefone ?? ''}
                     onChange={(e) => setContato((p) => ({ ...p, telefone: e.target.value }))}
                     placeholder="(11) 9999-9999"
-                    className="mt-0.5 w-full h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-400"
+                    className="mt-0.5 w-full h-8 rounded-lg border border-border bg-card px-2.5 text-xs text-foreground placeholder:text-zinc-500 focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-400"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">E-mail</label>
+                  <label className="text-[10px] font-medium text-zinc-400 uppercase tracking-wide">E-mail</label>
                   <input
                     type="email"
                     value={contato.email ?? ''}
                     onChange={(e) => setContato((p) => ({ ...p, email: e.target.value }))}
                     placeholder="vara@tjsp.jus.br"
-                    className="mt-0.5 w-full h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-400"
+                    className="mt-0.5 w-full h-8 rounded-lg border border-border bg-card px-2.5 text-xs text-foreground placeholder:text-zinc-500 focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-400"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Nome do Juiz</label>
+                <label className="text-[10px] font-medium text-zinc-400 uppercase tracking-wide">Nome do Juiz</label>
                 <input
                   type="text"
                   value={contato.juizNome ?? ''}
                   onChange={(e) => setContato((p) => ({ ...p, juizNome: e.target.value }))}
                   placeholder="Dr. João Silva"
-                  className="mt-0.5 w-full h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-400"
+                  className="mt-0.5 w-full h-8 rounded-lg border border-border bg-card px-2.5 text-xs text-foreground placeholder:text-zinc-500 focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-400"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Secretário(a)</label>
+                  <label className="text-[10px] font-medium text-zinc-400 uppercase tracking-wide">Secretário(a)</label>
                   <input
                     type="text"
                     value={contato.secretarioNome ?? ''}
                     onChange={(e) => setContato((p) => ({ ...p, secretarioNome: e.target.value }))}
                     placeholder="Maria Costa"
-                    className="mt-0.5 w-full h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-400"
+                    className="mt-0.5 w-full h-8 rounded-lg border border-border bg-card px-2.5 text-xs text-foreground placeholder:text-zinc-500 focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-400"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">LinkedIn</label>
+                  <label className="text-[10px] font-medium text-zinc-400 uppercase tracking-wide">LinkedIn</label>
                   <input
                     type="url"
                     value={contato.secretarioLinkedin ?? ''}
                     onChange={(e) => setContato((p) => ({ ...p, secretarioLinkedin: e.target.value }))}
                     placeholder="linkedin.com/in/..."
-                    className="mt-0.5 w-full h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-400"
+                    className="mt-0.5 w-full h-8 rounded-lg border border-border bg-card px-2.5 text-xs text-foreground placeholder:text-zinc-500 focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-400"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Observações</label>
+                <label className="text-[10px] font-medium text-zinc-400 uppercase tracking-wide">Observações</label>
                 <textarea
                   value={contato.observacoes ?? ''}
                   onChange={(e) => setContato((p) => ({ ...p, observacoes: e.target.value }))}
                   placeholder="Horário de atendimento, preferências..."
                   rows={2}
-                  className="mt-0.5 w-full resize-none rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-400"
+                  className="mt-0.5 w-full resize-none rounded-lg border border-border bg-card px-2.5 py-2 text-xs text-foreground placeholder:text-zinc-500 focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-400"
                 />
               </div>
 
@@ -688,13 +688,13 @@ export function CheckpointMediaPanel({
 
           {/* Media grid */}
           <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
               Evidências coletadas
             </p>
 
             {loadingMidias ? (
               <div className="flex items-center justify-center py-6">
-                <Loader2 className="h-5 w-5 animate-spin text-slate-300" />
+                <Loader2 className="h-5 w-5 animate-spin text-zinc-600" />
               </div>
             ) : midias.length === 0 ? (
               <EmptyState
@@ -710,7 +710,7 @@ export function CheckpointMediaPanel({
                   return (
                     <div
                       key={m.id}
-                      className="flex items-start gap-3 rounded-xl border border-slate-100 bg-white p-3"
+                      className="flex items-start gap-3 rounded-xl border border-border bg-card p-3"
                     >
                       {/* Preview */}
                       <div className="flex-shrink-0">
@@ -719,13 +719,13 @@ export function CheckpointMediaPanel({
                           <img
                             src={m.url}
                             alt={m.descricao ?? 'Foto'}
-                            className="h-14 w-14 rounded-lg object-cover border border-slate-100"
+                            className="h-14 w-14 rounded-lg object-cover border border-border"
                           />
                         ) : m.tipo === 'audio' && m.url ? (
                           <audio src={m.url} controls className="h-9 w-36" />
                         ) : (
-                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100">
-                            <TipoIcon className="h-5 w-5 text-slate-400" />
+                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-900/50">
+                            <TipoIcon className="h-5 w-5 text-zinc-500" />
                           </div>
                         )}
                       </div>
@@ -734,11 +734,11 @@ export function CheckpointMediaPanel({
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 mb-1">
                           <span
-                            className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${tipoBadgeClass[m.tipo] ?? 'bg-slate-100 text-slate-600'}`}
+                            className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${tipoBadgeClass[m.tipo] ?? 'bg-zinc-900/50 text-zinc-400'}`}
                           >
                             {tipoLabel[m.tipo] ?? m.tipo}
                           </span>
-                          <span className="text-[10px] text-slate-400">
+                          <span className="text-[10px] text-zinc-500">
                             {new Date(m.criadoEm).toLocaleTimeString('pt-BR', {
                               hour: '2-digit',
                               minute: '2-digit',
@@ -746,10 +746,10 @@ export function CheckpointMediaPanel({
                           </span>
                         </div>
                         {m.tipo === 'texto' && m.texto && (
-                          <p className="text-xs text-slate-700 line-clamp-3">{m.texto}</p>
+                          <p className="text-xs text-zinc-300 line-clamp-3">{m.texto}</p>
                         )}
                         {m.descricao && (
-                          <p className="text-xs text-slate-500 mt-0.5">{m.descricao}</p>
+                          <p className="text-xs text-zinc-400 mt-0.5">{m.descricao}</p>
                         )}
                       </div>
 
@@ -757,7 +757,7 @@ export function CheckpointMediaPanel({
                       <button
                         onClick={() => handleDelete(m.id)}
                         disabled={isPending}
-                        className="flex-shrink-0 rounded-lg p-1.5 text-slate-300 hover:bg-red-50 hover:text-red-500 transition-colors disabled:opacity-40"
+                        className="flex-shrink-0 rounded-lg p-1.5 text-zinc-600 hover:bg-red-50 hover:text-red-500 transition-colors disabled:opacity-40"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
@@ -770,7 +770,7 @@ export function CheckpointMediaPanel({
         </div>
 
         {/* Footer */}
-        <div className="border-t border-slate-100 bg-white px-4 py-3">
+        <div className="border-t border-border bg-card px-4 py-3">
           <Button
             className="w-full bg-emerald-600 hover:bg-emerald-700 text-white gap-2 font-semibold"
             onClick={handleFinalizar}
@@ -783,7 +783,7 @@ export function CheckpointMediaPanel({
             )}
             Finalizar Checkpoint
           </Button>
-          <p className="mt-2 text-center text-[11px] text-slate-400">
+          <p className="mt-2 text-center text-[11px] text-zinc-500">
             Salva evidências e marca este ponto como concluído
           </p>
         </div>

@@ -51,13 +51,13 @@ export default function Header({ onMenuClick, user }: HeaderProps) {
   const { title, section } = getPageInfo(pathname, user.role)
 
   return (
-    <header className="sticky top-0 z-10 flex h-14 flex-shrink-0 items-center justify-between border-b border-slate-200/80 bg-white/95 backdrop-blur-sm px-4 lg:px-5 gap-4">
+    <header className="sticky top-0 z-10 flex h-14 flex-shrink-0 items-center justify-between border-b border-border/80 bg-card/95 backdrop-blur-sm px-4 lg:px-5 gap-4">
 
       {/* ── Left — breadcrumb ── */}
       <div className="flex items-center gap-3 min-w-0">
         <button
           onClick={onMenuClick}
-          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors lg:hidden"
+          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md text-zinc-500 hover:bg-zinc-900/50 hover:text-zinc-400 transition-colors lg:hidden"
           aria-label="Abrir menu"
         >
           <Menu className="h-4 w-4" />
@@ -66,22 +66,22 @@ export default function Header({ onMenuClick, user }: HeaderProps) {
         <div className="flex items-center gap-1.5 min-w-0">
           {section && (
             <>
-              <span className="hidden sm:block text-xs text-slate-400 font-medium">{section}</span>
-              <ChevronRight className="hidden sm:block h-3 w-3 text-slate-300 flex-shrink-0" />
+              <span className="hidden sm:block text-xs text-zinc-500 font-medium">{section}</span>
+              <ChevronRight className="hidden sm:block h-3 w-3 text-zinc-600 flex-shrink-0" />
             </>
           )}
-          <span className="text-[13px] font-semibold text-slate-700 truncate">{title}</span>
+          <span className="text-[13px] font-semibold text-zinc-300 truncate">{title}</span>
         </div>
       </div>
 
       {/* ── Center — search ── */}
       <div className="hidden md:flex flex-1 max-w-[260px]">
         <div className="relative w-full">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500 pointer-events-none" />
           <input
             type="text"
             placeholder="Buscar..."
-            className="w-full h-8 pl-8 pr-3 rounded-md border border-slate-200 bg-slate-50 text-xs text-slate-700 placeholder:text-slate-400 focus:border-lime-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-lime-500/20 transition-colors"
+            className="w-full h-8 pl-8 pr-3 rounded-md border border-border bg-muted text-xs text-zinc-300 placeholder:text-zinc-500 focus:border-lime-500 focus:bg-card focus:outline-none focus:ring-1 focus:ring-lime-500/20 transition-colors"
           />
         </div>
       </div>
@@ -91,7 +91,7 @@ export default function Header({ onMenuClick, user }: HeaderProps) {
 
         {/* Search icon — mobile */}
         <button
-          className="flex md:hidden h-8 w-8 items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+          className="flex md:hidden h-8 w-8 items-center justify-center rounded-md text-zinc-500 hover:bg-zinc-900/50 hover:text-zinc-400 transition-colors"
           title="Buscar"
         >
           <Search className="h-4 w-4" />
@@ -99,34 +99,34 @@ export default function Header({ onMenuClick, user }: HeaderProps) {
 
         {/* Notifications */}
         <button
-          className="relative flex h-8 w-8 items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+          className="relative flex h-8 w-8 items-center justify-center rounded-md text-zinc-500 hover:bg-zinc-900/50 hover:text-zinc-400 transition-colors"
           title="Notificações"
         >
           <Bell className="h-4 w-4" />
-          <span className="absolute right-1.5 top-1.5 flex h-1.5 w-1.5 rounded-full bg-lime-500" />
+          <span className="absolute right-1.5 top-1.5 flex h-1.5 w-1.5 rounded-full bg-brand-500" />
         </button>
 
         {/* User menu */}
         <div className="relative ml-1 group">
           <button
-            className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-slate-100 transition-colors"
+            className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-zinc-900/50 transition-colors"
             title={user.name}
           >
             <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-slate-800 text-white text-[10px] font-bold select-none tracking-wide">
               {getInitials(user.name)}
             </div>
-            <span className="hidden sm:block text-[12px] font-medium text-slate-700 max-w-[88px] truncate">
+            <span className="hidden sm:block text-[12px] font-medium text-zinc-300 max-w-[88px] truncate">
               {user.name.split(' ')[0]}
             </span>
           </button>
 
           {/* Dropdown */}
-          <div className="absolute right-0 top-full mt-1.5 w-52 rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-200/60 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50">
+          <div className="absolute right-0 top-full mt-1.5 w-52 rounded-xl border border-border bg-card shadow-lg shadow-slate-200/60 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50">
             {/* User info */}
-            <div className="px-3.5 py-3 border-b border-slate-100">
-              <p className="text-[12px] font-semibold text-slate-800 truncate">{user.name}</p>
-              <p className="text-[11px] text-slate-400 truncate mt-0.5">{user.email}</p>
-              <span className="inline-block mt-1.5 text-[9px] font-semibold bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-md capitalize tracking-wide uppercase">
+            <div className="px-3.5 py-3 border-b border-border">
+              <p className="text-[12px] font-semibold text-foreground truncate">{user.name}</p>
+              <p className="text-[11px] text-zinc-500 truncate mt-0.5">{user.email}</p>
+              <span className="inline-block mt-1.5 text-[9px] font-semibold bg-zinc-900/50 text-zinc-400 px-1.5 py-0.5 rounded-md capitalize tracking-wide uppercase">
                 {user.role}
               </span>
             </div>
@@ -135,26 +135,26 @@ export default function Header({ onMenuClick, user }: HeaderProps) {
             <div className="p-1">
               <Link
                 href="/contatos"
-                className="flex w-full items-center gap-2 px-2.5 py-2 rounded-lg text-[12px] text-slate-600 hover:bg-slate-50 transition-colors"
+                className="flex w-full items-center gap-2 px-2.5 py-2 rounded-lg text-[12px] text-zinc-400 hover:bg-muted transition-colors"
               >
-                <Users className="h-3.5 w-3.5 text-slate-400" />
+                <Users className="h-3.5 w-3.5 text-zinc-500" />
                 Contatos
               </Link>
               <Link
                 href="/parceiros"
-                className="flex w-full items-center gap-2 px-2.5 py-2 rounded-lg text-[12px] text-slate-600 hover:bg-slate-50 transition-colors"
+                className="flex w-full items-center gap-2 px-2.5 py-2 rounded-lg text-[12px] text-zinc-400 hover:bg-muted transition-colors"
               >
-                <Handshake className="h-3.5 w-3.5 text-slate-400" />
+                <Handshake className="h-3.5 w-3.5 text-zinc-500" />
                 Parceiros
               </Link>
-              <div className="my-1 border-t border-slate-100" />
-              <button className="flex w-full items-center gap-2 px-2.5 py-2 rounded-lg text-[12px] text-slate-600 hover:bg-slate-50 transition-colors">
-                <Settings className="h-3.5 w-3.5 text-slate-400" />
+              <div className="my-1 border-t border-border" />
+              <button className="flex w-full items-center gap-2 px-2.5 py-2 rounded-lg text-[12px] text-zinc-400 hover:bg-muted transition-colors">
+                <Settings className="h-3.5 w-3.5 text-zinc-500" />
                 Configurações
               </button>
               <button
                 onClick={() => signOut({ callbackUrl: '/login' })}
-                className="flex w-full items-center gap-2 px-2.5 py-2 rounded-lg text-[12px] text-slate-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+                className="flex w-full items-center gap-2 px-2.5 py-2 rounded-lg text-[12px] text-zinc-400 hover:bg-red-50 hover:text-red-600 transition-colors"
               >
                 <LogOut className="h-3.5 w-3.5" />
                 Sair

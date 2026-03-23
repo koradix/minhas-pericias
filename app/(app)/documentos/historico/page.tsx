@@ -66,27 +66,27 @@ export default async function DocumentosHistoricoPage() {
           description='Use um modelo em "Modelos" para gerar seu primeiro documento.'
         />
       ) : (
-        <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div className="rounded-xl border border-border bg-card shadow-saas overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-100 bg-slate-50">
-                  <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                <tr className="border-b border-border bg-muted">
+                  <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
                     Documento
                   </th>
-                  <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                  <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
                     Tipo
                   </th>
-                  <th className="hidden md:table-cell px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                  <th className="hidden md:table-cell px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
                     Vínculo
                   </th>
-                  <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                  <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
                     Criado em
                   </th>
-                  <th className="px-4 py-3 text-center text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                  <th className="px-4 py-3 text-center text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
                     Status
                   </th>
-                  <th className="px-4 py-3 text-center text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                  <th className="px-4 py-3 text-center text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
                     Ação
                   </th>
                 </tr>
@@ -98,18 +98,18 @@ export default async function DocumentosHistoricoPage() {
                       label: doc.status,
                       variant: 'secondary' as const,
                     }
-                  const tipoColor = tipoColors[doc.tipo] ?? 'bg-slate-50 text-slate-700'
+                  const tipoColor = tipoColors[doc.tipo] ?? 'bg-muted text-zinc-300'
                   return (
-                    <tr key={doc.id} className="hover:bg-slate-50 transition-colors">
+                    <tr key={doc.id} className="hover:bg-muted transition-colors">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md bg-violet-50">
                             <FileText className="h-3.5 w-3.5 text-violet-600" />
                           </div>
                           <div>
-                            <p className="text-xs font-semibold text-slate-900">{doc.titulo}</p>
+                            <p className="text-xs font-semibold text-foreground">{doc.titulo}</p>
                             <div className="flex items-center gap-1.5 mt-0.5">
-                              <p className="text-[11px] text-slate-400">{doc.id}</p>
+                              <p className="text-[11px] text-zinc-500">{doc.id}</p>
                               {doc.isReal && (
                                 <span className="inline-flex items-center rounded px-1 py-px bg-emerald-50 text-[9px] font-semibold text-emerald-600">
                                   REAL
@@ -129,10 +129,10 @@ export default async function DocumentosHistoricoPage() {
                           {tipoDocumentoLabels[doc.tipo]}
                         </span>
                       </td>
-                      <td className="hidden md:table-cell px-4 py-3 text-xs text-slate-500">
+                      <td className="hidden md:table-cell px-4 py-3 text-xs text-zinc-400">
                         {doc.vinculo}
                       </td>
-                      <td className="px-4 py-3 text-xs text-slate-600">{doc.data}</td>
+                      <td className="px-4 py-3 text-xs text-zinc-400">{doc.data}</td>
                       <td className="px-4 py-3 text-center">
                         <Badge variant={st.variant}>{st.label}</Badge>
                       </td>
@@ -151,7 +151,7 @@ export default async function DocumentosHistoricoPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-7 px-2 text-xs text-slate-400 cursor-default"
+                            className="h-7 px-2 text-xs text-zinc-500 cursor-default"
                             disabled
                           >
                             <Download className="h-3.5 w-3.5" />
@@ -164,8 +164,8 @@ export default async function DocumentosHistoricoPage() {
               </tbody>
             </table>
           </div>
-          <div className="border-t border-slate-200 bg-slate-50 px-4 py-3 flex items-center gap-3">
-            <p className="text-xs text-slate-500">{rows.length} documentos</p>
+          <div className="border-t border-border bg-muted px-4 py-3 flex items-center gap-3">
+            <p className="text-xs text-zinc-400">{rows.length} documentos</p>
             {reais.length > 0 && (
               <p className="text-xs text-emerald-600 font-medium">
                 {reais.length} gerado{reais.length > 1 ? 's' : ''} pela plataforma

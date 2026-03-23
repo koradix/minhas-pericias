@@ -14,7 +14,7 @@ export default function AppShell({ children, user }: AppShellProps) {
   const [collapsed, setCollapsed] = useState(false)
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50">
+    <div className="flex h-screen overflow-hidden bg-muted">
       <Sidebar
         mobileOpen={mobileOpen}
         collapsed={collapsed}

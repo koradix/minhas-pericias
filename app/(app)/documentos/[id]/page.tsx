@@ -43,7 +43,7 @@ export default async function DocumentoDetailPage({
       {/* Meta bar */}
       <div className="flex flex-wrap items-center gap-3">
         <Link href="/documentos/historico">
-          <Button variant="ghost" size="sm" className="gap-1.5 text-slate-500">
+          <Button variant="ghost" size="sm" className="gap-1.5 text-zinc-400">
             <ArrowLeft className="h-3.5 w-3.5" />
             Histórico
           </Button>
@@ -61,13 +61,13 @@ export default async function DocumentoDetailPage({
         <Badge variant={st.variant}>{st.label}</Badge>
 
         {doc.periciaNum && (
-          <span className="flex items-center gap-1 text-xs text-slate-400">
+          <span className="flex items-center gap-1 text-xs text-zinc-500">
             <FileText className="h-3 w-3" />
             {doc.periciaNum}
           </span>
         )}
 
-        <span className="flex items-center gap-1 text-xs text-slate-400 ml-auto">
+        <span className="flex items-center gap-1 text-xs text-zinc-500 ml-auto">
           <Clock className="h-3 w-3" />
           Atualizado em{' '}
           {new Date(doc.updatedAt).toLocaleDateString('pt-BR', {
@@ -79,17 +79,17 @@ export default async function DocumentoDetailPage({
       </div>
 
       {/* Document content */}
-      <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-3">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+      <div className="rounded-xl border border-border bg-card shadow-saas">
+        <div className="flex items-center justify-between border-b border-border px-6 py-3">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
             Conteúdo do documento
           </p>
-          <p className="text-[10px] text-slate-300">
+          <p className="text-[10px] text-zinc-600">
             {doc.conteudo.length} caracteres
           </p>
         </div>
         <div className="overflow-x-auto p-6">
-          <pre className="whitespace-pre-wrap font-mono text-[11px] leading-[1.7] text-slate-700">
+          <pre className="whitespace-pre-wrap font-mono text-[11px] leading-[1.7] text-zinc-300">
             {doc.conteudo}
           </pre>
         </div>

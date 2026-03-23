@@ -186,7 +186,7 @@ export default async function DashboardPage() {
                 <Radar className="h-5 w-5 text-brand-500" />
               </div>
               {citacoesNaoLidas > 0 && (
-                <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white ring-2 ring-card shadow-sm">
+                <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white ring-2 ring-card shadow-saas">
                   {citacoesNaoLidas}
                 </span>
               )}
@@ -208,8 +208,8 @@ export default async function DashboardPage() {
         {/* Planejar Rota — secondary CTA */}
         <Link href="/rotas/nova">
           <div className="flex items-center gap-4 rounded-xl bg-card border border-border px-5 py-4 hover:border-zinc-700 hover:bg-zinc-900/40 transition-all group cursor-pointer">
-            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-zinc-800/50 border border-zinc-800 group-hover:bg-zinc-800 transition-colors">
-              <Navigation className="h-4 w-4 text-zinc-400 group-hover:text-foreground transition-colors" />
+            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-brand-500/10 border border-brand-500/20 group-hover:bg-brand-500/20 transition-colors">
+              <Navigation className="h-4 w-4 text-brand-500 transition-colors" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-foreground">Planejar Rota</p>
@@ -229,7 +229,7 @@ export default async function DashboardPage() {
             value={citacoesNaoLidas}
             subtitle={citacoesNaoLidas > 0 ? 'Não lidas' : 'Nenhuma pendente'}
             icon={Bell}
-            accent={citacoesNaoLidas > 0 ? 'brand' : 'slate'}
+            accent="brand"
             highlight={citacoesNaoLidas > 0}
             className="h-full cursor-pointer hover:border-zinc-700 transition-all"
           />
@@ -241,7 +241,7 @@ export default async function DashboardPage() {
             value={periciasAtivas.length}
             subtitle={periciasAtivas.length > 0 ? 'Em andamento' : 'Nenhuma ativa'}
             icon={FileText}
-            accent={periciasAtivas.length > 0 ? 'brand' : 'slate'}
+            accent="brand"
             className="h-full cursor-pointer hover:border-zinc-700 transition-all"
           />
         </Link>
@@ -252,7 +252,7 @@ export default async function DashboardPage() {
             value={laudosPendentes}
             subtitle={laudosPendentes > 0 ? 'Rotas concluídas' : 'Nenhum pendente'}
             icon={ScrollText}
-            accent={laudosPendentes > 0 ? 'amber' : 'slate'}
+            accent="brand"
             highlight={laudosPendentes > 0}
             className="h-full cursor-pointer hover:border-zinc-700 transition-all"
           />
@@ -293,7 +293,7 @@ export default async function DashboardPage() {
           <CardContent className="pt-0 space-y-1">
             {periciasAtivas.length === 0 ? (
               <div className="flex flex-col items-center justify-center min-h-[160px] gap-3 text-center border border-dashed border-border/50 rounded-lg bg-zinc-900/20">
-                <FileText className="h-6 w-6 text-zinc-600" />
+                <FileText className="h-6 w-6 text-brand-500" />
                 <p className="text-sm text-zinc-500">Nenhuma perícia ativa</p>
                 <Link href="/rotas/nova">
                   <Button size="sm" variant="outline" className="border-border text-xs h-8">
@@ -310,8 +310,8 @@ export default async function DashboardPage() {
                     href={`/pericias/${p.id}`}
                     className="group flex items-center gap-3 rounded-lg border border-transparent pl-2 pr-3 py-2.5 hover:bg-zinc-900/60 hover:border-border transition-all"
                   >
-                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded bg-zinc-900 border border-zinc-800">
-                      <FileText className="h-4 w-4 text-zinc-400 group-hover:text-brand-400 transition-colors" />
+                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded bg-brand-500/10 border border-brand-500/20">
+                      <FileText className="h-4 w-4 text-brand-500 transition-colors" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-foreground truncate">{p.titulo}</p>
@@ -359,7 +359,7 @@ export default async function DashboardPage() {
           <CardContent className="pt-0">
             {rotasAtivas.length === 0 ? (
               <div className="flex flex-col items-center justify-center min-h-[160px] gap-3 text-center border border-dashed border-border/50 rounded-lg bg-zinc-900/20">
-                <Navigation className="h-6 w-6 text-zinc-600" />
+                <Navigation className="h-6 w-6 text-brand-500" />
                 <div>
                   <p className="text-sm font-medium text-zinc-300">Nenhuma rota ativa</p>
                   <p className="text-xs text-zinc-500 mt-0.5">Planeje uma vistoria</p>
@@ -375,8 +375,8 @@ export default async function DashboardPage() {
                 {rotasAtivas.map((rota) => (
                   <Link key={rota.id} href="/rotas/pericias">
                     <div className="group flex items-start gap-3 rounded-lg border border-border bg-zinc-900/30 p-3 hover:border-brand-500/30 hover:bg-zinc-900/80 transition-all cursor-pointer">
-                      <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded bg-zinc-800 border border-zinc-700">
-                        <Navigation className="h-3.5 w-3.5 text-zinc-400 group-hover:text-brand-400 transition-colors" />
+                      <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded bg-brand-500/10 border border-brand-500/20">
+                        <Navigation className="h-3.5 w-3.5 text-brand-500 transition-colors" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-2 mb-1">
@@ -446,7 +446,7 @@ export default async function DashboardPage() {
                       : 'bg-card border-border text-zinc-400 hover:border-zinc-700 hover:text-foreground hover:bg-zinc-900/50',
                   )}
                 >
-                  <Icon className={cn("h-5 w-5", action.primary ? "text-black/80" : "text-zinc-500")} />
+                  <Icon className={cn("h-5 w-5", action.primary ? "text-black/80" : "text-brand-500")} />
                   {action.label}
                 </button>
               </Link>

@@ -107,32 +107,32 @@ export default async function RotasProspeccaoPage() {
       />
 
       {/* ── Varas do Radar ──────────────────────────────────────────────────── */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
+      <div className="rounded-xl border border-border bg-card p-5 shadow-saas space-y-4">
 
         {/* header row */}
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-semibold text-slate-900">
+            <p className="text-sm font-semibold text-foreground">
               Varas do Radar
               {varas.length > 0 && (
-                <span className="ml-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-lime-100 px-1.5 text-[10px] font-bold text-lime-700">
+                <span className="ml-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-500/20 px-1.5 text-[10px] font-bold text-brand-400">
                   {varas.length}
                 </span>
               )}
             </p>
-            <p className="text-xs text-slate-400 mt-0.5">Varas sincronizadas do seu radar de nomeações</p>
+            <p className="text-xs text-zinc-500 mt-0.5">Varas sincronizadas do seu radar de nomeações</p>
           </div>
           <SincronizarVarasBtn />
         </div>
 
         {varas.length === 0 ? (
-          <div className="flex items-center gap-3 rounded-xl border border-dashed border-slate-200 px-4 py-4">
-            <AlertCircle className="h-4 w-4 text-slate-400 flex-shrink-0" />
+          <div className="flex items-center gap-3 rounded-xl border border-dashed border-border px-4 py-4">
+            <AlertCircle className="h-4 w-4 text-zinc-500 flex-shrink-0" />
             <div>
-              <p className="text-xs font-medium text-slate-600">Nenhuma vara sincronizada</p>
-              <p className="text-xs text-slate-400">Configure tribunais no cadastro e clique em &quot;Sincronizar varas&quot;</p>
+              <p className="text-xs font-medium text-zinc-400">Nenhuma vara sincronizada</p>
+              <p className="text-xs text-zinc-500">Configure tribunais no cadastro e clique em &quot;Sincronizar varas&quot;</p>
             </div>
-            <Link href="/nomeacoes" className="ml-auto text-xs text-lime-600 hover:text-lime-700 font-medium whitespace-nowrap">
+            <Link href="/nomeacoes" className="ml-auto text-xs text-brand-500 hover:text-brand-400 font-medium whitespace-nowrap">
               Ir ao Radar →
             </Link>
           </div>
@@ -141,8 +141,8 @@ export default async function RotasProspeccaoPage() {
             {/* KPI strip */}
             <div className="grid grid-cols-3 gap-3">
               {[
-                { label: 'Total', value: varas.length,   color: 'bg-slate-50  text-slate-700'  },
-                { label: 'Com nomeações', value: comNomeacoes, color: 'bg-lime-50   text-lime-700'   },
+                { label: 'Total', value: varas.length,   color: 'bg-muted  text-zinc-300'  },
+                { label: 'Com nomeações', value: comNomeacoes, color: 'bg-brand-500/10   text-brand-400'   },
                 { label: 'Para prospectar', value: semNomeacoes, color: 'bg-amber-50  text-amber-700'  },
               ].map((k) => (
                 <div key={k.label} className={cn('rounded-xl px-3 py-2.5 text-center', k.color)}>
@@ -157,23 +157,23 @@ export default async function RotasProspeccaoPage() {
               {varas.map((v) => (
                 <div
                   key={v.id}
-                  className="flex items-center gap-3 rounded-xl border border-slate-100 px-3 py-2.5 hover:border-slate-200 hover:bg-slate-50/50 transition-colors"
+                  className="flex items-center gap-3 rounded-xl border border-border px-3 py-2.5 hover:border-border hover:bg-muted/50 transition-colors"
                 >
                   <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-violet-50">
                     <Landmark className="h-4 w-4 text-violet-600" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-semibold text-slate-800 truncate">{v.varaNome}</p>
-                    <p className="text-[10px] text-slate-400">{v.tribunalSigla}{v.uf ? ` · ${v.uf}` : ''}</p>
+                    <p className="text-xs font-semibold text-foreground truncate">{v.varaNome}</p>
+                    <p className="text-[10px] text-zinc-500">{v.tribunalSigla}{v.uf ? ` · ${v.uf}` : ''}</p>
                   </div>
                   {v.totalNomeacoes > 0 && (
-                    <span className="flex items-center gap-1 text-[10px] font-semibold text-lime-700 bg-lime-50 rounded-md px-1.5 py-0.5 flex-shrink-0">
+                    <span className="flex items-center gap-1 text-[10px] font-semibold text-brand-400 bg-brand-500/10 rounded-md px-1.5 py-0.5 flex-shrink-0">
                       <TrendingUp className="h-3 w-3" />
                       {v.totalNomeacoes}
                     </span>
                   )}
                   <Link href={`/rotas/nova?vara=${encodeURIComponent(v.varaNome)}&tribunal=${v.tribunalSigla}&uf=${v.uf ?? ''}`}>
-                    <Button size="sm" variant="outline" className="h-7 px-2.5 text-xs flex-shrink-0 border-slate-200 text-slate-600 hover:border-lime-400 hover:text-lime-700">
+                    <Button size="sm" variant="outline" className="h-7 px-2.5 text-xs flex-shrink-0 border-border text-zinc-400 hover:border-brand-400 hover:text-brand-400">
                       <Plus className="h-3 w-3" />
                       Criar Rota
                     </Button>
@@ -198,14 +198,14 @@ export default async function RotasProspeccaoPage() {
       />
 
       {/* Mapa real — isolate creates stacking context, keeping Leaflet z-indices contained */}
-      <div className="isolate h-[420px] w-full overflow-hidden rounded-xl border border-slate-200 shadow-sm">
+      <div className="isolate h-[420px] w-full overflow-hidden rounded-xl border border-border shadow-saas">
         <RouteMapDynamic
           routes={rotas.map((r) => ({ id: r.id, pontos: r.pontos }))}
         />
       </div>
 
       {/* Legenda */}
-      <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
+      <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-400">
         {Object.entries(pontoConfig).map(([tipo, conf]) => {
           const Icon = conf.icon
           return (

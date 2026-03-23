@@ -22,7 +22,7 @@ interface KPICardProps {
 
 const accentIcon: Record<KPIAccent, string> = {
   brand:   'bg-brand-500/10 text-brand-500',
-  lime:    'bg-lime-500/10  text-lime-500',
+  lime:    'bg-brand-500/10  text-brand-500',
   emerald: 'bg-emerald-500/10 text-emerald-500',
   amber:   'bg-amber-500/10   text-amber-500',
   rose:    'bg-rose-500/10    text-rose-500',

@@ -19,7 +19,7 @@ const statusConfig: Record<string, {
   aceita: { label: 'Aceita', variant: 'success', icon: CheckCircle2, color: 'text-emerald-600 bg-emerald-50' },
   recusada: { label: 'Recusada', variant: 'danger', icon: XCircle, color: 'text-red-600 bg-red-50' },
   em_negociacao: { label: 'Em negociação', variant: 'warning', icon: MessageSquare, color: 'text-violet-600 bg-violet-50' },
-  concluida: { label: 'Concluída', variant: 'secondary', icon: Star, color: 'text-slate-600 bg-slate-50' },
+  concluida: { label: 'Concluída', variant: 'secondary', icon: Star, color: 'text-zinc-400 bg-muted' },
 }
 
 const FILTROS = [
@@ -64,13 +64,13 @@ export function PropostasClient({ propostas }: { propostas: Proposta[] }) {
               className={`h-8 px-3 rounded-full text-xs font-medium transition-colors flex items-center gap-1.5 ${
                 filtro === f.key
                   ? 'bg-blue-600 text-white'
-                  : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                  : 'bg-card border border-border text-zinc-400 hover:bg-muted'
               }`}
             >
               {f.label}
               {count > 0 && (
                 <span className={`inline-flex items-center justify-center h-4 min-w-[1rem] rounded-full px-1 text-[10px] font-bold ${
-                  filtro === f.key ? 'bg-white/30 text-white' : 'bg-slate-100 text-slate-600'
+                  filtro === f.key ? 'bg-card/30 text-white' : 'bg-zinc-900/50 text-zinc-400'
                 }`}>
                   {count}
                 </span>
@@ -99,7 +99,7 @@ export function PropostasClient({ propostas }: { propostas: Proposta[] }) {
             return (
               <div
                 key={p.id}
-                className="flex gap-4 rounded-xl border border-slate-200 bg-white p-4 hover:shadow-sm transition-all"
+                className="flex gap-4 rounded-xl border border-border bg-card p-4 hover:shadow-saas transition-all"
               >
                 <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ${conf.color}`}>
                   <Icon className="h-5 w-5" />
@@ -108,31 +108,30 @@ export function PropostasClient({ propostas }: { propostas: Proposta[] }) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-3 flex-wrap">
                     <div>
-                      <p className="text-sm font-semibold text-slate-900">{p.peritoNome}</p>
-                      <p className="text-xs text-slate-400 mt-0.5">{p.demandaTitulo}</p>
+                      <p className="text-sm font-semibold text-foreground">{p.peritoNome}</p>
+                      <p className="text-xs text-zinc-500 mt-0.5">{p.demandaTitulo}</p>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <Badge variant={conf.variant}>{conf.label}</Badge>
                     </div>
                   </div>
-
                   {p.mensagem && (
-                    <p className="mt-2 text-xs text-slate-500 leading-relaxed line-clamp-2 italic">
-                      "{p.mensagem}"
+                    <p className="mt-2 text-xs text-zinc-400 leading-relaxed line-clamp-2 italic">
+                      {'"'}{p.mensagem}{'"'}
                     </p>
                   )}
 
-                  <div className="mt-2 flex items-center gap-4 text-xs text-slate-400">
+                  <div className="mt-2 flex items-center gap-4 text-xs text-zinc-500">
                     <span className="flex items-center gap-1">
                       <Clock className="h-3 w-3" />
                       {formatDate(p.createdAt)}
                     </span>
                     {p.valorProposto && (
-                      <span className="font-medium text-slate-600">
+                      <span className="font-medium text-zinc-400">
                         {formatCurrency(p.valorProposto)}
                       </span>
                     )}
-                    <span className="text-[10px] bg-slate-100 rounded px-1.5 py-0.5">
+                    <span className="text-[10px] bg-zinc-900/50 rounded px-1.5 py-0.5">
                       #{p.peritoId}
                     </span>
                   </div>

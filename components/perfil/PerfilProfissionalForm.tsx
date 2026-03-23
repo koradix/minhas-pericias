@@ -36,8 +36,8 @@ function Chip({ label, active, onClick }: { label: string; active: boolean; onCl
       onClick={onClick}
       className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium border transition-colors ${
         active
-          ? 'bg-lime-500 border-lime-500 text-slate-900'
-          : 'border-slate-300 text-slate-600 hover:border-lime-400 hover:text-lime-700 bg-white'
+          ? 'bg-brand-500 border-lime-500 text-foreground'
+          : 'border-border text-zinc-400 hover:border-brand-400 hover:text-brand-400 bg-card'
       }`}
     >
       {active && <Check className="h-3 w-3" />}
@@ -67,8 +67,8 @@ export function PerfilProfissionalForm({
 }: Props) {
   const { areaPrincipal, areasSecundarias, especialidades2, keywords, formacao, registro } = value
 
-  const labelCls = 'block text-xs font-medium text-slate-700 mb-1.5'
-  const inputCls = 'w-full h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-lime-500 focus:outline-none focus:ring-1 focus:ring-lime-500'
+  const labelCls = 'block text-xs font-medium text-zinc-300 mb-1.5'
+  const inputCls = 'w-full h-10 rounded-lg border border-border bg-card px-3 text-sm text-foreground placeholder:text-zinc-500 focus:border-lime-500 focus:outline-none focus:ring-1 focus:ring-lime-500'
 
   // ── Formação change: auto-suggest área principal ────────────────────────────
 
@@ -228,16 +228,16 @@ export function PerfilProfissionalForm({
                 }
                 className={`relative flex items-center gap-2 rounded-xl border px-3 py-2 text-left text-xs font-medium transition-colors ${
                   isPrimary
-                    ? 'border-lime-500 bg-lime-50 text-lime-800 ring-1 ring-lime-500'
+                    ? 'border-lime-500 bg-brand-500/10 text-lime-800 ring-1 ring-lime-500'
                     : isSuggested
                     ? 'border-amber-300 bg-amber-50/60 text-amber-800 ring-1 ring-amber-300'
                     : isSecondary
-                    ? 'border-slate-300 bg-slate-50 text-slate-700'
-                    : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:bg-slate-50'
+                    ? 'border-border bg-muted text-zinc-300'
+                    : 'border-border bg-card text-zinc-400 hover:border-border hover:bg-muted'
                 }`}
               >
                 {isPrimary && (
-                  <span className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-lime-500">
+                  <span className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-brand-500">
                     <Check className="h-2.5 w-2.5 text-white" />
                   </span>
                 )}
@@ -251,13 +251,13 @@ export function PerfilProfissionalForm({
                 )}
                 <span className="leading-tight">{area.label}</span>
                 {isPrimary && (
-                  <span className="ml-auto text-[9px] font-bold text-lime-600 whitespace-nowrap">principal</span>
+                  <span className="ml-auto text-[9px] font-bold text-brand-500 whitespace-nowrap">principal</span>
                 )}
               </button>
             )
           })}
         </div>
-        <p className="mt-1.5 text-[10px] text-slate-400">
+        <p className="mt-1.5 text-[10px] text-zinc-500">
           Clique para definir a principal. Clique direito para adicionar áreas secundárias.
         </p>
       </div>
@@ -268,7 +268,7 @@ export function PerfilProfissionalForm({
           <p className={labelCls}>
             Especialidades em perícia
             {especialidades2.length > 0 && (
-              <span className="ml-2 inline-flex items-center justify-center rounded-full bg-lime-100 text-lime-700 text-[10px] font-bold px-1.5 py-0.5">
+              <span className="ml-2 inline-flex items-center justify-center rounded-full bg-brand-500/20 text-brand-400 text-[10px] font-bold px-1.5 py-0.5">
                 {especialidades2.length}
               </span>
             )}
@@ -291,7 +291,7 @@ export function PerfilProfissionalForm({
         <div>
           <p className={labelCls}>
             Palavras-chave para busca
-            <span className="ml-1 font-normal text-slate-400">— melhoram o matching de demandas</span>
+            <span className="ml-1 font-normal text-zinc-500">— melhoram o matching de demandas</span>
           </p>
           <div className="flex flex-wrap gap-2">
             {keywordsSugeridas.map((kw) => (

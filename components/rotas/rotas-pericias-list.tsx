@@ -47,7 +47,7 @@ export function RotasPericiasListClient({ rotas }: { rotas: Rota[] }) {
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 mb-1.5">
                     <Badge variant={st.variant}>{st.label}</Badge>
-                    <span className="text-xs text-slate-400">{rota.data}</span>
+                    <span className="text-xs text-zinc-500">{rota.data}</span>
                   </div>
                   <CardTitle className="text-base">{rota.titulo}</CardTitle>
                 </div>
@@ -115,17 +115,17 @@ export function RotasPericiasListClient({ rotas }: { rotas: Rota[] }) {
                 )}
               </div>
 
-              <div className="flex items-center gap-5 text-xs text-slate-500">
+              <div className="flex items-center gap-5 text-xs text-zinc-400">
                 <span className="flex items-center gap-1.5">
-                  <MapPin className="h-3.5 w-3.5 text-slate-400" />
+                  <MapPin className="h-3.5 w-3.5 text-zinc-500" />
                   {rota.distanciaKm} km
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <Clock className="h-3.5 w-3.5 text-slate-400" />
+                  <Clock className="h-3.5 w-3.5 text-zinc-500" />
                   {formatTempo(rota.tempoEstimadoMin)}
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <Banknote className="h-3.5 w-3.5 text-slate-400" />
+                  <Banknote className="h-3.5 w-3.5 text-zinc-500" />
                   {formatCurrency(rota.custoEstimado)}
                 </span>
               </div>

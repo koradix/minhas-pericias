@@ -98,10 +98,10 @@ export function AdminPanel({ users }: { users: UserRow[] }) {
         <CardContent className="space-y-2">
           {users.map((u) => (
             <div key={u.id} className="space-y-1">
-              <div className="flex items-center gap-3 rounded-xl border border-slate-100 px-4 py-3">
+              <div className="flex items-center gap-3 rounded-xl border border-border px-4 py-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-slate-900 truncate">{u.name}</p>
-                  <p className="text-xs text-slate-500">{u.email}</p>
+                  <p className="text-sm font-semibold text-foreground truncate">{u.name}</p>
+                  <p className="text-xs text-zinc-400">{u.email}</p>
                 </div>
                 <Badge variant={u.role === 'perito' ? 'info' : 'secondary'} className="flex-shrink-0">
                   {u.role}
@@ -118,7 +118,7 @@ export function AdminPanel({ users }: { users: UserRow[] }) {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="flex-shrink-0 gap-1.5 text-lime-700 border-lime-200 hover:bg-lime-50"
+                  className="flex-shrink-0 gap-1.5 text-brand-400 border-brand-500/30 hover:bg-brand-500/10"
                   onClick={() => handleCreateDemo(u.id)}
                   disabled={isPendingDemo}
                 >
@@ -141,10 +141,10 @@ export function AdminPanel({ users }: { users: UserRow[] }) {
 
           {/* Password change form */}
           {selectedUser && (
-            <div className="rounded-xl border border-lime-200 bg-lime-50 p-4 space-y-3 mt-2">
-              <p className="text-sm font-semibold text-slate-800">
+            <div className="rounded-xl border border-brand-500/30 bg-brand-500/10 p-4 space-y-3 mt-2">
+              <p className="text-sm font-semibold text-foreground">
                 Alterar senha de{' '}
-                <span className="text-lime-700">{selectedUser.email}</span>
+                <span className="text-brand-400">{selectedUser.email}</span>
               </p>
               <div className="relative">
                 <input
@@ -153,13 +153,13 @@ export function AdminPanel({ users }: { users: UserRow[] }) {
                   onChange={(e) => setNewPassword(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleChangePassword()}
                   placeholder="Nova senha (mínimo 6 caracteres)"
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 pr-10 text-sm text-slate-800 focus:border-lime-400 focus:outline-none focus:ring-1 focus:ring-lime-400"
+                  className="w-full rounded-lg border border-border bg-card px-3 py-2 pr-10 text-sm text-foreground focus:border-brand-400 focus:outline-none focus:ring-1 focus:ring-lime-400"
                   autoFocus
                 />
                 <button
                   type="button"
                   onClick={() => setShowPw(!showPw)}
-                  className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600"
+                  className="absolute right-2.5 top-2.5 text-zinc-500 hover:text-zinc-400"
                 >
                   {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -170,7 +170,7 @@ export function AdminPanel({ users }: { users: UserRow[] }) {
                 </Button>
                 <Button
                   size="sm"
-                  className="bg-lime-500 hover:bg-lime-600 text-slate-900 font-semibold"
+                  className="bg-brand-500 hover:bg-lime-600 text-foreground font-semibold"
                   onClick={handleChangePassword}
                   disabled={!newPassword || newPassword.length < 6 || isPendingPw}
                 >
@@ -209,11 +209,11 @@ export function AdminPanel({ users }: { users: UserRow[] }) {
           <CardTitle className="flex items-center gap-2 text-sm">
             <Database className="h-4 w-4" />
             SQL Runner
-            <span className="ml-1 text-xs font-normal text-slate-400">Turso / SQLite</span>
+            <span className="ml-1 text-xs font-normal text-zinc-500">Turso / SQLite</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-zinc-400">
             Execute SQL direto no banco de produção. Statements ignoram erros de coluna/tabela
             já existente.
           </p>
@@ -222,7 +222,7 @@ export function AdminPanel({ users }: { users: UserRow[] }) {
             onChange={(e) => setSql(e.target.value)}
             placeholder={`ALTER TABLE "Checkpoint" ADD COLUMN "pericoId" TEXT;\nCREATE TABLE IF NOT EXISTS "VaraContato" (...);\nUPDATE "User" SET "passwordHash" = '...' WHERE "email" = '...';`}
             rows={10}
-            className="w-full resize-y rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 font-mono text-xs text-slate-800 placeholder:text-slate-400 focus:border-lime-400 focus:outline-none focus:ring-1 focus:ring-lime-400"
+            className="w-full resize-y rounded-lg border border-border bg-muted px-3 py-2.5 font-mono text-xs text-foreground placeholder:text-zinc-500 focus:border-brand-400 focus:outline-none focus:ring-1 focus:ring-lime-400"
           />
           <div className="flex gap-2 justify-end">
             <Button
@@ -234,7 +234,7 @@ export function AdminPanel({ users }: { users: UserRow[] }) {
             </Button>
             <Button
               size="sm"
-              className="bg-lime-500 hover:bg-lime-600 text-slate-900 font-semibold"
+              className="bg-brand-500 hover:bg-lime-600 text-foreground font-semibold"
               onClick={handleRunSql}
               disabled={!sql.trim() || isPendingSql}
             >

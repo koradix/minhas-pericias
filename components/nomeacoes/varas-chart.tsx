@@ -20,8 +20,8 @@ export function VarasChart({ varas }: Props) {
 
   if (top10.length === 0) {
     return (
-      <div className="flex h-48 items-center justify-center rounded-xl border border-dashed border-slate-200">
-        <p className="text-xs text-slate-400">Nenhuma nomeação registrada ainda — execute o radar para acumular dados</p>
+      <div className="flex h-48 items-center justify-center rounded-xl border border-dashed border-border">
+        <p className="text-xs text-zinc-500">Nenhuma nomeação registrada ainda — execute o radar para acumular dados</p>
       </div>
     )
   }
@@ -59,10 +59,10 @@ export function VarasChart({ varas }: Props) {
             if (!active || !payload?.length) return null
             const d = payload[0].payload as typeof data[0]
             return (
-              <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm text-xs">
-                <p className="font-semibold text-slate-800">{d.sigla}</p>
-                <p className="text-slate-500">{d.name}</p>
-                <p className="font-bold text-lime-700 mt-0.5">{d.nomeacoes} nomeação(ões)</p>
+              <div className="rounded-lg border border-border bg-card px-3 py-2 shadow-saas text-xs">
+                <p className="font-semibold text-foreground">{d.sigla}</p>
+                <p className="text-zinc-400">{d.name}</p>
+                <p className="font-bold text-brand-400 mt-0.5">{d.nomeacoes} nomeação(ões)</p>
               </div>
             )
           }}

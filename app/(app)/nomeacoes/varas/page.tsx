@@ -29,7 +29,7 @@ const prioridadeRow: Record<string, string> = {
 }
 
 const prioridadeBar: Record<string, string> = {
-  ALTA:  'bg-lime-500',
+  ALTA:  'bg-brand-500',
   MEDIA: 'bg-amber-400',
   BAIXA: 'bg-slate-300',
 }
@@ -52,7 +52,7 @@ export default async function NomeacoesVarasPage() {
         description="Ranking de varas por volume de perícias nomeadas"
         actions={
           <Link href="/nomeacoes/estrategia">
-            <Button size="sm" className="bg-lime-500 hover:bg-lime-600 text-slate-900 font-semibold">
+            <Button size="sm" className="bg-brand-500 hover:bg-lime-600 text-foreground font-semibold">
               <Navigation className="h-3.5 w-3.5" />
               Gerar Estratégia
             </Button>
@@ -61,13 +61,13 @@ export default async function NomeacoesVarasPage() {
       />
 
       {!hasData && (
-        <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center space-y-3">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100">
-            <Building2 className="h-6 w-6 text-slate-400" />
+        <div className="rounded-xl border border-dashed border-border bg-card p-8 text-center space-y-3">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-zinc-900/50">
+            <Building2 className="h-6 w-6 text-zinc-500" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-slate-700">Nenhuma vara sincronizada ainda</p>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-sm font-semibold text-zinc-300">Nenhuma vara sincronizada ainda</p>
+            <p className="text-xs text-zinc-500 mt-1">
               Configure o Radar e execute a primeira busca para acumular dados das varas.
             </p>
           </div>
@@ -83,26 +83,26 @@ export default async function NomeacoesVarasPage() {
       {hasData && (
         <>
           {/* Bar chart */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
-            <p className="text-sm font-semibold text-slate-900">
+          <div className="rounded-xl border border-border bg-card p-5 shadow-saas space-y-3">
+            <p className="text-sm font-semibold text-foreground">
               Nomeações por vara
-              <span className="ml-2 text-xs font-normal text-slate-400">Top 10</span>
+              <span className="ml-2 text-xs font-normal text-zinc-500">Top 10</span>
             </p>
             <VarasChart varas={varas} />
           </div>
 
           {/* Table */}
-          <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+          <div className="rounded-xl border border-border bg-card shadow-saas overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50/80">
-                    <th className="pl-4 pr-2 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-400 w-6">#</th>
-                    <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-400">Vara / Tribunal</th>
-                    <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-400">UF</th>
-                    <th className="px-4 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-slate-400">Nomeações</th>
-                    <th className="px-4 py-3 text-center text-[10px] font-semibold uppercase tracking-wider text-slate-400">Prioridade</th>
-                    <th className="px-4 py-3 text-center text-[10px] font-semibold uppercase tracking-wider text-slate-400">Ação</th>
+                  <tr className="border-b border-border bg-muted/80">
+                    <th className="pl-4 pr-2 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-zinc-500 w-6">#</th>
+                    <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Vara / Tribunal</th>
+                    <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-zinc-500">UF</th>
+                    <th className="px-4 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Nomeações</th>
+                    <th className="px-4 py-3 text-center text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Prioridade</th>
+                    <th className="px-4 py-3 text-center text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Ação</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -112,18 +112,18 @@ export default async function NomeacoesVarasPage() {
                     return (
                       <tr
                         key={v.id}
-                        className={cn('hover:bg-slate-50/60 transition-colors border-l-2', prioridadeRow[pri])}
+                        className={cn('hover:bg-muted/60 transition-colors border-l-2', prioridadeRow[pri])}
                       >
-                        <td className="pl-4 pr-2 py-3 text-xs font-medium text-slate-400 tabular-nums">{i + 1}</td>
+                        <td className="pl-4 pr-2 py-3 text-xs font-medium text-zinc-500 tabular-nums">{i + 1}</td>
                         <td className="px-4 py-3">
-                          <p className="text-sm font-semibold text-slate-800">{v.varaNome}</p>
-                          <p className="text-xs text-slate-400">{v.tribunalSigla} · {v.tribunalNome}</p>
+                          <p className="text-sm font-semibold text-foreground">{v.varaNome}</p>
+                          <p className="text-xs text-zinc-500">{v.tribunalSigla} · {v.tribunalNome}</p>
                         </td>
-                        <td className="px-4 py-3 text-xs text-slate-500">{v.uf ?? '—'}</td>
+                        <td className="px-4 py-3 text-xs text-zinc-400">{v.uf ?? '—'}</td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2 justify-end">
-                            <span className="text-sm font-bold text-slate-800 tabular-nums">{v.totalNomeacoes}</span>
-                            <div className="w-16 h-1 rounded-full bg-slate-100 overflow-hidden">
+                            <span className="text-sm font-bold text-foreground tabular-nums">{v.totalNomeacoes}</span>
+                            <div className="w-16 h-1 rounded-full bg-zinc-900/50 overflow-hidden">
                               <div
                                 className={cn('h-full rounded-full', prioridadeBar[pri])}
                                 style={{ width: `${pct}%` }}
@@ -136,7 +136,7 @@ export default async function NomeacoesVarasPage() {
                         </td>
                         <td className="px-4 py-3 text-center">
                           <Link href="/rotas/nova">
-                            <Button size="sm" variant="outline" className="h-7 px-2.5 text-xs whitespace-nowrap border-slate-200 text-slate-600 hover:border-lime-400 hover:text-lime-700">
+                            <Button size="sm" variant="outline" className="h-7 px-2.5 text-xs whitespace-nowrap border-border text-zinc-400 hover:border-brand-400 hover:text-brand-400">
                               <Navigation className="h-3 w-3" />
                               Criar Rota
                             </Button>
@@ -150,9 +150,9 @@ export default async function NomeacoesVarasPage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
+          <div className="flex items-center justify-between text-xs text-zinc-500 pt-1">
             <span>{varas.length} vara(s) monitorada(s)</span>
-            <Link href="/nomeacoes/estrategia" className="flex items-center gap-1 text-lime-600 hover:text-lime-700 font-medium transition-colors">
+            <Link href="/nomeacoes/estrategia" className="flex items-center gap-1 text-brand-500 hover:text-brand-400 font-medium transition-colors">
               Gerar estratégia de prospecção <ChevronRight className="h-3.5 w-3.5" />
             </Link>
           </div>

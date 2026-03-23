@@ -66,31 +66,31 @@ export default function DocumentosModelosPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
-              <p className="text-xs text-slate-500 leading-relaxed mb-4 line-clamp-2">
+              <p className="text-xs text-zinc-400 leading-relaxed mb-4 line-clamp-2">
                 {m.descricao}
               </p>
 
               {m.arquivosTreinamento.length > 0 && (
                 <div className="mb-4">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-1.5">
                     Arquivos de treinamento
                   </p>
                   <div className="space-y-1">
                     {m.arquivosTreinamento.map((a) => (
-                      <div key={a.id} className="flex items-center gap-2 text-xs text-slate-500">
+                      <div key={a.id} className="flex items-center gap-2 text-xs text-zinc-400">
                         <span className={a.tipo === 'PDF' ? 'text-red-500' : 'text-blue-500'}>
                           {a.tipo}
                         </span>
                         <span className="truncate">{a.nome}</span>
-                        <span className="ml-auto text-slate-400 flex-shrink-0">{a.tamanhoKb}kb</span>
+                        <span className="ml-auto text-zinc-500 flex-shrink-0">{a.tamanhoKb}kb</span>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
 
-              <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-                <span className="text-[10px] text-slate-400">
+              <div className="flex items-center justify-between pt-3 border-t border-border">
+                <span className="text-[10px] text-zinc-500">
                   {m.totalUsos} usos · criado em {m.criadoEm}
                 </span>
                 <UsarModeloButton modelo={m} iaAtiva={iaAtiva} />

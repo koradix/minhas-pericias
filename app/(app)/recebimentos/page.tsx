@@ -46,13 +46,13 @@ export default function RecebimentosPage() {
 
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 pointer-events-none" />
           <input type="text" placeholder="Buscar por pericia ou cliente..." value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full h-9 rounded-lg border border-slate-300 bg-white pl-9 pr-3 text-sm placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+            className="w-full h-9 rounded-lg border border-border bg-card pl-9 pr-3 text-sm placeholder:text-zinc-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
         </div>
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
-          className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500">
+          className="h-9 rounded-lg border border-border bg-card px-3 text-sm text-zinc-300 focus:outline-none focus:ring-1 focus:ring-blue-500">
           <option value="">Todos os status</option>
           <option value="pendente">Pendentes</option>
           <option value="recebido">Recebidos</option>
@@ -63,32 +63,32 @@ export default function RecebimentosPage() {
       {filtered.length === 0 ? (
         <EmptyState icon={ArrowDownCircle} title="Nenhum recebimento encontrado" description="Tente ajustar os filtros ou o termo de busca." />
       ) : (
-        <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div className="rounded-xl border border-border bg-card shadow-saas overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-slate-200">
               <thead>
-                <tr className="bg-slate-50">
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Pericia / Descricao</th>
-                  <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Cliente</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Valor</th>
-                  <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Vencimento</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Status</th>
+                <tr className="bg-muted">
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">Pericia / Descricao</th>
+                  <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">Cliente</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">Valor</th>
+                  <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">Vencimento</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filtered.map((r) => {
                   const status = statusMapRecebimentos[r.status]
                   return (
-                    <tr key={r.id} className="hover:bg-slate-50 cursor-pointer transition-colors">
+                    <tr key={r.id} className="hover:bg-muted cursor-pointer transition-colors">
                       <td className="px-4 py-3.5">
                         <div className="flex items-center gap-3">
                           <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-emerald-50"><FileText className="h-4 w-4 text-emerald-600" /></div>
-                          <div><p className="text-sm font-medium text-slate-900">{r.descricao}</p><p className="text-xs text-slate-400">{r.pericia}</p></div>
+                          <div><p className="text-sm font-medium text-foreground">{r.descricao}</p><p className="text-xs text-zinc-500">{r.pericia}</p></div>
                         </div>
                       </td>
-                      <td className="hidden sm:table-cell px-4 py-3.5"><span className="text-sm text-slate-700">{r.cliente}</span></td>
-                      <td className="px-4 py-3.5"><span className="text-sm font-semibold text-slate-900">{formatCurrency(r.valorTotal)}</span></td>
-                      <td className="hidden md:table-cell px-4 py-3.5"><span className="text-sm text-slate-600">{r.vencimento}</span></td>
+                      <td className="hidden sm:table-cell px-4 py-3.5"><span className="text-sm text-zinc-300">{r.cliente}</span></td>
+                      <td className="px-4 py-3.5"><span className="text-sm font-semibold text-foreground">{formatCurrency(r.valorTotal)}</span></td>
+                      <td className="hidden md:table-cell px-4 py-3.5"><span className="text-sm text-zinc-400">{r.vencimento}</span></td>
                       <td className="px-4 py-3.5"><Badge variant={status.variant}>{status.label}</Badge></td>
                     </tr>
                   )
@@ -96,9 +96,9 @@ export default function RecebimentosPage() {
               </tbody>
             </table>
           </div>
-          <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-4 py-3">
-            <p className="text-xs text-slate-500">{filtered.length} recebimento{filtered.length !== 1 ? "s" : ""}</p>
-            <p className="text-xs font-medium text-slate-700">Total pendente: <span className="text-amber-600">{formatCurrency(totalPendente)}</span></p>
+          <div className="flex items-center justify-between border-t border-border bg-muted px-4 py-3">
+            <p className="text-xs text-zinc-400">{filtered.length} recebimento{filtered.length !== 1 ? "s" : ""}</p>
+            <p className="text-xs font-medium text-zinc-300">Total pendente: <span className="text-amber-600">{formatCurrency(totalPendente)}</span></p>
           </div>
         </div>
       )}

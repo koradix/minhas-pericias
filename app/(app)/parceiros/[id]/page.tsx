@@ -44,10 +44,10 @@ export default async function ParceiroDetailPage({ params }: Props) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-1.5 text-sm text-slate-400">
-        <Link href="/parceiros" className="hover:text-slate-600 transition-colors">Parceiros</Link>
+      <div className="flex items-center gap-1.5 text-sm text-zinc-500">
+        <Link href="/parceiros" className="hover:text-zinc-400 transition-colors">Parceiros</Link>
         <ChevronRight className="h-3.5 w-3.5" />
-        <span className="text-slate-600 truncate max-w-xs">{parceiro.nome}</span>
+        <span className="text-zinc-400 truncate max-w-xs">{parceiro.nome}</span>
       </div>
 
       <PageHeader
@@ -68,8 +68,8 @@ export default async function ParceiroDetailPage({ params }: Props) {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {/* Tipo + Status */}
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-3">Classificação</p>
+        <div className="rounded-xl border border-border bg-card p-5">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-3">Classificação</p>
           <div className="flex flex-wrap gap-2">
             <Badge variant={TIPO_VARIANT[parceiro.tipo] ?? 'secondary'}>
               {TIPO_LABEL[parceiro.tipo] ?? parceiro.tipo}
@@ -81,20 +81,20 @@ export default async function ParceiroDetailPage({ params }: Props) {
         </div>
 
         {/* Contato */}
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-3">Contato</p>
+        <div className="rounded-xl border border-border bg-card p-5">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-3">Contato</p>
           <div className="space-y-2">
             {parceiro.email ? (
-              <div className="flex items-center gap-2 text-sm text-slate-700">
-                <Mail className="h-4 w-4 text-slate-400 flex-shrink-0" />
+              <div className="flex items-center gap-2 text-sm text-zinc-300">
+                <Mail className="h-4 w-4 text-zinc-500 flex-shrink-0" />
                 <span className="truncate">{parceiro.email}</span>
               </div>
             ) : (
-              <p className="text-sm text-slate-400">—</p>
+              <p className="text-sm text-zinc-500">—</p>
             )}
             {parceiro.telefone && (
-              <div className="flex items-center gap-2 text-sm text-slate-700">
-                <Phone className="h-4 w-4 text-slate-400 flex-shrink-0" />
+              <div className="flex items-center gap-2 text-sm text-zinc-300">
+                <Phone className="h-4 w-4 text-zinc-500 flex-shrink-0" />
                 <span>{parceiro.telefone}</span>
               </div>
             )}
@@ -102,29 +102,29 @@ export default async function ParceiroDetailPage({ params }: Props) {
         </div>
 
         {/* Localização */}
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-3">Localização</p>
+        <div className="rounded-xl border border-border bg-card p-5">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-3">Localização</p>
           {parceiro.cidade || parceiro.estado ? (
-            <div className="flex items-center gap-2 text-sm text-slate-700">
-              <MapPin className="h-4 w-4 text-slate-400 flex-shrink-0" />
+            <div className="flex items-center gap-2 text-sm text-zinc-300">
+              <MapPin className="h-4 w-4 text-zinc-500 flex-shrink-0" />
               <span>{[parceiro.cidade, parceiro.estado].filter(Boolean).join(' — ')}</span>
             </div>
           ) : (
-            <p className="text-sm text-slate-400">—</p>
+            <p className="text-sm text-zinc-500">—</p>
           )}
         </div>
       </div>
 
       {/* Observações */}
       {parceiro.observacoes && (
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-2">Observações</p>
-          <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{parceiro.observacoes}</p>
+        <div className="rounded-xl border border-border bg-card p-5">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-2">Observações</p>
+          <p className="text-sm text-zinc-300 whitespace-pre-wrap leading-relaxed">{parceiro.observacoes}</p>
         </div>
       )}
 
       {/* Metadados */}
-      <div className="flex items-center gap-4 text-xs text-slate-400">
+      <div className="flex items-center gap-4 text-xs text-zinc-500">
         <span className="flex items-center gap-1.5">
           <Calendar className="h-3.5 w-3.5" />
           Cadastrado em {criadoEm}

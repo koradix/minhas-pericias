@@ -9,15 +9,15 @@ import type { PropostaHonorarios } from '@prisma/client'
 // ── Input / Textarea style helpers ────────────────────────────────────────────
 
 const inputCls =
-  'w-full h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-lime-500 focus:outline-none focus:ring-1 focus:ring-lime-500/40 disabled:opacity-50'
+  'w-full h-10 rounded-lg border border-border bg-card px-3 text-sm text-foreground placeholder:text-zinc-500 focus:border-lime-500 focus:outline-none focus:ring-1 focus:ring-lime-500/40 disabled:opacity-50'
 
 const textareaCls =
-  'w-full resize-none rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-lime-500 focus:outline-none focus:ring-1 focus:ring-lime-500/40 disabled:opacity-50'
+  'w-full resize-none rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-zinc-500 focus:border-lime-500 focus:outline-none focus:ring-1 focus:ring-lime-500/40 disabled:opacity-50'
 
 const readonlyCls =
-  'w-full h-10 rounded-lg border border-slate-100 bg-slate-50 px-3 text-sm text-slate-500 cursor-default select-none flex items-center'
+  'w-full h-10 rounded-lg border border-border bg-muted px-3 text-sm text-zinc-400 cursor-default select-none flex items-center'
 
-const labelCls = 'block text-xs font-medium text-slate-700 mb-1.5'
+const labelCls = 'block text-xs font-medium text-zinc-300 mb-1.5'
 const errorCls = 'mt-1 text-xs text-red-500'
 
 // ── Props ─────────────────────────────────────────────────────────────────────
@@ -66,9 +66,9 @@ export function PropostaHonorariosForm({ pericia, draft, peritoNomeDefault, peri
       <input type="hidden" name="pericoPartes"   value={pericia.cliente} />
 
       {/* ══ 1. Dados do processo (read-only) ════════════════════════════════ */}
-      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div className="px-5 py-3.5 border-b border-slate-100 bg-slate-50">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+      <section className="rounded-xl border border-border bg-card shadow-saas overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-border bg-muted">
+          <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
             Dados do processo
           </p>
         </div>
@@ -87,7 +87,7 @@ export function PropostaHonorariosForm({ pericia, draft, peritoNomeDefault, peri
           </div>
           <div className="sm:col-span-2">
             <label className={labelCls}>Vara / Tribunal</label>
-            <div className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-sm text-slate-500 leading-snug">
+            <div className="rounded-lg border border-border bg-muted px-3 py-2 text-sm text-zinc-400 leading-snug">
               {pericia.vara}
             </div>
           </div>
@@ -99,9 +99,9 @@ export function PropostaHonorariosForm({ pericia, draft, peritoNomeDefault, peri
       </section>
 
       {/* ══ 2. Identificação do perito ══════════════════════════════════════ */}
-      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div className="px-5 py-3.5 border-b border-slate-100 bg-slate-50">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+      <section className="rounded-xl border border-border bg-card shadow-saas overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-border bg-muted">
+          <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
             Identificação do perito
           </p>
         </div>
@@ -141,9 +141,9 @@ export function PropostaHonorariosForm({ pericia, draft, peritoNomeDefault, peri
       </section>
 
       {/* ══ 3. Proposta ═════════════════════════════════════════════════════ */}
-      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div className="px-5 py-3.5 border-b border-slate-100 bg-slate-50">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+      <section className="rounded-xl border border-border bg-card shadow-saas overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-border bg-muted">
+          <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
             Proposta
           </p>
         </div>
@@ -231,18 +231,18 @@ export function PropostaHonorariosForm({ pericia, draft, peritoNomeDefault, peri
       </section>
 
       {/* ══ 4. Detalhes adicionais (opcionais, colapsáveis) ═════════════════ */}
-      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+      <section className="rounded-xl border border-border bg-card shadow-saas overflow-hidden">
         <button
           type="button"
           onClick={() => setShowOptional((v) => !v)}
-          className="w-full flex items-center justify-between px-5 py-3.5 bg-slate-50 hover:bg-slate-100 transition-colors"
+          className="w-full flex items-center justify-between px-5 py-3.5 bg-muted hover:bg-zinc-900/50 transition-colors"
         >
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-            Detalhes adicionais <span className="font-normal text-slate-400">(opcional)</span>
+          <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+            Detalhes adicionais <span className="font-normal text-zinc-500">(opcional)</span>
           </p>
           {showOptional
-            ? <ChevronUp className="h-3.5 w-3.5 text-slate-400" />
-            : <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
+            ? <ChevronUp className="h-3.5 w-3.5 text-zinc-500" />
+            : <ChevronDown className="h-3.5 w-3.5 text-zinc-500" />
           }
         </button>
 
@@ -308,7 +308,7 @@ export function PropostaHonorariosForm({ pericia, draft, peritoNomeDefault, peri
         <button
           type="submit"
           disabled={isPending}
-          className="flex items-center gap-2 rounded-xl bg-lime-500 hover:bg-lime-600 disabled:opacity-50 text-white font-semibold text-sm px-5 py-2.5 transition-colors"
+          className="flex items-center gap-2 rounded-xl bg-brand-500 hover:bg-lime-600 disabled:opacity-50 text-white font-semibold text-sm px-5 py-2.5 transition-colors"
         >
           {isPending ? (
             <>
@@ -328,7 +328,7 @@ export function PropostaHonorariosForm({ pericia, draft, peritoNomeDefault, peri
             </span>
             <Link
               href={`/pericias/${pericia.id}/proposta/preview`}
-              className="ml-auto flex items-center gap-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm px-4 py-2.5 transition-colors"
+              className="ml-auto flex items-center gap-2 rounded-xl border border-border bg-card hover:bg-muted text-zinc-300 font-semibold text-sm px-4 py-2.5 transition-colors"
             >
               <Eye className="h-4 w-4" />
               Visualizar proposta

@@ -141,30 +141,30 @@ export default function RotasPage() {
       <div className="grid sm:grid-cols-2 gap-4">
         <Link
           href="/rotas/prospeccao"
-          className="flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-5 hover:shadow-md hover:border-violet-200 transition-all group"
+          className="flex items-center gap-4 rounded-xl border border-border bg-card p-5 hover:shadow-md hover:border-violet-200 transition-all group"
         >
           <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-violet-50 group-hover:bg-violet-100 transition-colors">
             <Landmark className="h-5 w-5 text-violet-600" />
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-slate-900">Rotas de Prospecção</p>
-            <p className="text-xs text-slate-500 mt-0.5">Fóruns, varas cíveis e escritórios</p>
+            <p className="text-sm font-semibold text-foreground">Rotas de Prospecção</p>
+            <p className="text-xs text-zinc-400 mt-0.5">Fóruns, varas cíveis e escritórios</p>
           </div>
-          <ChevronRight className="ml-auto h-4 w-4 text-slate-300 group-hover:text-violet-500 transition-colors" />
+          <ChevronRight className="ml-auto h-4 w-4 text-zinc-600 group-hover:text-violet-500 transition-colors" />
         </Link>
 
         <Link
           href="/rotas/pericias"
-          className="flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-5 hover:shadow-md hover:border-emerald-200 transition-all group"
+          className="flex items-center gap-4 rounded-xl border border-border bg-card p-5 hover:shadow-md hover:border-emerald-200 transition-all group"
         >
           <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-emerald-50 group-hover:bg-emerald-100 transition-colors">
             <FileText className="h-5 w-5 text-emerald-600" />
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-slate-900">Rotas de Perícias</p>
-            <p className="text-xs text-slate-500 mt-0.5">Vistorias e diligências agendadas</p>
+            <p className="text-sm font-semibold text-foreground">Rotas de Perícias</p>
+            <p className="text-xs text-zinc-400 mt-0.5">Vistorias e diligências agendadas</p>
           </div>
-          <ChevronRight className="ml-auto h-4 w-4 text-slate-300 group-hover:text-emerald-500 transition-colors" />
+          <ChevronRight className="ml-auto h-4 w-4 text-zinc-600 group-hover:text-emerald-500 transition-colors" />
         </Link>
       </div>
 
@@ -184,7 +184,7 @@ export default function RotasPage() {
           {rotas.filter((r) => r.status !== 'concluida' && r.status !== 'cancelada').map((rota) => {
             const st = statusMap[rota.status]
             return (
-              <div key={rota.id} className="rounded-xl border border-slate-100 p-4 hover:border-slate-200 hover:bg-slate-50/50 transition-all cursor-pointer">
+              <div key={rota.id} className="rounded-xl border border-border p-4 hover:border-border hover:bg-muted/50 transition-all cursor-pointer">
                 {/* Header */}
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div className="min-w-0">
@@ -195,9 +195,9 @@ export default function RotasPage() {
                       )}>
                         {rota.tipo === 'PROSPECCAO' ? 'Prospecção' : 'Perícia'}
                       </span>
-                      <span className="text-xs text-slate-400">{rota.data}</span>
+                      <span className="text-xs text-zinc-500">{rota.data}</span>
                     </div>
-                    <p className="text-sm font-semibold text-slate-900">{rota.titulo}</p>
+                    <p className="text-sm font-semibold text-foreground">{rota.titulo}</p>
                   </div>
                   <Badge variant={st.variant}>{st.label}</Badge>
                 </div>
@@ -209,7 +209,7 @@ export default function RotasPage() {
                     const Icon = conf.icon
                     return (
                       <div key={p.id} className="flex items-center gap-1">
-                        {i > 0 && <ChevronRight className="h-3 w-3 text-slate-300 flex-shrink-0" />}
+                        {i > 0 && <ChevronRight className="h-3 w-3 text-zinc-600 flex-shrink-0" />}
                         <span className={cn('flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium', conf.bg, conf.color)}>
                           <Icon className="h-2.5 w-2.5" />
                           {p.nome}
@@ -220,17 +220,17 @@ export default function RotasPage() {
                 </div>
 
                 {/* Stats */}
-                <div className="flex items-center gap-4 text-xs text-slate-500 pt-2.5 border-t border-slate-100">
+                <div className="flex items-center gap-4 text-xs text-zinc-400 pt-2.5 border-t border-border">
                   <span className="flex items-center gap-1">
-                    <MapPin className="h-3 w-3 text-slate-400" />
+                    <MapPin className="h-3 w-3 text-zinc-500" />
                     {rota.distanciaKm} km
                   </span>
                   <span className="flex items-center gap-1">
-                    <Clock className="h-3 w-3 text-slate-400" />
+                    <Clock className="h-3 w-3 text-zinc-500" />
                     {formatTempo(rota.tempoEstimadoMin)}
                   </span>
                   <span className="flex items-center gap-1">
-                    <Banknote className="h-3 w-3 text-slate-400" />
+                    <Banknote className="h-3 w-3 text-zinc-500" />
                     {formatCurrency(rota.custoEstimado)}
                   </span>
                   <Link href={rota.tipo === 'PROSPECCAO' ? '/rotas/prospeccao' : '/rotas/pericias'}>

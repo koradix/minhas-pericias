@@ -74,7 +74,7 @@ export function DashboardRadarBanner({ ultimaBusca, saldo, naoLidas: initialNaoL
 
   return (
     <div className={cn(
-      'rounded-2xl border-l-4 border border-slate-100 bg-white px-5 py-4 shadow-sm',
+      'rounded-xl border-l-4 border border-border bg-card px-5 py-4 shadow-saas',
       'flex flex-col sm:flex-row sm:items-center gap-4',
       naoLidas > 0 ? 'border-l-lime-500' : 'border-l-slate-300',
     )}>
@@ -82,20 +82,20 @@ export function DashboardRadarBanner({ ultimaBusca, saldo, naoLidas: initialNaoL
       <div className="flex items-center gap-3 flex-1 min-w-0">
         <span className={cn(
           'flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full',
-          naoLidas > 0 ? 'bg-lime-100' : 'bg-slate-100',
+          naoLidas > 0 ? 'bg-brand-500/20' : 'bg-zinc-900/50',
         )}>
-          <Radar className={cn('h-4 w-4', naoLidas > 0 ? 'text-lime-700' : 'text-slate-500')} />
+          <Radar className={cn('h-4 w-4', naoLidas > 0 ? 'text-brand-400' : 'text-zinc-400')} />
         </span>
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-slate-900 truncate">
+          <p className="text-sm font-semibold text-foreground truncate">
             Radar de Nomeações ativo
             {naoLidas > 0 && (
-              <span className="ml-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-lime-500 text-white text-[10px] font-bold px-1.5">
+              <span className="ml-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-500 text-white text-[10px] font-bold px-1.5">
                 {naoLidas}
               </span>
             )}
           </p>
-          <p className="text-xs text-slate-400 mt-0.5 truncate">
+          <p className="text-xs text-zinc-500 mt-0.5 truncate">
             {feedback
               ? feedback.msg
               : subtitulo}
@@ -116,7 +116,7 @@ export function DashboardRadarBanner({ ultimaBusca, saldo, naoLidas: initialNaoL
         <div className="flex items-center gap-2">
           {naoLidas > 0 && !isPending && (
             <Link href="/nomeacoes">
-              <Button size="sm" variant="outline" className="h-9 text-xs border-lime-200 text-lime-700 hover:bg-lime-50">
+              <Button size="sm" variant="outline" className="h-9 text-xs border-brand-500/30 text-brand-400 hover:bg-brand-500/10">
                 Ver {naoLidas} pendente{naoLidas > 1 ? 's' : ''}
               </Button>
             </Link>
@@ -126,7 +126,7 @@ export function DashboardRadarBanner({ ultimaBusca, saldo, naoLidas: initialNaoL
             disabled={isPending}
             className={cn(
               'h-9 px-4 font-semibold text-sm gap-2',
-              'bg-lime-500 hover:bg-lime-600 text-slate-900',
+              'bg-brand-500 hover:bg-lime-600 text-foreground',
             )}
           >
             {isPending ? (
@@ -143,7 +143,7 @@ export function DashboardRadarBanner({ ultimaBusca, saldo, naoLidas: initialNaoL
           </Button>
         </div>
         {/* Credit cost notice — always visible */}
-        <p className="text-[10px] text-slate-400">
+        <p className="text-[10px] text-zinc-500">
           Busca manual · R$ 3,00 por chamada
           {saldo !== null && ` · Saldo: R$ ${saldo.toFixed(2)}`}
         </p>

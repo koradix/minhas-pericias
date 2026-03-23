@@ -52,13 +52,13 @@ export function ManualCitacaoForm({ siglas, onClose }: Props) {
       />
 
       {/* Modal */}
-      <div className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white shadow-2xl">
+      <div className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl bg-card shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-          <p className="text-sm font-semibold text-slate-900">Registrar citação manualmente</p>
+        <div className="flex items-center justify-between border-b border-border px-5 py-4">
+          <p className="text-sm font-semibold text-foreground">Registrar citação manualmente</p>
           <button
             onClick={onClose}
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+            className="rounded-lg p-1.5 text-zinc-500 hover:bg-zinc-900/50 hover:text-zinc-300 transition-colors"
           >
             <X className="h-4 w-4" />
           </button>
@@ -74,11 +74,11 @@ export function ManualCitacaoForm({ siglas, onClose }: Props) {
             {/* Tribunal + data */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">Tribunal</label>
+                <label className="block text-xs font-medium text-zinc-300 mb-1">Tribunal</label>
                 <select
                   value={sigla}
                   onChange={(e) => setSigla(e.target.value)}
-                  className="w-full h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-sm text-slate-800 focus:border-lime-400 focus:outline-none focus:ring-1 focus:ring-lime-400"
+                  className="w-full h-9 rounded-lg border border-border bg-card px-2.5 text-sm text-foreground focus:border-brand-400 focus:outline-none focus:ring-1 focus:ring-lime-400"
                 >
                   {siglas.map((s) => (
                     <option key={s} value={s}>{s}</option>
@@ -87,12 +87,12 @@ export function ManualCitacaoForm({ siglas, onClose }: Props) {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">Data do Diário</label>
+                <label className="block text-xs font-medium text-zinc-300 mb-1">Data do Diário</label>
                 <input
                   type="date"
                   value={data}
                   onChange={(e) => setData(e.target.value)}
-                  className="w-full h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-sm text-slate-800 focus:border-lime-400 focus:outline-none focus:ring-1 focus:ring-lime-400"
+                  className="w-full h-9 rounded-lg border border-border bg-card px-2.5 text-sm text-foreground focus:border-brand-400 focus:outline-none focus:ring-1 focus:ring-lime-400"
                   required
                 />
               </div>
@@ -100,7 +100,7 @@ export function ManualCitacaoForm({ siglas, onClose }: Props) {
 
             {/* Snippet */}
             <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1">
+              <label className="block text-xs font-medium text-zinc-300 mb-1">
                 Texto da citação <span className="text-rose-500">*</span>
               </label>
               <textarea
@@ -108,22 +108,22 @@ export function ManualCitacaoForm({ siglas, onClose }: Props) {
                 onChange={(e) => setTexto(e.target.value)}
                 placeholder="Cole ou digite o trecho do diário onde seu nome aparece…"
                 rows={4}
-                className="w-full resize-none rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-lime-400 focus:outline-none focus:ring-1 focus:ring-lime-400"
+                className="w-full resize-none rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-zinc-500 focus:border-brand-400 focus:outline-none focus:ring-1 focus:ring-lime-400"
                 required
               />
             </div>
 
             {/* Processo */}
             <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1">
-                Número do processo <span className="text-slate-400">(opcional)</span>
+              <label className="block text-xs font-medium text-zinc-300 mb-1">
+                Número do processo <span className="text-zinc-500">(opcional)</span>
               </label>
               <input
                 type="text"
                 value={processo}
                 onChange={(e) => setProcesso(e.target.value)}
                 placeholder="0000000-00.0000.0.00.0000"
-                className="w-full h-9 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-lime-400 focus:outline-none focus:ring-1 focus:ring-lime-400"
+                className="w-full h-9 rounded-lg border border-border bg-card px-3 text-sm text-foreground placeholder:text-zinc-500 focus:border-brand-400 focus:outline-none focus:ring-1 focus:ring-lime-400"
               />
             </div>
 
@@ -143,7 +143,7 @@ export function ManualCitacaoForm({ siglas, onClose }: Props) {
               <Button
                 type="submit"
                 size="sm"
-                className="bg-lime-500 hover:bg-lime-600 text-slate-900 font-semibold gap-1.5"
+                className="bg-brand-500 hover:bg-lime-600 text-foreground font-semibold gap-1.5"
                 disabled={isPending}
               >
                 {isPending ? (

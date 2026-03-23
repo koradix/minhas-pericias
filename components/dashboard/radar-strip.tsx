@@ -39,19 +39,19 @@ export function RadarStrip({ hasConfig, naoLidas, totalCitacoes, ultimaBusca, sa
   if (!hasConfig) {
     return (
       <Link href="/nomeacoes">
-        <div className="flex items-center gap-3 rounded-2xl border border-dashed border-lime-300 bg-lime-50/40 px-5 py-3.5 hover:bg-lime-50 transition-colors cursor-pointer">
-          <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-lime-100">
-            <Radar className="h-4 w-4 text-lime-700" />
+        <div className="flex items-center gap-3 rounded-xl border border-dashed border-brand-500/50 bg-brand-500/10/40 px-5 py-3.5 hover:bg-brand-500/10 transition-colors cursor-pointer">
+          <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-brand-500/20">
+            <Radar className="h-4 w-4 text-brand-400" />
           </span>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-lime-800">
               Configure o Radar de Nomeações
             </p>
-            <p className="text-xs text-lime-600 mt-0.5">
+            <p className="text-xs text-brand-500 mt-0.5">
               Monitore seus tribunais e receba alertas de citações nos diários oficiais
             </p>
           </div>
-          <span className="text-xs font-semibold text-lime-700 bg-lime-100 border border-lime-200 rounded-lg px-3 py-1.5 flex-shrink-0 whitespace-nowrap">
+          <span className="text-xs font-semibold text-brand-400 bg-brand-500/20 border border-brand-500/30 rounded-lg px-3 py-1.5 flex-shrink-0 whitespace-nowrap">
             Configurar →
           </span>
         </div>
@@ -82,23 +82,23 @@ export function RadarStrip({ hasConfig, naoLidas, totalCitacoes, ultimaBusca, sa
   return (
     <div
       className={cn(
-        'flex items-center gap-3 rounded-2xl border px-5 py-3.5 transition-colors',
+        'flex items-center gap-3 rounded-xl border px-5 py-3.5 transition-colors',
         hasNotifications
-          ? 'border-lime-200 bg-lime-50/50'
-          : 'border-slate-100 bg-white shadow-sm',
+          ? 'border-brand-500/30 bg-brand-500/10/50'
+          : 'border-border bg-card shadow-saas',
       )}
     >
       {/* Icon */}
       <span
         className={cn(
           'flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full',
-          hasNotifications ? 'bg-lime-500' : 'bg-slate-100',
+          hasNotifications ? 'bg-brand-500' : 'bg-zinc-900/50',
         )}
       >
         {hasNotifications ? (
           <BellDot className="h-4 w-4 text-white" />
         ) : (
-          <Radar className="h-4 w-4 text-slate-500" />
+          <Radar className="h-4 w-4 text-zinc-400" />
         )}
       </span>
 
@@ -115,11 +115,11 @@ export function RadarStrip({ hasConfig, naoLidas, totalCitacoes, ultimaBusca, sa
             {localNaoLidas} citaç{localNaoLidas > 1 ? 'ões' : 'ão'} não {localNaoLidas > 1 ? 'lidas' : 'lida'} no radar
           </p>
         ) : (
-          <p className="text-sm font-semibold text-slate-800">
+          <p className="text-sm font-semibold text-foreground">
             Radar de Nomeações · {totalCitacoes} citaç{totalCitacoes !== 1 ? 'ões' : 'ão'}
           </p>
         )}
-        <p className="text-xs text-slate-400 mt-0.5">
+        <p className="text-xs text-zinc-500 mt-0.5">
           {err ? (
             <span className="text-rose-600">{err}</span>
           ) : ultimaBusca ? (
@@ -152,7 +152,7 @@ export function RadarStrip({ hasConfig, naoLidas, totalCitacoes, ultimaBusca, sa
           size="sm"
           onClick={handleVerificar}
           disabled={isPending}
-          className="h-8 bg-lime-500 hover:bg-lime-600 text-slate-900 font-semibold text-xs gap-1.5"
+          className="h-8 bg-brand-500 hover:bg-lime-600 text-foreground font-semibold text-xs gap-1.5"
         >
           {isPending ? (
             <Loader2 className="h-3 w-3 animate-spin" />

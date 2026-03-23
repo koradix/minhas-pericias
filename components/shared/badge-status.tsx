@@ -46,18 +46,18 @@ const STATUS_MAP: Record<string, StatusDef> = {
 }
 
 const variantClass: Record<Variant, string> = {
-  lime:    'bg-lime-50    text-lime-700    ring-lime-600/15',
+  lime:    'bg-brand-500/10    text-brand-400    ring-lime-600/15',
   emerald: 'bg-emerald-50 text-emerald-700 ring-emerald-600/15',
   amber:   'bg-amber-50   text-amber-700   ring-amber-600/15',
   rose:    'bg-rose-50    text-rose-700    ring-rose-600/15',
-  slate:   'bg-slate-100  text-slate-600   ring-slate-500/15',
+  slate:   'bg-zinc-900/50  text-zinc-400   ring-slate-500/15',
   violet:  'bg-violet-50  text-violet-700  ring-violet-600/15',
 }
 
 // ─── Dot indicator ─────────────────────────────────────────────────────────────
 
 const dotClass: Record<Variant, string> = {
-  lime:    'bg-lime-500',
+  lime:    'bg-brand-500',
   emerald: 'bg-emerald-500',
   amber:   'bg-amber-500',
   rose:    'bg-rose-500',
@@ -81,7 +81,7 @@ export function BadgeStatus({ status, label, dot = false, className }: BadgeStat
 
   if (dot) {
     return (
-      <span className={cn('inline-flex items-center gap-1.5 text-xs text-slate-600', className)}>
+      <span className={cn('inline-flex items-center gap-1.5 text-xs text-zinc-400', className)}>
         <span className={cn('h-1.5 w-1.5 rounded-full flex-shrink-0', dotClass[variant])} />
         {displayLabel}
       </span>

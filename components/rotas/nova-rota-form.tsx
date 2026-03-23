@@ -25,8 +25,8 @@ import dynamic from 'next/dynamic'
 const RouteMapDynamic = dynamic(() => import('@/components/maps/route-map-dynamic'), {
   ssr: false,
   loading: () => (
-    <div className="h-full w-full flex items-center justify-center bg-slate-50">
-      <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+    <div className="h-full w-full flex items-center justify-center bg-muted">
+      <Loader2 className="h-5 w-5 animate-spin text-zinc-500" />
     </div>
   ),
 })
@@ -172,7 +172,7 @@ export function NovaRotaForm({ varas, grupos }: Props) {
 
       {/* Título */}
       <div>
-        <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+        <label className="block text-xs font-semibold text-zinc-300 mb-1.5">
           Nome da rota <span className="text-rose-500">*</span>
         </label>
         <input
@@ -180,7 +180,7 @@ export function NovaRotaForm({ varas, grupos }: Props) {
           value={titulo}
           onChange={(e) => setTitulo(e.target.value)}
           placeholder="Ex: Circuito Centro — Varas Cíveis RJ"
-          className="w-full h-10 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-lime-400 focus:outline-none focus:ring-1 focus:ring-lime-400"
+          className="w-full h-10 rounded-xl border border-border bg-card px-3 text-sm text-foreground placeholder:text-zinc-500 focus:border-brand-400 focus:outline-none focus:ring-1 focus:ring-lime-400"
         />
       </div>
 
@@ -188,10 +188,10 @@ export function NovaRotaForm({ varas, grupos }: Props) {
       <div className="grid lg:grid-cols-2 gap-5">
 
         {/* ── Varas disponíveis ── */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm space-y-3">
-          <p className="text-sm font-semibold text-slate-900">
+        <div className="rounded-xl border border-border bg-card p-4 shadow-saas space-y-3">
+          <p className="text-sm font-semibold text-foreground">
             Varas disponíveis
-            <span className="ml-2 text-xs font-normal text-slate-400">{varas.length} locais</span>
+            <span className="ml-2 text-xs font-normal text-zinc-500">{varas.length} locais</span>
           </p>
 
           <input
@@ -199,14 +199,14 @@ export function NovaRotaForm({ varas, grupos }: Props) {
             value={filtro}
             onChange={(e) => setFiltro(e.target.value)}
             placeholder="Filtrar por nome, tribunal ou cidade…"
-            className="w-full h-9 rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs text-slate-700 placeholder:text-slate-400 focus:border-lime-400 focus:outline-none focus:ring-1 focus:ring-lime-400"
+            className="w-full h-9 rounded-lg border border-border bg-muted px-3 text-xs text-zinc-300 placeholder:text-zinc-500 focus:border-brand-400 focus:outline-none focus:ring-1 focus:ring-lime-400"
           />
 
           <div className="max-h-72 overflow-y-auto space-y-2 pr-1">
             {filtradas ? (
               /* ── Search results ── */
               filtradas.length === 0 ? (
-                <p className="text-xs text-slate-400 py-4 text-center">Nenhum resultado</p>
+                <p className="text-xs text-zinc-500 py-4 text-center">Nenhum resultado</p>
               ) : (
                 filtradas.map((vara) => (
                   <VaraItem
@@ -221,7 +221,7 @@ export function NovaRotaForm({ varas, grupos }: Props) {
               /* ── Grouped view ── */
               Object.entries(grupos).map(([grupo, items]) => (
                 <div key={grupo}>
-                  <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400 mb-1">
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-zinc-500 mb-1">
                     {grupo}
                   </p>
                   <div className="space-y-1">
@@ -241,12 +241,12 @@ export function NovaRotaForm({ varas, grupos }: Props) {
         </div>
 
         {/* ── Pontos selecionados ── */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm space-y-3">
+        <div className="rounded-xl border border-border bg-card p-4 shadow-saas space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-slate-900">
+            <p className="text-sm font-semibold text-foreground">
               Rota
               {selecionadas.length > 0 && (
-                <span className="ml-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-lime-100 px-1.5 text-[10px] font-bold text-lime-700">
+                <span className="ml-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-500/20 px-1.5 text-[10px] font-bold text-brand-400">
                   {selecionadas.length}
                 </span>
               )}
@@ -254,7 +254,7 @@ export function NovaRotaForm({ varas, grupos }: Props) {
             {selecionadas.length > 0 && (
               <button
                 onClick={() => setSelecionadas([])}
-                className="text-[11px] text-slate-400 hover:text-rose-600 transition-colors"
+                className="text-[11px] text-zinc-500 hover:text-rose-600 transition-colors"
               >
                 Limpar
               </button>
@@ -262,7 +262,7 @@ export function NovaRotaForm({ varas, grupos }: Props) {
           </div>
 
           {selecionadas.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 py-8 text-slate-400">
+            <div className="flex flex-col items-center gap-2 py-8 text-zinc-500">
               <MapPin className="h-8 w-8 text-slate-200" />
               <p className="text-xs">Clique em varas para adicionar à rota</p>
             </div>
@@ -273,34 +273,34 @@ export function NovaRotaForm({ varas, grupos }: Props) {
                 return (
                   <div
                     key={vara.id}
-                    className="flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2"
+                    className="flex items-center gap-2 rounded-xl border border-border bg-muted px-3 py-2"
                   >
-                    <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-lime-500 text-[10px] font-bold text-white">
+                    <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-brand-500 text-[10px] font-bold text-white">
                       {idx + 1}
                     </span>
-                    <Icon className="h-3.5 w-3.5 flex-shrink-0 text-slate-500" />
+                    <Icon className="h-3.5 w-3.5 flex-shrink-0 text-zinc-400" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-slate-800 truncate">{vara.nome}</p>
-                      <p className="text-[10px] text-slate-400 truncate">{vara.cidade} · {vara.tribunal}</p>
+                      <p className="text-xs font-medium text-foreground truncate">{vara.nome}</p>
+                      <p className="text-[10px] text-zinc-500 truncate">{vara.cidade} · {vara.tribunal}</p>
                     </div>
                     <div className="flex items-center gap-0.5 flex-shrink-0">
                       <button
                         onClick={() => moveUp(idx)}
                         disabled={idx === 0}
-                        className="p-1 rounded text-slate-300 hover:text-slate-600 disabled:opacity-0 transition-colors"
+                        className="p-1 rounded text-zinc-600 hover:text-zinc-400 disabled:opacity-0 transition-colors"
                       >
                         <ArrowUp className="h-3 w-3" />
                       </button>
                       <button
                         onClick={() => moveDown(idx)}
                         disabled={idx === selecionadas.length - 1}
-                        className="p-1 rounded text-slate-300 hover:text-slate-600 disabled:opacity-0 transition-colors"
+                        className="p-1 rounded text-zinc-600 hover:text-zinc-400 disabled:opacity-0 transition-colors"
                       >
                         <ArrowDown className="h-3 w-3" />
                       </button>
                       <button
                         onClick={() => removeVara(vara.id)}
-                        className="p-1 rounded text-slate-300 hover:text-rose-500 transition-colors"
+                        className="p-1 rounded text-zinc-600 hover:text-rose-500 transition-colors"
                       >
                         <Trash2 className="h-3 w-3" />
                       </button>
@@ -316,8 +316,8 @@ export function NovaRotaForm({ varas, grupos }: Props) {
       {/* Mapa preview */}
       {selecionadas.length >= 1 && (
         <div>
-          <p className="text-sm font-semibold text-slate-900 mb-2">Preview no mapa</p>
-          <div className="h-[340px] w-full overflow-hidden rounded-xl border border-slate-200 shadow-sm">
+          <p className="text-sm font-semibold text-foreground mb-2">Preview no mapa</p>
+          <div className="h-[340px] w-full overflow-hidden rounded-xl border border-border shadow-saas">
             <RouteMapDynamic routes={[mapRoute]} />
           </div>
         </div>
@@ -325,16 +325,16 @@ export function NovaRotaForm({ varas, grupos }: Props) {
 
       {/* Google Maps link */}
       {selecionadas.length >= 2 && (
-        <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 flex items-center gap-3">
-          <ExternalLink className="h-4 w-4 text-slate-400 flex-shrink-0" />
+        <div className="rounded-xl border border-border bg-muted px-4 py-3 flex items-center gap-3">
+          <ExternalLink className="h-4 w-4 text-zinc-500 flex-shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-slate-700 mb-0.5">Link Google Maps</p>
-            <p className="text-[11px] text-slate-400 truncate">{gmapsUrl}</p>
+            <p className="text-xs font-semibold text-zinc-300 mb-0.5">Link Google Maps</p>
+            <p className="text-[11px] text-zinc-500 truncate">{gmapsUrl}</p>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             <button
               onClick={copyLink}
-              className="flex items-center gap-1 text-[11px] text-slate-500 hover:text-slate-800 transition-colors"
+              className="flex items-center gap-1 text-[11px] text-zinc-400 hover:text-foreground transition-colors"
             >
               {copied ? (
                 <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
@@ -347,7 +347,7 @@ export function NovaRotaForm({ varas, grupos }: Props) {
               href={gmapsUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1 rounded-lg bg-white border border-slate-200 px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+              className="flex items-center gap-1 rounded-lg bg-card border border-border px-2.5 py-1.5 text-[11px] font-semibold text-zinc-300 hover:bg-muted transition-colors"
             >
               <ExternalLink className="h-3 w-3" />
               Abrir
@@ -364,8 +364,8 @@ export function NovaRotaForm({ varas, grupos }: Props) {
       )}
 
       {/* Actions */}
-      <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
-        <p className="mr-auto text-xs text-slate-400">
+      <div className="flex items-center justify-end gap-3 pt-2 border-t border-border">
+        <p className="mr-auto text-xs text-zinc-500">
           {selecionadas.length === 0
             ? 'Nenhuma parada selecionada'
             : `${selecionadas.length} parada${selecionadas.length > 1 ? 's' : ''} na rota`}
@@ -374,7 +374,7 @@ export function NovaRotaForm({ varas, grupos }: Props) {
           type="button"
           onClick={handleSalvar}
           disabled={isPending || selecionadas.length < 2 || !titulo.trim()}
-          className="bg-lime-500 hover:bg-lime-600 text-slate-900 font-semibold gap-1.5"
+          className="bg-brand-500 hover:bg-lime-600 text-foreground font-semibold gap-1.5"
         >
           {isPending ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -407,21 +407,21 @@ function VaraItem({
       className={cn(
         'w-full flex items-center gap-2.5 rounded-xl border px-3 py-2 text-left transition-all',
         selected
-          ? 'border-lime-200 bg-lime-50 opacity-60 cursor-default'
-          : 'border-slate-100 bg-white hover:border-lime-300 hover:shadow-sm cursor-pointer',
+          ? 'border-brand-500/30 bg-brand-500/10 opacity-60 cursor-default'
+          : 'border-border bg-card hover:border-brand-500/50 hover:shadow-saas cursor-pointer',
       )}
     >
       <div className={cn('flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg border', tipoColor[vara.tipo])}>
         <Icon className="h-3.5 w-3.5" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-xs font-medium text-slate-800 truncate">{vara.nome}</p>
-        <p className="text-[10px] text-slate-400 truncate">{vara.endereco}</p>
+        <p className="text-xs font-medium text-foreground truncate">{vara.nome}</p>
+        <p className="text-[10px] text-zinc-500 truncate">{vara.endereco}</p>
       </div>
       {selected ? (
-        <CheckCircle2 className="h-3.5 w-3.5 text-lime-600 flex-shrink-0" />
+        <CheckCircle2 className="h-3.5 w-3.5 text-brand-500 flex-shrink-0" />
       ) : (
-        <Plus className="h-3.5 w-3.5 text-slate-300 flex-shrink-0" />
+        <Plus className="h-3.5 w-3.5 text-zinc-600 flex-shrink-0" />
       )}
     </button>
   )

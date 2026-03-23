@@ -52,7 +52,7 @@ export default async function ParceiroDashboardPage() {
         description={`Bem-vindo, ${session.user.name ?? 'Parceiro'}! Gerencie suas demandas e propostas.`}
         actions={
           <Link href="/parceiro/demandas/nova">
-            <Button size="sm" className="bg-lime-500 hover:bg-lime-600 text-slate-900 font-semibold">
+            <Button size="sm" className="bg-brand-500 hover:bg-lime-600 text-foreground font-semibold">
               <Plus className="h-3.5 w-3.5" />
               Nova Demanda
             </Button>
@@ -100,7 +100,7 @@ export default async function ParceiroDashboardPage() {
             <div className="flex items-center justify-between">
               <CardTitle>Minhas Demandas</CardTitle>
               <Link href="/parceiro/demandas">
-                <Button variant="ghost" size="sm" className="text-lime-600 hover:text-lime-700 -mr-2 gap-1">
+                <Button variant="ghost" size="sm" className="text-brand-500 hover:text-brand-400 -mr-2 gap-1">
                   Ver todas <ChevronRight className="h-3.5 w-3.5" />
                 </Button>
               </Link>
@@ -109,8 +109,8 @@ export default async function ParceiroDashboardPage() {
           <CardContent className="pt-0">
             {demandasRecentes.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-center">
-                <Inbox className="h-8 w-8 text-slate-300 mb-2" />
-                <p className="text-sm text-slate-500">Nenhuma demanda ainda</p>
+                <Inbox className="h-8 w-8 text-zinc-600 mb-2" />
+                <p className="text-sm text-zinc-400">Nenhuma demanda ainda</p>
                 <Link href="/parceiro/demandas/nova">
                   <Button size="sm" variant="outline" className="mt-3">
                     Criar primeira demanda
@@ -120,10 +120,10 @@ export default async function ParceiroDashboardPage() {
             ) : (
               <div className="space-y-3">
                 {demandasRecentes.map((d) => (
-                  <div key={d.id} className="flex items-start gap-3 rounded-lg border border-slate-100 p-3">
+                  <div key={d.id} className="flex items-start gap-3 rounded-lg border border-border p-3">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-900 truncate">{d.titulo}</p>
-                      <div className="flex items-center gap-2 mt-1 text-xs text-slate-400">
+                      <p className="text-sm font-medium text-foreground truncate">{d.titulo}</p>
+                      <div className="flex items-center gap-2 mt-1 text-xs text-zinc-500">
                         <span className="flex items-center gap-1">
                           <MapPin className="h-3 w-3" />
                           {d.cidade}/{d.uf}
@@ -132,7 +132,7 @@ export default async function ParceiroDashboardPage() {
                         <span>{d.tipo}</span>
                       </div>
                       {d.valor > 0 && (
-                        <p className="text-xs font-semibold text-slate-700 mt-0.5">
+                        <p className="text-xs font-semibold text-zinc-300 mt-0.5">
                           {formatCurrency(d.valor)}
                         </p>
                       )}
@@ -151,7 +151,7 @@ export default async function ParceiroDashboardPage() {
             <div className="flex items-center justify-between">
               <CardTitle>Propostas Enviadas</CardTitle>
               <Link href="/parceiro/propostas">
-                <Button variant="ghost" size="sm" className="text-lime-600 hover:text-lime-700 -mr-2 gap-1">
+                <Button variant="ghost" size="sm" className="text-brand-500 hover:text-brand-400 -mr-2 gap-1">
                   Ver todas <ChevronRight className="h-3.5 w-3.5" />
                 </Button>
               </Link>
@@ -160,8 +160,8 @@ export default async function ParceiroDashboardPage() {
           <CardContent className="pt-0">
             {propostasRecentes.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-center">
-                <Handshake className="h-8 w-8 text-slate-300 mb-2" />
-                <p className="text-sm text-slate-500">Nenhuma proposta enviada</p>
+                <Handshake className="h-8 w-8 text-zinc-600 mb-2" />
+                <p className="text-sm text-zinc-400">Nenhuma proposta enviada</p>
                 <Link href="/parceiro/peritos">
                   <Button size="sm" variant="outline" className="mt-3">
                     Buscar peritos
@@ -171,12 +171,12 @@ export default async function ParceiroDashboardPage() {
             ) : (
               <div className="space-y-3">
                 {propostasRecentes.map((p) => (
-                  <div key={p.id} className="flex items-start gap-3 rounded-lg border border-slate-100 p-3">
+                  <div key={p.id} className="flex items-start gap-3 rounded-lg border border-border p-3">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-900 truncate">{p.peritoNome}</p>
-                      <p className="text-xs text-slate-400 mt-0.5 truncate">{p.demandaTitulo}</p>
+                      <p className="text-sm font-medium text-foreground truncate">{p.peritoNome}</p>
+                      <p className="text-xs text-zinc-500 mt-0.5 truncate">{p.demandaTitulo}</p>
                       {p.valorProposto && (
-                        <p className="text-xs font-semibold text-slate-700 mt-0.5">
+                        <p className="text-xs font-semibold text-zinc-300 mt-0.5">
                           {formatCurrency(p.valorProposto)}
                         </p>
                       )}

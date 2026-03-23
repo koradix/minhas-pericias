@@ -30,8 +30,8 @@ function Chip({ label, active, onClick }: { label: string; active: boolean; onCl
       className={cn(
         'inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium border transition-colors',
         active
-          ? 'bg-lime-500 border-lime-500 text-slate-900'
-          : 'border-slate-300 text-slate-600 hover:border-lime-400 hover:text-lime-700 bg-white',
+          ? 'bg-brand-500 border-lime-500 text-foreground'
+          : 'border-border text-zinc-400 hover:border-brand-400 hover:text-brand-400 bg-card',
       )}
     >
       {active && <Check className="h-3 w-3" />}
@@ -101,8 +101,8 @@ export function TribunaisForm({ initialEstados, initialTribunais }: Props) {
       {/* Estados */}
       <div className="space-y-3">
         <div>
-          <p className="text-sm font-semibold text-slate-900">Estados de atuação</p>
-          <p className="text-xs text-slate-500 mt-0.5">Selecione os estados onde você atua como perito.</p>
+          <p className="text-sm font-semibold text-foreground">Estados de atuação</p>
+          <p className="text-xs text-zinc-400 mt-0.5">Selecione os estados onde você atua como perito.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           {ESTADOS_DISPONIVEIS.map((uf) => (
@@ -120,15 +120,15 @@ export function TribunaisForm({ initialEstados, initialTribunais }: Props) {
       {grupos.length > 0 && (
         <div className="space-y-4">
           <div>
-            <p className="text-sm font-semibold text-slate-900">Tribunais monitorados</p>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-sm font-semibold text-foreground">Tribunais monitorados</p>
+            <p className="text-xs text-zinc-400 mt-0.5">
               Clique para ativar/desativar. O DataJud buscará nomeações nesses tribunais.
             </p>
           </div>
 
           {grupos.map(({ uf, itens }) => (
             <div key={uf} className="space-y-2">
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-400">{uf}</p>
+              <p className="text-xs font-bold uppercase tracking-wider text-zinc-500">{uf}</p>
               <div className="flex flex-wrap gap-2">
                 {itens.map((t) => (
                   <button
@@ -139,7 +139,7 @@ export function TribunaisForm({ initialEstados, initialTribunais }: Props) {
                       'inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs transition-colors',
                       tribunais.includes(t.sigla)
                         ? 'bg-slate-900 border-slate-900 text-white'
-                        : 'bg-white border-slate-200 text-slate-600 hover:border-slate-400',
+                        : 'bg-card border-border text-zinc-400 hover:border-slate-400',
                     )}
                   >
                     {tribunais.includes(t.sigla) && <Check className="h-3 w-3" />}
@@ -154,14 +154,14 @@ export function TribunaisForm({ initialEstados, initialTribunais }: Props) {
           ))}
 
           {tribunaisDoEstados.length === 0 && (
-            <p className="text-xs text-slate-400">Nenhum tribunal disponível para os estados selecionados.</p>
+            <p className="text-xs text-zinc-500">Nenhum tribunal disponível para os estados selecionados.</p>
           )}
         </div>
       )}
 
       {/* Summary + Save */}
-      <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-        <p className="text-xs text-slate-500">
+      <div className="flex items-center justify-between pt-2 border-t border-border">
+        <p className="text-xs text-zinc-400">
           {tribunais.length > 0
             ? `${tribunais.length} tribunal(is) selecionado(s)`
             : 'Nenhum tribunal selecionado'}
@@ -169,7 +169,7 @@ export function TribunaisForm({ initialEstados, initialTribunais }: Props) {
         <Button
           onClick={handleSave}
           disabled={isPending}
-          className="bg-lime-500 hover:bg-lime-600 text-slate-900 font-semibold gap-1.5"
+          className="bg-brand-500 hover:bg-lime-600 text-foreground font-semibold gap-1.5"
         >
           {isPending ? (
             <><Loader2 className="h-4 w-4 animate-spin" /> Salvando…</>
