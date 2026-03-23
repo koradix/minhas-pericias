@@ -66,6 +66,23 @@ export async function createDemoRotas(
   }
 }
 
+/** Split SQL text into individual statements (strips comments, blank lines) */
+function splitStatements(sql: string): string[] {
+  return sql
+    .split(';')
+    .map((s) => s.replace(/--[^\n]*/g, '').trim())
+    .filter((s) => s.length > 0)
+}
+
+function isIgnorableError(msg: string): boolean {
+  const m = msg.toLowerCase()
+  return (
+    m.includes('duplicate column name') ||
+    m.includes('already exists') ||
+    m.includes('table') && m.includes('already exists')
+  )
+}
+
 export async function executeTursoSql(
   sql: string,
 ): Promise<{ ok: boolean; message: string }> {
@@ -74,54 +91,62 @@ export async function executeTursoSql(
   const DB_URL = process.env.TURSO_DATABASE_URL
   const TOKEN = process.env.TURSO_AUTH_TOKEN
 
-  // Local dev fallback: run via Prisma $executeRawUnsafe
+  const statements = splitStatements(sql)
+  if (statements.length === 0) return { ok: false, message: 'Nenhum statement encontrado.' }
+
+  // Local dev fallback: run via Prisma $executeRawUnsafe (one at a time)
   if (!DB_URL || !TOKEN) {
     try {
-      await prisma.$executeRawUnsafe(sql)
-      return { ok: true, message: 'Executado via SQLite local.' }
+      for (const stmt of statements) {
+        await prisma.$executeRawUnsafe(stmt)
+      }
+      return { ok: true, message: `${statements.length} statement(s) executado(s) via SQLite local.` }
     } catch (e) {
       return { ok: false, message: String(e) }
     }
   }
 
-  // Production: Turso HTTP pipeline API
+  // Production: Turso HTTP pipeline API — one statement per request
   const host = DB_URL.replace('libsql://', '')
   const apiUrl = `https://${host}/v2/pipeline`
 
-  try {
-    const res = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        requests: [
-          { type: 'execute', stmt: { sql } },
-          { type: 'close' },
-        ],
-      }),
-    })
+  const results: string[] = []
 
-    const data = await res.json() as { results?: { type: string; error?: { message?: string } }[] }
+  for (const stmt of statements) {
+    try {
+      const res = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          requests: [
+            { type: 'execute', stmt: { sql: stmt } },
+            { type: 'close' },
+          ],
+        }),
+      })
 
-    if (!res.ok) {
-      return { ok: false, message: `HTTP ${res.status}: ${JSON.stringify(data)}` }
+      const data = await res.json() as { results?: { type: string; error?: { message?: string } }[] }
+
+      if (!res.ok) {
+        return { ok: false, message: `HTTP ${res.status} no statement:\n${stmt}\n\n${JSON.stringify(data)}` }
+      }
+
+      const errors = data.results?.filter(
+        (r) => r.type === 'error' && !isIgnorableError(r.error?.message ?? ''),
+      )
+
+      if (errors?.length) {
+        return { ok: false, message: `Erro no statement:\n${stmt}\n\n${JSON.stringify(errors, null, 2)}` }
+      }
+
+      results.push(`✓ ${stmt.slice(0, 60).replace(/\s+/g, ' ')}…`)
+    } catch (e) {
+      return { ok: false, message: `Exceção no statement:\n${stmt}\n\n${String(e)}` }
     }
-
-    const errors = data.results?.filter(
-      (r) =>
-        r.type === 'error' &&
-        !r.error?.message?.toLowerCase().includes('duplicate column name') &&
-        !r.error?.message?.toLowerCase().includes('already exists'),
-    )
-
-    if (errors?.length) {
-      return { ok: false, message: JSON.stringify(errors, null, 2) }
-    }
-
-    return { ok: true, message: 'SQL executado com sucesso no Turso!' }
-  } catch (e) {
-    return { ok: false, message: String(e) }
   }
+
+  return { ok: true, message: `${statements.length} statement(s) executado(s) com sucesso!\n\n${results.join('\n')}` }
 }
