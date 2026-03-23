@@ -13,13 +13,15 @@ import {
   AlertCircle,
   Play,
   FileText,
+  Navigation,
 } from 'lucide-react'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { PericiaMediaSection } from '@/components/pericias/pericia-media-section'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
-import type { MidiaDaPericia } from '@/lib/data/checkpoint-media'
+import { getMidiasByPericiaId, type MidiaDaPericia } from '@/lib/data/checkpoint-media'
+import { pericias, statusMapPericias } from '@/lib/mocks/pericias'
 import type { Metadata } from 'next'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -34,6 +36,10 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('pt-BR', {
     day: '2-digit', month: 'short', year: 'numeric',
   })
+}
+
+function isMockId(id: string): boolean {
+  return /^\d+$/.test(id)
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -61,16 +67,224 @@ const CP_STATUS_ICON: Record<string, React.ReactNode> = {
   pendente:  <Circle       className="h-4 w-4 text-slate-300  flex-shrink-0" />,
 }
 
-// ─── Metadata ────────────────────────────────────────────────────────────────
+// ─── Metadata ─────────────────────────────────────────────────────────────────
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params
+  if (isMockId(id)) {
+    const p = pericias.find((x) => x.id === parseInt(id, 10))
+    return { title: p ? p.assunto : 'Perícia' }
+  }
   let title = 'Perícia'
   try {
     const rota = await prisma.rotaPericia.findUnique({ where: { id }, select: { titulo: true } })
     if (rota) title = rota.titulo
   } catch {}
   return { title }
+}
+
+// ─── Mock pericia view ────────────────────────────────────────────────────────
+
+async function MockPericiaView({ id, userId }: { id: string; userId: string }) {
+  const mockIndex = parseInt(id, 10)
+  const p = pericias.find((x) => x.id === mockIndex)
+  if (!p) notFound()
+
+  const st = statusMapPericias[p.status]
+
+  // Load media registered for this pericia (via pericoId on checkpoints/rotas)
+  let midias: MidiaDaPericia[] = []
+  try {
+    midias = await getMidiasByPericiaId(id, userId)
+  } catch {}
+
+  return (
+    <div className="space-y-6 pb-10 max-w-5xl mx-auto">
+
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-2 text-xs text-slate-400">
+        <Link href="/pericias" className="flex items-center gap-1 hover:text-slate-700 transition-colors">
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Péricias
+        </Link>
+        <ChevronRight className="h-3 w-3" />
+        <span className="text-slate-600 font-medium truncate max-w-xs">{p.assunto}</span>
+      </div>
+
+      {/* Header card */}
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div className="px-6 pt-5 pb-4 border-b border-slate-100">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">
+                {p.numero} · Prazo: {p.prazo}
+              </p>
+              <h1 className="text-xl font-bold text-slate-900 leading-snug">{p.assunto}</h1>
+            </div>
+            {st && (
+              <Badge variant={st.variant} className="flex-shrink-0 text-sm px-3 py-1">
+                {st.label}
+              </Badge>
+            )}
+          </div>
+        </div>
+
+        {/* Stats bar */}
+        <div className="grid grid-cols-3 divide-x divide-slate-100">
+          <div className="px-5 py-4 flex flex-col gap-1">
+            <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+              <FileText className="h-3 w-3" /> Processo
+            </p>
+            <p className="text-sm font-semibold text-slate-800 font-mono truncate">{p.processo}</p>
+          </div>
+          <div className="px-5 py-4 flex flex-col gap-1">
+            <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+              <Camera className="h-3 w-3" /> Registros
+            </p>
+            <p className="text-sm font-semibold text-slate-800">{midias.length} arquivos</p>
+          </div>
+          <div className="px-5 py-4 flex flex-col gap-1">
+            <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+              <MapPin className="h-3 w-3" /> Honorários
+            </p>
+            <p className="text-sm font-semibold text-slate-800">{p.valor}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Two-column layout */}
+      <div className="grid gap-5 lg:grid-cols-3">
+
+        {/* Left — main */}
+        <div className="lg:col-span-2 space-y-5">
+
+          {/* Vara / detalhes */}
+          <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100">
+                <FileText className="h-3.5 w-3.5 text-slate-600" />
+              </div>
+              <h2 className="text-sm font-semibold text-slate-800">Detalhes do processo</h2>
+            </div>
+            <div className="divide-y divide-slate-50">
+              <div className="grid grid-cols-2 gap-0">
+                <div className="px-5 py-3.5">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Vara</p>
+                  <p className="text-sm text-slate-800 leading-snug">{p.vara}</p>
+                </div>
+                <div className="px-5 py-3.5">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Parte</p>
+                  <p className="text-sm text-slate-800">{p.cliente}</p>
+                </div>
+              </div>
+              {p.endereco && (
+                <div className="px-5 py-3.5">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Local da vistoria</p>
+                  <p className="text-sm text-slate-800 flex items-start gap-1.5">
+                    <MapPin className="h-3.5 w-3.5 text-slate-400 flex-shrink-0 mt-0.5" />
+                    {p.endereco}
+                  </p>
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* Media gallery */}
+          <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50">
+                <Camera className="h-3.5 w-3.5 text-blue-600" />
+              </div>
+              <h2 className="text-sm font-semibold text-slate-800">Registros e fotos</h2>
+              {midias.length > 0 && (
+                <span className="ml-auto text-[11px] font-semibold text-slate-400 bg-slate-50 border border-slate-100 rounded-full px-2 py-0.5">
+                  {midias.length}
+                </span>
+              )}
+            </div>
+            <PericiaMediaSection pericoId={id} midias={midias} />
+          </section>
+
+        </div>
+
+        {/* Right — actions */}
+        <div className="space-y-5">
+
+          {/* Executar rota */}
+          <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-lime-50">
+                <Play className="h-3.5 w-3.5 text-lime-600" />
+              </div>
+              <h2 className="text-sm font-semibold text-slate-800">Execução</h2>
+            </div>
+            <div className="px-5 py-4 space-y-3">
+              <Link href={`/rotas/pericias`}>
+                <button className="w-full flex items-center justify-center gap-2 rounded-xl bg-lime-500 hover:bg-lime-600 text-white font-semibold text-sm px-4 py-2.5 transition-colors">
+                  <Navigation className="h-4 w-4" />
+                  Executar rota
+                </button>
+              </Link>
+              <p className="text-xs text-slate-400">
+                Planeje e execute uma rota de vistoria para este processo.
+              </p>
+            </div>
+          </section>
+
+          {/* Laudo */}
+          <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-50">
+                <ScrollText className="h-3.5 w-3.5 text-violet-600" />
+              </div>
+              <h2 className="text-sm font-semibold text-slate-800">Laudo pericial</h2>
+            </div>
+            <div className="px-5 py-4 space-y-3">
+              {p.status === 'concluida' ? (
+                <Link href="/documentos/modelos">
+                  <button className="w-full flex items-center justify-center gap-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm px-4 py-2.5 transition-colors">
+                    <ScrollText className="h-4 w-4" />
+                    Gerar laudo
+                  </button>
+                </Link>
+              ) : (
+                <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+                  <Clock className="h-3.5 w-3.5 flex-shrink-0" />
+                  Conclua a perícia antes de gerar o laudo
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* Proposta */}
+          <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50">
+                <FileText className="h-3.5 w-3.5 text-emerald-600" />
+              </div>
+              <h2 className="text-sm font-semibold text-slate-800">Proposta</h2>
+            </div>
+            <div className="px-5 py-4">
+              <Link href={`/pericias/${id}/proposta`}>
+                <button className="w-full flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold text-sm px-4 py-2.5 transition-colors">
+                  <FileText className="h-4 w-4" />
+                  Proposta de honorários
+                </button>
+              </Link>
+            </div>
+          </section>
+
+          {/* Info */}
+          <div className="rounded-2xl border border-slate-100 bg-slate-50 px-5 py-4 space-y-1.5">
+            <div className="flex items-center gap-2 text-xs text-slate-500">
+              <Calendar className="h-3.5 w-3.5 flex-shrink-0" />
+              <span>Prazo: {p.prazo}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -82,14 +296,19 @@ export default async function PericiaDetailPage({ params }: { params: Promise<{ 
   const userId = session?.user?.id
   if (!userId) notFound()
 
-  // Load rota
+  // ── Mock pericia (numeric ID) ───────────────────────────────────────────────
+  if (isMockId(id)) {
+    return <MockPericiaView id={id} userId={userId} />
+  }
+
+  // ── Real RotaPericia (cuid) ────────────────────────────────────────────────
+
   let rota: { id: string; peritoId: string; titulo: string; status: string; criadoEm: Date | string; atualizadoEm: Date | string } | null = null
   try {
     rota = await prisma.rotaPericia.findUnique({ where: { id } })
   } catch {}
   if (!rota || rota.peritoId !== userId) notFound()
 
-  // Load checkpoints + media
   let checkpoints: CpRow[] = []
   let midias: MidiaDaPericia[] = []
 
@@ -139,7 +358,7 @@ export default async function PericiaDetailPage({ params }: { params: Promise<{ 
       <div className="flex items-center gap-2 text-xs text-slate-400">
         <Link href="/pericias" className="flex items-center gap-1 hover:text-slate-700 transition-colors">
           <ArrowLeft className="h-3.5 w-3.5" />
-          Perícias
+          Péricias
         </Link>
         <ChevronRight className="h-3 w-3" />
         <span className="text-slate-600 font-medium truncate max-w-xs">{rota.titulo}</span>
@@ -187,10 +406,7 @@ export default async function PericiaDetailPage({ params }: { params: Promise<{ 
         {total > 0 && (
           <div className="px-6 pb-4">
             <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
-              <div
-                className="h-full rounded-full bg-lime-500 transition-all"
-                style={{ width: `${pct}%` }}
-              />
+              <div className="h-full rounded-full bg-lime-500 transition-all" style={{ width: `${pct}%` }} />
             </div>
           </div>
         )}

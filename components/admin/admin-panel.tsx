@@ -10,11 +10,12 @@ import {
   Eye,
   EyeOff,
   KeyRound,
+  Sparkles,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { changeUserPassword, executeTursoSql } from '@/lib/actions/admin'
+import { changeUserPassword, executeTursoSql, createDemoRotas } from '@/lib/actions/admin'
 
 interface UserRow {
   id: string
@@ -56,6 +57,18 @@ export function AdminPanel({ users }: { users: UserRow[] }) {
     })
   }
 
+  // ── Demo data ──────────────────────────────────────────────────────────────
+  const [demoResult, setDemoResult] = useState<{ ok: boolean; msg: string; userId?: string } | null>(null)
+  const [isPendingDemo, startDemoTransition] = useTransition()
+
+  function handleCreateDemo(userId: string) {
+    setDemoResult(null)
+    startDemoTransition(async () => {
+      const res = await createDemoRotas(userId)
+      setDemoResult({ ok: res.ok, msg: res.message, userId })
+    })
+  }
+
   // ── SQL runner ─────────────────────────────────────────────────────────────
   const [sql, setSql] = useState('')
   const [sqlResult, setSqlResult] = useState<{ ok: boolean; msg: string } | null>(null)
@@ -84,26 +97,45 @@ export function AdminPanel({ users }: { users: UserRow[] }) {
         </CardHeader>
         <CardContent className="space-y-2">
           {users.map((u) => (
-            <div
-              key={u.id}
-              className="flex items-center gap-3 rounded-xl border border-slate-100 px-4 py-3"
-            >
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-slate-900 truncate">{u.name}</p>
-                <p className="text-xs text-slate-500">{u.email}</p>
+            <div key={u.id} className="space-y-1">
+              <div className="flex items-center gap-3 rounded-xl border border-slate-100 px-4 py-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-slate-900 truncate">{u.name}</p>
+                  <p className="text-xs text-slate-500">{u.email}</p>
+                </div>
+                <Badge variant={u.role === 'perito' ? 'info' : 'secondary'} className="flex-shrink-0">
+                  {u.role}
+                </Badge>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-shrink-0 gap-1.5"
+                  onClick={() => handleSelectUser(u)}
+                >
+                  <KeyRound className="h-3 w-3" />
+                  Alterar senha
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-shrink-0 gap-1.5 text-lime-700 border-lime-200 hover:bg-lime-50"
+                  onClick={() => handleCreateDemo(u.id)}
+                  disabled={isPendingDemo}
+                >
+                  {isPendingDemo && demoResult?.userId === u.id ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-3 w-3" />
+                  )}
+                  Dados demo
+                </Button>
               </div>
-              <Badge variant={u.role === 'perito' ? 'info' : 'secondary'} className="flex-shrink-0">
-                {u.role}
-              </Badge>
-              <Button
-                size="sm"
-                variant="outline"
-                className="flex-shrink-0 gap-1.5"
-                onClick={() => handleSelectUser(u)}
-              >
-                <KeyRound className="h-3 w-3" />
-                Alterar senha
-              </Button>
+              {demoResult?.userId === u.id && (
+                <div className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs ${demoResult.ok ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800'}`}>
+                  {demoResult.ok ? <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0" /> : <XCircle className="h-3.5 w-3.5 flex-shrink-0" />}
+                  {demoResult.msg}
+                </div>
+              )}
             </div>
           ))}
 

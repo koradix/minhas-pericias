@@ -35,6 +35,17 @@ yarn-error.log*
 
 # vercel
 .vercel
+.agent/
+
+# temp output files
+audit.txt
+deploy-output.txt
+eslint-output.txt
+eslint-utf8.txt
+tsc-errors.txt
+tsc-output.txt
+tsc-utf8.txt
+perilab-redesign.md
 
 # typescript
 *.tsbuildinfo
@@ -45,3 +56,5 @@ next-env.d.ts
 # database
 prisma/*.db
 prisma/*.db-journal
+
+.vercel
