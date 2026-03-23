@@ -23,7 +23,7 @@ const errorCls = 'mt-1 text-xs text-red-500'
 // ── Props ─────────────────────────────────────────────────────────────────────
 
 interface Pericia {
-  id: number
+  id: string
   numero: string
   assunto: string
   processo: string
