@@ -37,8 +37,6 @@ export const navigation: NavSection[] = [
       { title: "Péricias", href: "/pericias", icon: FileText },
       { title: "Demandas", href: "/demandas", icon: Inbox },
       { title: "Visitas e Rotas", href: "/rotas", icon: Navigation },
-      { title: "Contatos", href: "/contatos", icon: Users },
-      { title: "Parceiros", href: "/parceiros", icon: Handshake },
     ],
   },
   {

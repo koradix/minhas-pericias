@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60">
+  <text
+    x="0" y="38"
+    font-family="'Segoe UI', system-ui, sans-serif"
+    font-weight="700"
+    font-size="36"
+  >
+    <tspan fill="#1f2937">Peri</tspan><tspan fill="#84cc16">LaB</tspan>
+  </text>
+  <text
+    x="2" y="54"
+    font-family="'Segoe UI', system-ui, sans-serif"
+    font-weight="400"
+    font-size="11"
+    fill="#6b7280"
+  >De perito para perito</text>
+</svg>

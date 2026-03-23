@@ -8,9 +8,11 @@ export interface SignupData {
   nome: string
   email: string
   senha: string
+  cpf?: string
   telefone?: string
   // Step 2
   formacao?: string
+  formacaoCustom?: string  // free-text when formacao = "Outra formação"
   registro?: string
   especialidades?: string[]
   cursos?: string[]
@@ -23,8 +25,8 @@ export interface SignupData {
 
 export async function signup(data: SignupData): Promise<{ success: true } | { error: string }> {
   const {
-    nome, email, senha, telefone,
-    formacao, registro, especialidades, cursos,
+    nome, email, senha, cpf, telefone,
+    formacao, formacaoCustom, registro, especialidades, cursos,
     estados, tribunais, cidade, areaAtuacao,
   } = data
 
@@ -56,8 +58,10 @@ export async function signup(data: SignupData): Promise<{ success: true } | { er
   await prisma.peritoPerfil.create({
     data: {
       userId: user.id,
+      cpf: cpf?.replace(/\D/g, '').length === 11 ? cpf.trim() : null,
       telefone: telefone?.trim() || null,
       formacao: formacao || null,
+      formacaoCustom: formacaoCustom?.trim() || null,
       registro: registro?.trim() || null,
       especialidades: JSON.stringify(especialidades ?? []),
       cursos: JSON.stringify(cursos ?? []),

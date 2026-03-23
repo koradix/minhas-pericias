@@ -11,6 +11,7 @@ export interface Pericia {
   status: StatusPericia
   prazo: string
   valor: string
+  endereco?: string  // local físico da perícia (para rotas)
 }
 
 export const pericias: Pericia[] = [
@@ -24,6 +25,7 @@ export const pericias: Pericia[] = [
     status: 'em_andamento',
     prazo: '15/01/2025',
     valor: 'R$ 4.200',
+    endereco: 'Rua Voluntários da Pátria, 340, Botafogo — Rio de Janeiro, RJ',
   },
   {
     id: 2,
@@ -35,6 +37,7 @@ export const pericias: Pericia[] = [
     status: 'aguardando',
     prazo: '22/01/2025',
     valor: 'R$ 3.500',
+    endereco: 'Av. Presidente Vargas, 1012, Centro — Rio de Janeiro, RJ',
   },
   {
     id: 3,
@@ -46,6 +49,7 @@ export const pericias: Pericia[] = [
     status: 'concluida',
     prazo: '20/12/2024',
     valor: 'R$ 8.000',
+    endereco: 'Rua Quinze de Novembro, 8, Centro — Niterói, RJ',
   },
   {
     id: 4,
@@ -57,6 +61,7 @@ export const pericias: Pericia[] = [
     status: 'em_andamento',
     prazo: '28/01/2025',
     valor: 'R$ 6.500',
+    endereco: 'Rua Uruguaiana, 75, Centro — Rio de Janeiro, RJ',
   },
   {
     id: 5,
@@ -68,6 +73,7 @@ export const pericias: Pericia[] = [
     status: 'aguardando',
     prazo: '10/02/2025',
     valor: 'R$ 5.200',
+    endereco: 'Av. Presidente Kennedy, 1500, Vila São Luís — Duque de Caxias, RJ',
   },
   {
     id: 6,
@@ -79,6 +85,7 @@ export const pericias: Pericia[] = [
     status: 'nomeado',
     prazo: '15/02/2025',
     valor: 'A definir',
+    endereco: 'Estrada do Colubandê, s/n, Porto Velho — São Gonçalo, RJ',
   },
   {
     id: 7,
@@ -101,6 +108,7 @@ export const pericias: Pericia[] = [
     status: 'nomeado',
     prazo: '20/02/2025',
     valor: 'R$ 12.000',
+    endereco: 'Av. Governador Portela, 212, Centro — Nova Iguaçu, RJ',
   },
 ]
 
@@ -109,5 +117,5 @@ export const statusMapPericias = {
   aguardando: { label: 'Aguardando', variant: 'warning' as const },
   concluida: { label: 'Concluída', variant: 'success' as const },
   cancelada: { label: 'Cancelada', variant: 'danger' as const },
-  nomeado: { label: 'Nomeado', variant: 'secondary' as const },
+  nomeado: { label: 'Nomeado', variant: 'info' as const },
 }

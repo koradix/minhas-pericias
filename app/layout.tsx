@@ -1,6 +1,7 @@
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import "./globals.css"
+import { SwRegister } from "@/components/shared/sw-register"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,10 +15,24 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    template: "%s | Minhas Perícias",
-    default: "Minhas Perícias",
+    template: "%s | PeriLaB",
+    default: "PeriLaB — De perito para perito",
   },
-  description: "Gestão completa de perícias judiciais",
+  description: "Plataforma de gestão pericial para peritos judiciais brasileiros",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "PeriLaB",
+  },
+  icons: {
+    icon: "/logo-icon.svg",
+    apple: "/logo-icon.svg",
+  },
+}
+
+export const viewport: Viewport = {
+  themeColor: "#84cc16",
 }
 
 export default function RootLayout({
@@ -27,6 +42,7 @@ export default function RootLayout({
     <html lang="pt-BR">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         {children}
+        <SwRegister />
       </body>
     </html>
   )

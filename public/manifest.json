@@ -1,0 +1,26 @@
+{
+  "name": "PeriLaB",
+  "short_name": "PeriLaB",
+  "description": "Gestão pericial em campo",
+  "start_url": "/rotas/pericias",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#84cc16",
+  "orientation": "portrait-primary",
+  "categories": ["productivity", "business"],
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Rota ativa",
+      "url": "/rotas/pericias",
+      "description": "Ver rota em execução"
+    }
+  ]
+}

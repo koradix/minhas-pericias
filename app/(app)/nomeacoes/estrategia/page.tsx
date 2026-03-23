@@ -11,8 +11,8 @@ import {
   Building2,
 } from 'lucide-react'
 import { PageHeader } from '@/components/shared/page-header'
+import { BadgeStatus } from '@/components/shared/badge-status'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type { EstatisticaVara } from '@/lib/types/nomeacoes'
@@ -85,14 +85,6 @@ const varasSugeridas: (EstatisticaVara & { distanciaKm: number; endereco: string
   },
 ]
 
-// ─── HELPERS ─────────────────────────────────────────────────────────────────
-
-const prioridadeConfig = {
-  ALTA: { variant: 'danger' as const, dot: 'bg-red-500' },
-  MEDIA: { variant: 'warning' as const, dot: 'bg-amber-500' },
-  BAIXA: { variant: 'secondary' as const, dot: 'bg-slate-300' },
-}
-
 // ─── PAGE ─────────────────────────────────────────────────────────────────────
 
 export default function EstrategiaPage() {
@@ -106,7 +98,7 @@ export default function EstrategiaPage() {
         description="Varas prioritárias para visitas presenciais com base no volume de nomeações"
         actions={
           <Link href="/rotas/prospeccao">
-            <Button size="sm" className="bg-violet-600 hover:bg-violet-700">
+            <Button size="sm" className="bg-lime-500 hover:bg-lime-600 text-slate-900 font-semibold">
               <Navigation className="h-3.5 w-3.5" />
               Ver Rotas Criadas
             </Button>
@@ -115,24 +107,24 @@ export default function EstrategiaPage() {
       />
 
       {/* Flow visualization */}
-      <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-6">
-        <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-4">Como funciona</p>
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-5">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-4">Como funciona</p>
         <div className="flex items-center gap-2 flex-wrap">
           {[
-            { icon: Radar, label: 'Radar monitora varas', bg: 'bg-blue-50', color: 'text-blue-600' },
-            { icon: AlertTriangle, label: 'Classifica prioridade', bg: 'bg-amber-50', color: 'text-amber-600' },
-            { icon: Navigation, label: 'Gera rota sugerida', bg: 'bg-violet-50', color: 'text-violet-600' },
-            { icon: CheckCircle2, label: 'Você planeja a visita', bg: 'bg-emerald-50', color: 'text-emerald-600' },
+            { icon: Radar,         label: 'Radar monitora varas',   bg: 'bg-lime-50',    color: 'text-lime-600'    },
+            { icon: AlertTriangle, label: 'Classifica prioridade',  bg: 'bg-amber-50',   color: 'text-amber-600'  },
+            { icon: Navigation,    label: 'Gera rota sugerida',     bg: 'bg-slate-100',  color: 'text-slate-500'  },
+            { icon: CheckCircle2,  label: 'Você planeja a visita',  bg: 'bg-emerald-50', color: 'text-emerald-600'},
           ].map((step, i) => {
             const Icon = step.icon
             return (
               <div key={step.label} className="flex items-center gap-2">
-                {i > 0 && <ArrowRight className="h-4 w-4 text-slate-300 flex-shrink-0" />}
-                <div className="flex items-center gap-2 rounded-lg border border-slate-100 px-3 py-2">
-                  <div className={cn('flex h-7 w-7 items-center justify-center rounded-lg flex-shrink-0', step.bg)}>
-                    <Icon className={cn('h-3.5 w-3.5', step.color)} />
+                {i > 0 && <ArrowRight className="h-3.5 w-3.5 text-slate-200 flex-shrink-0" />}
+                <div className="flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50/50 px-3 py-2">
+                  <div className={cn('flex h-6 w-6 items-center justify-center rounded-lg flex-shrink-0', step.bg)}>
+                    <Icon className={cn('h-3 w-3', step.color)} />
                   </div>
-                  <span className="text-xs font-medium text-slate-700 whitespace-nowrap">{step.label}</span>
+                  <span className="text-xs font-medium text-slate-600 whitespace-nowrap">{step.label}</span>
                 </div>
               </div>
             )
@@ -142,102 +134,99 @@ export default function EstrategiaPage() {
 
       {/* Summary */}
       <div className="grid sm:grid-cols-3 gap-4">
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-xs font-medium text-slate-500 mb-1">Varas Sugeridas</p>
-          <p className="text-2xl font-bold text-slate-900">{varasSugeridas.length}</p>
+          <p className="text-2xl font-semibold text-slate-800 tabular-nums">{varasSugeridas.length}</p>
           <p className="text-xs text-slate-400 mt-0.5">{altaCount} de alta prioridade</p>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-xs font-medium text-slate-500 mb-1">Distância Total Estimada</p>
-          <p className="text-2xl font-bold text-slate-900">{kmTotal} km</p>
+          <p className="text-2xl font-semibold text-slate-800 tabular-nums">{kmTotal} km</p>
           <p className="text-xs text-slate-400 mt-0.5">Rota otimizada sugerida</p>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-xs font-medium text-slate-500 mb-1">Período Sugerido</p>
-          <p className="text-2xl font-bold text-slate-900">Jan 2025</p>
+          <p className="text-2xl font-semibold text-slate-800">Jan 2025</p>
           <p className="text-xs text-slate-400 mt-0.5">1 dia de prospecção</p>
         </div>
       </div>
 
       {/* Vara selection */}
-      <Card>
+      <Card className="rounded-2xl border-slate-200 shadow-sm">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>Varas Prioritárias</CardTitle>
               <p className="text-xs text-slate-400 mt-1">Selecione as varas para incluir na rota de prospecção</p>
             </div>
-            <Button size="sm" className="bg-violet-600 hover:bg-violet-700">
+            <Button size="sm" className="bg-lime-500 hover:bg-lime-600 text-slate-900 font-semibold">
               <Zap className="h-3.5 w-3.5" />
               Gerar Rota
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="pt-4 space-y-3">
-          {varasSugeridas.map((v, i) => {
-            const conf = prioridadeConfig[v.prioridade]
-            return (
-              <div
-                key={v.vara}
-                className={cn(
-                  'flex items-start gap-4 rounded-xl border p-4 hover:bg-slate-50 transition-all cursor-pointer',
-                  v.prioridade === 'ALTA' ? 'border-red-100 bg-red-50/30' :
-                  v.prioridade === 'MEDIA' ? 'border-amber-100 bg-amber-50/20' :
-                  'border-slate-100'
-                )}
-              >
-                {/* Rank */}
-                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-white border border-slate-200 text-xs font-bold text-slate-500">
-                  {i + 1}
-                </div>
+        <CardContent className="pt-2 space-y-3">
+          {varasSugeridas.map((v, i) => (
+            <div
+              key={v.vara}
+              className={cn(
+                'flex items-start gap-4 rounded-2xl border p-4 hover:bg-slate-50/60 transition-all cursor-pointer',
+                v.prioridade === 'ALTA'  ? 'border-lime-200  bg-lime-50/20'   :
+                v.prioridade === 'MEDIA' ? 'border-amber-100 bg-amber-50/10'  :
+                'border-slate-100'
+              )}
+            >
+              {/* Rank */}
+              <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-white border border-slate-200 text-xs font-medium text-slate-400">
+                {i + 1}
+              </div>
 
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <p className="text-sm font-semibold text-slate-900">{v.vara}</p>
-                    <Badge variant={conf.variant}>{v.prioridade}</Badge>
-                  </div>
-                  <p className="text-xs text-slate-500">{v.juiz} · {v.tribunal}</p>
-                  <p className="flex items-center gap-1 text-xs text-slate-400 mt-1">
-                    <MapPin className="h-3 w-3" />
-                    {v.endereco}
-                  </p>
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {(v.especialidades ?? []).map((e) => (
-                      <span key={e} className="inline-flex items-center rounded-md bg-white border border-slate-200 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">
-                        {e}
-                      </span>
-                    ))}
-                  </div>
+              {/* Info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <p className="text-sm font-semibold text-slate-800">{v.vara}</p>
+                  <BadgeStatus status={v.prioridade.toLowerCase()} />
                 </div>
-
-                {/* Stats */}
-                <div className="flex-shrink-0 text-right">
-                  <p className="text-lg font-bold text-slate-900 tabular-nums">{v.totalPericias}</p>
-                  <p className="text-[10px] text-slate-400">perícias/ano</p>
-                  <p className="text-xs text-slate-500 mt-1 tabular-nums">{v.distanciaKm} km</p>
+                <p className="text-xs text-slate-500">{v.juiz} · {v.tribunal}</p>
+                <p className="flex items-center gap-1 text-xs text-slate-400 mt-1">
+                  <MapPin className="h-3 w-3" />
+                  {v.endereco}
+                </p>
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {(v.especialidades ?? []).map((e) => (
+                    <span key={e} className="inline-flex items-center rounded-md bg-white border border-slate-200 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">
+                      {e}
+                    </span>
+                  ))}
                 </div>
               </div>
-            )
-          })}
+
+              {/* Stats */}
+              <div className="flex-shrink-0 text-right">
+                <p className="text-lg font-bold text-slate-800 tabular-nums">{v.totalPericias}</p>
+                <p className="text-[10px] text-slate-400">perícias/ano</p>
+                <p className="text-xs text-slate-500 mt-1 tabular-nums">{v.distanciaKm} km</p>
+              </div>
+            </div>
+          ))}
         </CardContent>
       </Card>
 
       {/* CTA */}
-      <div className="rounded-xl border border-violet-200 bg-violet-50 p-5">
+      <div className="rounded-2xl border border-lime-200 bg-lime-50/40 p-5">
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <Building2 className="h-4 w-4 text-violet-600" />
-              <p className="text-sm font-semibold text-violet-900">Rota de Prospecção Sugerida</p>
+              <Building2 className="h-4 w-4 text-lime-600" />
+              <p className="text-sm font-semibold text-slate-800">Rota de Prospecção Sugerida</p>
             </div>
-            <p className="text-xs text-violet-700">
+            <p className="text-xs text-slate-500">
               Com base nas {altaCount} varas de alta prioridade, sugerimos uma rota de {kmTotal} km
               cobrindo o Fórum João Mendes, TRT-2 e demais varas prioritárias em um único dia.
             </p>
           </div>
           <Link href="/rotas/prospeccao" className="flex-shrink-0">
-            <Button size="sm" className="bg-violet-600 hover:bg-violet-700 whitespace-nowrap">
+            <Button size="sm" className="bg-lime-500 hover:bg-lime-600 text-slate-900 font-semibold whitespace-nowrap">
               Criar Rota <ChevronRight className="h-3.5 w-3.5" />
             </Button>
           </Link>

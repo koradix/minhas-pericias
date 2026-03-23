@@ -1,4 +1,5 @@
 import type { PeritoPerfil } from '@/lib/mocks/peritos'
+import { ESPECIALIDADES_POR_AREA, type AreaPrincipalId } from '@/lib/constants/pericias'
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -7,6 +8,14 @@ export interface Demanda {
   uf: string         // estado (ex: "RJ")
   cidade?: string
   tribunal?: string  // sigla (ex: "TJRJ")
+}
+
+// Extended type — mock PeritoPerfil + optional new taxonomy fields from Prisma
+interface PeritoComTaxonomia extends PeritoPerfil {
+  areaPrincipal?: string | null
+  areasSecundarias?: string[]
+  especialidades2?: string[]
+  keywords?: string[]
 }
 
 export type ScoreCategoria =
@@ -43,30 +52,91 @@ export function getCategoriaColor(score: number): string {
 
 // ─── Cálculo de score ─────────────────────────────────────────────────────────
 //
-//  Critério                     Pontos   Max
-//  ─────────────────────────────────────────
-//  Especialidade compatível      +40     40
-//  Mesmo estado de atuação       +20     20
-//  Mesmo tribunal de interesse   +15     15
-//  Cursos relevantes             +10     10
-//  Perfil completo               +5       5
-//  ─────────────────────────────────────────
-//  Total máximo                          90  (os últimos 10 são impossíveis de atingir sem todos)
-//  Normalizado cap                       100
+//  Critério (nova taxonomia)             Pontos   Max
+//  ──────────────────────────────────────────────────
+//  areaPrincipal contém tipo              +35     35
+//  especialidades2 exata                  +25     25
+//  especialidades2 parcial                +15     15  (só se !exata)
+//  areasSecundarias contém tipo           +10     10
+//  keywords relevantes (+5 cada, max 15)          15
+//  ──────────────────────────────────────────────────
+//  Critério (legado — sem nova taxonomia)
+//  Especialidade exata                    +40
+//  Especialidade parcial                  +20
+//  ──────────────────────────────────────────────────
+//  Mesmo estado de atuação                +20     20
+//  Mesmo tribunal de interesse            +15     15
+//  Cursos relevantes                      +10     10
+//  Perfil completo                        +5       5
+//  ──────────────────────────────────────────────────
+//  Total máximo (nova)                            100
+//  Total máximo (legado)                          90 (cap 100)
 
 export function calculatePeritoMatchScore(
-  perito: PeritoPerfil,
+  perito: PeritoPerfil | PeritoComTaxonomia,
   demanda: Demanda,
 ): number {
   let score = 0
-
-  // Especialidade (+40 exato, +20 parcial)
+  const p = perito as PeritoComTaxonomia
   const tipoNorm = demanda.tipo.toLowerCase()
-  if (perito.especialidades.some((e) => e.toLowerCase() === tipoNorm)) {
-    score += 40
-  } else if (perito.especialidades.some((e) => e.toLowerCase().includes(tipoNorm.split(' ')[0]))) {
-    score += 20
+  const keyword  = tipoNorm.split(' ').find((w) => w.length > 3) ?? ''
+
+  const esp2:            string[] = p.especialidades2 ?? []
+  const areasSecundarias: string[] = p.areasSecundarias ?? []
+  const keywords:         string[] = p.keywords ?? []
+  const hasNewTaxonomy = esp2.length > 0 || !!p.areaPrincipal
+
+  if (hasNewTaxonomy) {
+    // ── Nova taxonomia ────────────────────────────────────────────────────
+
+    // areaPrincipal match (+35): check if demanda.tipo is in the area's specialties
+    if (p.areaPrincipal) {
+      const area = p.areaPrincipal as AreaPrincipalId
+      const areaEsps = ESPECIALIDADES_POR_AREA[area] ?? []
+      const areaMatch = areaEsps.some((e) => e.toLowerCase() === tipoNorm)
+        || (keyword.length > 3 && areaEsps.some((e) => e.toLowerCase().includes(keyword)))
+      if (areaMatch) score += 35
+    }
+
+    // especialidades2 (+25 exata, +15 parcial)
+    if (esp2.some((e) => e.toLowerCase() === tipoNorm)) {
+      score += 25
+    } else if (keyword.length > 3 && esp2.some((e) => e.toLowerCase().includes(keyword))) {
+      score += 15
+    }
+
+    // areasSecundarias (+10)
+    if (areasSecundarias.length > 0) {
+      const secondaryEsps = areasSecundarias.flatMap((a) => ESPECIALIDADES_POR_AREA[a as AreaPrincipalId] ?? [])
+      const secMatch = secondaryEsps.some((e) => e.toLowerCase() === tipoNorm)
+        || (keyword.length > 3 && secondaryEsps.some((e) => e.toLowerCase().includes(keyword)))
+      if (secMatch) score += 10
+    }
+
+    // keywords (+5 each, max 15)
+    if (keyword.length > 3 && keywords.length > 0) {
+      let kwScore = 0
+      for (const kw of keywords) {
+        if (tipoNorm.includes(kw.toLowerCase()) || kw.toLowerCase().includes(keyword)) {
+          kwScore += 5
+        }
+        if (kwScore >= 15) break
+      }
+      score += kwScore
+    }
+  } else {
+    // ── Legado (sem nova taxonomia) ───────────────────────────────────────
+    if (perito.especialidades.some((e) => e.toLowerCase() === tipoNorm)) {
+      score += 40
+    } else if (
+      keyword.length > 3 &&
+      perito.especialidades.some((e) => e.toLowerCase().includes(keyword))
+    ) {
+      score += 20
+    }
   }
+
+  // ── Geography (sempre) ───────────────────────────────────────────────────
 
   // Estado (+20)
   if (perito.regioes.map((r) => r.toUpperCase()).includes(demanda.uf.toUpperCase())) {
@@ -78,13 +148,12 @@ export function calculatePeritoMatchScore(
     score += 15
   }
 
-  // Cursos relevantes (+10) — ao menos 1 curso que contenha palavra da especialidade
-  const keyword = demanda.tipo.toLowerCase().split(' ').find((w) => w.length > 3) ?? ''
-  if (keyword && perito.cursos.some((c) => c.toLowerCase().includes(keyword))) {
+  // Cursos relevantes (+10)
+  if (keyword.length > 3 && perito.cursos.some((c) => c.toLowerCase().includes(keyword))) {
     score += 10
   }
 
-  // Perfil completo (+5) — tem formação, bio e pelo menos 2 especialidades
+  // Perfil completo (+5)
   if (perito.formacao && perito.bio && perito.especialidades.length >= 2) {
     score += 5
   }

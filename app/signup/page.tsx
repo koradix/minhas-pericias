@@ -1,10 +1,18 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { signIn } from 'next-auth/react'
-import { ChevronRight, ChevronLeft, Check, Loader2 } from 'lucide-react'
+import { ChevronRight, ChevronLeft, Check, Loader2, Building2 } from 'lucide-react'
 import { signup } from '@/lib/actions/signup'
+import {
+  updatePerfilProfissional,
+  syncVarasFromSignup,
+  previewVarasCount,
+  type PerfilProfissionalData,
+} from '@/lib/actions/perfil'
+import { PerfilProfissionalForm } from '@/components/perfil/PerfilProfissionalForm'
 import {
   ESTADOS_DISPONIVEIS,
   TRIBUNAIS_POR_ESTADO,
@@ -13,63 +21,11 @@ import {
   type TipoTribunal,
 } from '@/lib/constants/tribunais'
 
-// ─── Options ──────────────────────────────────────────────────────────────────
-
-const FORMACOES = [
-  'Engenheiro Civil', 'Engenheiro Eletricista', 'Engenheiro Mecânico',
-  'Engenheiro de Produção', 'Arquiteto', 'Contador', 'Médico',
-  'Psicólogo', 'Administrador', 'Técnico', 'Outro',
-]
-
-const ESPECIALIDADES = [
-  'Avaliação de Imóvel', 'Engenharia Civil', 'Perícia Trabalhista',
-  'Perícia Contábil', 'Avaliação de Empresa', 'Perícia Médica',
-  'Avaliação de Veículo', 'Ambiental', 'Outro',
-]
-
-const CURSOS = [
-  'Perícia Judicial', 'Assistência Técnica', 'Avaliação de Imóveis',
-  'Inspeção Predial', 'Laudos Técnicos', 'Cálculos Judiciais',
-  'Perícia Trabalhista', 'Perícia Cível', 'Mediação e Arbitragem', 'Outro',
-]
-
 const TIPO_LABEL: Record<TipoTribunal, string> = {
   estadual:  'Estadual',
   trabalho:  'Trabalho',
   federal:   'Federal',
   eleitoral: 'Eleitoral',
-}
-
-// ─── Chip multi-select genérico ───────────────────────────────────────────────
-
-function ChipSelect({
-  options, selected, onChange,
-}: { options: string[]; selected: string[]; onChange: (v: string[]) => void }) {
-  function toggle(opt: string) {
-    onChange(selected.includes(opt) ? selected.filter((x) => x !== opt) : [...selected, opt])
-  }
-  return (
-    <div className="flex flex-wrap gap-2">
-      {options.map((opt) => {
-        const active = selected.includes(opt)
-        return (
-          <button
-            key={opt}
-            type="button"
-            onClick={() => toggle(opt)}
-            className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium border transition-colors ${
-              active
-                ? 'bg-lime-500 border-lime-500 text-slate-900'
-                : 'border-slate-300 text-slate-600 hover:border-lime-400 hover:text-lime-700 bg-white'
-            }`}
-          >
-            {active && <Check className="h-3 w-3" />}
-            {opt}
-          </button>
-        )
-      })}
-    </div>
-  )
 }
 
 // ─── Input styles ─────────────────────────────────────────────────────────────
@@ -90,19 +46,40 @@ export default function SignupPage() {
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
   const [confirmar, setConfirmar] = useState('')
+  const [cpf, setCpf] = useState('')
   const [telefone, setTelefone] = useState('')
 
-  // Step 2
-  const [formacao, setFormacao] = useState('')
-  const [registro, setRegistro] = useState('')
-  const [especialidades, setEspecialidades] = useState<string[]>([])
-  const [cursos, setCursos] = useState<string[]>([])
+  // Step 2 — taxonomia nova
+  const [perfil, setPerfil] = useState<PerfilProfissionalData>({
+    areaPrincipal: '' as PerfilProfissionalData['areaPrincipal'],
+    areasSecundarias: [],
+    especialidades2: [],
+    keywords: [],
+    formacao: '',
+    registro: '',
+  })
+  const [formacaoCustom, setFormacaoCustom] = useState('')
 
   // Step 3
   const [estadosSel, setEstadosSel] = useState<string[]>([])
   const [tribunaisSel, setTribunaisSel] = useState<string[]>([])
   const [cidade, setCidade] = useState('')
   const [areaAtuacao, setAreaAtuacao] = useState('')
+
+  // Step 3 — vara preview
+  const [varaPreview, setVaraPreview] = useState<{ varas: number; tribunais: number } | null>(null)
+  const varaPreviewTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // ─── Preview vara count when tribunal selection changes ─────────────────
+  useEffect(() => {
+    if (tribunaisSel.length === 0) { setVaraPreview(null); return }
+    if (varaPreviewTimer.current) clearTimeout(varaPreviewTimer.current)
+    varaPreviewTimer.current = setTimeout(async () => {
+      const result = await previewVarasCount(tribunaisSel)
+      setVaraPreview(result)
+    }, 600)
+    return () => { if (varaPreviewTimer.current) clearTimeout(varaPreviewTimer.current) }
+  }, [tribunaisSel])
 
   // ─── Lógica cascata: estado ↔ tribunais ──────────────────────────────────
 
@@ -156,8 +133,12 @@ export default function SignupPage() {
     setLoading(true)
     setError('')
     const result = await signup({
-      nome, email, senha, telefone,
-      formacao, registro, especialidades, cursos,
+      nome, email, senha, cpf, telefone,
+      formacao: perfil.formacao ?? '',
+      formacaoCustom: perfil.formacao === 'Outra formação' ? formacaoCustom : undefined,
+      registro: perfil.registro ?? '',
+      especialidades: perfil.especialidades2,
+      cursos: [],
       estados: estadosSel,
       tribunais: tribunaisSel,
       cidade,
@@ -169,6 +150,14 @@ export default function SignupPage() {
       return
     }
     const res = await signIn('credentials', { email, password: senha, redirect: false })
+    if (res?.ok) {
+      if (perfil.areaPrincipal) {
+        await updatePerfilProfissional({ ...perfil, formacaoCustom })
+      }
+      if (tribunaisSel.length > 0) {
+        await syncVarasFromSignup(tribunaisSel)
+      }
+    }
     router.push(res?.ok ? '/dashboard' : '/login')
   }
 
@@ -185,11 +174,8 @@ export default function SignupPage() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
       {/* Logo */}
-      <div className="mb-8 flex flex-col items-center gap-2">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-lime-500 text-slate-900 font-black text-lg select-none">
-          P
-        </div>
-        <span className="text-base font-bold text-slate-900 tracking-tight">PeriLaB</span>
+      <div className="mb-8 flex flex-col items-center">
+        <Image src="/logo.svg" alt="PeriLaB" width={180} height={68} priority />
       </div>
 
       <div className="w-full max-w-lg">
@@ -248,9 +234,20 @@ export default function SignupPage() {
                     <input type="password" className={inputCls} placeholder="••••••" value={confirmar} onChange={(e) => setConfirmar(e.target.value)} />
                   </div>
                 </div>
-                <div>
-                  <label className={labelCls}>Telefone <span className="text-slate-400 font-normal">(opcional)</span></label>
-                  <input className={inputCls} placeholder="(11) 9 0000-0000" value={telefone} onChange={(e) => setTelefone(e.target.value)} />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelCls}>CPF <span className="text-slate-400 font-normal">(para nomeações)</span></label>
+                    <input
+                      className={inputCls}
+                      placeholder="000.000.000-00"
+                      value={cpf}
+                      onChange={(e) => setCpf(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Telefone <span className="text-slate-400 font-normal">(opcional)</span></label>
+                    <input className={inputCls} placeholder="(11) 9 0000-0000" value={telefone} onChange={(e) => setTelefone(e.target.value)} />
+                  </div>
                 </div>
               </div>
             </>
@@ -263,27 +260,13 @@ export default function SignupPage() {
                 <h1 className="text-lg font-semibold text-slate-900">Perfil profissional</h1>
                 <p className="text-xs text-slate-500 mt-0.5">Personaliza seu dashboard e as demandas sugeridas</p>
               </div>
-              <div className="space-y-4">
-                <div>
-                  <label className={labelCls}>Formação principal</label>
-                  <select className={inputCls} value={formacao} onChange={(e) => setFormacao(e.target.value)}>
-                    <option value="">Selecione...</option>
-                    {FORMACOES.map((f) => <option key={f} value={f}>{f}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className={labelCls}>Registro profissional <span className="text-slate-400 font-normal">(ex: CREA 0123456)</span></label>
-                  <input className={inputCls} placeholder="CREA / CRC / CRM / CRP..." value={registro} onChange={(e) => setRegistro(e.target.value)} />
-                </div>
-                <div>
-                  <label className={labelCls}>Especialidades em perícia</label>
-                  <ChipSelect options={ESPECIALIDADES} selected={especialidades} onChange={setEspecialidades} />
-                </div>
-                <div>
-                  <label className={labelCls}>Cursos e capacitações</label>
-                  <ChipSelect options={CURSOS} selected={cursos} onChange={setCursos} />
-                </div>
-              </div>
+              <PerfilProfissionalForm
+                value={perfil}
+                onChange={(update) => setPerfil((p) => ({ ...p, ...update }))}
+                showFormacaoRegistro
+                formacaoCustom={formacaoCustom}
+                onFormacaoCustomChange={setFormacaoCustom}
+              />
             </>
           )}
 
@@ -384,6 +367,17 @@ export default function SignupPage() {
                         </span>
                       ))}
                     </div>
+                  </div>
+                )}
+
+                {/* Vara preview */}
+                {varaPreview !== null && varaPreview.varas > 0 && (
+                  <div className="flex items-center gap-2 rounded-xl border border-lime-200 bg-lime-50 px-3 py-2.5">
+                    <Building2 className="h-4 w-4 text-lime-600 flex-shrink-0" />
+                    <p className="text-xs text-lime-800">
+                      <span className="font-semibold">{varaPreview.varas} varas</span> encontradas em{' '}
+                      <span className="font-semibold">{varaPreview.tribunais} tribunal(is)</span> — serão sincronizadas no seu radar
+                    </p>
                   </div>
                 )}
 
