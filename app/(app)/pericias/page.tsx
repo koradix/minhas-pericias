@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { FileText, Search, SlidersHorizontal, ScrollText } from 'lucide-react'
+import { FileText, Search, SlidersHorizontal, ScrollText, List, Kanban } from 'lucide-react'
 // Nova Perícia button removed — perícias arrive via nomeações or parceiro proposals only
 import { PageHeader } from '@/components/shared/page-header'
 import { Button } from '@/components/ui/button'
@@ -34,10 +34,25 @@ export default function PericiasPage() {
         title="Perícias"
         description="Gerencie todos os seus processos periciais"
         actions={
-          <Button variant="outline" size="sm">
-            <SlidersHorizontal className="h-3.5 w-3.5" />
-            Filtros
-          </Button>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center rounded-lg border border-slate-200 overflow-hidden text-xs font-medium">
+              <span className="flex items-center gap-1.5 px-3 py-1.5 bg-lime-50 text-lime-700 border-r border-slate-200">
+                <List className="h-3.5 w-3.5" />
+                Lista
+              </span>
+              <Link
+                href="/pericias/kanban"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-slate-500 hover:bg-slate-50 transition-colors"
+              >
+                <Kanban className="h-3.5 w-3.5" />
+                Kanban
+              </Link>
+            </div>
+            <Button variant="outline" size="sm">
+              <SlidersHorizontal className="h-3.5 w-3.5" />
+              Filtros
+            </Button>
+          </div>
         }
       />
 

@@ -296,15 +296,15 @@ export function CheckpointMediaPanel({
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop — z-[1000] stays above Leaflet's max z-index (~700) */}
       <div
-        className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px]"
+        className="fixed inset-0 z-[1000] bg-black/40 backdrop-blur-[2px]"
         onClick={onClose}
         aria-hidden
       />
 
       {/* Slide-over panel */}
-      <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col bg-white shadow-2xl sm:border-l sm:border-slate-200">
+      <div className="fixed inset-y-0 right-0 z-[1001] flex w-full max-w-md flex-col bg-white shadow-2xl sm:border-l sm:border-slate-200">
 
         {/* Header */}
         <div className="flex items-start gap-3 border-b border-slate-100 bg-slate-50 px-5 py-4">

@@ -192,8 +192,8 @@ export default async function RotasProspeccaoPage() {
         }))}
       />
 
-      {/* Mapa real */}
-      <div className="h-[420px] w-full overflow-hidden rounded-xl border border-slate-200 shadow-sm">
+      {/* Mapa real — isolate creates stacking context, keeping Leaflet z-indices contained */}
+      <div className="isolate h-[420px] w-full overflow-hidden rounded-xl border border-slate-200 shadow-sm">
         <RouteMapDynamic
           routes={rotas.map((r) => ({ id: r.id, pontos: r.pontos }))}
         />
