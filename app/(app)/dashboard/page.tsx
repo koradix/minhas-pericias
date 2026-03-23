@@ -25,15 +25,6 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Dashboard' }
 
-// ─── MOCK DATA ────────────────────────────────────────────────────────────────
-
-const periciasAtivas = [
-  { id: 1, numero: 'PRC-2024-001', assunto: 'Avaliação de Imóvel Residencial',  vara: '3ª Vara Cível', status: 'em_andamento' as const, prazo: '15/12', diasRestantes: 3  },
-  { id: 2, numero: 'PRC-2024-002', assunto: 'Perícia Trabalhista',               vara: 'TRT-2',         status: 'aguardando'   as const, prazo: '20/12', diasRestantes: 8  },
-  { id: 3, numero: 'PRC-2024-004', assunto: 'Avaliação de Estabelecimento',      vara: '5ª Vara Cível', status: 'em_andamento' as const, prazo: '22/12', diasRestantes: 10 },
-  { id: 4, numero: 'PRC-2024-005', assunto: 'Perícia de Engenharia Civil',       vara: '4ª Vara Cível', status: 'aguardando'   as const, prazo: '28/12', diasRestantes: 16 },
-]
-
 // ─── PAGE ─────────────────────────────────────────────────────────────────────
 
 export default async function DashboardPage() {
@@ -135,6 +126,36 @@ export default async function DashboardPage() {
     } catch { /* DB not ready */ }
   }
 
+  // ── Péricias ativas (rotas em_andamento) ─────────────────────────────────
+  type RotaAtiva = { id: string; titulo: string; status: string; concluidos: number; total: number }
+  let periciasAtivas: RotaAtiva[] = []
+  if (userId) {
+    try {
+      const dbRotas = await prisma.rotaPericia.findMany({
+        where: { peritoId: userId, status: { in: ['em_andamento', 'concluida'] } },
+        orderBy: { atualizadoEm: 'desc' },
+        take: 4,
+      })
+      if (dbRotas.length > 0) {
+        const rotaIds = dbRotas.map((r) => r.id)
+        const cps = await prisma.checkpoint.findMany({
+          where: { rotaId: { in: rotaIds } },
+          select: { rotaId: true, status: true },
+        })
+        periciasAtivas = dbRotas.map((rota) => {
+          const mine = cps.filter((c) => c.rotaId === rota.id)
+          return {
+            id: rota.id,
+            titulo: rota.titulo,
+            status: rota.status,
+            concluidos: mine.filter((c) => c.status === 'concluido').length,
+            total: mine.length,
+          }
+        })
+      }
+    } catch { /* DB not ready */ }
+  }
+
   // ──────────────────────────────────────────────────────────────────────────
 
   return (
@@ -217,9 +238,9 @@ export default async function DashboardPage() {
           <KPICard
             title="Péricias Ativas"
             value={periciasAtivas.length}
-            subtitle="Em andamento"
+            subtitle={periciasAtivas.length > 0 ? 'Em andamento' : 'Nenhuma ativa'}
             icon={FileText}
-            accent="lime"
+            accent={periciasAtivas.length > 0 ? 'lime' : 'slate'}
             className="h-full cursor-pointer group-hover:shadow-md transition-all"
           />
         </Link>
@@ -269,43 +290,48 @@ export default async function DashboardPage() {
             </div>
           </CardHeader>
           <CardContent className="pt-0 space-y-0.5">
-            {periciasAtivas.map((p) => (
-              <Link
-                key={p.id}
-                href={`/pericias/${p.id}`}
-                className={cn(
-                  'group flex items-center gap-4 rounded-xl border-l-2 pl-3 pr-3 py-2.5 hover:bg-slate-50 transition-colors',
-                  p.status === 'em_andamento'
-                    ? 'border-l-lime-500'
-                    : p.diasRestantes <= 5
-                    ? 'border-l-rose-400'
-                    : 'border-l-amber-300',
-                )}
-              >
-                <div className={cn(
-                  'flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg',
-                  p.status === 'em_andamento' ? 'bg-lime-50' : 'bg-amber-50',
-                )}>
-                  {p.status === 'em_andamento'
-                    ? <FileText className="h-3.5 w-3.5 text-lime-600" />
-                    : <Clock className="h-3.5 w-3.5 text-amber-600" />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-800 truncate">{p.assunto}</p>
-                  <p className="text-xs text-slate-400 truncate">{p.numero} · {p.vara}</p>
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <span className={cn(
-                    'text-xs font-bold tabular-nums',
-                    p.diasRestantes <= 5 ? 'text-rose-600' :
-                    p.diasRestantes <= 10 ? 'text-amber-600' : 'text-slate-500',
-                  )}>
-                    {p.prazo}
-                  </span>
-                  <BadgeStatus status={p.status} />
-                </div>
-              </Link>
-            ))}
+            {periciasAtivas.length === 0 ? (
+              <div className="flex flex-col items-center gap-3 py-6 text-center">
+                <FileText className="h-8 w-8 text-slate-200" />
+                <p className="text-sm text-slate-400">Nenhuma perícia ativa</p>
+                <Link href="/rotas/nova">
+                  <Button size="sm" variant="outline" className="gap-1.5 text-xs">
+                    <Plus className="h-3.5 w-3.5" /> Planejar rota
+                  </Button>
+                </Link>
+              </div>
+            ) : (
+              periciasAtivas.map((p) => {
+                const pct = p.total > 0 ? Math.round((p.concluidos / p.total) * 100) : 0
+                return (
+                  <Link
+                    key={p.id}
+                    href={`/pericias/${p.id}`}
+                    className="group flex items-center gap-3 rounded-xl border-l-2 border-l-lime-500 pl-3 pr-3 py-2.5 hover:bg-slate-50 transition-colors"
+                  >
+                    <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-lime-50">
+                      <FileText className="h-3.5 w-3.5 text-lime-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-slate-800 truncate">{p.titulo}</p>
+                      {p.total > 0 && (
+                        <div className="mt-1 h-1 rounded-full bg-slate-100 overflow-hidden">
+                          <div className="h-full rounded-full bg-lime-400" style={{ width: `${pct}%` }} />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {p.total > 0 && (
+                        <span className="text-xs font-semibold tabular-nums text-slate-400">
+                          {p.concluidos}/{p.total}
+                        </span>
+                      )}
+                      <BadgeStatus status={p.status} />
+                    </div>
+                  </Link>
+                )
+              })
+            )}
           </CardContent>
         </Card>
 
