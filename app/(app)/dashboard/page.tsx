@@ -34,12 +34,6 @@ const periciasAtivas = [
   { id: 4, numero: 'PRC-2024-005', assunto: 'Perícia de Engenharia Civil',       vara: '4ª Vara Cível', status: 'aguardando'   as const, prazo: '28/12', diasRestantes: 16 },
 ]
 
-const proximasVisitas = [
-  { id: 1, tipo: 'Vistoria',   pericia: 'PRC-2024-001', local: 'Rua das Flores, 123', cidade: 'Jardins, SP',    quando: 'Hoje',   hora: '14:00', urgente: true  },
-  { id: 2, tipo: 'Entrevista', pericia: 'PRC-2024-004', local: 'Av. Paulista, 1000',  cidade: 'Bela Vista, SP', quando: 'Amanhã', hora: '09:30', urgente: false },
-  { id: 3, tipo: 'Vistoria',   pericia: 'PRC-2024-006', local: 'Rua do Comércio, 45', cidade: 'Centro, SP',     quando: '18 Dez', hora: '10:00', urgente: false },
-]
-
 // ─── PAGE ─────────────────────────────────────────────────────────────────────
 
 export default async function DashboardPage() {
@@ -87,6 +81,49 @@ export default async function DashboardPage() {
         .count({ where: { peritoId: userId, visualizado: false } })
         .catch(() => 0)
     : 0
+
+  // ── Rotas ativas (real Turso data) ───────────────────────────────────────
+  type RotaComProgresso = {
+    id: string
+    titulo: string
+    pericoId: string | null
+    proximoCheckpoint: { titulo: string; endereco: string | null } | null
+    checkpointsConcluidos: number
+    totalCheckpoints: number
+  }
+  let rotasAtivas: RotaComProgresso[] = []
+  if (userId) {
+    try {
+      const rotas = await prisma.rotaPericia.findMany({
+        where: { peritoId: userId, status: 'em_andamento' },
+        orderBy: { atualizadoEm: 'desc' },
+        take: 4,
+      })
+      if (rotas.length > 0) {
+        const rotaIds = rotas.map((r) => r.id)
+        const allCps = await prisma.checkpoint.findMany({
+          where: { rotaId: { in: rotaIds } },
+          orderBy: { ordem: 'asc' },
+          select: { id: true, rotaId: true, titulo: true, endereco: true, status: true },
+        })
+        rotasAtivas = rotas.map((rota) => {
+          const cps = allCps.filter((c) => c.rotaId === rota.id)
+          const concluidos = cps.filter((c) => c.status === 'concluido').length
+          const proximo = cps.find((c) => c.status !== 'concluido') ?? null
+          return {
+            id: rota.id,
+            titulo: rota.titulo,
+            pericoId: rota.pericoId ?? null,
+            proximoCheckpoint: proximo
+              ? { titulo: proximo.titulo, endereco: proximo.endereco ?? null }
+              : null,
+            checkpointsConcluidos: concluidos,
+            totalCheckpoints: cps.length,
+          }
+        })
+      }
+    } catch { /* DB not ready — renders empty state */ }
+  }
 
   // ──────────────────────────────────────────────────────────────────────────
 
@@ -261,11 +298,18 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Próximas Visitas */}
+        {/* Próximas Rotas */}
         <Card className="lg:col-span-2 rounded-2xl border-slate-200 shadow-sm">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>Próximas Visitas</CardTitle>
+              <div className="flex items-center gap-2">
+                <CardTitle>Próximas Rotas</CardTitle>
+                {rotasAtivas.length > 0 && (
+                  <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-lime-100 text-lime-700 text-[10px] font-bold px-1.5">
+                    {rotasAtivas.length}
+                  </span>
+                )}
+              </div>
               <Link href="/rotas">
                 <Button variant="ghost" size="sm" className="text-lime-600 hover:text-lime-700 -mr-2 gap-1">
                   Ver rotas <ChevronRight className="h-3.5 w-3.5" />
@@ -273,52 +317,70 @@ export default async function DashboardPage() {
               </Link>
             </div>
           </CardHeader>
-          <CardContent className="pt-0 space-y-2">
-            {proximasVisitas.map((v) => (
-              <div
-                key={v.id}
-                className={cn(
-                  'flex items-start gap-3 rounded-xl p-3 transition-all',
-                  v.urgente
-                    ? 'bg-amber-50 border border-amber-100'
-                    : 'border border-transparent hover:bg-slate-50 hover:border-slate-100',
-                )}
-              >
-                <div className={cn(
-                  'flex flex-col items-center justify-center flex-shrink-0 w-11 h-11 rounded-xl',
-                  v.urgente ? 'bg-amber-100' : 'bg-slate-100',
-                )}>
-                  <span className={cn(
-                    'text-[9px] font-bold uppercase leading-none',
-                    v.urgente ? 'text-amber-600' : 'text-slate-500',
-                  )}>
-                    {v.quando}
-                  </span>
-                  <span className={cn(
-                    'text-sm font-bold tabular-nums mt-0.5',
-                    v.urgente ? 'text-amber-700' : 'text-slate-700',
-                  )}>
-                    {v.hora}
-                  </span>
+          <CardContent className="pt-0">
+            {rotasAtivas.length === 0 ? (
+              <div className="flex flex-col items-center gap-3 py-5 text-center">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100">
+                  <Navigation className="h-5 w-5 text-slate-400" />
                 </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <span className={cn(
-                      'inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold',
-                      v.tipo === 'Vistoria' ? 'bg-lime-50 text-lime-700' : 'bg-slate-100 text-slate-600',
-                    )}>
-                      {v.tipo}
-                    </span>
-                    <span className="text-[10px] font-medium text-slate-400">{v.pericia}</span>
-                  </div>
-                  <p className="flex items-center gap-1 text-xs text-slate-700 font-medium">
-                    <MapPin className="h-3 w-3 flex-shrink-0 text-slate-400" />
-                    <span className="truncate">{v.local}</span>
-                  </p>
-                  <p className="text-[10px] text-slate-400 mt-0.5 pl-4">{v.cidade}</p>
+                <div>
+                  <p className="text-sm font-medium text-slate-700">Nenhuma rota ativa</p>
+                  <p className="text-xs text-slate-400 mt-0.5">Planeje uma rota de vistoria ou prospecção</p>
                 </div>
+                <Link href="/rotas/nova">
+                  <Button size="sm" variant="outline" className="gap-1.5 text-xs">
+                    <Plus className="h-3.5 w-3.5" /> Planejar rota
+                  </Button>
+                </Link>
               </div>
-            ))}
+            ) : (
+              <div className="space-y-2">
+                {rotasAtivas.map((rota) => (
+                  <Link key={rota.id} href="/rotas/pericias">
+                    <div className="group flex items-start gap-3 rounded-xl border border-slate-100 p-3 hover:border-lime-200 hover:bg-lime-50/40 transition-all cursor-pointer">
+                      <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-lime-50">
+                        <Navigation className="h-4 w-4 text-lime-600" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2 mb-0.5">
+                          <p className="text-xs font-semibold text-slate-900 truncate">{rota.titulo}</p>
+                          <span className="text-[10px] font-bold text-slate-400 flex-shrink-0 tabular-nums">
+                            {rota.checkpointsConcluidos}/{rota.totalCheckpoints}
+                          </span>
+                        </div>
+                        {rota.proximoCheckpoint ? (
+                          <>
+                            <p className="text-xs text-slate-500 truncate">↳ {rota.proximoCheckpoint.titulo}</p>
+                            {rota.proximoCheckpoint.endereco && (
+                              <p className="flex items-center gap-1 text-[10px] text-slate-400 mt-0.5">
+                                <MapPin className="h-2.5 w-2.5 flex-shrink-0" />
+                                <span className="truncate">{rota.proximoCheckpoint.endereco}</span>
+                              </p>
+                            )}
+                          </>
+                        ) : (
+                          <p className="text-xs text-emerald-600 font-medium">Todos concluídos ✓</p>
+                        )}
+                        {rota.totalCheckpoints > 0 && (
+                          <div className="mt-2 h-1 rounded-full bg-slate-100 overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-lime-400 transition-all"
+                              style={{ width: `${Math.round((rota.checkpointsConcluidos / rota.totalCheckpoints) * 100)}%` }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                      <ChevronRight className="h-3.5 w-3.5 text-slate-300 group-hover:text-lime-500 transition-colors flex-shrink-0 mt-1.5" />
+                    </div>
+                  </Link>
+                ))}
+                <Link href="/rotas/pericias">
+                  <button className="mt-1 w-full rounded-xl border border-dashed border-slate-200 py-2.5 text-xs font-semibold text-slate-500 hover:border-lime-400 hover:text-lime-700 transition-colors">
+                    Executar rota no mapa →
+                  </button>
+                </Link>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
