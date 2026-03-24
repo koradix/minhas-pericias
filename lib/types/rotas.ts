@@ -1,5 +1,5 @@
 export type TipoRota = 'PROSPECCAO' | 'PERICIA'
-export type StatusRota = 'planejada' | 'em_execucao' | 'concluida' | 'cancelada'
+export type StatusRota = 'planejada' | 'em_execucao' | 'em_andamento' | 'concluida' | 'cancelada'
 export type TipoPontoRota = 'VARA_CIVEL' | 'FORUM' | 'ESCRITORIO' | 'PERICIA'
 
 export interface PontoRota {

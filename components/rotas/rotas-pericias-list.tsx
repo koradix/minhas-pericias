@@ -11,11 +11,12 @@ import type { Rota, StatusRota } from '@/lib/types/rotas'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const statusMap = {
-  planejada:    { label: 'Planejada',     variant: 'info'    as const },
-  em_execucao:  { label: 'Em execução',   variant: 'warning' as const },
-  concluida:    { label: 'Concluída',     variant: 'success' as const },
-  cancelada:    { label: 'Cancelada',     variant: 'danger'  as const },
+const statusMap: Record<string, { label: string; variant: 'info' | 'warning' | 'success' | 'danger' | 'secondary' }> = {
+  planejada:    { label: 'Planejada',     variant: 'info'      },
+  em_execucao:  { label: 'Em execução',   variant: 'warning'   },
+  em_andamento: { label: 'Em andamento',  variant: 'warning'   },
+  concluida:    { label: 'Concluída',     variant: 'success'   },
+  cancelada:    { label: 'Cancelada',     variant: 'secondary' },
 }
 
 function formatTempo(min: number) {
@@ -38,7 +39,7 @@ export function RotasPericiasListClient({ rotas }: { rotas: Rota[] }) {
     <div className="space-y-4">
       {rotas.map((rota) => {
         const status = getStatus(rota)
-        const st = statusMap[status]
+        const st = statusMap[status] ?? { label: status, variant: 'secondary' as const }
 
         return (
           <Card key={rota.id} className={status === 'concluida' ? 'opacity-70' : ''}>

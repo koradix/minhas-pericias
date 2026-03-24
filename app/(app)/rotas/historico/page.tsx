@@ -100,11 +100,12 @@ const rotas: Rota[] = [
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
 
-const statusMap = {
-  planejada: { label: 'Planejada', variant: 'info' as const },
-  em_execucao: { label: 'Em execução', variant: 'warning' as const },
-  concluida: { label: 'Concluída', variant: 'success' as const },
-  cancelada: { label: 'Cancelada', variant: 'danger' as const },
+const statusMap: Record<string, { label: string; variant: 'info' | 'warning' | 'success' | 'danger' | 'secondary' }> = {
+  planejada:    { label: 'Planejada',    variant: 'info'      },
+  em_execucao:  { label: 'Em execução', variant: 'warning'   },
+  em_andamento: { label: 'Em andamento', variant: 'warning'  },
+  concluida:    { label: 'Concluída',    variant: 'success'   },
+  cancelada:    { label: 'Cancelada',    variant: 'secondary' },
 }
 
 const pontoIcons: Record<TipoPontoRota, typeof MapPin> = {
@@ -156,7 +157,7 @@ export default function RotasHistoricoPage() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {rotas.map((rota) => {
-                const st = statusMap[rota.status]
+                const st = statusMap[rota.status] ?? { label: rota.status, variant: 'secondary' as const }
                 return (
                   <tr key={rota.id} className="hover:bg-slate-50 transition-colors cursor-pointer">
                     <td className="px-4 py-3">
