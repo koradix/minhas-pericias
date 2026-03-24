@@ -7,7 +7,6 @@ import {
   Clock,
   Star,
   ChevronRight,
-  AlertCircle,
   Building2,
   Users,
   Zap,
@@ -19,10 +18,8 @@ import { PageHeader } from '@/components/shared/page-header'
 import { KPICard } from '@/components/shared/kpi-card'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { tipoCor, TRIBUNAIS_POR_ESTADO } from '@/lib/constants/tribunais'
 import { getRadarConfig, getCitacoes } from '@/lib/data/nomeacoes'
 import { getKpisDataJud, getNomeacoesByPerito } from '@/lib/data/nomeacoes-datajud'
-import { getDataJudAlias } from '@/lib/constants/datajud-tribunais'
 import { RadarBuscarBtn } from '@/components/nomeacoes/radar-buscar-btn'
 import { NomeacaoCard } from '@/components/nomeacoes/nomeacao-card'
 import { CitacoesList } from '@/components/nomeacoes/citacoes-list'
@@ -60,24 +57,6 @@ export default async function NomeacoesPage() {
   const peritoPerfil = await prisma.peritoPerfil.findUnique({ where: { userId } })
   const siglas: string[] = JSON.parse(peritoPerfil?.tribunais ?? '[]')
 
-  // Split siglas by DataJud support
-  const suportados = siglas.filter((s) => getDataJudAlias(s) !== undefined)
-  const semSuporte = siglas.filter((s) => getDataJudAlias(s) === undefined)
-
-  // Build enriched tribunal list for display
-  const allTribunaisInfo = Object.entries(TRIBUNAIS_POR_ESTADO).flatMap(([uf, ts]) =>
-    ts.map((t) => ({ ...t, uf })),
-  )
-  const suportadosComTipo = suportados.map((sigla) => {
-    const info = allTribunaisInfo.find((t) => t.sigla === sigla)
-    return {
-      sigla,
-      nome: info?.nome ?? sigla,
-      tipo: (info?.tipo ?? 'estadual') as 'estadual' | 'trabalho' | 'federal' | 'eleitoral',
-      uf: info?.uf ?? '',
-    }
-  })
-
   const escavadorEnabled = process.env.ESCAVADOR_ENABLED === 'true'
 
   const [kpis, nomeacoes, radarConfig, citacoes] = await Promise.all([
@@ -97,7 +76,7 @@ export default async function NomeacoesPage() {
       {/* [1] Header */}
       <PageHeader
         title="Radar de Nomeações"
-        description="Monitoramento automático via DataJud (CNJ)"
+        description="Monitoramento automático de nomeações nos seus tribunais"
         actions={
           <Link href="/nomeacoes/estrategia">
             <Button size="sm" variant="outline" className="gap-1.5">
@@ -142,57 +121,6 @@ export default async function NomeacoesPage() {
         />
       </div>
 
-      {/* [3] Tribunais monitorados */}
-      {siglas.length > 0 && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
-          <p className="text-sm font-semibold text-slate-900">
-            Tribunais monitorados via DataJud
-            <span className="ml-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-lime-100 px-1.5 text-[10px] font-bold text-lime-700">
-              {suportados.length}
-            </span>
-          </p>
-
-          <div className="flex flex-wrap gap-2">
-            {suportadosComTipo.map((t) => (
-              <div
-                key={t.sigla}
-                title={t.nome}
-                className="flex items-center gap-1.5 rounded-xl border border-slate-100 bg-white px-3 py-2 shadow-sm"
-              >
-                <span className="text-xs font-bold text-slate-900">{t.sigla}</span>
-                {t.uf && (
-                  <span className={cn('text-[10px] px-1.5 py-0.5 rounded-md font-medium', tipoCor[t.tipo])}>
-                    {t.uf}
-                  </span>
-                )}
-              </div>
-            ))}
-            {suportados.length === 0 && (
-              <p className="text-xs text-slate-400">
-                Nenhum tribunal compatível com o DataJud.{' '}
-                <Link href="/perfil" className="underline hover:no-underline">
-                  Adicione tribunais no perfil.
-                </Link>
-              </p>
-            )}
-          </div>
-
-          {semSuporte.length > 0 && (
-            <div className="flex items-start gap-3 rounded-xl bg-amber-50 border border-amber-100 px-4 py-3">
-              <AlertCircle className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-xs font-semibold text-amber-700">
-                  {semSuporte.length} tribunal(is) sem suporte ao DataJud
-                </p>
-                <p className="text-xs text-amber-600 mt-0.5">
-                  {semSuporte.join(', ')}
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
       {/* [4] CTA — buscar nomeações */}
       <div className="rounded-2xl border border-lime-200 bg-lime-50/30 p-5 space-y-3">
         <div className="flex items-center gap-2 mb-1">
@@ -203,7 +131,7 @@ export default async function NomeacoesPage() {
               {kpis.novas}
             </span>
           )}
-          <span className="ml-auto text-[11px] text-slate-400">Gratuito · via DataJud CNJ</span>
+          <span className="ml-auto text-[11px] text-slate-400">Gratuito</span>
         </div>
         <RadarBuscarBtn novas={kpis.novas} siglas={siglas} />
       </div>

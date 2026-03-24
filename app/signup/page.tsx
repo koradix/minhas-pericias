@@ -1,39 +1,29 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { signIn } from 'next-auth/react'
-import { ChevronRight, ChevronLeft, Check, Loader2, Building2 } from 'lucide-react'
+import { ChevronRight, ChevronLeft, Check, Loader2 } from 'lucide-react'
 import { signup } from '@/lib/actions/signup'
-import {
-  updatePerfilProfissional,
-  syncVarasFromSignup,
-  previewVarasCount,
-  type PerfilProfissionalData,
-} from '@/lib/actions/perfil'
-import { PerfilProfissionalForm } from '@/components/perfil/PerfilProfissionalForm'
-import {
-  ESTADOS_DISPONIVEIS,
-  TRIBUNAIS_POR_ESTADO,
-  getTribunaisParaEstados,
-  tipoCor,
-  type TipoTribunal,
-} from '@/lib/constants/tribunais'
 
-const TIPO_LABEL: Record<TipoTribunal, string> = {
-  estadual:  'Estadual',
-  trabalho:  'Trabalho',
-  federal:   'Federal',
-  eleitoral: 'Eleitoral',
-}
+const FORMACOES = [
+  'Engenheiro Civil',
+  'Engenheiro Eletricista',
+  'Engenheiro Mecânico',
+  'Engenheiro de Produção',
+  'Arquiteto e Urbanista',
+  'Contador',
+  'Médico',
+  'Psicólogo',
+  'Advogado',
+  'Administrador',
+  'Técnico',
+  'Outra formação',
+]
 
-// ─── Input styles ─────────────────────────────────────────────────────────────
-
-const inputCls = "w-full h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-lime-500 focus:outline-none focus:ring-1 focus:ring-lime-500"
-const labelCls = "block text-xs font-medium text-slate-700 mb-1.5"
-
-// ─── Page ──────────────────────────────────────────────────────────────────────
+const inputCls = 'w-full h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-lime-500 focus:outline-none focus:ring-1 focus:ring-lime-500'
+const labelCls = 'block text-xs font-medium text-slate-700 mb-1.5'
 
 export default function SignupPage() {
   const router = useRouter()
@@ -47,70 +37,10 @@ export default function SignupPage() {
   const [senha, setSenha] = useState('')
   const [confirmar, setConfirmar] = useState('')
   const [cpf, setCpf] = useState('')
-  const [telefone, setTelefone] = useState('')
 
-  // Step 2 — taxonomia nova
-  const [perfil, setPerfil] = useState<PerfilProfissionalData>({
-    areaPrincipal: '' as PerfilProfissionalData['areaPrincipal'],
-    areasSecundarias: [],
-    especialidades2: [],
-    keywords: [],
-    formacao: '',
-    registro: '',
-  })
+  // Step 2
+  const [formacao, setFormacao] = useState('')
   const [formacaoCustom, setFormacaoCustom] = useState('')
-
-  // Step 3
-  const [estadosSel, setEstadosSel] = useState<string[]>([])
-  const [tribunaisSel, setTribunaisSel] = useState<string[]>([])
-  const [cidade, setCidade] = useState('')
-  const [areaAtuacao, setAreaAtuacao] = useState('')
-
-  // Step 3 — vara preview
-  const [varaPreview, setVaraPreview] = useState<{ varas: number; tribunais: number } | null>(null)
-  const varaPreviewTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  // ─── Preview vara count when tribunal selection changes ─────────────────
-  useEffect(() => {
-    if (tribunaisSel.length === 0) { setVaraPreview(null); return }
-    if (varaPreviewTimer.current) clearTimeout(varaPreviewTimer.current)
-    varaPreviewTimer.current = setTimeout(async () => {
-      const result = await previewVarasCount(tribunaisSel)
-      setVaraPreview(result)
-    }, 600)
-    return () => { if (varaPreviewTimer.current) clearTimeout(varaPreviewTimer.current) }
-  }, [tribunaisSel])
-
-  // ─── Lógica cascata: estado ↔ tribunais ──────────────────────────────────
-
-  function handleToggleEstado(uf: string) {
-    const adicionando = !estadosSel.includes(uf)
-    const novosEstados = adicionando
-      ? [...estadosSel, uf]
-      : estadosSel.filter((e) => e !== uf)
-
-    setEstadosSel(novosEstados)
-
-    if (adicionando) {
-      // Auto-seleciona todos os tribunais do estado recém-adicionado
-      const siglas = (TRIBUNAIS_POR_ESTADO[uf] ?? []).map((t) => t.sigla)
-      setTribunaisSel((prev) => [...new Set([...prev, ...siglas])])
-    } else {
-      // Remove os tribunais do estado removido (só se não pertencerem a outro estado selecionado)
-      const tribunal_restantes = new Set(
-        novosEstados.flatMap((e) => (TRIBUNAIS_POR_ESTADO[e] ?? []).map((t) => t.sigla))
-      )
-      setTribunaisSel((prev) => prev.filter((s) => tribunal_restantes.has(s)))
-    }
-  }
-
-  function handleToggleTribunal(sigla: string) {
-    setTribunaisSel((prev) =>
-      prev.includes(sigla) ? prev.filter((s) => s !== sigla) : [...prev, sigla]
-    )
-  }
-
-  // ─── Validação step 1 ────────────────────────────────────────────────────
 
   function validateStep1() {
     if (!nome.trim()) return 'Informe seu nome completo.'
@@ -121,28 +51,22 @@ export default function SignupPage() {
   }
 
   function handleNext() {
-    if (step === 1) {
-      const err = validateStep1()
-      if (err) { setError(err); return }
-    }
+    const err = validateStep1()
+    if (err) { setError(err); return }
     setError('')
-    setStep((s) => s + 1)
+    setStep(2)
   }
 
   async function handleSubmit() {
     setLoading(true)
     setError('')
     const result = await signup({
-      nome, email, senha, cpf, telefone,
-      formacao: perfil.formacao ?? '',
-      formacaoCustom: perfil.formacao === 'Outra formação' ? formacaoCustom : undefined,
-      registro: perfil.registro ?? '',
-      especialidades: perfil.especialidades2,
-      cursos: [],
-      estados: estadosSel,
-      tribunais: tribunaisSel,
-      cidade,
-      areaAtuacao,
+      nome,
+      email,
+      senha,
+      cpf: cpf || undefined,
+      formacao: formacao || undefined,
+      formacaoCustom: formacao === 'Outra formação' ? formacaoCustom : undefined,
     })
     if ('error' in result) {
       setError(result.error)
@@ -150,35 +74,18 @@ export default function SignupPage() {
       return
     }
     const res = await signIn('credentials', { email, password: senha, redirect: false })
-    if (res?.ok) {
-      if (perfil.areaPrincipal) {
-        await updatePerfilProfissional({ ...perfil, formacaoCustom })
-      }
-      if (tribunaisSel.length > 0) {
-        await syncVarasFromSignup(tribunaisSel)
-      }
-    }
     router.push(res?.ok ? '/dashboard' : '/login')
   }
 
-  // ─── Tribunais agrupados por estado para exibição ─────────────────────────
-
-  const tribunaisDisponiveis = getTribunaisParaEstados(estadosSel)
-  const tribunaisPorEstado = estadosSel.map((uf) => ({
-    uf,
-    tribunais: TRIBUNAIS_POR_ESTADO[uf] ?? [],
-  }))
-
-  const stepLabels = ['Conta', 'Perfil', 'Atuação']
+  const stepLabels = ['Conta', 'Formação']
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
-      {/* Logo */}
       <div className="mb-8 flex flex-col items-center">
         <Image src="/logo.svg" alt="PeriLaB" width={180} height={68} priority />
       </div>
 
-      <div className="w-full max-w-lg">
+      <div className="w-full max-w-md">
         {/* Step indicator */}
         <div className="flex items-center justify-center gap-0 mb-8">
           {stepLabels.map((label, i) => {
@@ -205,10 +112,9 @@ export default function SignupPage() {
           })}
         </div>
 
-        {/* Card */}
         <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6 space-y-5">
 
-          {/* ── STEP 1 — Conta ────────────────────────────────────────────── */}
+          {/* STEP 1 — Conta */}
           {step === 1 && (
             <>
               <div>
@@ -218,206 +124,113 @@ export default function SignupPage() {
               <div className="space-y-4">
                 <div>
                   <label className={labelCls}>Nome completo *</label>
-                  <input className={inputCls} placeholder="Rafael Costa" value={nome} onChange={(e) => setNome(e.target.value)} />
+                  <input
+                    className={inputCls}
+                    placeholder="Rafael Costa"
+                    value={nome}
+                    onChange={(e) => setNome(e.target.value)}
+                  />
                 </div>
                 <div>
                   <label className={labelCls}>E-mail *</label>
-                  <input type="email" className={inputCls} placeholder="voce@email.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+                  <input
+                    type="email"
+                    className={inputCls}
+                    placeholder="voce@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className={labelCls}>Senha *</label>
-                    <input type="password" className={inputCls} placeholder="••••••" value={senha} onChange={(e) => setSenha(e.target.value)} />
-                  </div>
-                  <div>
-                    <label className={labelCls}>Confirmar *</label>
-                    <input type="password" className={inputCls} placeholder="••••••" value={confirmar} onChange={(e) => setConfirmar(e.target.value)} />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className={labelCls}>CPF <span className="text-slate-400 font-normal">(para nomeações)</span></label>
                     <input
+                      type="password"
                       className={inputCls}
-                      placeholder="000.000.000-00"
-                      value={cpf}
-                      onChange={(e) => setCpf(e.target.value)}
+                      placeholder="••••••"
+                      value={senha}
+                      onChange={(e) => setSenha(e.target.value)}
                     />
                   </div>
                   <div>
-                    <label className={labelCls}>Telefone <span className="text-slate-400 font-normal">(opcional)</span></label>
-                    <input className={inputCls} placeholder="(11) 9 0000-0000" value={telefone} onChange={(e) => setTelefone(e.target.value)} />
+                    <label className={labelCls}>Confirmar *</label>
+                    <input
+                      type="password"
+                      className={inputCls}
+                      placeholder="••••••"
+                      value={confirmar}
+                      onChange={(e) => setConfirmar(e.target.value)}
+                    />
                   </div>
                 </div>
-              </div>
-            </>
-          )}
-
-          {/* ── STEP 2 — Perfil profissional ──────────────────────────────── */}
-          {step === 2 && (
-            <>
-              <div>
-                <h1 className="text-lg font-semibold text-slate-900">Perfil profissional</h1>
-                <p className="text-xs text-slate-500 mt-0.5">Personaliza seu dashboard e as demandas sugeridas</p>
-              </div>
-              <PerfilProfissionalForm
-                value={perfil}
-                onChange={(update) => setPerfil((p) => ({ ...p, ...update }))}
-                showFormacaoRegistro
-                formacaoCustom={formacaoCustom}
-                onFormacaoCustomChange={setFormacaoCustom}
-              />
-            </>
-          )}
-
-          {/* ── STEP 3 — Área de atuação ──────────────────────────────────── */}
-          {step === 3 && (
-            <>
-              <div>
-                <h1 className="text-lg font-semibold text-slate-900">Área de atuação</h1>
-                <p className="text-xs text-slate-500 mt-0.5">Define quais estados e tribunais você monitora</p>
-              </div>
-              <div className="space-y-5">
-
-                {/* Estados */}
                 <div>
-                  <label className={labelCls}>
-                    Estados de atuação
-                    {estadosSel.length > 0 && (
-                      <span className="ml-2 inline-flex items-center justify-center rounded-full bg-lime-100 text-lime-700 text-[10px] font-bold px-1.5 py-0.5">
-                        {estadosSel.length}
-                      </span>
-                    )}
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {ESTADOS_DISPONIVEIS.map((uf) => {
-                      const active = estadosSel.includes(uf)
-                      return (
-                        <button
-                          key={uf}
-                          type="button"
-                          onClick={() => handleToggleEstado(uf)}
-                          className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold border transition-colors ${
-                            active
-                              ? 'bg-slate-900 border-slate-900 text-white'
-                              : 'border-slate-300 text-slate-600 hover:border-slate-400 bg-white'
-                          }`}
-                        >
-                          {active && <Check className="h-3 w-3" />}
-                          {uf}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-
-                {/* Tribunais (aparecem quando estados são selecionados) */}
-                {estadosSel.length > 0 && (
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="block text-xs font-medium text-slate-700">
-                        Tribunais de interesse
-                        <span className="ml-2 inline-flex items-center justify-center rounded-full bg-lime-100 text-lime-700 text-[10px] font-bold px-1.5 py-0.5">
-                          {tribunaisSel.length}/{tribunaisDisponiveis.length}
-                        </span>
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => setTribunaisSel(tribunaisDisponiveis.map((t) => t.sigla))}
-                        className="text-[10px] text-lime-600 hover:text-lime-700 font-medium"
-                      >
-                        Selecionar todos
-                      </button>
-                    </div>
-
-                    <div className="space-y-3">
-                      {tribunaisPorEstado.map(({ uf, tribunais }) => (
-                        <div key={uf}>
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">{uf}</p>
-                          <div className="flex flex-wrap gap-1.5">
-                            {tribunais.map((t) => {
-                              const active = tribunaisSel.includes(t.sigla)
-                              return (
-                                <button
-                                  key={t.sigla}
-                                  type="button"
-                                  onClick={() => handleToggleTribunal(t.sigla)}
-                                  title={t.nome}
-                                  className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold border transition-colors ${
-                                    active
-                                      ? 'bg-lime-500 border-lime-500 text-slate-900'
-                                      : `border-slate-200 text-slate-500 hover:border-lime-300 ${tipoCor[t.tipo]}`
-                                  }`}
-                                >
-                                  {active && <Check className="h-2.5 w-2.5" />}
-                                  {t.sigla}
-                                </button>
-                              )
-                            })}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Legenda */}
-                    <div className="flex flex-wrap gap-3 mt-3 pt-3 border-t border-slate-100">
-                      {(['estadual','trabalho','federal','eleitoral'] as TipoTribunal[]).map((tipo) => (
-                        <span key={tipo} className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-medium ${tipoCor[tipo]}`}>
-                          {TIPO_LABEL[tipo]}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Vara preview */}
-                {varaPreview !== null && varaPreview.varas > 0 && (
-                  <div className="flex items-center gap-2 rounded-xl border border-lime-200 bg-lime-50 px-3 py-2.5">
-                    <Building2 className="h-4 w-4 text-lime-600 flex-shrink-0" />
-                    <p className="text-xs text-lime-800">
-                      <span className="font-semibold">{varaPreview.varas} varas</span> encontradas em{' '}
-                      <span className="font-semibold">{varaPreview.tribunais} tribunal(is)</span> — serão sincronizadas no seu radar
-                    </p>
-                  </div>
-                )}
-
-                {/* Cidade + área de atuação */}
-                <div>
-                  <label className={labelCls}>Cidade principal</label>
-                  <input className={inputCls} placeholder="São Paulo, Rio de Janeiro..." value={cidade} onChange={(e) => setCidade(e.target.value)} />
-                </div>
-                <div>
-                  <label className={labelCls}>Área de atuação <span className="text-slate-400 font-normal">(descrição livre)</span></label>
-                  <textarea
-                    rows={2}
-                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-lime-500 focus:outline-none focus:ring-1 focus:ring-lime-500 resize-none"
-                    placeholder="Ex: Perícias cíveis e trabalhistas na região metropolitana..."
-                    value={areaAtuacao}
-                    onChange={(e) => setAreaAtuacao(e.target.value)}
+                  <label className={labelCls}>CPF <span className="text-slate-400 font-normal">(usado para localizar nomeações)</span></label>
+                  <input
+                    className={inputCls}
+                    placeholder="000.000.000-00"
+                    value={cpf}
+                    onChange={(e) => setCpf(e.target.value)}
                   />
                 </div>
               </div>
             </>
           )}
 
-          {/* Erro */}
+          {/* STEP 2 — Formação */}
+          {step === 2 && (
+            <>
+              <div>
+                <h1 className="text-lg font-semibold text-slate-900">Sua formação</h1>
+                <p className="text-xs text-slate-500 mt-0.5">Usada para personalizar seu perfil de perito</p>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className={labelCls}>Formação profissional</label>
+                  <select
+                    className={`${inputCls} cursor-pointer`}
+                    value={formacao}
+                    onChange={(e) => setFormacao(e.target.value)}
+                  >
+                    <option value="">Selecione...</option>
+                    {FORMACOES.map((f) => (
+                      <option key={f} value={f}>{f}</option>
+                    ))}
+                  </select>
+                </div>
+                {formacao === 'Outra formação' && (
+                  <div>
+                    <label className={labelCls}>Especifique sua formação</label>
+                    <input
+                      className={inputCls}
+                      placeholder="Ex: Geólogo, Biólogo..."
+                      value={formacaoCustom}
+                      onChange={(e) => setFormacaoCustom(e.target.value)}
+                    />
+                  </div>
+                )}
+                <p className="text-xs text-slate-400">
+                  Você pode completar seu perfil a qualquer momento nas configurações.
+                </p>
+              </div>
+            </>
+          )}
+
           {error && (
             <p className="rounded-lg bg-rose-50 border border-rose-100 px-3 py-2 text-xs text-rose-600">{error}</p>
           )}
 
-          {/* Navegação */}
           <div className="flex items-center gap-3 pt-1">
             {step > 1 && (
               <button
                 type="button"
-                onClick={() => { setError(''); setStep((s) => s - 1) }}
+                onClick={() => { setError(''); setStep(1) }}
                 className="flex items-center gap-1 h-10 px-4 rounded-lg border border-slate-300 text-sm text-slate-600 hover:bg-slate-50 transition-colors"
               >
                 <ChevronLeft className="h-4 w-4" />
                 Voltar
               </button>
             )}
-            {step < 3 ? (
+            {step === 1 ? (
               <button
                 type="button"
                 onClick={handleNext}

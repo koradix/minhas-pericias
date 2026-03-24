@@ -92,12 +92,15 @@ function parseHit(hit: RawHit, fallbackTribunal: string): ProcessoDataJud | null
  * Busca processos por nome de parte no DataJud.
  * @param nome  Nome do perito (ou variação)
  * @param alias Alias do tribunal (ex: "tjrj")
- * @param days  Janela de busca em dias a partir de hoje (padrão 7)
+ * @param days  Janela de busca em dias a partir de hoje (padrão 60 = 2 meses)
+ *
+ * IMPORTANTE: DataJud indexa `partes` como campo nested no ElasticSearch.
+ * A query deve usar `nested` path, caso contrário retorna zero resultados.
  */
 export async function searchByName(
   nome: string,
   alias: string,
-  days = 7,
+  days = 60,
 ): Promise<ProcessoDataJud[]> {
   const url = `${BASE_URL}/api_publica_${alias}/_search`
 
@@ -106,11 +109,12 @@ export async function searchByName(
       bool: {
         must: [
           {
-            match: {
-              'partes.nome': {
-                query: nome,
-                operator: 'and',
-                fuzziness: 'AUTO',
+            nested: {
+              path: 'partes',
+              query: {
+                match_phrase: {
+                  'partes.nome': nome,
+                },
               },
             },
           },
@@ -127,7 +131,7 @@ export async function searchByName(
         ],
       },
     },
-    size: 20,
+    size: 30,
     _source: [
       'numeroProcesso',
       'tribunal',

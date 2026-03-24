@@ -122,7 +122,7 @@ export function TribunaisForm({ initialEstados, initialTribunais }: Props) {
           <div>
             <p className="text-sm font-semibold text-slate-900">Tribunais monitorados</p>
             <p className="text-xs text-slate-500 mt-0.5">
-              Clique para ativar/desativar. O DataJud buscará nomeações nesses tribunais.
+              Clique para ativar/desativar os tribunais monitorados.
             </p>
           </div>
 
