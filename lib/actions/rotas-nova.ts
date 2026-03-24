@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
-import { EscavadorService } from '@/lib/services/escavador'
+import { VARAS_CATALOG } from '@/lib/data/varas-catalog'
 import type { VaraComEndereco } from '@/lib/services/escavador'
 
 export interface SalvarRotaInput {
@@ -17,15 +17,24 @@ export interface SalvarRotaInput {
   }[]
 }
 
-// ─── Action: Fetch varas by state (FREE — uses /origens cached) ───────────────
+// ─── Action: Fetch varas by state (from local catalog — no external API) ──────
 
 export async function fetchVarasByEstado(uf: string): Promise<VaraComEndereco[]> {
-  try {
-    const escavador = new EscavadorService()
-    return await escavador.getVarasByEstado(uf)
-  } catch {
-    return []
-  }
+  if (!uf) return []
+  return VARAS_CATALOG
+    .filter((v) => v.uf === uf)
+    .map((v) => ({
+      varaId: v.id,
+      varaNome: v.nome,
+      tribunalSigla: v.tribunal,
+      tribunalNome: v.tribunal,
+      uf: v.uf,
+      estado: v.uf,
+      enderecoTexto: `${v.endereco} — ${v.cidade}`,
+      latitude: v.latitude,
+      longitude: v.longitude,
+      dadosFicticios: false,
+    }))
 }
 
 // ─── Action: Create rota from selected TribunalVara IDs ───────────────────────

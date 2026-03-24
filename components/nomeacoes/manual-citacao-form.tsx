@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { X, Loader2, CheckCircle2, AlertCircle } from 'lucide-react'
+import { X, Loader2, CheckCircle2, AlertCircle, MapPin } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { criarCitacaoManual } from '@/lib/actions/nomeacoes'
+import { VARAS_CATALOG } from '@/lib/data/varas-catalog'
 
 interface Props {
   siglas: string[]
@@ -16,9 +17,19 @@ export function ManualCitacaoForm({ siglas, onClose }: Props) {
   const [success, setSuccess] = useState(false)
 
   const [sigla, setSigla] = useState(siglas[0] ?? '')
+  const [varaId, setVaraId] = useState('')
   const [data, setData] = useState(new Date().toISOString().split('T')[0])
   const [texto, setTexto] = useState('')
   const [processo, setProcesso] = useState('')
+
+  // Varas from catalog for the selected tribunal
+  const varasDoTribunal = VARAS_CATALOG.filter((v) => v.tribunal === sigla)
+  const varasSelecionada = varasDoTribunal.find((v) => v.id === varaId)
+
+  function handleTribunalChange(value: string) {
+    setSigla(value)
+    setVaraId('')
+  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -31,6 +42,7 @@ export function ManualCitacaoForm({ siglas, onClose }: Props) {
         diarioData: data,
         snippetTexto: texto.trim(),
         numeroProcesso: processo.trim() || undefined,
+        varaNome: varasSelecionada?.nome,
       })
 
       if (result.ok) {
@@ -55,7 +67,7 @@ export function ManualCitacaoForm({ siglas, onClose }: Props) {
       <div className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-          <p className="text-sm font-semibold text-slate-900">Registrar citação manualmente</p>
+          <p className="text-sm font-semibold text-slate-900">Registrar nomeação manualmente</p>
           <button
             onClick={onClose}
             className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
@@ -67,7 +79,7 @@ export function ManualCitacaoForm({ siglas, onClose }: Props) {
         {success ? (
           <div className="flex flex-col items-center gap-2 py-10">
             <CheckCircle2 className="h-10 w-10 text-emerald-500" />
-            <p className="text-sm font-semibold text-emerald-800">Citação registrada!</p>
+            <p className="text-sm font-semibold text-emerald-800">Nomeação registrada!</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="px-5 py-4 space-y-4">
@@ -77,7 +89,7 @@ export function ManualCitacaoForm({ siglas, onClose }: Props) {
                 <label className="block text-xs font-medium text-slate-700 mb-1">Tribunal</label>
                 <select
                   value={sigla}
-                  onChange={(e) => setSigla(e.target.value)}
+                  onChange={(e) => handleTribunalChange(e.target.value)}
                   className="w-full h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-sm text-slate-800 focus:border-lime-400 focus:outline-none focus:ring-1 focus:ring-lime-400"
                 >
                   {siglas.map((s) => (
@@ -87,7 +99,7 @@ export function ManualCitacaoForm({ siglas, onClose }: Props) {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">Data do Diário</label>
+                <label className="block text-xs font-medium text-slate-700 mb-1">Data</label>
                 <input
                   type="date"
                   value={data}
@@ -98,25 +110,35 @@ export function ManualCitacaoForm({ siglas, onClose }: Props) {
               </div>
             </div>
 
-            {/* Snippet */}
-            <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1">
-                Texto da citação <span className="text-rose-500">*</span>
-              </label>
-              <textarea
-                value={texto}
-                onChange={(e) => setTexto(e.target.value)}
-                placeholder="Cole ou digite o trecho do diário onde seu nome aparece…"
-                rows={4}
-                className="w-full resize-none rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-lime-400 focus:outline-none focus:ring-1 focus:ring-lime-400"
-                required
-              />
-            </div>
+            {/* Vara selector */}
+            {varasDoTribunal.length > 0 && (
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1">
+                  Vara / Fórum <span className="text-slate-400 font-normal">(opcional)</span>
+                </label>
+                <select
+                  value={varaId}
+                  onChange={(e) => setVaraId(e.target.value)}
+                  className="w-full h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-sm text-slate-800 focus:border-lime-400 focus:outline-none focus:ring-1 focus:ring-lime-400"
+                >
+                  <option value="">Selecionar vara...</option>
+                  {varasDoTribunal.map((v) => (
+                    <option key={v.id} value={v.id}>{v.nome}</option>
+                  ))}
+                </select>
+                {varasSelecionada && (
+                  <div className="mt-1.5 flex items-start gap-1.5 text-xs text-slate-500">
+                    <MapPin className="h-3.5 w-3.5 flex-shrink-0 mt-0.5 text-slate-400" />
+                    <span>{varasSelecionada.endereco} — {varasSelecionada.cidade}/{varasSelecionada.uf}</span>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Processo */}
             <div>
               <label className="block text-xs font-medium text-slate-700 mb-1">
-                Número do processo <span className="text-slate-400">(opcional)</span>
+                Número do processo <span className="text-slate-400 font-normal">(opcional)</span>
               </label>
               <input
                 type="text"
@@ -124,6 +146,21 @@ export function ManualCitacaoForm({ siglas, onClose }: Props) {
                 onChange={(e) => setProcesso(e.target.value)}
                 placeholder="0000000-00.0000.0.00.0000"
                 className="w-full h-9 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-lime-400 focus:outline-none focus:ring-1 focus:ring-lime-400"
+              />
+            </div>
+
+            {/* Snippet */}
+            <div>
+              <label className="block text-xs font-medium text-slate-700 mb-1">
+                Observações / trecho do diário <span className="text-rose-500">*</span>
+              </label>
+              <textarea
+                value={texto}
+                onChange={(e) => setTexto(e.target.value)}
+                placeholder="Cole o trecho do diário ou descreva a nomeação…"
+                rows={3}
+                className="w-full resize-none rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-lime-400 focus:outline-none focus:ring-1 focus:ring-lime-400"
+                required
               />
             </div>
 
@@ -151,7 +188,7 @@ export function ManualCitacaoForm({ siglas, onClose }: Props) {
                 ) : (
                   <CheckCircle2 className="h-3.5 w-3.5" />
                 )}
-                Salvar citação
+                Salvar
               </Button>
             </div>
           </form>

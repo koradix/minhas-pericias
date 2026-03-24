@@ -3,8 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
-import { radar } from '@/lib/services/radar'
-import { EscavadorService } from '@/lib/services/escavador'
+import { VARAS_CATALOG } from '@/lib/data/varas-catalog'
 import type { AreaPrincipalId } from '@/lib/constants/pericias'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -64,7 +63,55 @@ export async function updatePerfilProfissional(
   }
 }
 
-// ─── Action 2 — Sincronizar varas reais dos tribunais (FREE) ──────────────────
+// ─── Shared helper: upsert catalog varas for given tribunal siglas ─────────────
+
+async function upsertCatalogVaras(
+  userId: string,
+  siglas: string[],
+): Promise<number> {
+  const siglaSet = new Set(siglas.map((s) => s.toUpperCase()))
+  const varasDosCatalogo = VARAS_CATALOG.filter((v) => siglaSet.has(v.tribunal.toUpperCase()))
+
+  let count = 0
+  for (const v of varasDosCatalogo) {
+    try {
+      await prisma.tribunalVara.upsert({
+        where: {
+          peritoId_tribunalSigla_varaNome: {
+            peritoId: userId,
+            tribunalSigla: v.tribunal,
+            varaNome: v.nome,
+          },
+        },
+        create: {
+          peritoId: userId,
+          tribunalSigla: v.tribunal,
+          tribunalNome: v.tribunal,
+          varaNome: v.nome,
+          varaId: v.id,
+          uf: v.uf,
+          enderecoTexto: `${v.endereco} — ${v.cidade}`,
+          latitude: v.latitude,
+          longitude: v.longitude,
+        },
+        update: {
+          varaId: v.id,
+          uf: v.uf,
+          enderecoTexto: `${v.endereco} — ${v.cidade}`,
+          latitude: v.latitude,
+          longitude: v.longitude,
+          ativa: true,
+        },
+      })
+      count++
+    } catch {
+      // Ignore individual upsert errors
+    }
+  }
+  return count
+}
+
+// ─── Action 2 — Sincronizar varas (from local catalog) ───────────────────────
 
 export async function syncTribunaisReais(): Promise<
   { ok: true; varasSalvas: number } | { ok: false; error: string }
@@ -74,73 +121,28 @@ export async function syncTribunaisReais(): Promise<
 
   const userId = session.user.id
 
-  // 1. Get perito's tribunais
   const perfil = await prisma.peritoPerfil.findUnique({
     where: { userId },
-    select: { tribunais: true, estados: true },
+    select: { tribunais: true },
   })
   if (!perfil) return { ok: false, error: 'Perfil não encontrado' }
 
   const siglas: string[] = JSON.parse(perfil.tribunais ?? '[]')
   if (siglas.length === 0) return { ok: true, varasSalvas: 0 }
 
-  // 2. Call Escavador FREE endpoint to get origens (diários list)
-  let varasSalvas = 0
   try {
-    const escavador = radar as unknown as EscavadorService
-    const origens = await escavador.getTribunalOrigens()
+    const varasSalvas = await upsertCatalogVaras(userId, siglas)
 
-    // Build map: sigla → { nome, diarios }
-    const siglaSet = new Set(siglas.map((s) => s.toUpperCase()))
-
-    for (const origem of origens) {
-      for (const diario of origem.diarios) {
-        const siglaUp = diario.sigla.toUpperCase()
-        if (!siglaSet.has(siglaUp)) continue
-
-        // Each diario is effectively a vara/source for this tribunal
-        try {
-          await prisma.tribunalVara.upsert({
-            where: {
-              peritoId_tribunalSigla_varaNome: {
-                peritoId: userId,
-                tribunalSigla: diario.sigla,
-                varaNome: diario.nome,
-              },
-            },
-            create: {
-              peritoId: userId,
-              tribunalSigla: diario.sigla,
-              tribunalNome: origem.nome,
-              varaNome: diario.nome,
-              varaId: String(diario.id),
-              uf: diario.estado ?? null,
-            },
-            update: {
-              tribunalNome: origem.nome,
-              varaId: String(diario.id),
-              uf: diario.estado ?? null,
-              ativa: true,
-            },
-          })
-          varasSalvas++
-        } catch {
-          // Ignore individual upsert errors (e.g. duplicate edge cases)
-        }
-      }
-    }
-
-    // Update sincronizadoEm
     await prisma.peritoPerfil.update({
       where: { userId },
       data: { sincronizadoEm: new Date() },
     })
 
+    revalidatePath('/rotas/prospeccao')
     return { ok: true, varasSalvas }
   } catch (e) {
     console.error('[syncTribunaisReais]', e)
-    const msg = e instanceof Error ? e.message : 'Erro na sincronização'
-    return { ok: false, error: msg }
+    return { ok: false, error: e instanceof Error ? e.message : 'Erro na sincronização' }
   }
 }
 
@@ -156,47 +158,51 @@ export async function syncVarasFromSignup(
   if (siglas.length === 0) return { ok: true, varasCount: 0, tribunaisCount: 0 }
 
   try {
-    const escavador = radar as unknown as EscavadorService
-    const varas = await escavador.getVarasByTribunais(siglas)
-
-    let varasCount = 0
+    const siglaSet = new Set(siglas.map((s) => s.toUpperCase()))
+    const varasDosCatalogo = VARAS_CATALOG.filter((v) => siglaSet.has(v.tribunal.toUpperCase()))
     const tribunaisVistos = new Set<string>()
+    let varasCount = 0
 
-    for (const v of varas) {
+    for (const v of varasDosCatalogo) {
       try {
         await prisma.tribunalVara.upsert({
           where: {
             peritoId_tribunalSigla_varaNome: {
               peritoId: userId,
-              tribunalSigla: v.tribunalSigla,
-              varaNome: v.varaNome,
+              tribunalSigla: v.tribunal,
+              varaNome: v.nome,
             },
           },
           create: {
             peritoId: userId,
-            tribunalSigla: v.tribunalSigla,
-            tribunalNome: v.tribunalNome,
-            varaNome: v.varaNome,
-            varaId: v.varaId,
+            tribunalSigla: v.tribunal,
+            tribunalNome: v.tribunal,
+            varaNome: v.nome,
+            varaId: v.id,
             uf: v.uf,
+            enderecoTexto: `${v.endereco} — ${v.cidade}`,
+            latitude: v.latitude,
+            longitude: v.longitude,
           },
           update: {
-            tribunalNome: v.tribunalNome,
-            varaId: v.varaId,
+            varaId: v.id,
             uf: v.uf,
+            enderecoTexto: `${v.endereco} — ${v.cidade}`,
+            latitude: v.latitude,
+            longitude: v.longitude,
             ativa: true,
           },
         })
 
-        // Platform-wide stats — track how many peritos monitor each vara
+        // Platform-wide stats
         await prisma.varaStats.upsert({
-          where: { tribunalSigla_varaNome: { tribunalSigla: v.tribunalSigla, varaNome: v.varaNome } },
-          create: { tribunalSigla: v.tribunalSigla, varaNome: v.varaNome, totalPeritosSugeridos: 1 },
+          where: { tribunalSigla_varaNome: { tribunalSigla: v.tribunal, varaNome: v.nome } },
+          create: { tribunalSigla: v.tribunal, varaNome: v.nome, totalPeritosSugeridos: 1 },
           update: { totalPeritosSugeridos: { increment: 1 } },
         })
 
         varasCount++
-        tribunaisVistos.add(v.tribunalSigla)
+        tribunaisVistos.add(v.tribunal)
       } catch {
         // Ignore individual upsert errors
       }
@@ -239,18 +245,14 @@ export async function saveTribunaisEstados(
   }
 }
 
-// ─── Action 4 — Preview vara count (no auth needed, cached FREE call) ─────────
+// ─── Action 4 — Preview vara count (instant, from local catalog) ──────────────
 
 export async function previewVarasCount(
   siglas: string[],
 ): Promise<{ varas: number; tribunais: number }> {
   if (siglas.length === 0) return { varas: 0, tribunais: 0 }
-  try {
-    const escavador = radar as unknown as EscavadorService
-    const varas = await escavador.getVarasByTribunais(siglas)
-    const tribunais = new Set(varas.map((v) => v.tribunalSigla)).size
-    return { varas: varas.length, tribunais }
-  } catch {
-    return { varas: 0, tribunais: 0 }
-  }
+  const siglaSet = new Set(siglas.map((s) => s.toUpperCase()))
+  const varas = VARAS_CATALOG.filter((v) => siglaSet.has(v.tribunal.toUpperCase()))
+  const tribunais = new Set(varas.map((v) => v.tribunal)).size
+  return { varas: varas.length, tribunais }
 }

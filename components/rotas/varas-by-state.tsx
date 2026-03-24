@@ -98,7 +98,7 @@ export function VarasByState({ varasDoPerito }: Props) {
       <div>
         <p className="text-sm font-semibold text-slate-900">Varas por Estado</p>
         <p className="text-xs text-slate-400 mt-0.5">
-          Explore varas disponíveis no Escavador e crie rotas de prospecção
+          Explore varas disponíveis por estado e crie rotas de prospecção
         </p>
       </div>
 
@@ -144,7 +144,7 @@ export function VarasByState({ varasDoPerito }: Props) {
         <div className="flex items-center gap-3 rounded-xl border border-dashed border-slate-200 px-4 py-4">
           <AlertCircle className="h-4 w-4 text-slate-400 flex-shrink-0" />
           <p className="text-xs text-slate-500">
-            Nenhuma vara encontrada para {uf} na API Escavador.
+            Nenhuma vara cadastrada para {uf}.
           </p>
         </div>
       )}

@@ -322,6 +322,7 @@ export type ManualCitacaoInput = {
   diarioData: string // YYYY-MM-DD
   snippetTexto: string
   numeroProcesso?: string
+  varaNome?: string   // nome da vara/fórum do catálogo
 }
 
 export async function criarCitacaoManual(data: ManualCitacaoInput): Promise<{ ok: boolean; error?: string }> {
@@ -336,7 +337,7 @@ export async function criarCitacaoManual(data: ManualCitacaoInput): Promise<{ ok
         peritoId: userId,
         externalId,
         diarioSigla: data.diarioSigla,
-        diarioNome: data.diarioSigla,
+        diarioNome: data.varaNome ?? data.diarioSigla,
         diarioData: new Date(data.diarioData),
         snippet: data.snippetTexto,
         numeroProcesso: data.numeroProcesso ?? null,

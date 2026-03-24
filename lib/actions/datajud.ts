@@ -51,7 +51,7 @@ export async function buscarProcessosDataJud(): Promise<BuscarDataJudResult> {
       .filter((sigla) => getDataJudAlias(sigla) !== undefined)
       .map(async (sigla) => {
         const alias = getDataJudAlias(sigla)!
-        const processos = await searchByName(nome, alias, 7)
+        const processos = await searchByName(nome, alias, 60)
         return processos.map((p) => ({ ...p, tribunal: sigla }))
       })
   )
@@ -71,9 +71,6 @@ export async function buscarProcessosDataJud(): Promise<BuscarDataJudResult> {
 
   for (const proc of unique) {
     const score = calcularScore(proc, perfil)
-
-    // Só importa processos com score mínimo de 15 (está no tribunal do perito)
-    if (score < 15) continue
 
     try {
       // Upsert Processo (dedup por numeroProcesso global)
