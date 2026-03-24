@@ -3,7 +3,9 @@
 import { mkdir, writeFile } from 'fs/promises'
 import path from 'path'
 import { redirect } from 'next/navigation'
+import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { processTemplateExtraction } from '@/lib/services/template-extractor'
 
 export type ModeloActionState = {
   errors?: { nome?: string[]; tipo?: string[] }
@@ -14,10 +16,15 @@ export async function criarModelo(
   _prevState: ModeloActionState,
   formData: FormData,
 ): Promise<ModeloActionState> {
+  const session = await auth()
+  const userId = session?.user?.id ?? null
+
   const nome = (formData.get('nome') as string | null)?.trim() ?? ''
   const tipo = (formData.get('tipo') as string | null)?.trim() ?? ''
   const descricao = (formData.get('descricao') as string | null)?.trim() || null
   const area = (formData.get('area') as string | null)?.trim() || null
+  const especialidade = (formData.get('especialidade') as string | null)?.trim() || null
+  const subEspecialidade = (formData.get('subEspecialidade') as string | null)?.trim() || null
   const arquivo = formData.get('arquivo') as File | null
 
   const errors: ModeloActionState['errors'] = {}
@@ -27,6 +34,8 @@ export async function criarModelo(
 
   let nomeArquivo: string | null = null
   let caminhoArq: string | null = null
+  let mimeType: string | null = null
+  let tamanhoBytes: number | null = null
 
   if (arquivo && arquivo.size > 0) {
     const buffer = Buffer.from(await arquivo.arrayBuffer())
@@ -37,11 +46,24 @@ export async function criarModelo(
     await writeFile(path.join(uploadDir, filename), buffer)
     nomeArquivo = arquivo.name
     caminhoArq = `/uploads/modelos/${filename}`
+    mimeType = arquivo.type || null
+    tamanhoBytes = arquivo.size
   }
 
-  await prisma.modeloBase.create({
-    data: { nome, tipo, descricao, area, nomeArquivo, caminhoArq },
+  const created = await prisma.modeloBase.create({
+    data: {
+      nome, tipo, descricao, area,
+      especialidade, subEspecialidade,
+      uploadedById: userId,
+      nomeArquivo, caminhoArq, mimeType, tamanhoBytes,
+    },
+    select: { id: true },
   })
+
+  // Trigger text extraction asynchronously (best-effort)
+  if (caminhoArq) {
+    processTemplateExtraction(created.id, caminhoArq, mimeType).catch(() => {})
+  }
 
   redirect('/documentos/modelos')
 }

@@ -5,66 +5,16 @@ import { auth } from '@/auth'
 import { PageHeader } from '@/components/shared/page-header'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import type { Rota, TipoPontoRota } from '@/lib/types/rotas'
+import type { TipoPontoRota } from '@/lib/types/rotas'
 import type { Metadata } from 'next'
 import RouteMapDynamic from '@/components/maps/route-map-dynamic'
 import { RotasProspeccaoListClient } from '@/components/rotas/rotas-prospeccao-list'
 import { getVarasByPerito } from '@/lib/data/varas'
+import { getRotasPericiasByPerito } from '@/lib/data/rotas'
 import { SincronizarVarasBtn } from '@/components/rotas/sincronizar-varas-btn'
 import { VarasByState } from '@/components/rotas/varas-by-state'
 
 export const metadata: Metadata = { title: 'Rotas de Prospecção' }
-
-// ─── MOCKS ───────────────────────────────────────────────────────────────────
-
-const rotas: Rota[] = [
-  {
-    id: 'RT-001',
-    tipo: 'PROSPECCAO',
-    titulo: 'Circuito Centro — Fórum João Mendes',
-    data: '16/12/2024',
-    status: 'planejada',
-    distanciaKm: 18,
-    tempoEstimadoMin: 90,
-    custoEstimado: 45,
-    pontos: [
-      { id: 'P1', rotaId: 'RT-001', nome: 'Fórum João Mendes', latitude: -23.548, longitude: -46.636, tipo: 'FORUM', ordem: 1, endereco: 'Praça João Mendes s/n, Centro' },
-      { id: 'P2', rotaId: 'RT-001', nome: '1ª Vara Cível Central', latitude: -23.547, longitude: -46.637, tipo: 'VARA_CIVEL', ordem: 2, endereco: 'Praça João Mendes s/n, Centro' },
-      { id: 'P3', rotaId: 'RT-001', nome: '3ª Vara Cível Central', latitude: -23.546, longitude: -46.638, tipo: 'VARA_CIVEL', ordem: 3, endereco: 'Praça João Mendes s/n, Centro' },
-      { id: 'P4', rotaId: 'RT-001', nome: 'Lima & Associados', latitude: -23.560, longitude: -46.650, tipo: 'ESCRITORIO', ordem: 4, endereco: 'Av. Paulista, 1000' },
-    ],
-  },
-  {
-    id: 'RT-002',
-    tipo: 'PROSPECCAO',
-    titulo: 'Zona Sul — Circuito Seguradoras',
-    data: '19/12/2024',
-    status: 'planejada',
-    distanciaKm: 31,
-    tempoEstimadoMin: 150,
-    custoEstimado: 78,
-    pontos: [
-      { id: 'P5', rotaId: 'RT-002', nome: 'Seguradora Confiança', latitude: -23.610, longitude: -46.680, tipo: 'ESCRITORIO', ordem: 1, endereco: 'Av. das Nações, 500' },
-      { id: 'P6', rotaId: 'RT-002', nome: 'Porto Seguro — Sede', latitude: -23.630, longitude: -46.700, tipo: 'ESCRITORIO', ordem: 2, endereco: 'Rua Gomes de Carvalho, 1000' },
-      { id: 'P7', rotaId: 'RT-002', nome: 'Liberty Seguros', latitude: -23.620, longitude: -46.690, tipo: 'ESCRITORIO', ordem: 3, endereco: 'Av. Ibirapuera, 2315' },
-    ],
-  },
-  {
-    id: 'RT-003',
-    tipo: 'PROSPECCAO',
-    titulo: 'Lapa-Barra Funda — TRT e Varas Trabalhistas',
-    data: '05/12/2024',
-    status: 'concluida',
-    distanciaKm: 22,
-    tempoEstimadoMin: 120,
-    custoEstimado: 55,
-    pontos: [
-      { id: 'P8', rotaId: 'RT-003', nome: 'TRT-2', latitude: -23.525, longitude: -46.675, tipo: 'FORUM', ordem: 1, endereco: 'Rua Boa Vista, 83, Barra Funda' },
-      { id: 'P9', rotaId: 'RT-003', nome: '4ª Vara Trabalhista', latitude: -23.524, longitude: -46.674, tipo: 'VARA_CIVEL', ordem: 2, endereco: 'Rua Boa Vista, 83' },
-      { id: 'P10', rotaId: 'RT-003', nome: 'Dra. Ana Carvalho — Advocacia', latitude: -23.530, longitude: -46.660, tipo: 'ESCRITORIO', ordem: 3, endereco: 'Rua Lapa, 180' },
-    ],
-  },
-]
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -90,6 +40,8 @@ export default async function RotasProspeccaoPage() {
   }
   const comNomeacoes = varas.filter((v) => v.totalNomeacoes > 0).length
   const semNomeacoes = varas.filter((v) => v.totalNomeacoes === 0).length
+
+  const rotas = await getRotasPericiasByPerito(userId).catch(() => [])
 
   return (
     <div className="space-y-6">

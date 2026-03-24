@@ -94,11 +94,17 @@ export async function getMidiasByPericiaId(
   peritoId: string,
 ): Promise<MidiaDaPericia[]> {
   // Path 1: checkpoints linked via RotaPericia
-  const rotas = await prisma.rotaPericia.findMany({
-    where: { pericoId, peritoId },
-    select: { id: true },
-  })
-  const rotaIds = rotas.map((r) => r.id)
+  // pericoId column may not exist in production DB yet — wrap defensively
+  let rotaIds: string[] = []
+  try {
+    const rotas = await prisma.rotaPericia.findMany({
+      where: { pericoId, peritoId },
+      select: { id: true },
+    })
+    rotaIds = rotas.map((r) => r.id)
+  } catch {
+    // pericoId column not yet migrated — skip Path 1 gracefully
+  }
 
   // Collect checkpoint IDs from both paths
   const cpFromRota = rotaIds.length

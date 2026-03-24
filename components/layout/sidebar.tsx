@@ -53,13 +53,13 @@ export default function Sidebar({
         )}
       >
         {collapsed ? (
-          <Link href="/dashboard" title="PeriLaB">
+          <Link href="/dashboard" title="Perilab">
             <Image src="/logo-icon.svg" alt="PL" width={32} height={32} priority />
           </Link>
         ) : (
           <>
             <Link href="/dashboard" className="flex items-center min-w-0">
-              <Image src="/logo.svg" alt="PeriLaB" width={120} height={44} priority />
+              <Image src="/logo.svg" alt="Perilab" width={120} height={44} priority />
             </Link>
             <button
               onClick={onMobileClose}

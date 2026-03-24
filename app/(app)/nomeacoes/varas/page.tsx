@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { Navigation, ChevronRight, Building2, RefreshCw } from 'lucide-react'
+import { Navigation, ChevronRight, Building2, RefreshCw, Settings2 } from 'lucide-react'
 import { auth } from '@/auth'
 import { PageHeader } from '@/components/shared/page-header'
 import { BadgeStatus } from '@/components/shared/badge-status'
@@ -51,12 +51,20 @@ export default async function NomeacoesVarasPage() {
         title="Varas"
         description="Ranking de varas por volume de perícias nomeadas"
         actions={
-          <Link href="/nomeacoes/estrategia">
-            <Button size="sm" className="bg-lime-500 hover:bg-lime-600 text-slate-900 font-semibold">
-              <Navigation className="h-3.5 w-3.5" />
-              Gerar Estratégia
-            </Button>
-          </Link>
+          <div className="flex gap-2">
+            <Link href="/configuracoes/varas">
+              <Button size="sm" variant="outline" className="gap-1.5 border-slate-200 text-slate-600">
+                <Settings2 className="h-3.5 w-3.5" />
+                Gerenciar
+              </Button>
+            </Link>
+            <Link href="/nomeacoes/estrategia">
+              <Button size="sm" className="bg-lime-500 hover:bg-lime-600 text-slate-900 font-semibold">
+                <Navigation className="h-3.5 w-3.5" />
+                Gerar Estratégia
+              </Button>
+            </Link>
+          </div>
         }
       />
 

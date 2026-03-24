@@ -14,20 +14,27 @@ export async function criarCheckpointParaPericia(pericoId: string): Promise<stri
 
   const peritoId = session.user.id
 
-  // Find or create a rota linked to this pericia
-  let rota = await prisma.rotaPericia.findFirst({
-    where: { pericoId, peritoId, status: 'em_andamento' },
-  })
+  // Find existing rota — pericoId column may not exist in production DB yet
+  let rota = null
+  try {
+    rota = await prisma.rotaPericia.findFirst({
+      where: { pericoId, peritoId, status: 'em_andamento' },
+    })
+  } catch {
+    // pericoId column not yet migrated — skip lookup, always create
+  }
 
   if (!rota) {
-    rota = await prisma.rotaPericia.create({
-      data: {
-        peritoId,
-        pericoId,
-        titulo: `Vistoria — processo ${pericoId}`,
-        status: 'em_andamento',
-      },
-    })
+    // Try with pericoId first, fallback without it if column is missing in production
+    try {
+      rota = await prisma.rotaPericia.create({
+        data: { peritoId, pericoId, titulo: `Vistoria — processo ${pericoId}`, status: 'em_andamento' },
+      })
+    } catch {
+      rota = await prisma.rotaPericia.create({
+        data: { peritoId, titulo: `Vistoria — processo ${pericoId}`, status: 'em_andamento' },
+      })
+    }
   }
 
   // Create a new checkpoint for this capture session (timestamped)

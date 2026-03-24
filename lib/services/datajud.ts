@@ -112,8 +112,11 @@ export async function searchByName(
             nested: {
               path: 'partes',
               query: {
-                match_phrase: {
-                  'partes.nome': nome,
+                match: {
+                  'partes.nome': {
+                    query: nome,
+                    operator: 'and',
+                  },
                 },
               },
             },

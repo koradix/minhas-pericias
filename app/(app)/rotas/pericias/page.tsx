@@ -1,66 +1,26 @@
+import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronRight, Plus } from 'lucide-react'
+import { Plus, FileText } from 'lucide-react'
+import { auth } from '@/auth'
 import { PageHeader } from '@/components/shared/page-header'
 import { Button } from '@/components/ui/button'
-import type { Rota } from '@/lib/types/rotas'
-import type { Metadata } from 'next'
 import RouteMapDynamic from '@/components/maps/route-map-dynamic'
 import { RotasPericiasListClient } from '@/components/rotas/rotas-pericias-list'
+import { getRotasPericiasByPerito } from '@/lib/data/rotas'
+import type { Metadata } from 'next'
 
-export const metadata: Metadata = { title: 'Rotas de Perícias' }
+export const metadata: Metadata = { title: 'Rotas de Péricias' }
 
-// ─── MOCKS ───────────────────────────────────────────────────────────────────
+export default async function RotasPericiasPage() {
+  const session = await auth()
+  if (!session?.user?.id) redirect('/login')
 
-const rotas: Rota[] = [
-  {
-    id: 'RT-004',
-    tipo: 'PERICIA',
-    titulo: 'Vistoria PRC-2024-001 e PRC-2024-004',
-    data: '13/12/2024',
-    status: 'em_execucao',
-    distanciaKm: 24,
-    tempoEstimadoMin: 180,
-    custoEstimado: 60,
-    pontos: [
-      { id: 'P11', rotaId: 'RT-004', nome: 'Imóvel PRC-2024-001 — Jardins', latitude: -23.570, longitude: -46.660, tipo: 'PERICIA', ordem: 1, endereco: 'Rua das Flores, 123, Jardins', pericoId: '1' },
-      { id: 'P12', rotaId: 'RT-004', nome: 'Estabelecimento PRC-2024-004 — Bela Vista', latitude: -23.575, longitude: -46.655, tipo: 'PERICIA', ordem: 2, endereco: 'Av. Paulista, 1000, Bela Vista', pericoId: '4' },
-    ],
-  },
-  {
-    id: 'RT-005',
-    tipo: 'PERICIA',
-    titulo: 'Vistoria PRC-2024-006 — Centro',
-    data: '18/12/2024',
-    status: 'planejada',
-    distanciaKm: 11,
-    tempoEstimadoMin: 90,
-    custoEstimado: 30,
-    pontos: [
-      { id: 'P13', rotaId: 'RT-005', nome: 'Local Perícia PRC-2024-006', latitude: -23.548, longitude: -46.636, tipo: 'PERICIA', ordem: 1, endereco: 'Rua do Comércio, 45, Centro', pericoId: '6' },
-    ],
-  },
-  {
-    id: 'RT-006',
-    tipo: 'PERICIA',
-    titulo: 'Diligência PRC-2024-002 — TRT-2',
-    data: '28/11/2024',
-    status: 'concluida',
-    distanciaKm: 16,
-    tempoEstimadoMin: 120,
-    custoEstimado: 40,
-    pontos: [
-      { id: 'P14', rotaId: 'RT-006', nome: 'TRT-2 — Entrevista Testemunha', latitude: -23.525, longitude: -46.675, tipo: 'PERICIA', ordem: 1, endereco: 'Rua Boa Vista, 83, Barra Funda', pericoId: '2' },
-    ],
-  },
-]
+  const rotas = await getRotasPericiasByPerito(session.user.id)
 
-// ─── PAGE ─────────────────────────────────────────────────────────────────────
-
-export default function RotasPericiasPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Rotas de Perícias"
+        title="Rotas de Péricias"
         description="Roteiros para vistorias, diligências e coleta de documentos"
         actions={
           <Link href="/rotas/nova?tipo=PERICIA">
@@ -72,23 +32,35 @@ export default function RotasPericiasPage() {
         }
       />
 
-      {/* Mapa real */}
-      <div className="isolate h-[420px] w-full overflow-hidden rounded-xl border border-slate-200 shadow-sm">
-        <RouteMapDynamic
-          routes={rotas.map((r) => ({ id: r.id, pontos: r.pontos }))}
-        />
-      </div>
+      {rotas.length === 0 ? (
+        <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-slate-200 bg-white p-10 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100">
+            <FileText className="h-6 w-6 text-slate-400" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-slate-700">Nenhuma rota de perícia</p>
+            <p className="text-xs text-slate-400 mt-1">Crie uma rota para planejar suas vistorias e diligências</p>
+          </div>
+          <Link href="/rotas/nova?tipo=PERICIA">
+            <Button size="sm" className="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold gap-1.5">
+              <Plus className="h-3.5 w-3.5" />
+              Criar primeira rota
+            </Button>
+          </Link>
+        </div>
+      ) : (
+        <>
+          {/* Mapa real */}
+          <div className="isolate h-[420px] w-full overflow-hidden rounded-xl border border-slate-200 shadow-sm">
+            <RouteMapDynamic
+              routes={rotas.map((r) => ({ id: r.id, pontos: r.pontos }))}
+            />
+          </div>
 
-      {/* Route cards — client (Iniciar button triggers em_execucao) */}
-      <RotasPericiasListClient rotas={rotas} />
-
-      <div className="text-center">
-        <Link href="/rotas/historico">
-          <Button variant="outline" size="sm">
-            Ver histórico completo <ChevronRight className="h-3.5 w-3.5" />
-          </Button>
-        </Link>
-      </div>
+          {/* Route cards */}
+          <RotasPericiasListClient rotas={rotas} />
+        </>
+      )}
     </div>
   )
 }

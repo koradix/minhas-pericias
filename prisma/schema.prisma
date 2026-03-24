@@ -20,6 +20,7 @@ model User {
 
   // Relations
   varas        TribunalVara[]
+  modelos      ModeloBase[] @relation("ModelosBase")
 }
 
 model Parceiro {
@@ -37,17 +38,40 @@ model Parceiro {
 }
 
 model ModeloBase {
-  id          String   @id @default(cuid())
-  nome        String
-  tipo        String   // LAUDO | PROPOSTA_HONORARIOS | PARECER_TECNICO | RESPOSTA_QUESITOS
-  descricao   String?
-  area        String?
-  nomeArquivo String?
-  caminhoArq  String?
-  status      String   @default("ativo")
-  totalUsos   Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id               String    @id @default(cuid())
+  nome             String
+  tipo             String    // LAUDO | PROPOSTA_HONORARIOS | PARECER_TECNICO | RESPOSTA_QUESITOS
+  descricao        String?
+  area             String?   // área principal (legado — mantido)
+  nomeArquivo      String?
+  caminhoArq       String?
+  status           String    @default("ativo") // legado — mantido para compatibilidade
+  totalUsos        Int       @default(0)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  // ── Template metadata (Sprint 4+) ─────────────────────────────────────────
+  especialidade    String?   // ex: "Avaliação de Imóvel", "Perícia Trabalhista"
+  subEspecialidade String?   // ex: "Imóvel Residencial", "Adicional Noturno"
+  uploadedById     String?   // User.id (quem fez upload)
+  versao           Int       @default(1)   // número da versão: 1, 2, 3…
+  versaoPaiId      String?   // null = template raiz; não-null aponta para a raiz
+  isActive         Boolean   @default(true)  // ativo/inativo (substitui status)
+  preferido        Boolean   @default(false) // template preferido para tipo+especialidade
+
+  // ── Arquivo ──────────────────────────────────────────────────────────────
+  mimeType         String?   // "application/pdf" | "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  tamanhoBytes     Int?      // tamanho do arquivo em bytes
+
+  // ── Readiness para IA (preenchidos futuramente por extraction job) ────────
+  textoExtraido    String?   // texto completo extraído (para indexação semântica)
+  tokenCount       Int?      // contagem aproximada de tokens (para gestão de contexto)
+  processadoEm     DateTime? // timestamp da última extração de texto
+
+  // ── Relações ──────────────────────────────────────────────────────────────
+  uploadedBy       User?      @relation("ModelosBase", fields: [uploadedById], references: [id])
+  versaoPai        ModeloBase?  @relation("Versoes", fields: [versaoPaiId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  versoes          ModeloBase[] @relation("Versoes")
 }
 
 model DocumentoGerado {
@@ -210,6 +234,41 @@ model PropostaHonorarios {
   updatedAt          DateTime @updatedAt
 
   @@unique([pericoId, userId]) // um rascunho por processo por usuário
+}
+
+// ─── PERFIL DE ESCRITA (injeção em prompts de IA) ────────────────────────────
+
+model PeritoEscritaProfile {
+  id                 String   @id @default(cuid())
+  userId             String   @unique  // User.id — um perfil por perito
+
+  // ── Estilo geral ────────────────────────────────────────────────────────────
+  tom                String   @default("formal")
+  // valores: formal | tecnico | objetivo | detalhado | conciso
+
+  // ── Estrutura de documentos ─────────────────────────────────────────────────
+  estruturaLaudo     String   @default("[]")   // JSON string[] — seções preferidas para laudo
+  estruturaProposta  String   @default("[]")   // JSON string[] — seções preferidas para proposta
+
+  // ── Templates favoritos ─────────────────────────────────────────────────────
+  templatesFavoritos String   @default("[]")   // JSON string[] — ModeloBase.id[]
+
+  // ── Vocabulário e expressões ────────────────────────────────────────────────
+  expressoes         String   @default("[]")   // JSON string[] — expressões recorrentes usadas
+  palavrasEvitar     String   @default("[]")   // JSON string[] — termos a evitar
+  abreviaturas       String   @default("[]")   // JSON {sigla:string, expansao:string}[] — glossário
+
+  // ── Estilo de conclusão ──────────────────────────────────────────────────────
+  estiloConc         String   @default("")     // texto livre: como o perito fecha laudos/propostas
+  formulaFecho       String   @default("")     // frase de encerramento padrão
+
+  // ── Notas para IA ────────────────────────────────────────────────────────────
+  notasIA            String   @default("")     // instruções livres para o modelo de IA
+  contextoRegional   String   @default("")     // ex: "Foro da Comarca do Rio de Janeiro — TJRJ"
+
+  // ── Metadados ────────────────────────────────────────────────────────────────
+  criadoEm           DateTime @default(now())
+  atualizadoEm       DateTime @updatedAt
 }
 
 // ─── RADAR DE NOMEAÇÕES ───────────────────────────────────────────────────────

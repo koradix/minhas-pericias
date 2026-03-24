@@ -115,7 +115,7 @@ export default function LandingPage() {
       <header className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/95 backdrop-blur-sm">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
           <Link href="/">
-            <Image src="/logo.svg" alt="PeriLaB" width={130} height={48} priority />
+            <Image src="/logo.svg" alt="Perilab" width={130} height={48} priority />
           </Link>
 
           <nav className="hidden items-center gap-7 md:flex">
@@ -157,7 +157,7 @@ export default function LandingPage() {
           </h1>
 
           <p className="mx-auto mb-10 max-w-[520px] text-[1.05rem] leading-relaxed text-slate-500">
-            O PeriLaB centraliza suas péricias, monitora nomeações em varas estratégicas
+            O Perilab centraliza suas péricias, monitora nomeações em varas estratégicas
             e gera documentos profissionais.
           </p>
 
@@ -243,7 +243,7 @@ export default function LandingPage() {
                 <span className="text-lime-600">no piloto automático</span>
               </h2>
               <p className="mb-8 text-base leading-relaxed text-slate-500">
-                O PeriLaB automatiza a prospecção de advogados, escritórios e seguradoras. Envie
+                O Perilab automatiza a prospecção de advogados, escritórios e seguradoras. Envie
                 e-mails personalizados, propostas e currículo de forma organizada e escalável —
                 enquanto você foca nas péricias.
               </p>
@@ -415,7 +415,7 @@ export default function LandingPage() {
             Pronto para profissionalizar<br className="hidden sm:block" /> sua atuação pericial?
           </h2>
           <p className="mb-8 text-base leading-relaxed text-slate-400">
-            Junte-se a centenas de peritos que já usam o PeriLaB para organizar processos e
+            Junte-se a centenas de peritos que já usam o Perilab para organizar processos e
             conquistar novos trabalhos com mais eficiência.
           </p>
           <Link
@@ -435,10 +435,10 @@ export default function LandingPage() {
             <div className="flex h-7 w-7 items-center justify-center rounded-md bg-lime-500 text-[9px] font-bold text-slate-900 select-none">
               PL
             </div>
-            <span className="text-sm font-semibold text-slate-400">PeriLaB</span>
+            <span className="text-sm font-semibold text-slate-400">Perilab</span>
           </div>
           <p className="text-xs text-slate-600">
-            © {new Date().getFullYear()} PeriLaB. Todos os direitos reservados.
+            © {new Date().getFullYear()} Perilab. Todos os direitos reservados.
           </p>
           <div className="flex gap-5 text-xs text-slate-600">
             <a href="#" className="hover:text-slate-400 transition-colors">Termos de uso</a>

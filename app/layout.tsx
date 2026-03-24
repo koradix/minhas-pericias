@@ -15,15 +15,15 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    template: "%s | PeriLaB",
-    default: "PeriLaB — De perito para perito",
+    template: "%s | Perilab",
+    default: "Perilab — de perito para perito",
   },
   description: "Plataforma de gestão pericial para peritos judiciais brasileiros",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "PeriLaB",
+    title: "Perilab",
   },
   icons: {
     icon: "/logo-icon.svg",

@@ -43,7 +43,7 @@ function getPageInfo(
     }
   }
 
-  return { title: item?.title ?? 'PeriLaB', section }
+  return { title: item?.title ?? 'Perilab', section }
 }
 
 export default function Header({ onMenuClick, user }: HeaderProps) {

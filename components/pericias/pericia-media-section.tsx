@@ -9,6 +9,7 @@ import {
   FileText,
   Loader2,
   Plus,
+  AlertCircle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { CheckpointMediaPanel } from '@/components/rotas/checkpoint-media-panel'
@@ -42,11 +43,17 @@ export function PericiaMediaSection({ pericoId, midias }: Props) {
   const router = useRouter()
   const [checkpointId, setCheckpointId] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  const [actionError, setActionError] = useState<string | null>(null)
 
   function handleAbrir() {
+    setActionError(null)
     startTransition(async () => {
-      const cpId = await criarCheckpointParaPericia(pericoId)
-      setCheckpointId(cpId)
+      try {
+        const cpId = await criarCheckpointParaPericia(pericoId)
+        setCheckpointId(cpId)
+      } catch {
+        setActionError('Não foi possível abrir o registro. Tente novamente.')
+      }
     })
   }
 
@@ -79,6 +86,12 @@ export function PericiaMediaSection({ pericoId, midias }: Props) {
             {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
             Abrir câmera / Registrar
           </Button>
+          {actionError && (
+            <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-red-600">
+              <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+              {actionError}
+            </p>
+          )}
         </div>
       ) : (
         <div className="divide-y divide-slate-100">
