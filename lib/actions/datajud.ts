@@ -13,6 +13,26 @@ export type BuscarDataJudResult =
   | { ok: true; novas: number; atualizadas: number }
   | { ok: false; error: string }
 
+// ─── Helper: gera variações de nome para aumentar cobertura ──────────────────
+
+function gerarVariacoesNome(nome: string): string[] {
+  const parts = nome.trim().split(/\s+/).filter(Boolean)
+  const set = new Set<string>()
+
+  // Nome completo sempre incluído
+  set.add(nome.trim())
+
+  if (parts.length >= 3) {
+    // Primeira + última palavra: "Fernando Altounian"
+    set.add(`${parts[0]} ${parts[parts.length - 1]}`)
+    // Primeira + segunda palavra: "Fernando Sarian"
+    set.add(`${parts[0]} ${parts[1]}`)
+  }
+
+  // Remove variações muito curtas (< 5 chars)
+  return Array.from(set).filter((v) => v.length >= 5)
+}
+
 // ─── Action 1 — Buscar processos no DataJud ───────────────────────────────────
 
 export async function buscarProcessosDataJud(): Promise<BuscarDataJudResult> {
@@ -61,11 +81,16 @@ export async function buscarProcessosDataJud(): Promise<BuscarDataJudResult> {
     return { ok: false, error: `Nenhum dos seus tribunais é suportado (${siglas.join(', ')}). Adicione um tribunal estadual (TJSP, TJRJ, etc.)` }
   }
 
+  // Busca com variações de nome para aumentar cobertura
+  const variacoes = gerarVariacoesNome(nome)
+
   const resultadosPorTribunal = await Promise.all(
-    siglasComAlias.map(async (sigla) => {
+    siglasComAlias.flatMap((sigla) => {
       const alias = getDataJudAlias(sigla)!
-      const processos = await searchByName(nome, alias, 60)
-      return processos.map((p) => ({ ...p, tribunal: sigla }))
+      return variacoes.map(async (variacao) => {
+        const processos = await searchByName(variacao, alias, 60)
+        return processos.map((p) => ({ ...p, tribunal: sigla }))
+      })
     })
   )
 
