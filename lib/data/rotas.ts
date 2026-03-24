@@ -7,6 +7,14 @@ function checkpointToTipo(tribunalSigla: string | null): TipoPontoRota {
 }
 
 export async function getRotasPericiasByPerito(peritoId: string): Promise<Rota[]> {
+  try {
+    return await _getRotas(peritoId)
+  } catch {
+    return []
+  }
+}
+
+async function _getRotas(peritoId: string): Promise<Rota[]> {
   const rotas = await prisma.rotaPericia.findMany({
     where: { peritoId },
     orderBy: { criadoEm: 'desc' },
@@ -15,12 +23,14 @@ export async function getRotasPericiasByPerito(peritoId: string): Promise<Rota[]
   if (rotas.length === 0) return []
 
   const rotaIds = rotas.map((r) => r.id)
-  const checkpoints = await prisma.checkpoint.findMany({
+
+  type CheckpointRow = Awaited<ReturnType<typeof prisma.checkpoint.findMany>>[number]
+  const checkpoints: CheckpointRow[] = await prisma.checkpoint.findMany({
     where: { rotaId: { in: rotaIds } },
     orderBy: { ordem: 'asc' },
-  })
+  }).catch(() => [])
 
-  const checkpointsByRota = new Map<string, typeof checkpoints>()
+  const checkpointsByRota = new Map<string, CheckpointRow[]>()
   for (const c of checkpoints) {
     const arr = checkpointsByRota.get(c.rotaId) ?? []
     arr.push(c)

@@ -15,7 +15,7 @@ export default async function RotasPericiasPage() {
   const session = await auth()
   if (!session?.user?.id) redirect('/login')
 
-  const rotas = await getRotasPericiasByPerito(session.user.id)
+  const rotas = await getRotasPericiasByPerito(session.user.id).catch(() => [])
 
   return (
     <div className="space-y-6">
