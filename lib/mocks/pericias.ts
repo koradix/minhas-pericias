@@ -12,6 +12,8 @@ export interface Pericia {
   prazo: string
   valor: string
   endereco?: string  // local físico da perícia (para rotas)
+  latitude?: number
+  longitude?: number
 }
 
 export const pericias: Pericia[] = [
@@ -26,6 +28,8 @@ export const pericias: Pericia[] = [
     prazo: '15/01/2025',
     valor: 'R$ 4.200',
     endereco: 'Rua Voluntários da Pátria, 340, Botafogo — Rio de Janeiro, RJ',
+    latitude: -22.9388,
+    longitude: -43.1822,
   },
   {
     id: 2,
@@ -38,6 +42,8 @@ export const pericias: Pericia[] = [
     prazo: '22/01/2025',
     valor: 'R$ 3.500',
     endereco: 'Av. Presidente Vargas, 1012, Centro — Rio de Janeiro, RJ',
+    latitude: -22.9041,
+    longitude: -43.1789,
   },
   {
     id: 3,
@@ -50,6 +56,8 @@ export const pericias: Pericia[] = [
     prazo: '20/12/2024',
     valor: 'R$ 8.000',
     endereco: 'Rua Quinze de Novembro, 8, Centro — Niterói, RJ',
+    latitude: -22.8998,
+    longitude: -43.1769,
   },
   {
     id: 4,
@@ -62,6 +70,8 @@ export const pericias: Pericia[] = [
     prazo: '28/01/2025',
     valor: 'R$ 6.500',
     endereco: 'Rua Uruguaiana, 75, Centro — Rio de Janeiro, RJ',
+    latitude: -22.9056,
+    longitude: -43.1769,
   },
   {
     id: 5,
@@ -74,6 +84,8 @@ export const pericias: Pericia[] = [
     prazo: '10/02/2025',
     valor: 'R$ 5.200',
     endereco: 'Av. Presidente Kennedy, 1500, Vila São Luís — Duque de Caxias, RJ',
+    latitude: -22.7736,
+    longitude: -43.3133,
   },
   {
     id: 6,
@@ -86,6 +98,8 @@ export const pericias: Pericia[] = [
     prazo: '15/02/2025',
     valor: 'A definir',
     endereco: 'Estrada do Colubandê, s/n, Porto Velho — São Gonçalo, RJ',
+    latitude: -22.8297,
+    longitude: -43.0505,
   },
   {
     id: 7,
@@ -109,6 +123,8 @@ export const pericias: Pericia[] = [
     prazo: '20/02/2025',
     valor: 'R$ 12.000',
     endereco: 'Av. Governador Portela, 212, Centro — Nova Iguaçu, RJ',
+    latitude: -22.7575,
+    longitude: -43.4523,
   },
 ]
 

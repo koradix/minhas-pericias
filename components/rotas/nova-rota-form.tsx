@@ -190,7 +190,7 @@ export function NovaRotaForm({ varas, grupos }: Props) {
         {/* ── Varas disponíveis ── */}
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm space-y-3">
           <p className="text-sm font-semibold text-slate-900">
-            Varas disponíveis
+            Perícias disponíveis
             <span className="ml-2 text-xs font-normal text-slate-400">{varas.length} locais</span>
           </p>
 
@@ -198,7 +198,7 @@ export function NovaRotaForm({ varas, grupos }: Props) {
             type="text"
             value={filtro}
             onChange={(e) => setFiltro(e.target.value)}
-            placeholder="Filtrar por nome, tribunal ou cidade…"
+            placeholder="Filtrar por processo, assunto ou cidade…"
             className="w-full h-9 rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs text-slate-700 placeholder:text-slate-400 focus:border-lime-400 focus:outline-none focus:ring-1 focus:ring-lime-400"
           />
 
@@ -264,7 +264,7 @@ export function NovaRotaForm({ varas, grupos }: Props) {
           {selecionadas.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-8 text-slate-400">
               <MapPin className="h-8 w-8 text-slate-200" />
-              <p className="text-xs">Clique em varas para adicionar à rota</p>
+              <p className="text-xs">Clique em perícias para adicionar à rota</p>
             </div>
           ) : (
             <div className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
