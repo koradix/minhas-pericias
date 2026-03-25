@@ -12,6 +12,7 @@ import {
   Send,
   BarChart3,
   Shield,
+  Sparkles,
 } from 'lucide-react'
 
 // ─── Data ────────────────────────────────────────────────────────────────────
@@ -20,29 +21,25 @@ const features = [
   {
     icon: FileText,
     title: 'Gestão de Péricias',
-    description:
-      'Centralize processos, prazos, documentos e laudos. Acompanhe cada etapa com visibilidade total do fluxo pericial.',
+    description: 'Centralize processos, prazos, documentos e laudos. Acompanhe cada etapa com visibilidade total do fluxo pericial.',
     accent: 'bg-lime-50 text-lime-600 ring-lime-100',
   },
   {
     icon: Radar,
     title: 'Radar de Nomeações',
-    description:
-      'Monitore varas e juízes estratégicos. Identifique padrões de nomeação e antecipe oportunidades de trabalho.',
+    description: 'Monitore varas e juízes estratégicos. Identifique padrões de nomeação e antecipe oportunidades de trabalho.',
     accent: 'bg-violet-50 text-violet-600 ring-violet-100',
   },
   {
     icon: Navigation,
     title: 'Rotas Inteligentes',
-    description:
-      'Planeje deslocamentos entre visitas e vistorias. Reduza tempo e custo com organização eficiente de rotas.',
+    description: 'Planeje deslocamentos entre visitas e vistorias. Reduza tempo e custo com organização eficiente de rotas.',
     accent: 'bg-emerald-50 text-emerald-600 ring-emerald-100',
   },
   {
     icon: Zap,
     title: 'Geração de Documentos',
-    description:
-      'Gere laudos, propostas de honorários e pareceres com agilidade. Modelos profissionais prontos para uso.',
+    description: 'Gere laudos, propostas de honorários e pareceres com agilidade. Modelos profissionais prontos para uso.',
     accent: 'bg-amber-50 text-amber-600 ring-amber-100',
   },
 ]
@@ -58,10 +55,11 @@ const prospectionFeatures = [
 const plans = [
   {
     name: 'Essencial',
-    price: 'R$ 89',
-    period: '/mês',
+    price: 'Grátis',
+    period: '',
     description: 'Para quem está começando a organizar sua atuação pericial.',
     highlight: false,
+    badge: null,
     features: [
       'Até 20 péricias ativas',
       'Gestão de documentos',
@@ -69,39 +67,44 @@ const plans = [
       'Contatos e parceiros',
       'Dashboard financeiro',
     ],
-    cta: 'Começar agora',
+    cta: 'Começar grátis',
+    ctaStyle: 'secondary',
   },
   {
-    name: 'Profissional',
+    name: 'Pro (IA)',
     price: 'R$ 189',
     period: '/mês',
-    description: 'Para peritos que querem crescer e prospectar ativamente.',
+    description: 'Para peritos que querem crescer com inteligência artificial.',
     highlight: true,
+    badge: 'Mais popular',
     features: [
       'Péricias ilimitadas',
-      'Tudo do Essencial',
+      'Resumo automático de processos',
+      'Geração de proposta de honorários',
+      'Rascunho de laudo com IA',
       'Radar de Nomeações',
       'Rotas inteligentes',
-      'Prospecção por e-mail',
-      'Envio de propostas e currículo',
     ],
     cta: 'Começar agora',
+    ctaStyle: 'primary',
   },
   {
-    name: 'Premium',
+    name: 'Avançado',
     price: 'R$ 389',
     period: '/mês',
     description: 'Automação completa para maximizar sua captação de trabalhos.',
     highlight: false,
+    badge: null,
     features: [
-      'Tudo do Profissional',
-      'Automação de prospecção',
+      'Tudo do Pro (IA)',
+      'CRM de advogados e escritórios',
+      'Automação de e-mails de prospecção',
+      'Gestão de contatos de varas',
       'Leads qualificados',
-      'Geração de documentos com IA',
-      'Relatórios avançados',
       'Suporte prioritário',
     ],
     cta: 'Falar com consultor',
+    ctaStyle: 'secondary',
   },
 ]
 
@@ -141,56 +144,73 @@ export default function LandingPage() {
       </header>
 
       {/* ── Hero ── */}
-      <section className="border-b border-slate-100 bg-white py-24 sm:py-32 lg:py-36">
-        <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
+      <section className="border-b border-slate-100 bg-white py-16 sm:py-20 lg:py-24">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
 
-          {/* Announcement Pill */}
-          <div className="mb-8 inline-flex cursor-pointer items-center gap-2 rounded-full border border-lime-200 bg-lime-50 px-3.5 py-1 text-xs font-semibold text-lime-700 transition-all hover:bg-lime-100 ring-1 ring-lime-200/60">
-            <span className="flex h-1.5 w-1.5 rounded-full bg-lime-500"></span>
-            Novo Radar de Nomeações V2.0
-            <ArrowRight className="h-3 w-3 ml-0.5" />
-          </div>
-
-          <h1 className="mb-6 text-[2.75rem] font-bold leading-[1.06] tracking-[-0.03em] text-slate-900 sm:text-5xl lg:text-[3.5rem]">
-            Gestão pericial completa,{' '}
-            <span className="text-lime-500">do processo ao laudo.</span>
-          </h1>
-
-          <p className="mx-auto mb-10 max-w-[520px] text-[1.05rem] leading-relaxed text-slate-500">
-            O Perilab centraliza suas péricias, monitora nomeações em varas estratégicas
-            e gera documentos profissionais.
-          </p>
-
-          <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-            <Link
-              href="/login"
-              className="inline-flex h-11 items-center gap-2 rounded-xl bg-lime-500 px-7 text-sm font-bold text-slate-900 shadow-sm shadow-lime-300/50 transition-all hover:bg-lime-400 hover:shadow-md hover:shadow-lime-300/60"
-            >
-              Acessar a plataforma
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-            <a
-              href="#planos"
-              className="inline-flex h-11 items-center gap-2 rounded-xl border border-slate-200 px-7 text-sm font-semibold text-slate-600 transition-all hover:border-slate-300 hover:bg-slate-50/80 hover:text-slate-900"
-            >
-              Ver planos
-            </a>
-          </div>
-
-          {/* Stats */}
-          <div className="mx-auto mt-16 grid max-w-sm grid-cols-3 gap-6 border-t border-slate-100 pt-10">
-            {[
-              { value: '200+', label: 'Peritos ativos' },
-              { value: '5.000+', label: 'Péricias gerenciadas' },
-              { value: '12.000+', label: 'Documentos gerados' },
-            ].map((s) => (
-              <div key={s.label} className="text-center">
-                <p className="text-2xl font-bold tracking-tight text-slate-900 tabular-nums">{s.value}</p>
-                <p className="mt-1 text-[11px] font-medium uppercase tracking-wide text-slate-400">{s.label}</p>
+            {/* LEFT — text */}
+            <div>
+              {/* Pill */}
+              <div className="mb-7 inline-flex cursor-pointer items-center gap-2 rounded-full border border-lime-200 bg-lime-50 px-3.5 py-1 text-xs font-semibold text-lime-700 transition-all hover:bg-lime-100 ring-1 ring-lime-200/50">
+                <span className="flex h-1.5 w-1.5 rounded-full bg-lime-500" />
+                Novo Radar de Nomeações V2.0
+                <ArrowRight className="h-3 w-3 ml-0.5" />
               </div>
-            ))}
-          </div>
 
+              {/* Headline */}
+              <h1 className="font-display mb-6 text-[2.6rem] font-bold leading-[1.06] tracking-[-0.03em] text-slate-900 sm:text-5xl lg:text-[3.25rem]">
+                Gestão pericial completa,<br />
+                <em className="not-italic italic font-bold text-lime-500">do processo ao laudo.</em>
+              </h1>
+
+              <p className="mb-8 max-w-[480px] text-lg leading-relaxed text-slate-500">
+                O Perilab organiza suas péricias, identifica oportunidades de nomeação e gera documentos profissionais com precisão.
+              </p>
+
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Link
+                  href="/login"
+                  className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-lime-500 px-8 text-sm font-bold text-slate-900 shadow-sm shadow-lime-300/40 transition-all hover:bg-lime-400 hover:shadow-md hover:shadow-lime-300/50"
+                >
+                  Acessar plataforma
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+                <a
+                  href="#planos"
+                  className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 px-8 text-sm font-semibold text-slate-600 transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
+                >
+                  Ver planos
+                </a>
+              </div>
+
+              {/* Stats */}
+              <div className="mt-12 flex flex-wrap gap-8 border-t border-slate-100 pt-8">
+                {[
+                  { value: '200+', label: 'Peritos ativos' },
+                  { value: '5.000+', label: 'Péricias gerenciadas' },
+                  { value: '12.000+', label: 'Documentos gerados' },
+                ].map((s) => (
+                  <div key={s.label}>
+                    <p className="font-display text-2xl font-bold tracking-tight text-slate-900 tabular-nums">{s.value}</p>
+                    <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">{s.label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* RIGHT — product mockup */}
+            <div className="flex items-center justify-center">
+              <Image
+                src="/hero-mockup.png"
+                alt="Perilab no laptop e no celular"
+                width={620}
+                height={520}
+                className="w-full max-w-[620px] object-contain drop-shadow-xl"
+                priority
+              />
+            </div>
+
+          </div>
         </div>
       </section>
 
@@ -201,12 +221,11 @@ export default function LandingPage() {
             <p className="mb-3 text-xs font-semibold uppercase tracking-[0.15em] text-lime-600">
               Funcionalidades
             </p>
-            <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-[2.1rem]">
+            <h2 className="font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-[2.1rem]">
               Tudo que o perito precisa
             </h2>
             <p className="mt-4 text-base leading-relaxed text-slate-500">
-              Do controle de processos à geração de laudos — uma plataforma integrada para
-              profissionalizar sua atuação pericial.
+              Do controle de processos à geração de laudos — uma plataforma integrada para profissionalizar sua atuação pericial.
             </p>
           </div>
 
@@ -216,10 +235,10 @@ export default function LandingPage() {
               return (
                 <div
                   key={f.title}
-                  className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5"
+                  className="group rounded-2xl border border-slate-200/80 bg-white p-6 transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md hover:shadow-slate-100/80"
                 >
                   <div className={`mb-4 flex h-10 w-10 items-center justify-center rounded-lg ring-1 ${f.accent}`}>
-                    <Icon className="h-4.5 w-4.5" />
+                    <Icon className="h-5 w-5" />
                   </div>
                   <h3 className="mb-2 text-sm font-semibold text-slate-900">{f.title}</h3>
                   <p className="text-sm leading-relaxed text-slate-500">{f.description}</p>
@@ -231,14 +250,14 @@ export default function LandingPage() {
       </section>
 
       {/* ── Prospection ── */}
-      <section id="prospeccao" className="bg-slate-50/70 py-20 sm:py-28 border-y border-slate-100">
+      <section id="prospeccao" className="bg-slate-50/60 py-20 sm:py-28 border-y border-slate-100">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="grid items-center gap-12 lg:grid-cols-2">
             <div>
               <p className="mb-3 text-xs font-semibold uppercase tracking-[0.15em] text-lime-600">
                 Módulo de Prospecção
               </p>
-              <h2 className="mb-5 text-3xl font-bold tracking-tight text-slate-900 sm:text-[2.1rem]">
+              <h2 className="font-display mb-5 text-3xl font-bold tracking-tight text-slate-900 sm:text-[2.1rem]">
                 Conquiste novos trabalhos{' '}
                 <span className="text-lime-600">no piloto automático</span>
               </h2>
@@ -265,7 +284,7 @@ export default function LandingPage() {
                   href="#planos"
                   className="inline-flex items-center gap-2 text-sm font-semibold text-lime-600 hover:text-lime-700 transition-colors"
                 >
-                  Disponível nos planos Profissional e Premium
+                  Disponível nos planos Pro e Avançado
                   <ArrowRight className="h-4 w-4" />
                 </a>
               </div>
@@ -328,7 +347,7 @@ export default function LandingPage() {
             <p className="mb-3 text-xs font-semibold uppercase tracking-[0.15em] text-lime-600">
               Planos
             </p>
-            <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-[2.1rem]">
+            <h2 className="font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-[2.1rem]">
               Escolha o seu plano
             </h2>
             <p className="mt-4 text-base text-slate-500">
@@ -340,31 +359,34 @@ export default function LandingPage() {
             {plans.map((plan) => (
               <div
                 key={plan.name}
-                className={`relative flex flex-col rounded-2xl border p-8 transition-shadow hover:shadow-md ${
+                className={`relative flex flex-col rounded-2xl border p-8 transition-all ${
                   plan.highlight
-                    ? 'border-slate-700 bg-slate-950 text-white shadow-lg shadow-slate-900/30'
-                    : 'border-slate-200 bg-white text-slate-900 shadow-sm'
+                    ? 'border-slate-800 bg-slate-950 text-white shadow-xl shadow-slate-900/30 scale-[1.02]'
+                    : 'border-slate-200 bg-white text-slate-900 hover:shadow-md'
                 }`}
               >
-                {plan.highlight && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <span className="rounded-full bg-lime-500 px-3 py-1 text-[10px] font-bold text-slate-900 tracking-wide uppercase">
-                      Mais popular
+                {plan.badge && (
+                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-lime-500 px-3 py-1 text-[10px] font-bold text-slate-900 tracking-wide uppercase">
+                      <Sparkles className="h-3 w-3" />
+                      {plan.badge}
                     </span>
                   </div>
                 )}
 
                 <div className="mb-6">
-                  <p className={`mb-1 text-xs font-semibold uppercase tracking-wider ${plan.highlight ? 'text-slate-400' : 'text-slate-400'}`}>
+                  <p className={`mb-1 text-xs font-semibold uppercase tracking-wider ${plan.highlight ? 'text-lime-400' : 'text-slate-400'}`}>
                     {plan.name}
                   </p>
                   <div className="flex items-baseline gap-1 mt-2">
-                    <span className={`text-4xl font-bold tabular-nums ${plan.highlight ? 'text-white' : 'text-slate-900'}`}>
+                    <span className={`font-display text-4xl font-bold tabular-nums tracking-tight ${plan.highlight ? 'text-white' : 'text-slate-900'}`}>
                       {plan.price}
                     </span>
-                    <span className={`text-sm ${plan.highlight ? 'text-slate-500' : 'text-slate-400'}`}>
-                      {plan.period}
-                    </span>
+                    {plan.period && (
+                      <span className={`text-sm ${plan.highlight ? 'text-slate-500' : 'text-slate-400'}`}>
+                        {plan.period}
+                      </span>
+                    )}
                   </div>
                   <p className={`mt-2.5 text-sm leading-relaxed ${plan.highlight ? 'text-slate-400' : 'text-slate-500'}`}>
                     {plan.description}
@@ -387,8 +409,10 @@ export default function LandingPage() {
                 <Link
                   href="/login"
                   className={`inline-flex h-11 items-center justify-center rounded-xl text-sm font-semibold transition-all ${
-                    plan.highlight
-                      ? 'bg-lime-500 text-slate-900 hover:bg-lime-400'
+                    plan.ctaStyle === 'primary'
+                      ? 'bg-lime-500 text-slate-900 hover:bg-lime-400 shadow-sm shadow-lime-400/30'
+                      : plan.highlight
+                      ? 'border border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800'
                       : 'border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 hover:border-slate-300'
                   }`}
                 >
@@ -411,7 +435,7 @@ export default function LandingPage() {
             <Shield className="h-3.5 w-3.5 text-lime-400" />
             Dados seguros · LGPD compliant
           </div>
-          <h2 className="mb-4 text-2xl font-bold tracking-tight text-white sm:text-3xl">
+          <h2 className="font-display mb-4 text-2xl font-bold tracking-tight text-white sm:text-3xl">
             Pronto para profissionalizar<br className="hidden sm:block" /> sua atuação pericial?
           </h2>
           <p className="mb-8 text-base leading-relaxed text-slate-400">
@@ -420,7 +444,7 @@ export default function LandingPage() {
           </p>
           <Link
             href="/login"
-            className="inline-flex h-11 items-center gap-2 rounded-lg bg-lime-500 px-7 text-sm font-semibold text-slate-900 transition-all hover:bg-lime-400"
+            className="inline-flex h-12 items-center gap-2 rounded-xl bg-lime-500 px-8 text-sm font-bold text-slate-900 transition-all hover:bg-lime-400 hover:scale-105"
           >
             Acessar a plataforma
             <ArrowRight className="h-4 w-4" />
@@ -435,7 +459,7 @@ export default function LandingPage() {
             <div className="flex h-7 w-7 items-center justify-center rounded-md bg-lime-500 text-[9px] font-bold text-slate-900 select-none">
               PL
             </div>
-            <span className="text-sm font-semibold text-slate-400">Perilab</span>
+            <span className="font-display text-sm font-semibold text-slate-400">Perilab</span>
           </div>
           <p className="text-xs text-slate-600">
             © {new Date().getFullYear()} Perilab. Todos os direitos reservados.
