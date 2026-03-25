@@ -78,25 +78,31 @@ export async function salvarRotaProspeccao(input: SalvarRotaInput) {
   if (!input.titulo.trim()) return { ok: false, error: 'Título obrigatório' }
   if (input.pontos.length < 2) return { ok: false, error: 'Selecione ao menos 2 paradas' }
 
-  const rota = await prisma.rotaPericia.create({
-    data: {
-      peritoId: session.user.id,
-      titulo: input.titulo.trim(),
-      status: 'planejada',
-    },
-  })
+  try {
+    const rota = await prisma.rotaPericia.create({
+      data: {
+        peritoId: session.user.id,
+        titulo: input.titulo.trim(),
+        status: 'planejada',
+      },
+      select: { id: true },
+    })
 
-  await prisma.checkpoint.createMany({
-    data: input.pontos.map((p) => ({
-      rotaId: rota.id,
-      ordem: p.ordem,
-      titulo: p.titulo,
-      endereco: p.endereco,
-      lat: p.latitude,
-      lng: p.longitude,
-      status: 'pendente',
-    })),
-  })
+    await prisma.checkpoint.createMany({
+      data: input.pontos.map((p) => ({
+        rotaId: rota.id,
+        ordem: p.ordem,
+        titulo: p.titulo,
+        endereco: p.endereco,
+        lat: p.latitude,
+        lng: p.longitude,
+        status: 'pendente',
+      })),
+    })
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    return { ok: false, error: `Erro ao salvar: ${msg.slice(0, 120)}` }
+  }
 
   redirect('/rotas/prospeccao')
 }
