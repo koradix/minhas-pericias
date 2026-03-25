@@ -1,6 +1,7 @@
 'use server'
 
 import { redirect } from 'next/navigation'
+import { revalidatePath } from 'next/cache'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { VARAS_CATALOG } from '@/lib/data/varas-catalog'
@@ -105,4 +106,24 @@ export async function salvarRotaProspeccao(input: SalvarRotaInput) {
   }
 
   redirect('/rotas/prospeccao')
+}
+
+// ─── Action: Iniciar rota (planejada → em_execucao) ───────────────────────────
+
+export async function iniciarRota(rotaId: string): Promise<{ ok: boolean; error?: string }> {
+  const session = await auth()
+  if (!session?.user?.id) return { ok: false, error: 'Não autenticado' }
+
+  try {
+    await prisma.rotaPericia.update({
+      where: { id: rotaId, peritoId: session.user.id },
+      data: { status: 'em_execucao' },
+      select: { id: true },
+    })
+    revalidatePath('/rotas/pericias')
+    revalidatePath('/rotas/prospeccao')
+    return { ok: true }
+  } catch {
+    return { ok: false, error: 'Erro ao iniciar rota' }
+  }
 }

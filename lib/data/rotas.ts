@@ -1,6 +1,10 @@
 import { prisma } from '@/lib/prisma'
 import type { Rota, PontoRota, TipoPontoRota } from '@/lib/types/rotas'
 
+function toDate(d: Date | string): Date {
+  return d instanceof Date ? d : new Date(d as string)
+}
+
 function checkpointToTipo(tribunalSigla: string | null): TipoPontoRota {
   if (tribunalSigla) return 'FORUM'
   return 'PERICIA'
@@ -51,6 +55,7 @@ async function _getRotas(peritoId: string): Promise<Rota[]> {
       pericoId: c.pericoId ?? undefined,
       tribunalSigla: c.tribunalSigla ?? undefined,
       varaNome: c.varaNome ?? undefined,
+      statusCheckpoint: (c.status as 'pendente' | 'chegou' | 'concluido') ?? 'pendente',
     }))
 
     // Infer tipo from checkpoints
@@ -64,7 +69,7 @@ async function _getRotas(peritoId: string): Promise<Rota[]> {
       id: r.id,
       tipo,
       titulo: r.titulo,
-      data: r.criadoEm.toLocaleDateString('pt-BR'),
+      data: toDate(r.criadoEm).toLocaleDateString('pt-BR'),
       status,
       distanciaKm: 0,
       tempoEstimadoMin: 0,

@@ -18,6 +18,7 @@ export interface CheckpointItem {
   tipo?: 'FORUM' | 'VARA_CIVEL' | 'ESCRITORIO' | 'PERICIA'
   tribunalSigla?: string
   varaNome?: string
+  statusCheckpoint?: 'pendente' | 'chegou' | 'concluido'
 }
 
 interface Props {
@@ -31,7 +32,7 @@ type CPStatus = 'pendente' | 'chegou' | 'concluido'
 
 export function RotaPericiasExecucao({ rotaId, checkpoints }: Props) {
   const [statusMap, setStatusMap] = useState<Record<string, CPStatus>>(() =>
-    Object.fromEntries(checkpoints.map((c) => [c.id, 'pendente' as CPStatus])),
+    Object.fromEntries(checkpoints.map((c) => [c.id, (c.statusCheckpoint ?? 'pendente') as CPStatus])),
   )
   const [activeCheckpoint, setActiveCheckpoint] = useState<CheckpointItem | null>(null)
   const [isPending, startTransition] = useTransition()

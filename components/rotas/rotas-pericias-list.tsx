@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
-import { MapPin, Clock, Banknote, Navigation, FileText } from 'lucide-react'
+import { useState, useTransition } from 'react'
+import { MapPin, Clock, Banknote, Navigation, FileText, Loader2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
 import { RotaPericiasExecucao } from '@/components/rotas/rota-pericias-execucao'
+import { iniciarRota } from '@/lib/actions/rotas-nova'
 import type { Rota, StatusRota } from '@/lib/types/rotas'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -30,9 +31,20 @@ function formatTempo(min: number) {
 
 export function RotasPericiasListClient({ rotas }: { rotas: Rota[] }) {
   const [localStatus, setLocalStatus] = useState<Record<string, StatusRota>>({})
+  const [isPending, startTransition] = useTransition()
+  const [loadingId, setLoadingId] = useState<string | null>(null)
 
   function getStatus(rota: Rota): StatusRota {
     return localStatus[rota.id] ?? rota.status
+  }
+
+  function handleIniciar(rotaId: string) {
+    setLoadingId(rotaId)
+    startTransition(async () => {
+      await iniciarRota(rotaId)
+      setLocalStatus((p) => ({ ...p, [rotaId]: 'em_execucao' }))
+      setLoadingId(null)
+    })
   }
 
   return (
@@ -40,6 +52,7 @@ export function RotasPericiasListClient({ rotas }: { rotas: Rota[] }) {
       {rotas.map((rota) => {
         const status = getStatus(rota)
         const st = statusMap[status] ?? { label: status, variant: 'secondary' as const }
+        const isLoading = loadingId === rota.id
 
         return (
           <Card key={rota.id} className={status === 'concluida' ? 'opacity-70' : ''}>
@@ -57,11 +70,14 @@ export function RotasPericiasListClient({ rotas }: { rotas: Rota[] }) {
                   <Button
                     size="sm"
                     className="flex-shrink-0 bg-emerald-600 hover:bg-emerald-700"
-                    onClick={() =>
-                      setLocalStatus((p) => ({ ...p, [rota.id]: 'em_execucao' }))
-                    }
+                    onClick={() => handleIniciar(rota.id)}
+                    disabled={isPending}
                   >
-                    <Navigation className="h-3.5 w-3.5" />
+                    {isLoading ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Navigation className="h-3.5 w-3.5" />
+                    )}
                     Iniciar
                   </Button>
                 )}
@@ -88,6 +104,7 @@ export function RotasPericiasListClient({ rotas }: { rotas: Rota[] }) {
                       tipo: p.tipo,
                       tribunalSigla: p.tribunalSigla,
                       varaNome: p.varaNome,
+                      statusCheckpoint: p.statusCheckpoint,
                     }))}
                   />
                 ) : (

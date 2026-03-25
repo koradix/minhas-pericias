@@ -15,6 +15,7 @@ export interface PontoRota {
   pericoId?:      string // para tipo PERICIA — liga ao processo
   tribunalSigla?: string // para tipo FORUM / VARA_CIVEL
   varaNome?:      string // para tipo FORUM / VARA_CIVEL
+  statusCheckpoint?: 'pendente' | 'chegou' | 'concluido'
 }
 
 export interface Rota {
