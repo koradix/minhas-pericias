@@ -158,7 +158,7 @@ export default function LandingPage() {
               </div>
 
               {/* Headline */}
-              <h1 className="font-display mb-6 text-[2.6rem] font-bold leading-[1.06] tracking-[-0.03em] text-slate-900 sm:text-5xl lg:text-[3.25rem]">
+              <h1 className="font-heading mb-6 text-[2.6rem] font-bold leading-[1.06] tracking-[-0.03em] text-slate-900 sm:text-5xl lg:text-[3.25rem]">
                 Gestão pericial completa,<br />
                 <em className="not-italic italic font-bold text-lime-500">do processo ao laudo.</em>
               </h1>
@@ -191,21 +191,21 @@ export default function LandingPage() {
                   { value: '12.000+', label: 'Documentos gerados' },
                 ].map((s) => (
                   <div key={s.label}>
-                    <p className="font-display text-2xl font-bold tracking-tight text-slate-900 tabular-nums">{s.value}</p>
+                    <p className="font-heading text-2xl font-bold tracking-tight text-slate-900 tabular-nums">{s.value}</p>
                     <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">{s.label}</p>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* RIGHT — product mockup */}
-            <div className="flex items-center justify-center">
+            {/* RIGHT — product mockup, transparent on white */}
+            <div className="flex items-center justify-end">
               <Image
                 src="/hero-mockup.png"
                 alt="Perilab no laptop e no celular"
-                width={620}
-                height={520}
-                className="w-full max-w-[620px] object-contain drop-shadow-xl"
+                width={560}
+                height={420}
+                className="w-full max-w-[320px] object-contain mix-blend-multiply"
                 priority
               />
             </div>
@@ -221,7 +221,7 @@ export default function LandingPage() {
             <p className="mb-3 text-xs font-semibold uppercase tracking-[0.15em] text-lime-600">
               Funcionalidades
             </p>
-            <h2 className="font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-[2.1rem]">
+            <h2 className="font-heading text-3xl font-bold tracking-tight text-slate-900 sm:text-[2.1rem]">
               Tudo que o perito precisa
             </h2>
             <p className="mt-4 text-base leading-relaxed text-slate-500">
@@ -257,7 +257,7 @@ export default function LandingPage() {
               <p className="mb-3 text-xs font-semibold uppercase tracking-[0.15em] text-lime-600">
                 Módulo de Prospecção
               </p>
-              <h2 className="font-display mb-5 text-3xl font-bold tracking-tight text-slate-900 sm:text-[2.1rem]">
+              <h2 className="font-heading mb-5 text-3xl font-bold tracking-tight text-slate-900 sm:text-[2.1rem]">
                 Conquiste novos trabalhos{' '}
                 <span className="text-lime-600">no piloto automático</span>
               </h2>
@@ -347,7 +347,7 @@ export default function LandingPage() {
             <p className="mb-3 text-xs font-semibold uppercase tracking-[0.15em] text-lime-600">
               Planos
             </p>
-            <h2 className="font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-[2.1rem]">
+            <h2 className="font-heading text-3xl font-bold tracking-tight text-slate-900 sm:text-[2.1rem]">
               Escolha o seu plano
             </h2>
             <p className="mt-4 text-base text-slate-500">
@@ -379,7 +379,7 @@ export default function LandingPage() {
                     {plan.name}
                   </p>
                   <div className="flex items-baseline gap-1 mt-2">
-                    <span className={`font-display text-4xl font-bold tabular-nums tracking-tight ${plan.highlight ? 'text-white' : 'text-slate-900'}`}>
+                    <span className={`font-heading text-4xl font-bold tabular-nums tracking-tight ${plan.highlight ? 'text-white' : 'text-slate-900'}`}>
                       {plan.price}
                     </span>
                     {plan.period && (
@@ -435,7 +435,7 @@ export default function LandingPage() {
             <Shield className="h-3.5 w-3.5 text-lime-400" />
             Dados seguros · LGPD compliant
           </div>
-          <h2 className="font-display mb-4 text-2xl font-bold tracking-tight text-white sm:text-3xl">
+          <h2 className="font-heading mb-4 text-2xl font-bold tracking-tight text-white sm:text-3xl">
             Pronto para profissionalizar<br className="hidden sm:block" /> sua atuação pericial?
           </h2>
           <p className="mb-8 text-base leading-relaxed text-slate-400">
@@ -459,7 +459,7 @@ export default function LandingPage() {
             <div className="flex h-7 w-7 items-center justify-center rounded-md bg-lime-500 text-[9px] font-bold text-slate-900 select-none">
               PL
             </div>
-            <span className="font-display text-sm font-semibold text-slate-400">Perilab</span>
+            <span className="font-heading text-sm font-semibold text-slate-400">Perilab</span>
           </div>
           <p className="text-xs text-slate-600">
             © {new Date().getFullYear()} Perilab. Todos os direitos reservados.
