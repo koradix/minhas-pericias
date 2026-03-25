@@ -198,16 +198,85 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* RIGHT — product mockup */}
-            <div className="flex items-center justify-end">
-              <Image
-                src="/hero-mockup.png"
-                alt="Perilab no laptop e no celular"
-                width={840}
-                height={630}
-                className="w-full max-w-[560px] object-contain drop-shadow-xl"
-                priority
-              />
+            {/* RIGHT — UI mockup */}
+            <div className="relative flex items-center justify-center lg:justify-end">
+              <div className="w-full max-w-[480px] rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-200/60 overflow-hidden">
+                {/* App topbar */}
+                <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <div className="h-5 w-5 rounded-md bg-lime-500 flex items-center justify-center">
+                      <span className="text-[8px] font-bold text-slate-900">PL</span>
+                    </div>
+                    <span className="text-xs font-semibold text-slate-700">Perilab</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="h-2 w-2 rounded-full bg-slate-200" />
+                    <div className="h-2 w-2 rounded-full bg-slate-200" />
+                    <div className="h-2 w-2 rounded-full bg-lime-400" />
+                  </div>
+                </div>
+
+                <div className="p-5 space-y-4">
+                  {/* KPI row */}
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      { label: 'Péricias ativas', value: '12', color: 'text-lime-600', bg: 'bg-lime-50' },
+                      { label: 'Honorários', value: 'R$ 8.4k', color: 'text-emerald-600', bg: 'bg-emerald-50' },
+                      { label: 'Nomeações', value: '3 novas', color: 'text-violet-600', bg: 'bg-violet-50' },
+                    ].map((k) => (
+                      <div key={k.label} className={`rounded-xl ${k.bg} px-3 py-3`}>
+                        <p className={`text-sm font-bold tabular-nums ${k.color}`}>{k.value}</p>
+                        <p className="text-[10px] text-slate-500 mt-0.5 leading-tight">{k.label}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Péricias list */}
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-2">Péricias recentes</p>
+                    <div className="space-y-1.5">
+                      {[
+                        { num: 'PRC-2024-041', assunto: 'Avaliação de Imóvel', status: 'Em andamento', dot: 'bg-amber-400' },
+                        { num: 'PRC-2024-039', assunto: 'Laudo Contábil', status: 'Aguardando docs', dot: 'bg-violet-400' },
+                        { num: 'PRC-2024-037', assunto: 'Perícia Trabalhista', status: 'Concluída', dot: 'bg-emerald-400' },
+                      ].map((p) => (
+                        <div key={p.num} className="flex items-center justify-between rounded-lg border border-slate-100 px-3 py-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${p.dot}`} />
+                            <div className="min-w-0">
+                              <p className="text-[11px] font-semibold text-slate-800 truncate">{p.assunto}</p>
+                              <p className="text-[10px] text-slate-400">{p.num}</p>
+                            </div>
+                          </div>
+                          <span className="text-[10px] font-medium text-slate-500 flex-shrink-0 ml-2">{p.status}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Radar strip */}
+                  <div className="rounded-xl border border-violet-100 bg-violet-50 px-4 py-3 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-semibold text-violet-800">Radar de Nomeações</p>
+                      <p className="text-[10px] text-violet-500 mt-0.5">3 citações novas · TJRJ, TRT-1</p>
+                    </div>
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-violet-100">
+                      <Radar className="h-4 w-4 text-violet-600" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Floating badge */}
+              <div className="absolute -bottom-3 -left-3 hidden lg:flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-lg shadow-slate-200/60">
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-lime-100">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-lime-600" />
+                </div>
+                <div>
+                  <p className="text-[11px] font-semibold text-slate-800">Laudo gerado com IA</p>
+                  <p className="text-[10px] text-slate-400">PRC-2024-041 · agora</p>
+                </div>
+              </div>
             </div>
 
           </div>
