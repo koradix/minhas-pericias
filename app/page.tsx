@@ -198,14 +198,14 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* RIGHT — product mockup, transparent on white */}
+            {/* RIGHT — product mockup */}
             <div className="flex items-center justify-end">
               <Image
                 src="/hero-mockup.png"
                 alt="Perilab no laptop e no celular"
-                width={560}
-                height={420}
-                className="w-full max-w-[320px] object-contain mix-blend-multiply"
+                width={840}
+                height={630}
+                className="w-full max-w-[560px] object-contain drop-shadow-xl"
                 priority
               />
             </div>
