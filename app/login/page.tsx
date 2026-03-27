@@ -9,7 +9,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center">
-          <Image src="/logo.svg" alt="PeriLaB" width={180} height={68} priority />
+          <Image src="/logo.svg" alt="Perilab" width={180} height={68} priority />
           <p className="mt-3 text-sm text-slate-500">Entre na sua conta para continuar</p>
         </div>
         <LoginForm />

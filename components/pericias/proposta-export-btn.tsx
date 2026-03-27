@@ -248,12 +248,12 @@ function buildDocx(d: PropostaExportData): Document {
     blank(),
     new Paragraph({
       alignment: AlignmentType.CENTER,
-      children: [new TextRun({ text: 'Gerado via PeriLaB', size: 16, color: 'CBD5E1', font: 'Calibri', italics: true })],
+      children: [new TextRun({ text: 'Gerado via Perilab', size: 16, color: 'CBD5E1', font: 'Calibri', italics: true })],
     }),
   )
 
   return new Document({
-    creator: 'PeriLaB',
+    creator: 'Perilab',
     title: `Proposta de Honorários — ${d.pericoNumero}`,
     description: 'Proposta de honorários periciais',
     sections: [{ properties: {}, children }],

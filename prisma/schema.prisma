@@ -327,17 +327,49 @@ model Processo {
 }
 
 model Nomeacao {
-  id           String   @id @default(cuid())
-  peritoId     String                        // User.id
-  processoId   String                        // Processo.id
-  status       String   @default("novo")     // novo | proposta | em_andamento | laudo | entregue | arquivado
-  scoreMatch   Int      @default(0)          // 0–90+
-  criadoEm     DateTime @default(now())
-  atualizadoEm DateTime @updatedAt
+  id             String   @id @default(cuid())
+  peritoId       String                        // User.id
+  processoId     String                        // Processo.id
+  status         String   @default("novo")     // novo | proposta | em_andamento | laudo | entregue | arquivado
+  scoreMatch     Int      @default(0)          // 0–90+
+  // ── Documento do processo ──────────────────────────────────────────────────
+  nomeArquivo    String?                       // filename of uploaded document
+  tamanhoBytes   Int?
+  mimeType       String?
+  // ── Análise IA ─────────────────────────────────────────────────────────────
+  extractedData  String?                       // JSON: ExtractProcessDataOutput
+  processSummary String?                       // JSON: GenerateProcessSummaryOutput
+  // ── Perícia criada a partir desta nomeação ─────────────────────────────────
+  periciaId      String?                       // Pericia.id
+  criadoEm       DateTime @default(now())
+  atualizadoEm   DateTime @updatedAt
 
   processo     Processo @relation(fields: [processoId], references: [id])
 
   @@unique([peritoId, processoId])
+}
+
+// ─── PÉRICIAS (registro real do processo pericial) ───────────────────────────
+
+model Pericia {
+  id              String   @id @default(cuid())
+  peritoId        String   // User.id
+  numero          String   // ex: "PRC-2025-001"
+  assunto         String   // descrição do caso
+  tipo            String   // Imobiliária | Residencial | Hidráulica | Elétrica | Médica | Psicológica | Grafotécnica
+  processo        String?  // número do processo judicial
+  vara            String?  // vara judicial
+  partes          String?  // partes envolvidas
+  endereco        String?  // endereço do local da perícia
+  latitude        Float?
+  longitude       Float?
+  status          String   @default("planejada") // planejada | em_andamento | concluida | cancelada
+  prazo           String?  // data prazo "DD/MM/YYYY"
+  valorHonorarios Float?
+  criadoEm        DateTime @default(now())
+  atualizadoEm    DateTime @updatedAt
+
+  checkpoints     Checkpoint[] @relation("PericiaCheckpoints")
 }
 
 // ─── ROTAS / CHECKPOINTS ─────────────────────────────────────────────────────
@@ -345,9 +377,9 @@ model Nomeacao {
 model RotaPericia {
   id           String   @id @default(cuid())
   peritoId     String   // User.id
-  pericoId     String?  // pericia mock id (string) — links rota to a pericia process
+  pericoId     String?  // pericia mock id (string) — legado
   titulo       String
-  status       String   @default("em_andamento") // em_andamento | concluida | cancelada
+  status       String   @default("em_andamento") // planejada | em_execucao | em_andamento | concluida | cancelada
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 }
@@ -363,7 +395,10 @@ model Checkpoint {
   status        String    @default("pendente") // pendente | chegou | concluido
   chegadaEm     DateTime?
   criadoEm      DateTime  @default(now())
-  // ── Ligação direta com pericia / vara ───────────────────────────────────────
+  // ── Ligação com Pericia real ─────────────────────────────────────────────────
+  periciaId     String?   // Pericia.id (real FK)
+  pericia       Pericia?  @relation("PericiaCheckpoints", fields: [periciaId], references: [id])
+  // ── Ligação com pericia mock (legado) / vara ─────────────────────────────────
   pericoId      String?   // pericia mock id — allows direct media lookup by pericia
   tribunalSigla String?   // for FORUM/VARA_CIVEL checkpoints
   varaNome      String?   // for FORUM/VARA_CIVEL checkpoints
@@ -397,4 +432,21 @@ model CheckpointMidia {
   texto        String?  // for tipo=texto
   descricao    String?  // optional caption for foto/audio
   criadoEm     DateTime @default(now())
+}
+
+// ─── INTAKE DE PROCESSOS (entrada manual + IA futura) ────────────────────────
+
+model ProcessoIntake {
+  id             String    @id @default(cuid())
+  peritoId       String    // User.id
+  nomeArquivo    String    // nome original do arquivo enviado
+  tamanhoBytes   Int?      // tamanho em bytes
+  mimeType       String?   // "application/pdf" | "application/vnd.openxmlformats-..."
+  status         String    @default("upload_feito")
+  // upload_feito | extraindo | extraido | resumindo | resumido | card_criado
+  dadosExtraidos String?   // JSON: { numeroProcesso, tribunal, classe, assunto, partes, vara, endereco }
+  resumo         String?   // texto do resumo gerado por IA
+  periciaId      String?   // Pericia.id — preenchido após "Criar card"
+  criadoEm      DateTime   @default(now())
+  atualizadoEm  DateTime   @updatedAt
 }

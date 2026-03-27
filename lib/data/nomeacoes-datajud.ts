@@ -8,6 +8,11 @@ export interface NomeacaoComProcesso {
   status: string
   scoreMatch: number
   criadoEm: string
+  // intake fields
+  nomeArquivo: string | null
+  extractedData: string | null
+  processSummary: string | null
+  periciaId: string | null
   processo: {
     id: string
     numeroProcesso: string
@@ -45,6 +50,10 @@ export async function getNomeacoesByPerito(
       status: n.status,
       scoreMatch: n.scoreMatch,
       criadoEm: toISO(n.criadoEm),
+      nomeArquivo: n.nomeArquivo ?? null,
+      extractedData: n.extractedData ?? null,
+      processSummary: n.processSummary ?? null,
+      periciaId: n.periciaId ?? null,
       processo: {
         id: n.processo.id,
         numeroProcesso: n.processo.numeroProcesso,

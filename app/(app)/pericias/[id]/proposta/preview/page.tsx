@@ -281,7 +281,7 @@ export default async function PreviewPropostaPage({ params }: { params: Promise<
         {/* ── Document footer ────────────────────────────────────────────── */}
         <div className="px-8 py-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
           <p className="text-[10px] text-slate-400">
-            Gerado via PeriLaB · {new Date().toLocaleDateString('pt-BR')}
+            Gerado via Perilab · {new Date().toLocaleDateString('pt-BR')}
           </p>
           {(() => {
             const s = PROPOSTA_STATUS[draft.status] ?? PROPOSTA_STATUS.rascunho

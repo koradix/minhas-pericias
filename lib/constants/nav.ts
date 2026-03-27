@@ -1,19 +1,20 @@
 import {
   LayoutDashboard,
   FileText,
-  Users,
   TrendingUp,
   ArrowDownCircle,
   Settings,
   Inbox,
   Navigation,
   Radar,
-  Handshake,
   Send,
   Search,
-  ScrollText,
   type LucideIcon,
 } from "lucide-react"
+
+// MVP-hidden — descomentar os imports abaixo ao restaurar os itens
+// import { Upload } from "lucide-react"   // /processos
+// import { ScrollText } from "lucide-react" // /documentos/modelos
 
 export interface NavItem {
   title: string
@@ -33,26 +34,27 @@ export const navigation: NavSection[] = [
   {
     title: "Principal",
     items: [
-      { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-      { title: "Péricias", href: "/pericias", icon: FileText },
-      { title: "Demandas", href: "/demandas", icon: Inbox },
-      { title: "Visitas e Rotas", href: "/rotas", icon: Navigation },
+      { title: "Dashboard",       href: "/dashboard", icon: LayoutDashboard },
+      { title: "Péricias",        href: "/pericias",  icon: FileText },
+      // { title: "Processos",    href: "/processos", icon: Upload },   // MVP: oculto
+      { title: "Visitas e Rotas", href: "/rotas",     icon: Navigation },
+      { title: "Radar",           href: "/nomeacoes", icon: Radar },
     ],
   },
   {
     title: "Financeiro",
     items: [
-      { title: "Visão Geral", href: "/financeiro", icon: TrendingUp },
+      { title: "Visão Geral",  href: "/financeiro",   icon: TrendingUp },
       { title: "Recebimentos", href: "/recebimentos", icon: ArrowDownCircle },
     ],
   },
-  {
-    title: "Inteligência",
-    items: [
-      { title: "Radar", href: "/nomeacoes", icon: Radar },
-      { title: "Modelos", href: "/documentos/modelos", icon: ScrollText },
-    ],
-  },
+  // MVP: seção Inteligência oculta
+  // {
+  //   title: "Inteligência",
+  //   items: [
+  //     { title: "Modelos", href: "/documentos/modelos", icon: ScrollText },
+  //   ],
+  // },
 ]
 
 export const bottomNavigation: NavItem[] = [
@@ -65,10 +67,10 @@ export const navigationParceiro: NavSection[] = [
   {
     title: "Principal",
     items: [
-      { title: "Dashboard", href: "/parceiro/dashboard", icon: LayoutDashboard },
-      { title: "Minhas Demandas", href: "/parceiro/demandas", icon: Inbox },
-      { title: "Buscar Peritos", href: "/parceiro/peritos", icon: Search },
-      { title: "Propostas", href: "/parceiro/propostas", icon: Send },
+      { title: "Dashboard",       href: "/parceiro/dashboard", icon: LayoutDashboard },
+      { title: "Minhas Demandas", href: "/parceiro/demandas",  icon: Inbox },
+      { title: "Buscar Peritos",  href: "/parceiro/peritos",   icon: Search },
+      { title: "Propostas",       href: "/parceiro/propostas", icon: Send },
     ],
   },
 ]

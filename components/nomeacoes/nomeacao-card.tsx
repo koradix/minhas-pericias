@@ -7,6 +7,7 @@ import {
   Hash,
   Users,
   ChevronDown,
+  ChevronRight,
   ChevronUp,
   Loader2,
   CheckCircle2,
@@ -35,12 +36,18 @@ function formatDate(iso: string | null): string {
 // ─── Status flow ──────────────────────────────────────────────────────────────
 
 const STATUS_LABELS: Record<string, string> = {
-  novo:         'Nova nomeação',
-  proposta:     'Proposta gerada',
-  em_andamento: 'Perícia em andamento',
-  laudo:        'Laudo pendente',
-  entregue:     'Entregue',
-  arquivado:    'Arquivado',
+  // intake statuses
+  novo:                 'Nova',
+  nomeacao_recebida:    'Nova',
+  documentos_enviados:  'Doc. enviado',
+  resumo_pendente:      'Dados extraídos',
+  pronta_para_pericia:  'Pronta p/ perícia',
+  // workflow statuses
+  proposta:             'Proposta gerada',
+  em_andamento:         'Em andamento',
+  laudo:                'Laudo pendente',
+  entregue:             'Entregue',
+  arquivado:            'Arquivado',
 }
 
 export function NomeacaoCard({ nomeacao }: Props) {
@@ -59,16 +66,19 @@ export function NomeacaoCard({ nomeacao }: Props) {
   const partes = processo.partes.slice(0, 3)
   const isLonga = processo.partes.length > 3
 
-  const isNovo      = status === 'novo'
+  const isNovo      = status === 'novo' || status === 'nomeacao_recebida'
   const isArquivado = status === 'arquivado'
   const isEntregue  = status === 'entregue'
+  const isIntake    = ['documentos_enviados', 'resumo_pendente', 'pronta_para_pericia'].includes(status)
+  const canArchive  = !isArquivado && !isEntregue
 
   return (
     <div className={cn(
       'rounded-2xl border bg-white shadow-sm overflow-hidden transition-all',
-      isNovo      ? 'border-lime-200' :
+      isNovo      ? 'border-lime-200'     :
+      isIntake    ? 'border-violet-200'   :
       isArquivado ? 'border-slate-100 opacity-60' :
-      isEntregue  ? 'border-emerald-200' :
+      isEntregue  ? 'border-emerald-200'  :
                     'border-slate-200',
     )}>
       {/* Header */}
@@ -80,17 +90,20 @@ export function NomeacaoCard({ nomeacao }: Props) {
               <Building2 className="h-2.5 w-2.5" />
               {processo.tribunal}
             </span>
-            <span className={cn(
-              'inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-semibold',
-              scoreBadgeClass(scoreMatch),
-            )}>
-              {scoreMatch}% · {scoreBadgeLabel(scoreMatch)}
-            </span>
+            {scoreMatch < 100 && (
+              <span className={cn(
+                'inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-semibold',
+                scoreBadgeClass(scoreMatch),
+              )}>
+                {scoreMatch}% · {scoreBadgeLabel(scoreMatch)}
+              </span>
+            )}
             <span className={cn(
               'inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-medium',
-              isNovo      ? 'bg-lime-100 text-lime-700'    :
+              isNovo      ? 'bg-lime-100 text-lime-700'       :
+              isIntake    ? 'bg-violet-100 text-violet-700'   :
               isEntregue  ? 'bg-emerald-100 text-emerald-700' :
-              isArquivado ? 'bg-slate-100 text-slate-500'  :
+              isArquivado ? 'bg-slate-100 text-slate-500'     :
                             'bg-blue-100 text-blue-700',
             )}>
               {STATUS_LABELS[status] ?? status}
@@ -102,13 +115,20 @@ export function NomeacaoCard({ nomeacao }: Props) {
           </div>
         </div>
 
-        {/* Expand/collapse */}
-        <button
-          onClick={() => setExpanded((v) => !v)}
-          className="flex-shrink-0 rounded-lg border border-slate-200 p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors"
-        >
-          {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-        </button>
+        {/* Actions row */}
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <Link href={`/nomeacoes/${nomeacao.id}`}>
+            <button className="flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-[11px] font-semibold text-slate-500 hover:text-slate-700 hover:bg-slate-50 transition-colors">
+              Abrir <ChevronRight className="h-3 w-3" />
+            </button>
+          </Link>
+          <button
+            onClick={() => setExpanded((v) => !v)}
+            className="flex-shrink-0 rounded-lg border border-slate-200 p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors"
+          >
+            {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+          </button>
+        </div>
       </div>
 
       {/* Process info */}
@@ -156,6 +176,25 @@ export function NomeacaoCard({ nomeacao }: Props) {
       {!isArquivado && !isEntregue && (
         <div className="px-5 py-3 border-t border-slate-50 flex flex-wrap items-center gap-2">
           {isPending && <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-400" />}
+
+          {isIntake && (
+            <>
+              <Link href={`/nomeacoes/${nomeacao.id}`}>
+                <button className="flex items-center gap-1.5 rounded-xl bg-lime-500 hover:bg-lime-600 text-slate-900 font-semibold text-xs px-3 py-1.5 transition-colors">
+                  <FileText className="h-3.5 w-3.5" />
+                  Ver análise
+                </button>
+              </Link>
+              <button
+                onClick={() => handleStatus('arquivado')}
+                disabled={isPending}
+                className="flex items-center gap-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-500 text-xs px-3 py-1.5 transition-colors disabled:opacity-50"
+              >
+                <Archive className="h-3.5 w-3.5" />
+                Arquivar
+              </button>
+            </>
+          )}
 
           {status === 'novo' && (
             <>
@@ -217,22 +256,14 @@ export function NomeacaoCard({ nomeacao }: Props) {
           )}
 
           {status === 'laudo' && (
-            <>
-              <Link href="/documentos/modelos">
-                <button className="flex items-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 hover:bg-violet-100 text-violet-700 font-medium text-xs px-3 py-1.5 transition-colors">
-                  <ScrollText className="h-3.5 w-3.5" />
-                  Gerar laudo
-                </button>
-              </Link>
-              <button
-                onClick={() => handleStatus('entregue')}
-                disabled={isPending}
-                className="flex items-center gap-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-xs px-3 py-1.5 transition-colors disabled:opacity-50"
-              >
-                <PackageCheck className="h-3.5 w-3.5" />
-                Marcar como entregue
-              </button>
-            </>
+            <button
+              onClick={() => handleStatus('entregue')}
+              disabled={isPending}
+              className="flex items-center gap-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-xs px-3 py-1.5 transition-colors disabled:opacity-50"
+            >
+              <PackageCheck className="h-3.5 w-3.5" />
+              Marcar como entregue
+            </button>
           )}
         </div>
       )}

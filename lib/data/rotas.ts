@@ -1,12 +1,13 @@
 import { prisma } from '@/lib/prisma'
-import type { Rota, PontoRota, TipoPontoRota } from '@/lib/types/rotas'
+import type { Rota, PontoRota, PericiaInfo, TipoPontoRota } from '@/lib/types/rotas'
 
 function toDate(d: Date | string): Date {
   return d instanceof Date ? d : new Date(d as string)
 }
 
-function checkpointToTipo(tribunalSigla: string | null): TipoPontoRota {
+function checkpointToTipo(periciaId: string | null, tribunalSigla: string | null): TipoPontoRota {
   if (tribunalSigla) return 'FORUM'
+  if (periciaId) return 'PERICIA'
   return 'PERICIA'
 }
 
@@ -34,6 +35,22 @@ async function _getRotas(peritoId: string): Promise<Rota[]> {
     orderBy: { ordem: 'asc' },
   }).catch(() => [])
 
+  // Collect periciaIds to join
+  const periciaIds = [...new Set(
+    checkpoints.map((c) => c.periciaId).filter((id): id is string => !!id)
+  )]
+
+  const periciasMap = new Map<string, PericiaInfo>()
+  if (periciaIds.length > 0) {
+    const pericias = await prisma.pericia.findMany({
+      where: { id: { in: periciaIds } },
+      select: { id: true, numero: true, assunto: true, tipo: true, status: true, vara: true },
+    }).catch(() => [])
+    for (const p of pericias) {
+      periciasMap.set(p.id, { id: p.id, numero: p.numero, assunto: p.assunto, tipo: p.tipo, status: p.status, vara: p.vara })
+    }
+  }
+
   const checkpointsByRota = new Map<string, CheckpointRow[]>()
   for (const c of checkpoints) {
     const arr = checkpointsByRota.get(c.rotaId) ?? []
@@ -49,9 +66,11 @@ async function _getRotas(peritoId: string): Promise<Rota[]> {
       nome: c.titulo,
       latitude: c.lat ?? 0,
       longitude: c.lng ?? 0,
-      tipo: checkpointToTipo(c.tribunalSigla ?? null),
+      tipo: checkpointToTipo(c.periciaId ?? null, c.tribunalSigla ?? null),
       ordem: c.ordem,
       endereco: c.endereco ?? undefined,
+      periciaId: c.periciaId ?? undefined,
+      periciaInfo: c.periciaId ? periciasMap.get(c.periciaId) : undefined,
       pericoId: c.pericoId ?? undefined,
       tribunalSigla: c.tribunalSigla ?? undefined,
       varaNome: c.varaNome ?? undefined,
@@ -59,18 +78,15 @@ async function _getRotas(peritoId: string): Promise<Rota[]> {
     }))
 
     // Infer tipo from checkpoints
-    const hasPericia = pts.some((c) => c.pericoId)
+    const hasPericia = pts.some((c) => c.periciaId || c.pericoId)
     const tipo = hasPericia ? 'PERICIA' : 'PROSPECCAO'
-
-    // Status mapping
-    const status = r.status as Rota['status']
 
     return {
       id: r.id,
       tipo,
       titulo: r.titulo,
       data: toDate(r.criadoEm).toLocaleDateString('pt-BR'),
-      status,
+      status: r.status as Rota['status'],
       distanciaKm: 0,
       tempoEstimadoMin: 0,
       custoEstimado: 0,

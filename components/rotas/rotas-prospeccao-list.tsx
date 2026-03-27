@@ -144,7 +144,7 @@ export function RotasProspeccaoListClient({ rotas }: { rotas: Rota[] }) {
                             conf.color,
                           )}
                         >
-                          {conf.label}
+                          {p.periciaInfo?.tipo ?? conf.label}
                         </span>
                       </div>
                     )

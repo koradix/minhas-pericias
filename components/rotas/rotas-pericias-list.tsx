@@ -118,6 +118,9 @@ export function RotasPericiasListClient({ rotas }: { rotas: Rota[] }) {
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-xs font-semibold text-emerald-900">{p.nome}</p>
+                        {p.periciaInfo && (
+                          <p className="text-[11px] font-medium text-emerald-700 mt-0.5">{p.periciaInfo.tipo}</p>
+                        )}
                         {p.endereco && (
                           <p className="flex items-center gap-1 text-[11px] text-emerald-700 mt-0.5">
                             <MapPin className="h-2.5 w-2.5" />

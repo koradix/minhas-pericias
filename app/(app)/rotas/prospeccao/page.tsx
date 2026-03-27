@@ -41,7 +41,9 @@ export default async function RotasProspeccaoPage() {
   const comNomeacoes = varas.filter((v) => v.totalNomeacoes > 0).length
   const semNomeacoes = varas.filter((v) => v.totalNomeacoes === 0).length
 
-  const rotas = await getRotasPericiasByPerito(userId).catch(() => [])
+  const todasRotas = await getRotasPericiasByPerito(userId).catch(() => [])
+  // Prospecção = rotas cujos checkpoints são varas/fóruns (sem periciaId)
+  const rotas = todasRotas.filter((r) => r.tipo === 'PROSPECCAO')
 
   return (
     <div className="space-y-6">

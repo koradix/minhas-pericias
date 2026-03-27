@@ -72,6 +72,25 @@ const MIGRATIONS = [
   )`,
   `CREATE UNIQUE INDEX IF NOT EXISTS "PeritoPerfil_userId_key" ON "PeritoPerfil"("userId")`,
 
+  `CREATE TABLE IF NOT EXISTS "Pericia" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "peritoId" TEXT NOT NULL,
+    "numero" TEXT NOT NULL,
+    "assunto" TEXT NOT NULL,
+    "tipo" TEXT NOT NULL,
+    "processo" TEXT,
+    "vara" TEXT,
+    "partes" TEXT,
+    "endereco" TEXT,
+    "latitude" REAL,
+    "longitude" REAL,
+    "status" TEXT NOT NULL DEFAULT 'planejada',
+    "prazo" TEXT,
+    "valorHonorarios" REAL,
+    "criadoEm" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "atualizadoEm" DATETIME NOT NULL
+  )`,
+
   `CREATE TABLE IF NOT EXISTS "RotaPericia" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "peritoId" TEXT NOT NULL,
@@ -93,10 +112,14 @@ const MIGRATIONS = [
     "status" TEXT NOT NULL DEFAULT 'pendente',
     "chegadaEm" DATETIME,
     "criadoEm" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "periciaId" TEXT,
     "pericoId" TEXT,
     "tribunalSigla" TEXT,
     "varaNome" TEXT
   )`,
+
+  // ALTER existing Checkpoint tables that may not have periciaId yet
+  `ALTER TABLE "Checkpoint" ADD COLUMN "periciaId" TEXT`,
 
   `CREATE TABLE IF NOT EXISTS "CheckpointMidia" (
     "id" TEXT NOT NULL PRIMARY KEY,
@@ -304,31 +327,51 @@ async function seed(userId: string) {
     ],
   })
 
-  // Rotas de teste
+  // 7 Péricias reais de teste
+  type PericiaData = { id: string; numero: string; assunto: string; tipo: string; processo: string; vara: string; partes: string; endereco: string; lat: number; lng: number; prazo: string; valor: number }
+  const periciaData: PericiaData[] = [
+    { id: `p1-${userId}`, numero: 'PRC-2025-001', assunto: 'Avaliação de Imóvel para Partilha de Bens', tipo: 'Imobiliária', processo: '0012345-11.2025.8.19.0001', vara: '2ª Vara de Família — TJRJ', partes: 'João Ferreira × Maria Ferreira', endereco: 'Rua São Clemente, 450, Botafogo — Rio de Janeiro, RJ', lat: -22.9388, lng: -43.1822, prazo: '30/04/2025', valor: 4200 },
+    { id: `p2-${userId}`, numero: 'PRC-2025-002', assunto: 'Vistoria de Vícios Construtivos em Apartamento', tipo: 'Residencial', processo: '0023456-22.2025.8.19.0001', vara: '5ª Vara Cível — TJRJ', partes: 'Construtora Horizonte × Condomínio Solar', endereco: 'Av. Atlântica, 2800, Copacabana — Rio de Janeiro, RJ', lat: -22.9666, lng: -43.1773, prazo: '15/04/2025', valor: 3800 },
+    { id: `p3-${userId}`, numero: 'PRC-2025-003', assunto: 'Perícia Hidráulica — Vazamento e Danos em Tubulação', tipo: 'Hidráulica', processo: '0034567-33.2025.8.19.0002', vara: '3ª Vara Cível — TJRJ', partes: 'Condomínio Maracanã × Seguros Brasil S.A.', endereco: 'Av. Rio Branco, 85, Centro — Rio de Janeiro, RJ', lat: -22.9041, lng: -43.1789, prazo: '20/04/2025', valor: 2900 },
+    { id: `p4-${userId}`, numero: 'PRC-2025-004', assunto: 'Perícia Elétrica — Análise de Instalação e Incêndio', tipo: 'Elétrica', processo: '0045678-44.2025.8.19.0003', vara: '7ª Vara Cível — TJRJ', partes: 'Metalúrgica São Jorge × Eletrobrás', endereco: 'Rua da Passagem, 120, Botafogo — Rio de Janeiro, RJ', lat: -22.9452, lng: -43.1872, prazo: '10/04/2025', valor: 5500 },
+    { id: `p5-${userId}`, numero: 'PRC-2025-005', assunto: 'Perícia Médica — Avaliação de Incapacidade Laboral', tipo: 'Médica', processo: '0056789-55.2025.5.01.0001', vara: '2ª Vara do Trabalho — TRT-1', partes: 'Carlos Eduardo × Empresa de Logística Rio', endereco: 'Rua Conde de Bonfim, 1020, Tijuca — Rio de Janeiro, RJ', lat: -22.9261, lng: -43.2355, prazo: '05/05/2025', valor: 3200 },
+    { id: `p6-${userId}`, numero: 'PRC-2025-006', assunto: 'Perícia Psicológica — Avaliação de Dano Moral', tipo: 'Psicológica', processo: '0067890-66.2025.8.19.0004', vara: '10ª Vara Cível — TJRJ', partes: 'Ana Paula Rodrigues × Banco Nacional S.A.', endereco: 'Av. das Américas, 3434, Barra da Tijuca — Rio de Janeiro, RJ', lat: -23.0045, lng: -43.3660, prazo: '25/04/2025', valor: 2800 },
+    { id: `p7-${userId}`, numero: 'PRC-2025-007', assunto: 'Perícia Grafotécnica — Autenticidade de Assinatura', tipo: 'Grafotécnica', processo: '0078901-77.2025.8.19.0038', vara: '1ª Vara Empresarial de Niterói — TJRJ', partes: 'Roberto Alves × Sociedade Comercial Niterói', endereco: 'Rua Quinze de Novembro, 8, Centro — Niterói, RJ', lat: -22.8998, lng: -43.1769, prazo: '12/05/2025', valor: 3500 },
+  ]
+
+  for (const p of periciaData) {
+    await db.execute({
+      sql: `INSERT OR IGNORE INTO "Pericia" ("id","peritoId","numero","assunto","tipo","processo","vara","partes","endereco","latitude","longitude","status","prazo","valorHonorarios","criadoEm","atualizadoEm") VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      args: [p.id, userId, p.numero, p.assunto, p.tipo, p.processo, p.vara, p.partes, p.endereco, p.lat, p.lng, 'planejada', p.prazo, p.valor, now, now],
+    })
+  }
+
+  // Rotas de teste ligadas às péricias reais
   const rota1Id = `rota-test-1-${userId}`
   const rota2Id = `rota-test-2-${userId}`
 
   await db.execute({
     sql: `INSERT OR IGNORE INTO "RotaPericia" ("id","peritoId","titulo","status","criadoEm","atualizadoEm") VALUES (?,?,?,?,?,?)`,
-    args: [rota1Id, userId, 'Circuito Centro RJ — 3 Perícias', 'planejada', now, now],
+    args: [rota1Id, userId, 'Circuito Centro RJ — Péricias do dia', 'planejada', now, now],
   })
   await db.execute({
     sql: `INSERT OR IGNORE INTO "RotaPericia" ("id","peritoId","titulo","status","criadoEm","atualizadoEm") VALUES (?,?,?,?,?,?)`,
-    args: [rota2Id, userId, 'Niterói + São Gonçalo — 2 Perícias', 'em_andamento', now, now],
+    args: [rota2Id, userId, 'Zona Sul RJ — Vistorias Residenciais', 'em_andamento', now, now],
   })
 
-  const cps = [
-    [`${rota1Id}-cp1`, rota1Id, 1, 'PRC-2024-004 — Avaliação de Estabelecimento Comercial', 'Rua Uruguaiana, 75, Centro — Rio de Janeiro, RJ', -22.9056, -43.1769, '4'],
-    [`${rota1Id}-cp2`, rota1Id, 2, 'PRC-2024-002 — Perícia Trabalhista', 'Av. Presidente Vargas, 1012, Centro — Rio de Janeiro, RJ', -22.9041, -43.1789, '2'],
-    [`${rota1Id}-cp3`, rota1Id, 3, 'PRC-2024-001 — Avaliação de Imóvel Residencial', 'Rua Voluntários da Pátria, 340, Botafogo — Rio de Janeiro, RJ', -22.9388, -43.1822, '1'],
-    [`${rota2Id}-cp1`, rota2Id, 1, 'PRC-2024-003 — Laudo Contábil', 'Rua Quinze de Novembro, 8, Centro — Niterói, RJ', -22.8998, -43.1769, '3'],
-    [`${rota2Id}-cp2`, rota2Id, 2, 'PRC-2024-006 — Laudo Ambiental', 'Estrada do Colubandê, s/n, Porto Velho — São Gonçalo, RJ', -22.8297, -43.0505, '6'],
+  // Checkpoints com periciaId
+  const cps: [string, string, number, string, string, number, number, string][] = [
+    [`${rota1Id}-cp1`, rota1Id, 1, `PRC-2025-001 — Avaliação de Imóvel para Partilha de Bens`, 'Rua São Clemente, 450, Botafogo — Rio de Janeiro, RJ', -22.9388, -43.1822, `p1-${userId}`],
+    [`${rota1Id}-cp2`, rota1Id, 2, `PRC-2025-003 — Perícia Hidráulica — Vazamento`, 'Av. Rio Branco, 85, Centro — Rio de Janeiro, RJ', -22.9041, -43.1789, `p3-${userId}`],
+    [`${rota1Id}-cp3`, rota1Id, 3, `PRC-2025-007 — Perícia Grafotécnica`, 'Rua Quinze de Novembro, 8, Centro — Niterói, RJ', -22.8998, -43.1769, `p7-${userId}`],
+    [`${rota2Id}-cp1`, rota2Id, 1, `PRC-2025-002 — Vistoria de Vícios Construtivos`, 'Av. Atlântica, 2800, Copacabana — Rio de Janeiro, RJ', -22.9666, -43.1773, `p2-${userId}`],
+    [`${rota2Id}-cp2`, rota2Id, 2, `PRC-2025-004 — Perícia Elétrica — Instalação`, 'Rua da Passagem, 120, Botafogo — Rio de Janeiro, RJ', -22.9452, -43.1872, `p4-${userId}`],
   ]
 
-  for (const [id, rotaId, ordem, titulo, endereco, lat, lng, pericoId] of cps) {
+  for (const [id, rotaId, ordem, titulo, endereco, lat, lng, periciaId] of cps) {
     await db.execute({
-      sql: `INSERT OR IGNORE INTO "Checkpoint" ("id","rotaId","ordem","titulo","endereco","lat","lng","status","pericoId","criadoEm") VALUES (?,?,?,?,?,?,?,?,?,?)`,
-      args: [id, rotaId, ordem, titulo, endereco, lat, lng, 'pendente', pericoId, now],
+      sql: `INSERT OR IGNORE INTO "Checkpoint" ("id","rotaId","ordem","titulo","endereco","lat","lng","status","periciaId","criadoEm") VALUES (?,?,?,?,?,?,?,?,?,?)`,
+      args: [id, rotaId, ordem, titulo, endereco, lat, lng, 'pendente', periciaId, now],
     })
   }
 }
