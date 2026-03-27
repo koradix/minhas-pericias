@@ -7,6 +7,7 @@ import {
   CheckCircle2, ChevronRight, Building2, Hash,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { registrarNomeacao } from '@/lib/actions/nomeacoes-upload'
 
 interface Props {
   siglas: string[]
@@ -72,37 +73,24 @@ export function ManualCitacaoForm({ siglas, onClose }: Props) {
     fd.append('tribunal', sigla)
     if (numero.trim()) fd.append('numeroProcesso', numero.trim())
 
-    // ── Upload starts ─────────────────────────────────────────────────────────
     setPhase('uploading')
-    console.log(`[upload] Arquivo: ${file.name} | ${formatBytes(file.size)} | tribunal: ${sigla}`)
-
-    // After upload is likely done, switch label to "analisando"
-    const switchDelay = Math.min(800 + file.size / 60_000, 3000)
-    const timer = setTimeout(() => setPhase('analyzing'), switchDelay)
+    const timer = setTimeout(() => setPhase('analyzing'), Math.min(800 + file.size / 60_000, 3000))
 
     try {
-      const t0 = performance.now()
-      console.log(`[upload] Iniciando — Prompt Mestre v1.0 — ${new Date().toISOString()}`)
-
-      const res  = await fetch('/api/nomeacoes/upload', { method: 'POST', body: fd })
+      const result = await registrarNomeacao(fd)
       clearTimeout(timer)
 
-      const json = await res.json() as { ok: boolean; nomeacaoId?: string; preview?: Preview; message?: string }
-      const elapsed = ((performance.now() - t0) / 1000).toFixed(1)
-
-      if (json.ok && json.nomeacaoId) {
-        console.log(`[upload] ✅ Concluído em ${elapsed}s — nomeacaoId: ${json.nomeacaoId}`)
-        setNomeacaoId(json.nomeacaoId)
-        setPreview(json.preview ?? null)
+      if (result.ok && result.nomeacaoId) {
+        setNomeacaoId(result.nomeacaoId)
+        setPreview(result.preview ?? null)
         setPhase('results')
       } else {
-        console.error(`[upload] ❌ Falhou após ${elapsed}s:`, json.message)
-        setError(json.message ?? 'Erro ao registrar nomeação')
+        setError(result.message ?? 'Erro ao registrar nomeação')
         setPhase('idle')
       }
     } catch (err) {
       clearTimeout(timer)
-      console.error('[upload] ❌ Erro de rede:', err)
+      console.error('[upload] ❌ Erro:', err)
       setError('Erro de conexão. Tente novamente.')
       setPhase('idle')
     }

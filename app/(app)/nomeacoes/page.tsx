@@ -1,3 +1,5 @@
+export const maxDuration = 60
+
 import { redirect } from 'next/navigation'
 import { Plus } from 'lucide-react'
 import { auth } from '@/auth'
