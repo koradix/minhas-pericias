@@ -69,23 +69,40 @@ export async function POST(request: NextRequest) {
 
     let userContent: Anthropic.MessageParam['content']
 
+    const mbSize = (buffer.length / 1024 / 1024).toFixed(1)
+    const contexto = `Tribunal: ${tribunal}${numeroRaw ? `\nNúmero: ${numeroRaw}` : ''}`
+
     if (file.type === 'application/pdf') {
-      const base64Data = buffer.toString('base64')
-      console.log(`[upload] PDF: ${file.name} | ${buffer.length} bytes | model: ${model}`)
+      console.log(`[upload] PDF: ${file.name} | ${mbSize}MB | model: ${model}`)
+
+      // Usa pdf-lib para ler o PDF e extrair primeiras páginas se necessário
+      const { PDFDocument } = await import('pdf-lib')
+      const pdfDoc = await PDFDocument.load(buffer, { ignoreEncryption: true })
+      const totalPaginas = pdfDoc.getPageCount()
+      console.log(`[upload] pdf-lib: ${totalPaginas} páginas`)
+
+      // Extrai só as primeiras 40 páginas (onde fica o despacho de nomeação)
+      const MAX_PAGINAS = 40
+      let pdfParaEnviar: Buffer
+
+      if (totalPaginas <= MAX_PAGINAS) {
+        pdfParaEnviar = buffer
+      } else {
+        console.log(`[upload] Extraindo páginas 1-${MAX_PAGINAS} de ${totalPaginas}`)
+        const novoPdf = await PDFDocument.create()
+        const indices = Array.from({ length: MAX_PAGINAS }, (_, i) => i)
+        const copias = await novoPdf.copyPages(pdfDoc, indices)
+        copias.forEach(p => novoPdf.addPage(p))
+        pdfParaEnviar = Buffer.from(await novoPdf.save())
+        console.log(`[upload] PDF extraído: ${(pdfParaEnviar.length / 1024 / 1024).toFixed(1)}MB`)
+      }
 
       userContent = [
         {
           type: 'document',
-          source: {
-            type: 'base64',
-            media_type: 'application/pdf',
-            data: base64Data,
-          },
+          source: { type: 'base64', media_type: 'application/pdf', data: pdfParaEnviar.toString('base64') },
         } as Anthropic.DocumentBlockParam,
-        {
-          type: 'text',
-          text: buildPdfUserPrompt(`Tribunal: ${tribunal}${numeroRaw ? `\nNúmero: ${numeroRaw}` : ''}`),
-        },
+        { type: 'text', text: buildPdfUserPrompt(contexto) },
       ]
     } else {
       const textoDocx = buffer.toString('utf8').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()

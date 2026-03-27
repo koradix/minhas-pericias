@@ -1,5 +1,5 @@
 // PeriLaB Service Worker — cache-first para assets, network-first para dados
-const CACHE = 'perilab-v1'
+const CACHE = 'perilab-v2'
 
 // Assets que ficam disponíveis offline
 const PRECACHE = [
@@ -51,9 +51,12 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
+  // Auth: nunca interceptar — deixa o Next.js/Auth.js gerenciar
+  if (url.pathname.startsWith('/api/auth/')) return
+
   // API / Server Actions: sempre network, sem cache
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/_next/data/')) {
-    event.respondWith(fetch(request).catch(() => caches.match(request)))
+    event.respondWith(fetch(request).catch(() => caches.match(request) ?? new Response('', { status: 503 })))
     return
   }
 
@@ -80,6 +83,6 @@ self.addEventListener('fetch', (event) => {
         caches.open(CACHE).then((cache) => cache.put(request, clone))
         return response
       })
-      .catch(() => caches.match(request))
+      .catch(() => caches.match(request).then((cached) => cached ?? new Response('Offline', { status: 503 })))
   )
 })

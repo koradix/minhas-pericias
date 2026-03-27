@@ -72,11 +72,20 @@ export function isAnaliseProcesso(data: unknown): data is AnaliseProcesso {
 // ─── Prompts ──────────────────────────────────────────────────────────────────
 
 export const SYSTEM_PROMPT =
-  'Você é um perito judicial experiente, com ampla experiência em análise de processos, ' +
-  'elaboração de propostas de honorários e organização de perícias técnicas.\n' +
-  'Você é direto, prático e focado em identificar o que realmente importa para execução da perícia.\n' +
-  'Analise o documento do processo fornecido e extraia todas as informações relevantes.\n' +
-  'Retorne APENAS JSON válido, sem texto adicional.'
+  'Você é um especialista em leitura e análise de documentos processuais judiciais brasileiros.\n' +
+  'Sua tarefa é extrair informações de processos judiciais — incluindo documentos escaneados, PDFs de baixa qualidade e imagens de páginas.\n\n' +
+  'INSTRUÇÕES DE LEITURA (OCR):\n' +
+  '- Leia TODAS as páginas do documento visualmente, incluindo cabeçalhos, rodapés e carimbos\n' +
+  '- O número do processo segue o padrão CNJ: NNNNNNN-DD.AAAA.J.TT.OOOO (ex: 0845912-13.2022.8.19.0001)\n' +
+  '- Partes estão marcadas como: AUTOR/REQUERENTE/EXEQUENTE vs RÉU/REQUERIDO/EXECUTADO\n' +
+  '- O nome do perito nomeado aparece após termos como "nomeio", "designo", "fica nomeado"\n' +
+  '- Prazos aparecem como "no prazo de X dias", "até DD/MM/AAAA", "em X dias úteis"\n' +
+  '- Endereços de vistoria aparecem próximos a "imóvel", "local", "endereço do bem"\n' +
+  '- Quesitos são perguntas numeradas dirigidas ao perito\n\n' +
+  'REGRA CRÍTICA: NUNCA retorne "Não identificado" se a informação existir no documento, mesmo que parcialmente legível.\n' +
+  'Se um campo não existir de fato no documento, use null.\n' +
+  'Se existir mas estiver parcialmente ilegível, retorne o que conseguiu ler com "[ilegível]" na parte incerta.\n\n' +
+  'Retorne APENAS JSON válido, sem texto adicional, sem markdown.'
 
 // Template JSON reutilizado por buildUserPrompt e buildPdfUserPrompt
 const JSON_TEMPLATE =
@@ -137,9 +146,17 @@ const JSON_TEMPLATE =
 /** Para PDF: o conteúdo já vem como DocumentBlockParam — não wrapa em <processo> */
 export function buildPdfUserPrompt(contexto?: string): string {
   return (
-    'O documento do processo judicial foi fornecido acima como PDF.\n' +
-    (contexto ? `Contexto adicional: ${contexto}\n\n` : '\n') +
-    'Leia o documento completo e ' + JSON_TEMPLATE
+    'O documento acima é um processo judicial brasileiro em PDF.\n' +
+    (contexto ? `Contexto já conhecido: ${contexto}\n\n` : '\n') +
+    'PASSOS:\n' +
+    '1. Leia visualmente TODAS as páginas — o documento pode ser escaneado ou de baixa qualidade\n' +
+    '2. Procure na capa/cabeçalho: número do processo (formato CNJ), tribunal, vara, comarca\n' +
+    '3. Procure nas primeiras páginas: nomes das partes (autor, réu), tipo de ação\n' +
+    '4. Procure no despacho/decisão: nomeação do perito, quesitos, prazos\n' +
+    '5. Procure em qualquer página: endereço do imóvel/local da perícia\n' +
+    '6. Se um campo estiver ilegível mas parcialmente visível, retorne o que conseguir + "[ilegível]"\n' +
+    '7. Use null apenas se a informação realmente não existir no documento\n\n' +
+    JSON_TEMPLATE
   )
 }
 
