@@ -158,9 +158,9 @@ export default function LandingPage() {
               </div>
 
               {/* Headline */}
-              <h1 className="font-heading mb-6 text-[2.6rem] font-bold leading-[1.06] tracking-[-0.03em] text-slate-900 sm:text-5xl lg:text-[3.25rem]">
+              <h1 className="mb-6 text-[2.6rem] font-bold leading-[1.06] tracking-[-0.03em] text-slate-900 sm:text-5xl lg:text-[3.25rem]" style={{ fontFamily: 'var(--font-montserrat), ui-sans-serif, system-ui, sans-serif' }}>
                 Gestão pericial completa,<br />
-                <em className="not-italic italic font-bold text-lime-500">do processo ao laudo.</em>
+                <em className="italic font-extrabold text-lime-500" style={{ fontStyle: 'italic' }}>do processo ao laudo.</em>
               </h1>
 
               <p className="mb-8 max-w-[480px] text-lg leading-relaxed text-slate-500">

@@ -2,12 +2,12 @@ import {
   AlertTriangle,
   CheckSquare,
   Clock,
-  MapPin,
   Wrench,
   FileText,
   Scale,
-  Sparkles,
+  Gavel,
 } from 'lucide-react'
+import { EnderecoVistoriaEdit } from './endereco-vistoria-edit'
 import type { AnaliseProcesso } from '@/lib/ai/prompt-mestre-resumo'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -22,8 +22,13 @@ const COMPLEXIDADE: Record<string, string> = {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function AnaliseProcessoBlock({ analise }: { analise: AnaliseProcesso }) {
-  const rp  = analise.resumoProcesso      ?? {}
+export function AnaliseProcessoBlock({
+  analise,
+  nomeacaoId,
+}: {
+  analise: AnaliseProcesso
+  nomeacaoId?: string
+}) {
   const nd  = analise.nomeacaoDespacho    ?? {}
   const ah  = analise.aceiteHonorarios    ?? {}
   const pr  = analise.prazos              ?? {}
@@ -33,6 +38,7 @@ export function AnaliseProcessoBlock({ analise }: { analise: AnaliseProcesso }) 
   const ck  = safe(analise.checklist)
 
   const quesitos            = safe(nd.quesitos)
+  const pontoCriticos       = safe(nd.pontoCriticos)
   const equipamentos        = safe(nt.equipamentos)
   const coletaDados         = safe(nt.coletaDados)
   const outrosPrazos        = safe(pr.outrosPrazos)
@@ -42,30 +48,45 @@ export function AnaliseProcessoBlock({ analise }: { analise: AnaliseProcesso }) 
   const infoFaltando        = safe(ri.informacoesFaltando)
   const hasRiscos = riscosTecnicos.length > 0 || riscosJuridicos.length > 0 || infoFaltando.length > 0
 
-  return (
-    <div className="space-y-4">
+  // Endereço: prefer top-level field, fall back to localPericia
+  const endereco = analise.enderecoVistoria ?? lp.enderecoCompleto ?? null
 
-      {/* Objeto da perícia */}
-      {(rp.objetoPericia || rp.tipoAcao) && (
-        <div className="flex items-start gap-3 rounded-xl bg-slate-50 border border-slate-100 px-4 py-3">
-          <Sparkles className="h-3.5 w-3.5 text-violet-500 flex-shrink-0 mt-0.5" />
-          <div className="min-w-0">
-            {rp.tipoAcao && (
-              <p className="text-sm font-semibold text-slate-800">{rp.tipoAcao}</p>
-            )}
-            {rp.objetoPericia && (
-              <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{rp.objetoPericia}</p>
-            )}
-            {rp.areaTecnica && (
-              <span className="mt-1.5 inline-flex items-center rounded-md bg-violet-50 border border-violet-100 px-2 py-0.5 text-[10px] font-semibold text-violet-600">
-                {rp.areaTecnica}
-              </span>
-            )}
-          </div>
+  return (
+    <div className="space-y-3">
+
+      {/* ── 1. Despacho do Juiz — máxima destaque ──────────────────────────── */}
+      {nd.determinacaoJuiz && (
+        <div className="rounded-xl border-l-[3px] border-l-slate-800 border border-slate-200 bg-slate-50 px-4 py-3.5">
+          <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-2">
+            <Gavel className="h-3 w-3" /> Despacho do juiz
+          </p>
+          <p className="text-sm text-slate-800 leading-relaxed font-medium">
+            {nd.determinacaoJuiz}
+          </p>
+          {nd.dataNomeacao && (
+            <p className="mt-1.5 text-[11px] text-slate-400">Data: {nd.dataNomeacao}</p>
+          )}
         </div>
       )}
 
-      {/* Prazos + Honorários */}
+      {/* ── 2. Pontos críticos — destaque amber ─────────────────────────────── */}
+      {pontoCriticos.length > 0 && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+          <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-amber-600 mb-2">
+            <AlertTriangle className="h-3 w-3" /> Pontos críticos
+          </p>
+          <ul className="space-y-1.5">
+            {pontoCriticos.map((p, i) => (
+              <li key={i} className="flex items-start gap-2 text-xs text-amber-900">
+                <span className="font-bold text-amber-500 flex-shrink-0 mt-0.5">!</span>
+                {p}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* ── 3. Prazos + Endereço ──────────────────────────────────────────── */}
       <div className="grid sm:grid-cols-2 gap-3">
 
         {/* Prazos */}
@@ -75,35 +96,51 @@ export function AnaliseProcessoBlock({ analise }: { analise: AnaliseProcesso }) 
           </p>
           <div className="space-y-1 text-xs text-slate-600">
             {pr.prazoAceite && (
-              <p><span className="text-slate-400">Aceite:</span> {pr.prazoAceite}</p>
+              <p><span className="text-slate-400">Aceite:</span> <span className="font-semibold">{pr.prazoAceite}</span></p>
             )}
             {pr.prazoLaudo && (
-              <p><span className="text-slate-400">Laudo:</span> {pr.prazoLaudo}</p>
+              <p><span className="text-slate-400">Laudo:</span> <span className="font-semibold">{pr.prazoLaudo}</span></p>
             )}
             {outrosPrazos.map((p, i) => (
               <p key={i} className="text-slate-500">· {p}</p>
             ))}
             {!pr.prazoAceite && !pr.prazoLaudo && outrosPrazos.length === 0 && (
-              <p className="text-slate-400 italic text-[11px]">Não identificados no documento</p>
+              <p className="text-slate-400 italic text-[11px]">Não identificados</p>
             )}
           </div>
         </div>
 
-        {/* Honorários */}
+        {/* Endereço da vistoria */}
+        {nomeacaoId ? (
+          <EnderecoVistoriaEdit nomeacaoId={nomeacaoId} endereco={endereco} />
+        ) : (endereco && (
+          <div className="rounded-xl border border-slate-100 bg-white p-3.5">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+              Local da vistoria
+            </p>
+            <p className="text-sm text-slate-700">{endereco}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* ── 4. Honorários ────────────────────────────────────────────────── */}
+      {(ah.complexidade || ah.estrategiaHonorarios || justificativas.length > 0) && (
         <div className="rounded-xl border border-slate-100 bg-white p-3.5">
-          <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-violet-500 mb-2">
-            <Scale className="h-3 w-3" /> Honorários
-          </p>
-          {ah.complexidade && (
-            <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-semibold mb-2 ${COMPLEXIDADE[ah.complexidade] ?? COMPLEXIDADE['baixa']}`}>
-              Complexidade {ah.complexidade}
-            </span>
-          )}
+          <div className="flex items-start justify-between gap-3 mb-2">
+            <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-violet-500">
+              <Scale className="h-3 w-3" /> Honorários
+            </p>
+            {ah.complexidade && (
+              <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-semibold ${COMPLEXIDADE[ah.complexidade] ?? COMPLEXIDADE['baixa']}`}>
+                {ah.complexidade}
+              </span>
+            )}
+          </div>
           {ah.estrategiaHonorarios && (
             <p className="text-xs text-slate-600 leading-relaxed">{ah.estrategiaHonorarios}</p>
           )}
           {justificativas.length > 0 && (
-            <div className="mt-2">
+            <div className="mt-2 pt-2 border-t border-slate-50">
               <p className="text-[10px] text-violet-400 mb-1">Justificativas para aumento</p>
               {justificativas.map((j, i) => (
                 <p key={i} className="text-[11px] text-slate-500">· {j}</p>
@@ -111,22 +148,9 @@ export function AnaliseProcessoBlock({ analise }: { analise: AnaliseProcesso }) 
             </div>
           )}
         </div>
-      </div>
-
-      {/* Local */}
-      {lp.enderecoCompleto && (
-        <div className="rounded-xl border border-slate-100 bg-white p-3.5">
-          <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
-            <MapPin className="h-3 w-3" /> Local da perícia
-          </p>
-          <p className="text-sm text-slate-700">{lp.enderecoCompleto}</p>
-          {lp.cidadeEstado && (
-            <p className="text-xs text-slate-400 mt-0.5">{lp.cidadeEstado}</p>
-          )}
-        </div>
       )}
 
-      {/* Quesitos */}
+      {/* ── 5. Quesitos ───────────────────────────────────────────────────── */}
       {quesitos.length > 0 && (
         <div className="rounded-xl border border-slate-100 bg-white p-3.5">
           <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-violet-500 mb-2">
@@ -143,7 +167,7 @@ export function AnaliseProcessoBlock({ analise }: { analise: AnaliseProcesso }) 
         </div>
       )}
 
-      {/* Necessidades técnicas */}
+      {/* ── 6. Necessidades técnicas ──────────────────────────────────────── */}
       {(equipamentos.length > 0 || coletaDados.length > 0 || nt.tipoVistoria) && (
         <div className="rounded-xl border border-slate-100 bg-white p-3.5">
           <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-2">
@@ -151,7 +175,7 @@ export function AnaliseProcessoBlock({ analise }: { analise: AnaliseProcesso }) 
           </p>
           {nt.tipoVistoria && (
             <p className="text-xs text-slate-600 mb-2">
-              <span className="text-slate-400">Tipo de vistoria:</span> {nt.tipoVistoria}
+              <span className="text-slate-400">Tipo:</span> {nt.tipoVistoria}
             </p>
           )}
           <div className="grid sm:grid-cols-2 gap-3">
@@ -179,7 +203,7 @@ export function AnaliseProcessoBlock({ analise }: { analise: AnaliseProcesso }) 
         </div>
       )}
 
-      {/* Riscos */}
+      {/* ── 7. Riscos ─────────────────────────────────────────────────────── */}
       {hasRiscos && (
         <div className="rounded-xl border border-rose-100 bg-rose-50 p-3.5">
           <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-rose-500 mb-2">
@@ -204,7 +228,7 @@ export function AnaliseProcessoBlock({ analise }: { analise: AnaliseProcesso }) 
             )}
             {infoFaltando.length > 0 && (
               <div>
-                <p className="text-[10px] text-rose-400 mb-1">Informações faltando</p>
+                <p className="text-[10px] text-rose-400 mb-1">Informações ausentes</p>
                 {infoFaltando.map((r, i) => (
                   <p key={i} className="text-xs text-rose-700">· {r}</p>
                 ))}
@@ -214,7 +238,7 @@ export function AnaliseProcessoBlock({ analise }: { analise: AnaliseProcesso }) 
         </div>
       )}
 
-      {/* Checklist */}
+      {/* ── 8. Checklist ──────────────────────────────────────────────────── */}
       {ck.length > 0 && (
         <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-3.5">
           <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-600 mb-2">

@@ -264,7 +264,7 @@ export default async function NomeacaoDetailPage({ params }: { params: Promise<{
               </div>
               <div className="px-5 py-4">
                 {analise ? (
-                  <AnaliseProcessoBlock analise={analise} />
+                  <AnaliseProcessoBlock analise={analise} nomeacaoId={nomeacao.id} />
                 ) : resumo ? (
                   <div className="space-y-4">
                     <div className="flex items-start gap-3 rounded-xl bg-slate-50 border border-slate-100 px-4 py-3">

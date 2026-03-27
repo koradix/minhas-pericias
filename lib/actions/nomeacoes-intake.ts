@@ -272,3 +272,43 @@ export async function criarPericiaDeNomeacao(
     return { ok: false, message: err instanceof Error ? err.message : 'Erro ao criar péricia' }
   }
 }
+
+// ─── Action 5 — Atualizar endereço da vistoria ────────────────────────────────
+
+export async function atualizarEnderecoVistoria(
+  nomeacaoId: string,
+  endereco: string,
+): Promise<{ ok: boolean; message: string }> {
+  const session = await auth()
+  if (!session?.user?.id) return { ok: false, message: 'Não autorizado' }
+
+  try {
+    const n = await prisma.nomeacao.findUnique({
+      where: { id: nomeacaoId },
+      select: { peritoId: true, processSummary: true },
+    })
+    if (!n || n.peritoId !== session.user.id) return { ok: false, message: 'Nomeação não encontrada' }
+
+    let summary: Record<string, unknown> = {}
+    if (n.processSummary) {
+      try { summary = JSON.parse(n.processSummary) as Record<string, unknown> } catch {}
+    }
+
+    summary.enderecoVistoria = endereco.trim() || null
+
+    // Also update localPericia.enderecoCompleto for consistency
+    if (typeof summary.localPericia === 'object' && summary.localPericia !== null) {
+      (summary.localPericia as Record<string, unknown>).enderecoCompleto = endereco.trim() || null
+    }
+
+    await prisma.nomeacao.update({
+      where: { id: nomeacaoId },
+      data: { processSummary: JSON.stringify(summary) },
+    })
+
+    revalidatePath(`/nomeacoes/${nomeacaoId}`)
+    return { ok: true, message: 'Endereço atualizado' }
+  } catch (err) {
+    return { ok: false, message: err instanceof Error ? err.message : 'Erro ao salvar endereço' }
+  }
+}

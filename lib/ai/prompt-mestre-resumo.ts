@@ -100,9 +100,9 @@ const JSON_TEMPLATE =
   '  "nomeacaoDespacho": {\n' +
   '    "peritoNomeado": true,\n' +
   '    "dataNomeacao": "data ou null",\n' +
-  '    "determinacaoJuiz": "o que o juiz determinou",\n' +
-  '    "quesitos": ["lista de quesitos ou []"],\n' +
-  '    "pontoCriticos": ["pontos críticos definidos pelo juiz"]\n' +
+  '    "determinacaoJuiz": "transcrição fiel do despacho/decisão do juiz — incluindo prazo, determinações e quesitos mencionados",\n' +
+  '    "quesitos": ["lista de quesitos numerados ou []"],\n' +
+  '    "pontoCriticos": ["item ação 1 — ex: Prazo de aceite: 5 dias", "item 2", "item 3"]\n' +
   '  },\n' +
   '  "aceiteHonorarios": {\n' +
   '    "prazoAceite": "prazo ou null",\n' +

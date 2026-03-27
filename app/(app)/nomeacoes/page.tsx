@@ -1,11 +1,12 @@
 import { redirect } from 'next/navigation'
-import { Plus, SearchX } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { PageHeader } from '@/components/shared/page-header'
 import { getNomeacoesByPerito } from '@/lib/data/nomeacoes-datajud'
 import { RadarBuscarBtn } from '@/components/nomeacoes/radar-buscar-btn'
 import { NomeacaoCard } from '@/components/nomeacoes/nomeacao-card'
+import { ArquivadosCollapse } from '@/components/nomeacoes/arquivados-collapse'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Processos' }
@@ -20,7 +21,9 @@ export default async function NomeacoesPage() {
   const peritoPerfil = await prisma.peritoPerfil.findUnique({ where: { userId } })
   const siglas: string[] = JSON.parse(peritoPerfil?.tribunais ?? '[]')
 
-  const nomeacoes = await getNomeacoesByPerito(userId)
+  const todas = await getNomeacoesByPerito(userId)
+  const ativos    = todas.filter((n) => n.status !== 'arquivado')
+  const arquivados = todas.filter((n) => n.status === 'arquivado')
 
   return (
     <div className="space-y-6">
@@ -34,17 +37,17 @@ export default async function NomeacoesPage() {
       {/* CTA — registrar manualmente */}
       <RadarBuscarBtn novas={0} siglas={siglas} />
 
-      {/* Lista de processos */}
+      {/* Lista de processos ativos */}
       <div className="space-y-3">
-        {nomeacoes.length > 0 && (
+        {ativos.length > 0 && (
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-            {nomeacoes.length} processo{nomeacoes.length > 1 ? 's' : ''}
+            {ativos.length} processo{ativos.length > 1 ? 's' : ''}
           </p>
         )}
 
-        {nomeacoes.length > 0 ? (
+        {ativos.length > 0 ? (
           <div className="space-y-3">
-            {nomeacoes.map((n) => (
+            {ativos.map((n) => (
               <NomeacaoCard key={n.id} nomeacao={n} />
             ))}
           </div>
@@ -62,6 +65,12 @@ export default async function NomeacoesPage() {
           </div>
         )}
       </div>
+
+      {/* Arquivados — colapsável */}
+      {arquivados.length > 0 && (
+        <ArquivadosCollapse nomeacoes={arquivados} />
+      )}
+
     </div>
   )
 }
