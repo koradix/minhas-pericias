@@ -10,7 +10,6 @@ import {
   Circle,
   AlertCircle,
   Clock,
-  Cpu,
   FileText,
   MapPin,
   Navigation,
@@ -27,6 +26,7 @@ import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { getMidiasByPericiaId, type MidiaDaPericia } from '@/lib/data/checkpoint-media'
 import { pericias, statusMapPericias } from '@/lib/mocks/pericias'
+import { PericiaDetailTabs } from '@/components/pericias/pericia-detail-tabs'
 import type { ResumoData } from '@/lib/actions/processos-intake'
 import type { Metadata } from 'next'
 
@@ -449,281 +449,142 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
         )}
       </div>
 
-      {/* Two-column layout */}
-      <div className="grid gap-5 lg:grid-cols-3">
+      {/* Proposta link — right-aligned quick action */}
+      <div className="flex justify-end">
+        <Link href={`/pericias/${pericia.id}/proposta`}>
+          <button className="flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 px-3 py-2 text-xs font-semibold text-emerald-700 transition-colors">
+            <FileText className="h-3.5 w-3.5" />
+            Proposta de honorários
+          </button>
+        </Link>
+      </div>
 
-        {/* Left — main */}
-        <div className="lg:col-span-2 space-y-5">
-
-          {/* Process summary from intake */}
-          {resumo && intake && (
-            <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-              <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-50">
-                  <Sparkles className="h-3.5 w-3.5 text-violet-600" />
-                </div>
-                <h2 className="text-sm font-semibold text-slate-800">Resumo do processo</h2>
-                <Link
-                  href={`/processos/${intake.id}`}
-                  className="ml-auto text-[11px] font-semibold text-slate-400 hover:text-slate-600 transition-colors"
-                >
-                  Ver processo →
-                </Link>
-              </div>
-              <div className="px-5 py-4">
-                <ResumoBlock intakeId={intake.id} resumo={resumo} />
-              </div>
-            </section>
-          )}
-
-          {/* Field evidence — checkpoints */}
-          <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100">
-                <MapPin className="h-3.5 w-3.5 text-slate-600" />
-              </div>
-              <h2 className="text-sm font-semibold text-slate-800">Checkpoints</h2>
-              {total > 0 && (
-                <span className="ml-auto text-[11px] font-semibold text-slate-400 bg-slate-50 border border-slate-100 rounded-full px-2 py-0.5">
-                  {concluidos}/{total}
-                </span>
-              )}
-            </div>
-            <div className="divide-y divide-slate-50">
-              {checkpoints.length === 0 ? (
-                <div className="px-5 py-8 text-center">
-                  <MapPin className="h-8 w-8 text-slate-200 mx-auto mb-2" />
-                  <p className="text-sm text-slate-400">Nenhum checkpoint ainda.</p>
-                  <Link href="/rotas/pericias">
-                    <button className="mt-3 text-xs font-semibold text-lime-600 hover:text-lime-700">
-                      Planejar rota →
-                    </button>
-                  </Link>
-                </div>
-              ) : (
-                checkpoints.map((cp) => (
-                  <div key={cp.id} className="flex items-start gap-3 px-5 py-3.5">
-                    {CP_STATUS_ICON[cp.status] ?? CP_STATUS_ICON.pendente}
-                    <div className="flex-1 min-w-0">
-                      <p className={cn(
-                        'text-sm font-medium leading-snug',
-                        cp.status === 'concluido' ? 'text-slate-500 line-through' : 'text-slate-800',
-                      )}>
-                        {cp.titulo}
-                      </p>
-                      {cp.endereco && (
-                        <p className="text-xs text-slate-400 mt-0.5 truncate">{cp.endereco}</p>
-                      )}
-                    </div>
-                    {cp.midiaCount > 0 && (
-                      <span className="flex items-center gap-1 text-[11px] font-medium text-blue-600 bg-blue-50 rounded-full px-2 py-0.5 flex-shrink-0">
-                        <Camera className="h-3 w-3" />
-                        {cp.midiaCount}
-                      </span>
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
-          </section>
-
-          {/* Timeline */}
-          {(() => {
-            type TLEvent = { label: string; sub?: string; date?: string; done: boolean; future?: boolean }
-            const events: TLEvent[] = []
-
-            if (nomeacaoLink) {
-              events.push({
-                label: 'Nomeação recebida',
-                date: formatDate(toISO(nomeacaoLink.criadoEm)),
-                done: true,
-              })
-              events.push({
-                label: 'Documento do processo',
-                sub: nomeacaoLink.nomeArquivo ?? undefined,
-                done: !!nomeacaoLink.nomeArquivo,
-              })
-              events.push({
-                label: 'Análise IA',
-                sub: nomeacaoLink.extractedData ? 'Dados extraídos · Resumo gerado' : undefined,
-                done: !!nomeacaoLink.extractedData,
-              })
-            }
-
-            events.push({
-              label: 'Processo aberto',
-              date: formatDate(toISO(pericia.criadoEm)),
-              done: true,
-            })
-
-            const cpConcluidos = checkpoints.filter((c) => c.status === 'concluido')
-            if (cpConcluidos.length > 0) {
-              events.push({
-                label: `Vistoria${cpConcluidos.length > 1 ? 's' : ''} realizadas`,
-                sub: `${cpConcluidos.length} checkpoint${cpConcluidos.length > 1 ? 's' : ''} concluído${cpConcluidos.length > 1 ? 's' : ''}`,
-                done: true,
-              })
-            } else if (checkpoints.length > 0) {
-              events.push({ label: 'Vistoria em campo', done: false })
-            } else {
-              events.push({ label: 'Vistoria em campo', done: false, future: true })
-            }
-
-            events.push({ label: 'Proposta de honorários', done: false, future: pericia.status !== 'concluida' })
-            events.push({ label: 'Laudo entregue', done: pericia.status === 'concluida', future: pericia.status !== 'concluida' })
-
-            return (
+      {/* ── Tabs ── */}
+      <PericiaDetailTabs
+        periciaId={pericia.id}
+        periciaStatus={pericia.status}
+        enderecoPericia={pericia.endereco}
+        checkpoints={checkpoints}
+        resumoContent={
+          <div className="space-y-5">
+            {/* Process summary from intake */}
+            {resumo && intake && (
               <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
                 <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100">
-                    <Clock className="h-3.5 w-3.5 text-slate-500" />
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-50">
+                    <Sparkles className="h-3.5 w-3.5 text-violet-600" />
                   </div>
-                  <h2 className="text-sm font-semibold text-slate-800">Linha do tempo</h2>
+                  <h2 className="text-sm font-semibold text-slate-800">Resumo do processo</h2>
                 </div>
                 <div className="px-5 py-4">
-                  <ol className="relative border-l border-slate-200 space-y-0">
-                    {events.map((ev, i) => (
-                      <li key={i} className="ml-4 pb-5 last:pb-0">
-                        <span className={cn(
-                          'absolute -left-[7px] flex h-3.5 w-3.5 items-center justify-center rounded-full border-2',
-                          ev.done
-                            ? 'border-emerald-500 bg-emerald-500'
-                            : ev.future
-                              ? 'border-slate-200 bg-white'
-                              : 'border-amber-400 bg-amber-50',
-                        )} />
-                        <p className={cn(
-                          'text-sm font-semibold leading-none',
-                          ev.done ? 'text-slate-800' : 'text-slate-400',
-                        )}>
-                          {ev.label}
-                        </p>
-                        {ev.sub && (
-                          <p className="mt-0.5 text-xs text-slate-400 truncate max-w-xs">{ev.sub}</p>
-                        )}
-                        {ev.date && (
-                          <p className="mt-0.5 text-[11px] text-slate-400">{ev.date}</p>
-                        )}
-                      </li>
-                    ))}
-                  </ol>
+                  <ResumoBlock intakeId={intake.id} resumo={resumo} />
                 </div>
               </section>
-            )
-          })()}
+            )}
 
-          {/* Media gallery */}
-          {midias.length > 0 && (
+            {/* Process details */}
             <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
               <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50">
-                  <Camera className="h-3.5 w-3.5 text-blue-600" />
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100">
+                  <FileText className="h-3.5 w-3.5 text-slate-600" />
                 </div>
-                <h2 className="text-sm font-semibold text-slate-800">Registros e fotos</h2>
+                <h2 className="text-sm font-semibold text-slate-800">Detalhes</h2>
+              </div>
+              <div className="divide-y divide-slate-50">
+                {pericia.vara && (
+                  <div className="px-5 py-3.5">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Vara</p>
+                    <p className="text-sm text-slate-800">{pericia.vara}</p>
+                  </div>
+                )}
+                {pericia.partes && (
+                  <div className="px-5 py-3.5">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Partes</p>
+                    <p className="text-sm text-slate-800">{pericia.partes}</p>
+                  </div>
+                )}
+                {pericia.endereco && (
+                  <div className="px-5 py-3.5">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Local da vistoria</p>
+                    <p className="text-sm text-slate-800 flex items-start gap-1.5">
+                      <MapPin className="h-3.5 w-3.5 text-amber-500 flex-shrink-0 mt-0.5" />
+                      {pericia.endereco}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </section>
+
+            {/* Timeline */}
+            {(() => {
+              type TLEvent = { label: string; sub?: string; date?: string; done: boolean; future?: boolean }
+              const events: TLEvent[] = []
+
+              if (nomeacaoLink) {
+                events.push({ label: 'Nomeação recebida', date: formatDate(toISO(nomeacaoLink.criadoEm)), done: true })
+                events.push({ label: 'Documento do processo', sub: nomeacaoLink.nomeArquivo ?? undefined, done: !!nomeacaoLink.nomeArquivo })
+                events.push({ label: 'Análise IA', sub: nomeacaoLink.extractedData ? 'Dados extraídos · Resumo gerado' : undefined, done: !!nomeacaoLink.extractedData })
+              }
+
+              events.push({ label: 'Processo aberto', date: formatDate(toISO(pericia.criadoEm)), done: true })
+
+              const cpConcluidos = checkpoints.filter((c) => c.status === 'concluido')
+              if (cpConcluidos.length > 0) {
+                events.push({ label: `Vistoria${cpConcluidos.length > 1 ? 's' : ''} realizadas`, sub: `${cpConcluidos.length} checkpoint${cpConcluidos.length > 1 ? 's' : ''} concluído${cpConcluidos.length > 1 ? 's' : ''}`, done: true })
+              } else if (checkpoints.length > 0) {
+                events.push({ label: 'Vistoria em campo', done: false })
+              } else {
+                events.push({ label: 'Vistoria em campo', done: false, future: true })
+              }
+
+              events.push({ label: 'Proposta de honorários', done: false, future: pericia.status !== 'concluida' })
+              events.push({ label: 'Laudo entregue', done: pericia.status === 'concluida', future: pericia.status !== 'concluida' })
+
+              return (
+                <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                  <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100">
+                      <Clock className="h-3.5 w-3.5 text-slate-500" />
+                    </div>
+                    <h2 className="text-sm font-semibold text-slate-800">Linha do tempo</h2>
+                  </div>
+                  <div className="px-5 py-4">
+                    <ol className="relative border-l border-slate-200 space-y-0">
+                      {events.map((ev, i) => (
+                        <li key={i} className="ml-4 pb-5 last:pb-0">
+                          <span className={cn(
+                            'absolute -left-[7px] flex h-3.5 w-3.5 items-center justify-center rounded-full border-2',
+                            ev.done ? 'border-emerald-500 bg-emerald-500' : ev.future ? 'border-slate-200 bg-white' : 'border-amber-400 bg-amber-50',
+                          )} />
+                          <p className={cn('text-sm font-semibold leading-none', ev.done ? 'text-slate-800' : 'text-slate-400')}>{ev.label}</p>
+                          {ev.sub && <p className="mt-0.5 text-xs text-slate-400 truncate max-w-xs">{ev.sub}</p>}
+                          {ev.date && <p className="mt-0.5 text-[11px] text-slate-400">{ev.date}</p>}
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                </section>
+              )
+            })()}
+          </div>
+        }
+        fotosContent={
+          <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50">
+                <Camera className="h-3.5 w-3.5 text-blue-600" />
+              </div>
+              <h2 className="text-sm font-semibold text-slate-800">Registros e fotos</h2>
+              {midias.length > 0 && (
                 <span className="ml-auto text-[11px] font-semibold text-slate-400 bg-slate-50 border border-slate-100 rounded-full px-2 py-0.5">
                   {midias.length}
                 </span>
-              </div>
-              <PericiaMediaSection pericoId={pericia.id} midias={midias} />
-            </section>
-          )}
-
-        </div>
-
-        {/* Right sidebar */}
-        <div className="space-y-5">
-
-          {/* Next step */}
-          <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-lime-50">
-                <Play className="h-3.5 w-3.5 text-lime-600" />
-              </div>
-              <h2 className="text-sm font-semibold text-slate-800">Próximos passos</h2>
-            </div>
-            <div className="px-5 py-4 space-y-3">
-              {pericia.status === 'concluida' ? (
-                <div className="flex items-center gap-2 text-xs text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2">
-                  <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0" />
-                  Perícia concluída
-                </div>
-              ) : (
-                <Link href="/rotas/pericias">
-                  <button className="w-full flex items-center justify-center gap-2 rounded-xl bg-lime-500 hover:bg-lime-600 text-white font-semibold text-sm px-4 py-2.5 transition-colors">
-                    <Navigation className="h-4 w-4" />
-                    {pericia.status === 'em_andamento' ? 'Continuar rota' : 'Agendar vistoria'}
-                  </button>
-                </Link>
               )}
-              <p className="text-xs text-slate-400">
-                {pericia.status === 'concluida'
-                  ? 'Gere o laudo pericial a partir dos registros coletados.'
-                  : pericia.status === 'em_andamento'
-                    ? 'Continue coletando evidências e registrando chegadas.'
-                    : 'Adicione esta perícia a uma rota de vistorias para iniciar o campo.'}
-              </p>
             </div>
+            <PericiaMediaSection pericoId={pericia.id} midias={midias} />
           </section>
-
-          {/* AI actions */}
-          <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-50">
-                <Sparkles className="h-3.5 w-3.5 text-violet-600" />
-              </div>
-              <h2 className="text-sm font-semibold text-slate-800">IA Pericial</h2>
-            </div>
-            <div className="px-5 py-4 space-y-2.5">
-              {/* Proposta de honorários */}
-              <Link href={`/pericias/${pericia.id}/proposta`}>
-                <button className="w-full flex items-center justify-between gap-2 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 px-3 py-2.5 text-left transition-colors">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-3.5 w-3.5 text-emerald-600 flex-shrink-0" />
-                    <span className="text-sm font-semibold text-emerald-800">Proposta de honorários</span>
-                  </div>
-                  <ChevronRight className="h-3.5 w-3.5 text-emerald-500" />
-                </button>
-              </Link>
-              {/* Estrutura do laudo — coming soon */}
-              <button
-                disabled
-                className="w-full flex items-center justify-between gap-2 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 text-left cursor-not-allowed"
-              >
-                <div className="flex items-center gap-2">
-                  <ScrollText className="h-3.5 w-3.5 text-slate-300 flex-shrink-0" />
-                  <span className="text-sm font-semibold text-slate-300">Estrutura do laudo</span>
-                </div>
-                <span className="text-[10px] font-semibold text-slate-300 uppercase tracking-wider">Em breve</span>
-              </button>
-              {/* Rascunho do laudo — coming soon */}
-              <button
-                disabled
-                className="w-full flex items-center justify-between gap-2 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 text-left cursor-not-allowed"
-              >
-                <div className="flex items-center gap-2">
-                  <Cpu className="h-3.5 w-3.5 text-slate-300 flex-shrink-0" />
-                  <span className="text-sm font-semibold text-slate-300">Rascunho do laudo</span>
-                </div>
-                <span className="text-[10px] font-semibold text-slate-300 uppercase tracking-wider">Em breve</span>
-              </button>
-            </div>
-          </section>
-
-          {/* Timeline */}
-          <div className="rounded-2xl border border-slate-100 bg-slate-50 px-5 py-4 space-y-1.5">
-            {pericia.prazo && (
-              <div className="flex items-center gap-2 text-xs text-slate-500">
-                <Calendar className="h-3.5 w-3.5 flex-shrink-0" />
-                <span>Prazo: {pericia.prazo}</span>
-              </div>
-            )}
-            <div className="flex items-center gap-2 text-xs text-slate-500">
-              <Clock className="h-3.5 w-3.5 flex-shrink-0" />
-              <span>Criada em {formatDate(toISO(pericia.criadoEm))}</span>
-            </div>
-          </div>
-        </div>
-      </div>
+        }
+      />
     </div>
   )
 }
