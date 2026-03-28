@@ -1,11 +1,17 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 import { ChevronRight, ChevronLeft, Check, Loader2 } from 'lucide-react'
 import { signup } from '@/lib/actions/signup'
+import {
+  ESTADOS_DISPONIVEIS,
+  TRIBUNAIS_POR_ESTADO,
+  type TipoTribunal,
+} from '@/lib/constants/tribunais'
+import { cn } from '@/lib/utils'
 
 const FORMACOES = [
   'Engenheiro Civil',
@@ -21,6 +27,20 @@ const FORMACOES = [
   'Técnico',
   'Outra formação',
 ]
+
+const TIPO_LABEL: Record<TipoTribunal, string> = {
+  estadual:  'Cível',
+  trabalho:  'Trabalho',
+  federal:   'Federal',
+  eleitoral: 'Eleitoral',
+}
+
+const TIPO_COR: Record<TipoTribunal, string> = {
+  estadual:  'bg-lime-100 text-lime-800',
+  trabalho:  'bg-amber-100 text-amber-800',
+  federal:   'bg-sky-100 text-sky-800',
+  eleitoral: 'bg-rose-100 text-rose-800',
+}
 
 const inputCls = 'w-full h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-lime-500 focus:outline-none focus:ring-1 focus:ring-lime-500'
 const labelCls = 'block text-xs font-medium text-slate-700 mb-1.5'
@@ -42,6 +62,44 @@ export default function SignupPage() {
   const [formacao, setFormacao] = useState('')
   const [formacaoCustom, setFormacaoCustom] = useState('')
 
+  // Step 3
+  const [estados, setEstados] = useState<string[]>([])
+  const [tribunais, setTribunais] = useState<string[]>([])
+
+  // Tribunais agrupados pelos estados selecionados
+  const grupos = useMemo(() =>
+    estados.map((uf) => ({
+      uf,
+      itens: TRIBUNAIS_POR_ESTADO[uf] ?? [],
+    })),
+    [estados]
+  )
+
+  function toggleEstado(uf: string) {
+    setEstados((prev) => {
+      const isAdding = !prev.includes(uf)
+      const next = isAdding ? [...prev, uf] : prev.filter((e) => e !== uf)
+      if (isAdding) {
+        // Auto-seleciona só tribunais estaduais (TJ) ao adicionar um estado
+        const tjSiglas = (TRIBUNAIS_POR_ESTADO[uf] ?? [])
+          .filter((t) => t.tipo === 'estadual')
+          .map((t) => t.sigla)
+        setTribunais((t) => [...new Set([...t, ...tjSiglas])])
+      } else {
+        // Remove tribunais do estado que foi desmarcado
+        const siglasDo = (TRIBUNAIS_POR_ESTADO[uf] ?? []).map((t) => t.sigla)
+        setTribunais((t) => t.filter((s) => !siglasDo.includes(s)))
+      }
+      return next
+    })
+  }
+
+  function toggleTribunal(sigla: string) {
+    setTribunais((prev) =>
+      prev.includes(sigla) ? prev.filter((s) => s !== sigla) : [...prev, sigla]
+    )
+  }
+
   function validateStep1() {
     if (!nome.trim()) return 'Informe seu nome completo.'
     if (!email.trim() || !email.includes('@')) return 'Informe um e-mail válido.'
@@ -50,14 +108,23 @@ export default function SignupPage() {
     return ''
   }
 
-  function handleNext() {
+  function handleNext1() {
     const err = validateStep1()
     if (err) { setError(err); return }
     setError('')
     setStep(2)
   }
 
+  function handleNext2() {
+    setError('')
+    setStep(3)
+  }
+
   async function handleSubmit() {
+    if (estados.length === 0) {
+      setError('Selecione pelo menos um estado de atuação.')
+      return
+    }
     setLoading(true)
     setError('')
     const result = await signup({
@@ -67,6 +134,8 @@ export default function SignupPage() {
       cpf: cpf || undefined,
       formacao: formacao || undefined,
       formacaoCustom: formacao === 'Outra formação' ? formacaoCustom : undefined,
+      estados,
+      tribunais,
     })
     if ('error' in result) {
       setError(result.error)
@@ -77,7 +146,7 @@ export default function SignupPage() {
     router.push(res?.ok ? '/dashboard' : '/login')
   }
 
-  const stepLabels = ['Conta', 'Formação']
+  const stepLabels = ['Conta', 'Formação', 'Tribunais']
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
@@ -105,7 +174,7 @@ export default function SignupPage() {
                   <span className={`text-[10px] font-medium ${active ? 'text-slate-800' : 'text-slate-400'}`}>{label}</span>
                 </div>
                 {i < stepLabels.length - 1 && (
-                  <div className={`w-16 h-px mx-2 mb-4 ${step > n ? 'bg-lime-400' : 'bg-slate-200'}`} />
+                  <div className={`w-12 h-px mx-2 mb-4 ${step > n ? 'bg-lime-400' : 'bg-slate-200'}`} />
                 )}
               </div>
             )
@@ -164,7 +233,9 @@ export default function SignupPage() {
                   </div>
                 </div>
                 <div>
-                  <label className={labelCls}>CPF <span className="text-slate-400 font-normal">(usado para localizar nomeações)</span></label>
+                  <label className={labelCls}>
+                    CPF <span className="text-slate-400 font-normal">(usado para localizar nomeações)</span>
+                  </label>
                   <input
                     className={inputCls}
                     placeholder="000.000.000-00"
@@ -215,6 +286,90 @@ export default function SignupPage() {
             </>
           )}
 
+          {/* STEP 3 — Tribunais */}
+          {step === 3 && (
+            <>
+              <div>
+                <h1 className="text-lg font-semibold text-slate-900">Tribunais de atuação</h1>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Selecione os estados onde você atua — o radar buscará nomeações nos tribunais correspondentes.
+                </p>
+              </div>
+
+              {/* Dropdown para adicionar estado */}
+              <div className="space-y-2">
+                <label className={labelCls}>Adicionar estado *</label>
+                <select
+                  className={`${inputCls} cursor-pointer`}
+                  value=""
+                  onChange={(e) => {
+                    const uf = e.target.value
+                    if (uf && !estados.includes(uf)) toggleEstado(uf)
+                    e.target.value = ''
+                  }}
+                >
+                  <option value="">Selecione um estado...</option>
+                  {ESTADOS_DISPONIVEIS.filter((uf) => !estados.includes(uf)).map((uf) => (
+                    <option key={uf} value={uf}>{uf}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Estados selecionados com seus tribunais */}
+              {grupos.length > 0 && (
+                <div className="space-y-3">
+                  {grupos.map(({ uf, itens }) => (
+                    <div key={uf} className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-bold uppercase tracking-wider text-slate-700">{uf}</p>
+                        <button
+                          type="button"
+                          onClick={() => toggleEstado(uf)}
+                          className="text-[10px] text-slate-400 hover:text-rose-500 transition-colors"
+                        >
+                          remover
+                        </button>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {itens.map((t) => (
+                          <button
+                            key={t.sigla}
+                            type="button"
+                            onClick={() => toggleTribunal(t.sigla)}
+                            className={cn(
+                              'inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-xs transition-colors',
+                              tribunais.includes(t.sigla)
+                                ? 'bg-slate-900 border-slate-900 text-white'
+                                : 'bg-white border-slate-200 text-slate-500 hover:border-slate-400',
+                            )}
+                          >
+                            {tribunais.includes(t.sigla) && <Check className="h-2.5 w-2.5" />}
+                            <span className="font-semibold">{t.sigla}</span>
+                            <span className={cn('rounded px-1 text-[10px] font-medium', TIPO_COR[t.tipo])}>
+                              {TIPO_LABEL[t.tipo]}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {estados.length === 0 && (
+                <p className="text-xs text-slate-400 text-center py-2">
+                  Selecione pelo menos um estado para continuar.
+                </p>
+              )}
+
+              {tribunais.length > 0 && (
+                <p className="text-xs text-lime-700 font-medium">
+                  {tribunais.filter(s => s.startsWith('TJ')).length} tribunal(is) cível(is) — radar de nomeações ativo.
+                </p>
+              )}
+            </>
+          )}
+
           {error && (
             <p className="rounded-lg bg-rose-50 border border-rose-100 px-3 py-2 text-xs text-rose-600">{error}</p>
           )}
@@ -223,23 +378,34 @@ export default function SignupPage() {
             {step > 1 && (
               <button
                 type="button"
-                onClick={() => { setError(''); setStep(1) }}
+                onClick={() => { setError(''); setStep(step - 1) }}
                 className="flex items-center gap-1 h-10 px-4 rounded-lg border border-slate-300 text-sm text-slate-600 hover:bg-slate-50 transition-colors"
               >
                 <ChevronLeft className="h-4 w-4" />
                 Voltar
               </button>
             )}
-            {step === 1 ? (
+            {step === 1 && (
               <button
                 type="button"
-                onClick={handleNext}
+                onClick={handleNext1}
                 className="flex-1 flex items-center justify-center gap-1.5 h-10 rounded-lg bg-lime-500 hover:bg-lime-600 text-slate-900 text-sm font-semibold transition-colors"
               >
                 Próximo
                 <ChevronRight className="h-4 w-4" />
               </button>
-            ) : (
+            )}
+            {step === 2 && (
+              <button
+                type="button"
+                onClick={handleNext2}
+                className="flex-1 flex items-center justify-center gap-1.5 h-10 rounded-lg bg-lime-500 hover:bg-lime-600 text-slate-900 text-sm font-semibold transition-colors"
+              >
+                Próximo
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            )}
+            {step === 3 && (
               <button
                 type="button"
                 onClick={handleSubmit}

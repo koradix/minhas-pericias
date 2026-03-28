@@ -4,7 +4,6 @@ import { Plus } from 'lucide-react'
 import { auth } from '@/auth'
 import { PageHeader } from '@/components/shared/page-header'
 import { Button } from '@/components/ui/button'
-import RouteMapDynamic from '@/components/maps/route-map-dynamic'
 import { RotasPericiasListClient } from '@/components/rotas/rotas-pericias-list'
 import { getRotasPericiasByPerito } from '@/lib/data/rotas'
 import type { Metadata } from 'next'
@@ -32,13 +31,6 @@ export default async function RotasPericiasPage() {
           </Link>
         }
       />
-
-      {/* Mapa */}
-      <div className="isolate h-[360px] w-full overflow-hidden rounded-xl border border-slate-200 shadow-sm">
-        <RouteMapDynamic
-          routes={rotas.map((r) => ({ id: r.id, pontos: r.pontos }))}
-        />
-      </div>
 
       {/* Route cards */}
       {rotas.length === 0 ? (

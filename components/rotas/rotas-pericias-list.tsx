@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { MapPin, Clock, Banknote, Navigation, FileText, Loader2 } from 'lucide-react'
+import { MapPin, Clock, Banknote, Navigation, FileText, Loader2, ExternalLink } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -11,6 +11,22 @@ import { iniciarRota } from '@/lib/actions/rotas-nova'
 import type { Rota, StatusRota } from '@/lib/types/rotas'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function buildMapsUrl(pontos: Rota['pontos']): string | null {
+  const enderecos = pontos
+    .sort((a, b) => a.ordem - b.ordem)
+    .map((p) => p.endereco)
+    .filter(Boolean) as string[]
+  if (enderecos.length === 0) return null
+  if (enderecos.length === 1) {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(enderecos[0])}`
+  }
+  const origin = encodeURIComponent(enderecos[0])
+  const destination = encodeURIComponent(enderecos[enderecos.length - 1])
+  const waypoints = enderecos.slice(1, -1).map(encodeURIComponent).join('|')
+  const base = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`
+  return waypoints ? `${base}&waypoints=${waypoints}` : base
+}
 
 const statusMap: Record<string, { label: string; variant: 'info' | 'warning' | 'success' | 'danger' | 'secondary' }> = {
   planejada:    { label: 'Planejada',     variant: 'info'      },
@@ -136,19 +152,35 @@ export function RotasPericiasListClient({ rotas }: { rotas: Rota[] }) {
                 )}
               </div>
 
-              <div className="flex items-center gap-5 text-xs text-slate-500">
-                <span className="flex items-center gap-1.5">
-                  <MapPin className="h-3.5 w-3.5 text-slate-400" />
-                  {rota.distanciaKm} km
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Clock className="h-3.5 w-3.5 text-slate-400" />
-                  {formatTempo(rota.tempoEstimadoMin)}
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Banknote className="h-3.5 w-3.5 text-slate-400" />
-                  {formatCurrency(rota.custoEstimado)}
-                </span>
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-5 text-xs text-slate-500">
+                  <span className="flex items-center gap-1.5">
+                    <MapPin className="h-3.5 w-3.5 text-slate-400" />
+                    {rota.distanciaKm} km
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <Clock className="h-3.5 w-3.5 text-slate-400" />
+                    {formatTempo(rota.tempoEstimadoMin)}
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <Banknote className="h-3.5 w-3.5 text-slate-400" />
+                    {formatCurrency(rota.custoEstimado)}
+                  </span>
+                </div>
+                {(() => {
+                  const mapsUrl = buildMapsUrl(rota.pontos)
+                  return mapsUrl ? (
+                    <a
+                      href={mapsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 hover:border-blue-300 hover:text-blue-600 transition-colors"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      Ver no Maps
+                    </a>
+                  ) : null
+                })()}
               </div>
             </CardContent>
           </Card>
