@@ -500,37 +500,54 @@ export class EscavadorService implements RadarProvider {
     return Buffer.from(ab)
   }
 
-  // ── ENDPOINT 9 — Busca por nome (PAGO — R$3.00/chamada) ────────────────────
+  // ── ENDPOINT 9 — Busca por nome em diários (PAGO) ──────────────────────────
+  //
+  // Busca o nome exato do perito nos Diários de Justiça Eletrônico (DJE) dos
+  // tribunais informados. A query adiciona "perito" para priorizar resultados
+  // de nomeações, mas o filtro pós-busca é a fonte definitiva de filtragem.
 
   async buscarPorNome(nome: string, siglasFiltro: string[], page = 1): Promise<CitacaoResult[]> {
-    const q = encodeURIComponent(nome)
-    const data = await this.request<{
-      paginator: { total: number }
-      items: EscavadorBuscaItem[]
-    }>(`/busca?q=${q}&qo=d&qs=d&limit=20&page=${page}`)
+    // Compõe query: nome entre aspas (match exato) + perito para priorizar nomeações
+    const queryTermo = `"${nome}" perito`
+    const q = encodeURIComponent(queryTermo)
 
-    if (process.env.NODE_ENV !== 'production') {
-      console.log(
-        `[Escavador] buscarPorNome: ${data.paginator.total} resultado(s) encontrado(s) para "${nome}"`,
+    let data: { paginator: { total: number }; items: EscavadorBuscaItem[] }
+    try {
+      data = await this.request<{ paginator: { total: number }; items: EscavadorBuscaItem[] }>(
+        `/busca?q=${q}&qo=d&qs=d&limit=50&page=${page}`,
+      )
+    } catch {
+      // Fallback: tenta sem aspas se a API rejeitar a query exata
+      const qFallback = encodeURIComponent(`${nome} perito`)
+      data = await this.request<{ paginator: { total: number }; items: EscavadorBuscaItem[] }>(
+        `/busca?q=${qFallback}&qo=d&qs=d&limit=50&page=${page}`,
       )
     }
 
+    console.log(
+      `[Escavador] buscarPorNome: query="${queryTermo}" → ${data.paginator.total} resultado(s) total`,
+    )
+
     const filtroUpper = new Set(siglasFiltro.map((s) => s.toUpperCase()))
 
-    return data.items
-      .filter(
-        (item) =>
-          item.tipo_resultado === 'Diario' &&
-          filtroUpper.has(item.diario_sigla.toUpperCase()),
-      )
-      .map((item) => ({
-        externalId: `busca-${item.id}`,
-        diarioSigla: item.diario_sigla,
-        diarioNome: item.diario_nome,
-        diarioData: item.diario_data,
-        snippet: item.texto,
-        numeroProcesso: null,
-        linkCitacao: item.link,
-      }))
+    const filtrados = data.items.filter(
+      (item) =>
+        item.tipo_resultado === 'Diario' &&
+        filtroUpper.has(item.diario_sigla.toUpperCase()),
+    )
+
+    console.log(
+      `[Escavador] buscarPorNome: ${filtrados.length} de ${data.items.length} itens passaram pelo filtro de tribunal`,
+    )
+
+    return filtrados.map((item) => ({
+      externalId: `busca-${item.id}`,
+      diarioSigla: item.diario_sigla,
+      diarioNome: item.diario_nome,
+      diarioData: item.diario_data,
+      snippet: item.texto,
+      numeroProcesso: null,
+      linkCitacao: item.link,
+    }))
   }
 }

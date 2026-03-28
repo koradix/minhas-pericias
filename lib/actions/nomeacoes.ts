@@ -15,14 +15,33 @@ function buildVariacoes(nome: string, cpf?: string | null): string[] {
   const vars: string[] = []
   if (parts.length >= 2) vars.push(`${parts[0]} ${parts[parts.length - 1]}`) // first + last
   if (parts.length >= 1) vars.push(parts[0]) // first name
-  // Use CPF as 3rd variation (diários sometimes list CPF alongside name)
   const cpfDigits = cpf?.replace(/\D/g, '') ?? ''
   if (cpfDigits.length === 11) {
-    vars.push(cpf!.trim()) // formatted CPF e.g. "123.456.789-00"
+    vars.push(cpf!.trim())
   } else if (parts.length >= 2) {
-    vars.push(parts[parts.length - 1]) // surname fallback
+    vars.push(parts[parts.length - 1])
   }
   return vars.slice(0, 3)
+}
+
+/** Retorna true se o sigla pertence a um tribunal estadual cível (TJ*). */
+function isTribunalCivel(sigla: string): boolean {
+  return sigla.toUpperCase().startsWith('TJ')
+}
+
+/**
+ * Retorna true se o snippet parece ser uma nomeação de perito em vara cível.
+ * Aceita qualquer menção a "nomea", "perito" ou "perícia" no texto.
+ */
+function isSnippetNomeacaoCivel(snippet: string): boolean {
+  const lower = snippet.toLowerCase()
+  return /nomea[ç r]|perito|per[íi]cia/.test(lower)
+}
+
+/** Busca o nome completo do usuário diretamente do banco (fonte mais confiável). */
+async function getNomePeito(userId: string): Promise<string> {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { name: true } })
+  return user?.name?.trim() ?? ''
 }
 
 // ─── Action 1 — Setup radar ───────────────────────────────────────────────────
@@ -66,10 +85,16 @@ export async function setupRadar(): Promise<SetupRadarResult> {
     const peritoPerfil = await prisma.peritoPerfil.findUnique({ where: { userId } })
     if (!peritoPerfil) return { status: 'error', message: 'Perfil não encontrado' }
 
-    const nomePeito = session.user?.name ?? peritoPerfil.cidade ?? 'Perito'
+    // Nome do cadastro — fonte primária: banco de dados (User.name)
+    const nomePeito = await getNomePeito(userId)
+    if (!nomePeito) return { status: 'error', message: 'Nome não cadastrado no perfil' }
+
     const cpf = (peritoPerfil as { cpf?: string | null }).cpf ?? null
-    const siglas: string[] = JSON.parse(peritoPerfil.tribunais || '[]')
-    if (siglas.length === 0) return { status: 'error', message: 'Nenhum tribunal registrado no perfil' }
+
+    // Filtra apenas tribunais estaduais cíveis (TJ*)
+    const todasSiglas: string[] = JSON.parse(peritoPerfil.tribunais || '[]')
+    const siglas = todasSiglas.filter(isTribunalCivel)
+    if (siglas.length === 0) return { status: 'error', message: 'Nenhum tribunal estadual (TJ) registrado no perfil' }
 
     const resolvidos = await radar.resolverTribunais(siglas)
     const suportados = resolvidos.filter((t) => t.suportaBusca)
@@ -259,13 +284,17 @@ export async function buscarNomeacoes(): Promise<BuscarResult> {
     if (!config) return { ok: false, novas: 0, error: 'Radar não configurado' }
 
     const peritoPerfil = await prisma.peritoPerfil.findUnique({ where: { userId } })
-    const nomePeito = session.user?.name ?? ''
     const cpfPerfil = (peritoPerfil as { cpf?: string | null })?.cpf ?? null
+
+    // Nome exato do cadastro (User.name — fonte mais confiável)
+    const nomePeito = await getNomePeito(userId)
+    if (!nomePeito) return { ok: false, novas: 0, error: 'Nome não cadastrado no perfil' }
+
+    console.log(`[buscarNomeacoes] Buscando por: "${nomePeito}"`)
 
     // ── Check saldo before any paid endpoint ────────────────────────────────
     const saldoInfo = await radar.verificarSaldo()
 
-    // Update last known balance
     await prisma.radarConfig.update({
       where: { peritoId: userId },
       data: { saldoUltimaVerif: saldoInfo.saldo },
@@ -275,40 +304,61 @@ export async function buscarNomeacoes(): Promise<BuscarResult> {
       return { ok: false, novas: 0, error: 'Saldo insuficiente na API Escavador' }
     }
 
-    const siglasFiltro: string[] = JSON.parse(config.tribunaisMonitorados || '[]')
+    // Apenas tribunais estaduais cíveis (TJ*) — exclui TRT, TRF, TRE
+    const todasSiglas: string[] = JSON.parse(config.tribunaisMonitorados || '[]')
+    const siglasFiltro = todasSiglas.filter(isTribunalCivel)
+    if (siglasFiltro.length === 0) {
+      return { ok: false, novas: 0, error: 'Nenhum tribunal estadual (TJ) configurado no radar' }
+    }
+
+    console.log(`[buscarNomeacoes] Tribunais cíveis monitorados: ${siglasFiltro.join(', ')}`)
+
     const citacoes: CitacaoResult[] = []
 
-    // ── FREE: monitoring appearances ─────────────────────────────────────────
+    // ── FREE: aparições do monitoramento ────────────────────────────────────
     if (config.monitoramentoExtId) {
       try {
         const fromMonitor = await radar.buscarCitacoes(config.monitoramentoExtId)
         citacoes.push(...fromMonitor)
+        console.log(`[buscarNomeacoes] Monitoramento: ${fromMonitor.length} aparições`)
       } catch {
-        // Non-blocking: monitoring might not have results yet
+        // Non-blocking
       }
     }
 
-    // ── PAID: full text search ────────────────────────────────────────────────
+    // ── PAID: busca por nome completo nos diários cíveis ────────────────────
     const fromBusca = await radar.buscarPorNome(nomePeito, siglasFiltro)
+    console.log(`[buscarNomeacoes] Busca por nome: ${fromBusca.length} resultados antes do filtro`)
     citacoes.push(...fromBusca)
 
-    // If CPF is set, also search by CPF (some diários list CPF alongside the name)
+    // ── PAID: busca por CPF (alguns diários listam CPF junto ao nome) ───────
     if (cpfPerfil && cpfPerfil.replace(/\D/g, '').length === 11) {
       try {
         const fromCpf = await radar.buscarPorNome(cpfPerfil, siglasFiltro)
         citacoes.push(...fromCpf)
       } catch {
-        // Non-blocking — CPF search failure doesn't abort
+        // Non-blocking
       }
     }
 
-    // ── Dedup by externalId ──────────────────────────────────────────────────
+    // ── Dedup por externalId ─────────────────────────────────────────────────
     const seen = new Set<string>()
-    const unique = citacoes.filter((c) => {
+    const deduped = citacoes.filter((c) => {
       if (seen.has(c.externalId)) return false
       seen.add(c.externalId)
       return true
     })
+
+    // ── Filtra apenas citações de nomeação de perito em varas cíveis ─────────
+    const unique = deduped.filter((c) => {
+      // Tribunal já está filtrado por TJ* no siglasFiltro — garante vara cível
+      if (!isTribunalCivel(c.diarioSigla)) return false
+      // Snippet deve conter menção a nomeação ou perito
+      if (!isSnippetNomeacaoCivel(c.snippet)) return false
+      return true
+    })
+
+    console.log(`[buscarNomeacoes] Após filtro cível+nomeação: ${unique.length} de ${deduped.length}`)
 
     // ── Verify updated saldo after paid call ─────────────────────────────────
     const saldoPos = await radar.verificarSaldo()
