@@ -6,7 +6,7 @@ import {
   X, Upload, Loader2, AlertCircle, FileText, Sparkles,
   CheckCircle2, ChevronRight, Building2, Hash,
 } from 'lucide-react'
-import { upload } from '@vercel/blob/client'
+import { registrarNomeacao } from '@/lib/actions/nomeacoes-upload'
 import { Button } from '@/components/ui/button'
 
 interface Props {
@@ -25,7 +25,7 @@ interface Preview {
   pontoControvertido: string | null
 }
 
-type Phase = 'idle' | 'uploading' | 'analyzing' | 'results'
+type Phase = 'idle' | 'analyzing' | 'results'
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
@@ -54,7 +54,7 @@ export function ManualCitacaoForm({ siglas, onClose }: Props) {
   const [sigla, setSigla]   = useState(siglas[0] ?? 'TJRJ')
   const [numero, setNumero] = useState('')
 
-  const isPending = phase === 'uploading' || phase === 'analyzing'
+  const isPending = phase === 'analyzing'
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0]
@@ -75,50 +75,15 @@ export function ManualCitacaoForm({ siglas, onClose }: Props) {
     if (!allowed.includes(file.type)) { setError('Apenas PDF ou DOCX são aceitos'); return }
     if (file.size > 50 * 1024 * 1024) { setError('Arquivo muito grande (máx 50 MB)'); return }
 
-    setPhase('uploading')
+    setPhase('analyzing')
 
     try {
-      let res: Response
+      const formData = new FormData()
+      formData.append('arquivo', file)
+      formData.append('tribunal', sigla)
+      if (numero.trim()) formData.append('numeroProcesso', numero.trim())
 
-      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-
-      if (isLocalhost) {
-        // ── Dev: envia arquivo direto como FormData (sem Vercel Blob) ──────────
-        const formData = new FormData()
-        formData.append('file', file)
-        formData.append('tribunal', sigla)
-        if (numero.trim()) formData.append('numero', numero.trim())
-
-        setPhase('analyzing')
-        res = await fetch('/api/nomeacoes/upload', { method: 'POST', body: formData })
-      } else {
-        // ── Prod: upload direto para Vercel Blob (não passa pelo serverless) ───
-        const blob = await upload(file.name, file, {
-          access: 'public',
-          handleUploadUrl: '/api/nomeacoes/blob-upload',
-        })
-
-        setPhase('analyzing')
-        res = await fetch('/api/nomeacoes/upload', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            blobUrl:  blob.url,
-            fileName: file.name,
-            fileSize: file.size,
-            mimeType: file.type,
-            tribunal: sigla,
-            numero:   numero.trim() || null,
-          }),
-        })
-      }
-
-      const result = await res.json() as {
-        ok: boolean
-        message?: string
-        nomeacaoId?: string
-        preview?: Preview
-      }
+      const result = await registrarNomeacao(formData)
 
       if (result.ok && result.nomeacaoId) {
         setNomeacaoId(result.nomeacaoId)
@@ -278,22 +243,14 @@ export function ManualCitacaoForm({ siglas, onClose }: Props) {
                 <div className="flex items-center gap-2.5">
                   <Loader2 className="h-4 w-4 text-violet-500 animate-spin flex-shrink-0" />
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-violet-800">
-                      {phase === 'uploading' ? 'Enviando documento…' : 'IA analisando o processo…'}
-                    </p>
+                    <p className="text-sm font-semibold text-violet-800">IA analisando o processo…</p>
                     <p className="text-xs text-violet-500 truncate">
-                      {phase === 'uploading'
-                        ? `${fileName} · ${formatBytes(fileSize)}`
-                        : 'Aplicando Prompt Mestre — aguarde alguns segundos'}
+                      Aplicando Prompt Mestre — aguarde alguns segundos
                     </p>
                   </div>
                 </div>
                 <div className="w-full h-1 bg-violet-100 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full bg-violet-400 rounded-full transition-all duration-1000 ${
-                      phase === 'uploading' ? 'w-1/3' : 'w-2/3 animate-pulse'
-                    }`}
-                  />
+                  <div className="h-full bg-violet-400 rounded-full transition-all duration-1000 w-2/3 animate-pulse" />
                 </div>
               </div>
             )}
@@ -347,7 +304,7 @@ export function ManualCitacaoForm({ siglas, onClose }: Props) {
                 disabled={isPending}
               >
                 {isPending
-                  ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> {phase === 'uploading' ? 'Enviando…' : 'Analisando…'}</>
+                  ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Analisando…</>
                   : <><Sparkles className="h-3.5 w-3.5" /> Registrar e analisar</>
                 }
               </Button>
