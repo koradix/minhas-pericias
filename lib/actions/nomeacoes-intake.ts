@@ -202,10 +202,6 @@ export async function criarPericiaDeNomeacao(
     // Already has a péricia
     if (n.periciaId) return { ok: true, message: 'Péricia já criada.', periciaId: n.periciaId }
 
-    // Requires at least a document upload OR extracted data
-    if (!n.nomeArquivo && !n.extractedData)
-      return { ok: false, message: 'Envie o documento do processo antes de criar a perícia.' }
-
     // Sequential número: PRC-YYYY-NNN
     const count = await prisma.pericia.count({ where: { peritoId: session.user.id } })
     const numero = `PRC-${new Date().getFullYear()}-${String(count + 1).padStart(3, '0')}`
@@ -257,10 +253,10 @@ export async function criarPericiaDeNomeacao(
       },
     })
 
-    // Link péricia back to nomeação and advance status
+    // Link péricia back to nomeação and mark as converted (terminal state)
     await prisma.nomeacao.update({
       where: { id: nomeacaoId },
-      data: { periciaId: pericia.id, status: 'em_andamento' },
+      data: { periciaId: pericia.id, status: 'convertida' },
     })
 
     revalidatePath(`/nomeacoes/${nomeacaoId}`)

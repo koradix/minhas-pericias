@@ -94,7 +94,7 @@ export default async function PericiasPage() {
         actions={
           <Link href="/nomeacoes">
             <Button size="sm" className="bg-lime-500 hover:bg-lime-600 text-slate-900 gap-1.5">
-              <Plus className="h-3.5 w-3.5" /> Importar processo
+              <Plus className="h-3.5 w-3.5" /> Ver nomeações
             </Button>
           </Link>
         }

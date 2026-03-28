@@ -8,7 +8,6 @@ import {
   FileText,
   CheckCircle2,
   Loader2,
-  Lock,
   ChevronRight,
 } from 'lucide-react'
 import {
@@ -95,13 +94,11 @@ export function NomeacaoIntakeActions({
     startTransition(async () => {
       const res = await criarPericiaDeNomeacao(nomeacaoId)
       if (res.ok && res.periciaId) {
-        setPericiaId(res.periciaId)
-        setPericiaNumero(res.periciaNumero ?? null)
-        router.refresh()
+        router.push(`/pericias/${res.periciaId}`)
       } else {
         setErrorMsg(res.message)
+        setActiveStep(null)
       }
-      setActiveStep(null)
     })
   }
 
@@ -188,36 +185,33 @@ export function NomeacaoIntakeActions({
         )}
       </div>
 
-      {/* Step 3 — Criar péricia (enabled after document upload) */}
+      {/* Step 3 — Aceitar e criar péricia */}
       {(() => {
-        const canCreate = !!nomeArquivo || hasExtracted
+        const canCreate = true // processo sempre está linkado
         return (
           <div className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 ${
             !canCreate ? 'border-slate-100 bg-slate-50 opacity-60' : 'border-lime-200 bg-lime-50'
           }`}>
             <StepCircle n={3} done={false} active={activeStep === 3} />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-slate-700">Criar péricia</p>
-              {canCreate && !hasSummary && (
+              <p className="text-sm font-semibold text-slate-700">Aceitar e criar perícia</p>
+              {!hasSummary && (
                 <p className="text-[10px] text-slate-400 mt-0.5">
-                  {hasExtracted ? 'Dados extraídos disponíveis' : 'A partir do processo'}
+                  {hasExtracted ? 'Com dados extraídos' : 'A partir dos dados do processo'}
                 </p>
               )}
             </div>
-            {!canCreate && <Lock className="h-3.5 w-3.5 text-slate-300 flex-shrink-0" />}
-            {canCreate && (
-              <button
-                onClick={handleCreatePericia}
-                disabled={isRunning}
-                className="flex items-center gap-1.5 rounded-lg bg-lime-500 hover:bg-lime-600 text-slate-900 font-semibold text-xs px-3 py-1.5 transition-colors disabled:opacity-50"
-              >
-                {isRunning && activeStep === 3
-                  ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  : <ChevronRight className="h-3.5 w-3.5" />
-                }
-                Criar
-              </button>
-            )}
+            <button
+              onClick={handleCreatePericia}
+              disabled={isRunning}
+              className="flex items-center gap-1.5 rounded-lg bg-lime-500 hover:bg-lime-600 text-slate-900 font-semibold text-xs px-3 py-1.5 transition-colors disabled:opacity-50"
+            >
+              {isRunning && activeStep === 3
+                ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                : <ChevronRight className="h-3.5 w-3.5" />
+              }
+              Aceitar
+            </button>
           </div>
         )
       })()}

@@ -5,8 +5,6 @@ import {
   ArrowDownCircle,
   Settings,
   Inbox,
-  Navigation,
-  Radar,
   Send,
   Search,
   type LucideIcon,
@@ -35,10 +33,10 @@ export const navigation: NavSection[] = [
     title: "Principal",
     items: [
       { title: "Dashboard",       href: "/dashboard", icon: LayoutDashboard },
-      { title: "Péricias",        href: "/pericias",  icon: FileText },
+      { title: "Nomeações",  href: "/nomeacoes", icon: Inbox },
+      { title: "Péricias",   href: "/pericias",  icon: FileText },
       // { title: "Processos",    href: "/processos", icon: Upload },   // MVP: oculto
-      { title: "Visitas e Rotas", href: "/rotas",     icon: Navigation },
-      { title: "Radar",           href: "/nomeacoes", icon: Radar },
+      // { title: "Rotas",        href: "/rotas",     icon: Navigation }, // MVP: acessado via detalhe da perícia
     ],
   },
   {
