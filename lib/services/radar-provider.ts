@@ -72,7 +72,7 @@ export interface RadarProvider {
 
 export class EscavadorError extends Error {
   constructor(
-    public code: 401 | 402 | 404 | 500,
+    public code: 401 | 402 | 404 | 408 | 500,
     message: string,
   ) {
     super(message)

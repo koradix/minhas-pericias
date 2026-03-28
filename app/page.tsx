@@ -1,16 +1,22 @@
+'use client'
+
 import Link from 'next/link'
 import Image from 'next/image'
+import { useEffect, useState } from 'react'
 import {
   ArrowRight,
   CheckCircle2,
   FileText,
   Radar,
-  Navigation,
-  Zap,
-  Mail,
+  MapPin,
+  FileOutput,
+  DollarSign,
   Users,
+  Star,
+  Mail,
   Send,
   BarChart3,
+  Zap,
   Shield,
   Sparkles,
 } from 'lucide-react'
@@ -19,37 +25,40 @@ import {
 
 const features = [
   {
-    icon: FileText,
     title: 'Gestão de Péricias',
     description: 'Centralize processos, prazos, documentos e laudos. Acompanhe cada etapa com visibilidade total do fluxo pericial.',
-    accent: 'bg-lime-50 text-lime-600 ring-lime-100',
   },
   {
-    icon: Radar,
     title: 'Radar de Nomeações',
     description: 'Monitore varas e juízes estratégicos. Identifique padrões de nomeação e antecipe oportunidades de trabalho.',
-    accent: 'bg-violet-50 text-violet-600 ring-violet-100',
   },
   {
-    icon: Navigation,
     title: 'Rotas Inteligentes',
     description: 'Planeje deslocamentos entre visitas e vistorias. Reduza tempo e custo com organização eficiente de rotas.',
-    accent: 'bg-emerald-50 text-emerald-600 ring-emerald-100',
   },
   {
-    icon: Zap,
     title: 'Geração de Documentos',
     description: 'Gere laudos, propostas de honorários e pareceres com agilidade. Modelos profissionais prontos para uso.',
-    accent: 'bg-amber-50 text-amber-600 ring-amber-100',
   },
 ]
 
+function getFeatureIcon(title: string) {
+  const t = title.toLowerCase()
+  if (t.includes('perícia') || t.includes('gestão')) return FileText
+  if (t.includes('radar') || t.includes('nomeaç')) return Radar
+  if (t.includes('rota') || t.includes('vistoria')) return MapPin
+  if (t.includes('documento') || t.includes('laudo') || t.includes('relatório')) return FileOutput
+  if (t.includes('financeiro') || t.includes('honorário')) return DollarSign
+  if (t.includes('parceiro') || t.includes('demanda')) return Users
+  return Star
+}
+
 const prospectionFeatures = [
-  { icon: Mail, text: 'Envio automatizado de e-mails para advogados e escritórios' },
-  { icon: Users, text: 'Cadastro e organização de leads qualificados' },
-  { icon: Send, text: 'Envio de propostas e currículo profissional' },
-  { icon: BarChart3, text: 'Acompanhamento de funil e taxa de resposta' },
-  { icon: Zap, text: 'Identificação automática de oportunidades' },
+  { text: 'Envio automatizado de e-mails para advogados e escritórios' },
+  { text: 'Cadastro e organização de leads qualificados' },
+  { text: 'Envio de propostas e currículo profissional' },
+  { text: 'Acompanhamento de funil e taxa de resposta' },
+  { text: 'Identificação automática de oportunidades' },
 ]
 
 const plans = [
@@ -108,27 +117,58 @@ const plans = [
   },
 ]
 
+// ─── Logo component (uses Montserrat via CSS var) ────────────────────────────
+
+function PeriLabLogo({ dark = true }: { dark?: boolean }) {
+  return (
+    <div style={{ fontFamily: 'var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif', lineHeight: 1 }}>
+      <div style={{ fontSize: '1.75rem', fontWeight: 900, letterSpacing: '-0.03em' }}>
+        <span style={{ color: dark ? '#1f2937' : 'white' }}>Peri</span>
+        <span style={{ color: '#84cc16' }}>LaB</span>
+      </div>
+      <div style={{ fontSize: '0.6rem', color: dark ? '#9ca3af' : 'rgba(255,255,255,0.5)', fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', marginTop: '3px' }}>
+        de perito para perito
+      </div>
+    </div>
+  )
+}
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function LandingPage() {
+  const [scrolled, setScrolled] = useState(false)
+
+  useEffect(() => {
+    const handler = () => setScrolled(window.scrollY > 50)
+    window.addEventListener('scroll', handler, { passive: true })
+    return () => window.removeEventListener('scroll', handler)
+  }, [])
+
   return (
     <div className="min-h-screen bg-white text-slate-900 antialiased">
 
       {/* ── Navbar ── */}
-      <header className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/95 backdrop-blur-sm">
+      <header
+        className="fixed top-0 z-50 w-full transition-all duration-300"
+        style={
+          scrolled
+            ? { background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }
+            : { background: 'transparent' }
+        }
+      >
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
           <Link href="/">
-            <Image src="/logo.svg" alt="Perilab" width={130} height={48} priority />
+            <PeriLabLogo dark />
           </Link>
 
           <nav className="hidden items-center gap-7 md:flex">
-            <a href="#funcionalidades" className="text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors">
+            <a href="#funcionalidades" className="text-sm font-medium text-slate-700 transition-colors hover:text-lime-600">
               Funcionalidades
             </a>
-            <a href="#prospeccao" className="text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors">
+            <a href="#prospeccao" className="text-sm font-medium text-slate-700 transition-colors hover:text-lime-600">
               Prospecção
             </a>
-            <a href="#planos" className="text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors">
+            <a href="#planos" className="text-sm font-medium text-slate-700 transition-colors hover:text-lime-600">
               Planos
             </a>
           </nav>
@@ -144,214 +184,204 @@ export default function LandingPage() {
       </header>
 
       {/* ── Hero ── */}
-      <section className="border-b border-slate-100 bg-white py-16 sm:py-20 lg:py-24">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+      <section className="relative flex min-h-screen flex-col overflow-hidden">
+        {/* Blurred background image */}
+        <div
+          aria-hidden
+          className="absolute inset-0 scale-110"
+          style={{
+            backgroundImage: `url('https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=1920&q=80')`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            filter: 'blur(10px)',
+          }}
+        />
+        {/* White overlay */}
+        <div aria-hidden className="absolute inset-0" style={{ background: 'rgba(255,255,255,0.88)' }} />
 
-            {/* LEFT — text */}
-            <div>
-              {/* Pill */}
-              <div className="mb-7 inline-flex cursor-pointer items-center gap-2 rounded-full border border-lime-200 bg-lime-50 px-3.5 py-1 text-xs font-semibold text-lime-700 transition-all hover:bg-lime-100 ring-1 ring-lime-200/50">
-                <span className="flex h-1.5 w-1.5 rounded-full bg-lime-500" />
-                Novo Radar de Nomeações V2.0
-                <ArrowRight className="h-3 w-3 ml-0.5" />
+        {/* Main content — centered single column */}
+        <div className="relative mx-auto flex w-full max-w-4xl flex-1 flex-col items-center justify-center px-4 pb-32 pt-32 text-center sm:px-6">
+
+          {/* Headline */}
+          <h1
+            className="mb-6"
+            style={{
+              color: '#1f2937',
+              fontWeight: 800,
+              fontSize: 'clamp(3rem, 6vw, 5.5rem)',
+              letterSpacing: '-0.03em',
+              lineHeight: 1.05,
+              textAlign: 'center',
+              fontFamily: 'var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif',
+            }}
+          >
+            Gestão pericial completa,<br />
+            <em style={{ color: '#84cc16', fontStyle: 'italic' }}>do processo ao laudo.</em>
+          </h1>
+
+          <p
+            className="mb-10"
+            style={{ color: '#6b7280', fontSize: 'clamp(1.1rem, 2vw, 1.35rem)', maxWidth: '600px', lineHeight: 1.7, textAlign: 'center', margin: '0 auto 2.5rem' }}
+          >
+            O Perilab organiza suas péricias, identifica oportunidades de nomeação e gera documentos profissionais com precisão.
+          </p>
+
+          <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+            <Link
+              href="/login"
+              className="inline-flex items-center justify-center gap-2 transition-all hover:bg-lime-400"
+              style={{ background: '#84cc16', color: '#1f2937', fontWeight: 600, padding: '16px 36px', fontSize: '1.05rem', borderRadius: '0.75rem' }}
+            >
+              Acessar plataforma
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+            <a
+              href="#planos"
+              className="inline-flex items-center justify-center gap-2 transition-all hover:border-slate-400"
+              style={{ border: '1px solid #d1d5db', color: '#374151', background: 'transparent', padding: '16px 36px', fontSize: '1.05rem', fontWeight: 600, borderRadius: '0.75rem' }}
+            >
+              Ver planos
+            </a>
+          </div>
+        </div>
+
+        {/* ── Stats bar (bottom of hero) ── */}
+        <div
+          className="relative w-full"
+          style={{
+            background: 'rgba(255,255,255,0.7)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            borderTop: '1px solid rgba(0,0,0,0.08)',
+          }}
+        >
+          <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-center px-4 sm:px-6">
+            {[
+              { value: '200+', label: 'Peritos ativos' },
+              { value: '5.000+', label: 'Péricias gerenciadas' },
+              { value: '12.000+', label: 'Documentos gerados' },
+            ].map((s, i) => (
+              <div
+                key={s.label}
+                className="flex flex-col items-center py-6 px-10 sm:px-16"
+                style={i > 0 ? { borderLeft: '1px solid rgba(0,0,0,0.1)' } : {}}
+              >
+                <p style={{ color: '#1f2937', fontSize: '2rem', fontWeight: 800, lineHeight: 1, fontFamily: 'var(--font-montserrat), ui-sans-serif, system-ui, sans-serif' }}>{s.value}</p>
+                <p style={{ color: '#9ca3af', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: '4px' }}>{s.label}</p>
               </div>
-
-              {/* Headline */}
-              <h1 className="mb-6 text-[2.6rem] font-bold leading-[1.06] tracking-[-0.03em] text-slate-900 sm:text-5xl lg:text-[3.25rem]" style={{ fontFamily: 'var(--font-montserrat), ui-sans-serif, system-ui, sans-serif' }}>
-                Gestão pericial completa,<br />
-                <em className="italic font-extrabold text-lime-500" style={{ fontStyle: 'italic' }}>do processo ao laudo.</em>
-              </h1>
-
-              <p className="mb-8 max-w-[480px] text-lg leading-relaxed text-slate-500">
-                O Perilab organiza suas péricias, identifica oportunidades de nomeação e gera documentos profissionais com precisão.
-              </p>
-
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <Link
-                  href="/login"
-                  className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-lime-500 px-8 text-sm font-bold text-slate-900 shadow-sm shadow-lime-300/40 transition-all hover:bg-lime-400 hover:shadow-md hover:shadow-lime-300/50"
-                >
-                  Acessar plataforma
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-                <a
-                  href="#planos"
-                  className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 px-8 text-sm font-semibold text-slate-600 transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
-                >
-                  Ver planos
-                </a>
-              </div>
-
-              {/* Stats */}
-              <div className="mt-12 flex flex-wrap gap-8 border-t border-slate-100 pt-8">
-                {[
-                  { value: '200+', label: 'Peritos ativos' },
-                  { value: '5.000+', label: 'Péricias gerenciadas' },
-                  { value: '12.000+', label: 'Documentos gerados' },
-                ].map((s) => (
-                  <div key={s.label}>
-                    <p className="font-heading text-2xl font-bold tracking-tight text-slate-900 tabular-nums">{s.value}</p>
-                    <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">{s.label}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* RIGHT — UI mockup */}
-            <div className="relative flex items-center justify-center lg:justify-end">
-              <div className="w-full max-w-[480px] rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-200/60 overflow-hidden">
-                {/* App topbar */}
-                <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <div className="h-5 w-5 rounded-md bg-lime-500 flex items-center justify-center">
-                      <span className="text-[8px] font-bold text-slate-900">PL</span>
-                    </div>
-                    <span className="text-xs font-semibold text-slate-700">Perilab</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="h-2 w-2 rounded-full bg-slate-200" />
-                    <div className="h-2 w-2 rounded-full bg-slate-200" />
-                    <div className="h-2 w-2 rounded-full bg-lime-400" />
-                  </div>
-                </div>
-
-                <div className="p-5 space-y-4">
-                  {/* KPI row */}
-                  <div className="grid grid-cols-3 gap-3">
-                    {[
-                      { label: 'Péricias ativas', value: '12', color: 'text-lime-600', bg: 'bg-lime-50' },
-                      { label: 'Honorários', value: 'R$ 8.4k', color: 'text-emerald-600', bg: 'bg-emerald-50' },
-                      { label: 'Nomeações', value: '3 novas', color: 'text-violet-600', bg: 'bg-violet-50' },
-                    ].map((k) => (
-                      <div key={k.label} className={`rounded-xl ${k.bg} px-3 py-3`}>
-                        <p className={`text-sm font-bold tabular-nums ${k.color}`}>{k.value}</p>
-                        <p className="text-[10px] text-slate-500 mt-0.5 leading-tight">{k.label}</p>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Péricias list */}
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-2">Péricias recentes</p>
-                    <div className="space-y-1.5">
-                      {[
-                        { num: 'PRC-2024-041', assunto: 'Avaliação de Imóvel', status: 'Em andamento', dot: 'bg-amber-400' },
-                        { num: 'PRC-2024-039', assunto: 'Laudo Contábil', status: 'Aguardando docs', dot: 'bg-violet-400' },
-                        { num: 'PRC-2024-037', assunto: 'Perícia Trabalhista', status: 'Concluída', dot: 'bg-emerald-400' },
-                      ].map((p) => (
-                        <div key={p.num} className="flex items-center justify-between rounded-lg border border-slate-100 px-3 py-2">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${p.dot}`} />
-                            <div className="min-w-0">
-                              <p className="text-[11px] font-semibold text-slate-800 truncate">{p.assunto}</p>
-                              <p className="text-[10px] text-slate-400">{p.num}</p>
-                            </div>
-                          </div>
-                          <span className="text-[10px] font-medium text-slate-500 flex-shrink-0 ml-2">{p.status}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Radar strip */}
-                  <div className="rounded-xl border border-violet-100 bg-violet-50 px-4 py-3 flex items-center justify-between">
-                    <div>
-                      <p className="text-xs font-semibold text-violet-800">Radar de Nomeações</p>
-                      <p className="text-[10px] text-violet-500 mt-0.5">3 citações novas · TJRJ, TRT-1</p>
-                    </div>
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-violet-100">
-                      <Radar className="h-4 w-4 text-violet-600" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Floating badge */}
-              <div className="absolute -bottom-3 -left-3 hidden lg:flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-lg shadow-slate-200/60">
-                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-lime-100">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-lime-600" />
-                </div>
-                <div>
-                  <p className="text-[11px] font-semibold text-slate-800">Laudo gerado com IA</p>
-                  <p className="text-[10px] text-slate-400">PRC-2024-041 · agora</p>
-                </div>
-              </div>
-            </div>
-
+            ))}
           </div>
         </div>
       </section>
 
       {/* ── Features ── */}
-      <section id="funcionalidades" className="py-20 sm:py-28">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="mb-14 max-w-2xl">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.15em] text-lime-600">
+      <section id="funcionalidades" className="py-24">
+        <div className="mx-auto max-w-[1100px] px-6">
+          {/* Header */}
+          <div className="mb-12 max-w-xl">
+            <p style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.15em', color: '#84cc16', textTransform: 'uppercase', marginBottom: '12px' }}>
               Funcionalidades
             </p>
-            <h2 className="font-heading text-3xl font-bold tracking-tight text-slate-900 sm:text-[2.1rem]">
+            <h2 style={{ fontSize: 'clamp(2rem, 3vw, 2.8rem)', fontWeight: 800, color: '#1f2937', letterSpacing: '-0.02em', lineHeight: 1.2, fontFamily: 'var(--font-montserrat), ui-sans-serif, system-ui, sans-serif' }}>
               Tudo que o perito precisa
             </h2>
-            <p className="mt-4 text-base leading-relaxed text-slate-500">
+            <p style={{ color: '#6b7280', fontSize: '1rem', maxWidth: '560px', marginTop: '12px', lineHeight: 1.7 }}>
               Do controle de processos à geração de laudos — uma plataforma integrada para profissionalizar sua atuação pericial.
             </p>
           </div>
 
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {features.map((f) => {
-              const Icon = f.icon
-              return (
-                <div
-                  key={f.title}
-                  className="group rounded-2xl border border-slate-200/80 bg-white p-6 transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md hover:shadow-slate-100/80"
-                >
-                  <div className={`mb-4 flex h-10 w-10 items-center justify-center rounded-lg ring-1 ${f.accent}`}>
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <h3 className="mb-2 text-sm font-semibold text-slate-900">{f.title}</h3>
-                  <p className="text-sm leading-relaxed text-slate-500">{f.description}</p>
-                </div>
-              )
-            })}
-          </div>
+          {/* Divider */}
+          <div style={{ borderTop: '1px solid #e2e8f0' }} />
+
+          {/* Editorial list */}
+          {features.map((f, i) => (
+            <div
+              key={f.title}
+              className="transition-colors duration-150"
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '3rem 1fr 2fr',
+                gap: '2rem',
+                padding: '2rem 0',
+                borderBottom: '1px solid #e2e8f0',
+                alignItems: 'start',
+                cursor: 'default',
+              }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = '#fafafa' }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = 'transparent' }}
+            >
+              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#84cc16', letterSpacing: '0.05em', paddingTop: '3px' }}>
+                {String(i + 1).padStart(2, '0')}
+              </span>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1f2937', letterSpacing: '-0.01em', margin: 0 }}>
+                {f.title}
+              </h3>
+              <p style={{ fontSize: '0.95rem', color: '#6b7280', lineHeight: 1.7, margin: 0 }}>
+                {f.description}
+              </p>
+            </div>
+          ))}
         </div>
       </section>
 
       {/* ── Prospection ── */}
-      <section id="prospeccao" className="bg-slate-50/60 py-20 sm:py-28 border-y border-slate-100">
+      <section
+        id="prospeccao"
+        className="py-20 sm:py-28"
+        style={{ background: '#0f172a' }}
+      >
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="grid items-center gap-12 lg:grid-cols-2">
+            {/* Left column */}
             <div>
-              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.15em] text-lime-600">
+              {/* Label pill */}
+              <div
+                className="mb-4 inline-block"
+                style={{
+                  background: 'rgba(132,204,22,0.15)',
+                  border: '1px solid rgba(132,204,22,0.3)',
+                  color: '#a3e635',
+                  borderRadius: '999px',
+                  padding: '4px 14px',
+                  fontSize: '12px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.1em',
+                  fontWeight: 600,
+                }}
+              >
                 Módulo de Prospecção
-              </p>
-              <h2 className="font-heading mb-5 text-3xl font-bold tracking-tight text-slate-900 sm:text-[2.1rem]">
+              </div>
+              <h2
+                className="font-heading mb-5 text-3xl tracking-tight sm:text-[2.1rem]"
+                style={{ color: 'white', fontWeight: 800 }}
+              >
                 Conquiste novos trabalhos{' '}
-                <span className="text-lime-600">no piloto automático</span>
+                <span style={{ color: '#84cc16' }}>no piloto automático</span>
               </h2>
-              <p className="mb-8 text-base leading-relaxed text-slate-500">
+              <p
+                className="mb-8 text-base leading-relaxed"
+                style={{ color: '#d1d5db' }}
+              >
                 O Perilab automatiza a prospecção de advogados, escritórios e seguradoras. Envie
                 e-mails personalizados, propostas e currículo de forma organizada e escalável —
                 enquanto você foca nas péricias.
               </p>
               <ul className="space-y-3.5">
-                {prospectionFeatures.map((item) => {
-                  const Icon = item.icon
-                  return (
-                    <li key={item.text} className="flex items-start gap-3">
-                      <div className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md bg-lime-100">
-                        <Icon className="h-3.5 w-3.5 text-lime-600" />
-                      </div>
-                      <span className="text-sm text-slate-700 leading-relaxed">{item.text}</span>
-                    </li>
-                  )
-                })}
+                {prospectionFeatures.map((item) => (
+                  <li key={item.text} className="flex items-start gap-3">
+                    <CheckCircle2
+                      className="mt-0.5 flex-shrink-0"
+                      style={{ color: '#84cc16', width: '20px', height: '20px' }}
+                    />
+                    <span className="text-sm leading-relaxed" style={{ color: '#d1d5db' }}>{item.text}</span>
+                  </li>
+                ))}
               </ul>
               <div className="mt-10">
                 <a
                   href="#planos"
-                  className="inline-flex items-center gap-2 text-sm font-semibold text-lime-600 hover:text-lime-700 transition-colors"
+                  className="inline-flex items-center gap-2 text-sm font-semibold transition-colors"
+                  style={{ color: '#a3e635' }}
                 >
                   Disponível nos planos Pro e Avançado
                   <ArrowRight className="h-4 w-4" />
@@ -359,48 +389,70 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Visual card */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            {/* Right column — glassmorphism card */}
+            <div
+              style={{
+                background: 'rgba(255,255,255,0.05)',
+                backdropFilter: 'blur(20px)',
+                WebkitBackdropFilter: 'blur(20px)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: '1.5rem',
+                padding: '1.5rem',
+              }}
+            >
               <div className="mb-4 flex items-center justify-between">
-                <p className="text-sm font-semibold text-slate-800">Campanha ativa</p>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                <p className="text-sm font-semibold" style={{ color: 'white' }}>Campanha ativa</p>
+                <span
+                  className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium"
+                  style={{ background: 'rgba(52,211,153,0.15)', color: '#34d399' }}
+                >
+                  <span className="h-1.5 w-1.5 rounded-full" style={{ background: '#34d399' }} />
                   Enviando
                 </span>
               </div>
               <div className="space-y-2.5">
                 {[
-                  { nome: 'Dr. Ricardo Alves', status: 'Respondeu', color: 'bg-emerald-50 text-emerald-700' },
-                  { nome: 'Escritório Martins & Assoc.', status: 'Abriu e-mail', color: 'bg-amber-50 text-amber-700' },
-                  { nome: 'Dra. Camila Santos', status: 'Enviado', color: 'bg-slate-100 text-slate-500' },
-                  { nome: 'Braz Advogados', status: 'Enviado', color: 'bg-slate-100 text-slate-500' },
-                  { nome: 'Dr. Fernando Costa', status: 'Agendou reunião', color: 'bg-violet-50 text-violet-700' },
+                  { nome: 'Dr. Ricardo Alves', status: 'Respondeu', bg: 'rgba(52,211,153,0.15)', color: '#34d399' },
+                  { nome: 'Escritório Martins & Assoc.', status: 'Abriu e-mail', bg: 'rgba(251,191,36,0.15)', color: '#fbbf24' },
+                  { nome: 'Dra. Camila Santos', status: 'Enviado', bg: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)' },
+                  { nome: 'Braz Advogados', status: 'Enviado', bg: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)' },
+                  { nome: 'Dr. Fernando Costa', status: 'Agendou reunião', bg: 'rgba(167,139,250,0.15)', color: '#a78bfa' },
                 ].map((lead) => (
                   <div
                     key={lead.nome}
-                    className="flex items-center justify-between rounded-lg border border-slate-100 px-3 py-2.5"
+                    className="flex items-center justify-between rounded-lg px-3 py-2.5"
+                    style={{ border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)' }}
                   >
                     <div className="flex items-center gap-3">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">
+                      <div
+                        className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold"
+                        style={{ background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.7)' }}
+                      >
                         {lead.nome[0]}
                       </div>
-                      <span className="text-xs font-medium text-slate-800">{lead.nome}</span>
+                      <span className="text-xs font-medium" style={{ color: 'rgba(255,255,255,0.85)' }}>{lead.nome}</span>
                     </div>
-                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${lead.color}`}>
+                    <span
+                      className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                      style={{ background: lead.bg, color: lead.color }}
+                    >
                       {lead.status}
                     </span>
                   </div>
                 ))}
               </div>
-              <div className="mt-4 grid grid-cols-3 gap-2 border-t border-slate-100 pt-4">
+              <div
+                className="mt-4 grid grid-cols-3 gap-2 pt-4"
+                style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}
+              >
                 {[
                   { label: 'Enviados', value: '124' },
                   { label: 'Abertos', value: '68' },
                   { label: 'Respondidos', value: '19' },
                 ].map((s) => (
                   <div key={s.label} className="text-center">
-                    <p className="text-base font-bold text-slate-900 tabular-nums">{s.value}</p>
-                    <p className="text-[10px] text-slate-400">{s.label}</p>
+                    <p className="text-base font-bold tabular-nums" style={{ color: 'white' }}>{s.value}</p>
+                    <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.4)' }}>{s.label}</p>
                   </div>
                 ))}
               </div>
@@ -410,12 +462,26 @@ export default function LandingPage() {
       </section>
 
       {/* ── Pricing ── */}
-      <section id="planos" className="py-20 sm:py-28">
+      <section id="planos" className="py-20 sm:py-28" style={{ background: '#f8fafc' }}>
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="mb-14 max-w-lg">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.15em] text-lime-600">
+            {/* Pill label */}
+            <div
+              className="mb-4 inline-block"
+              style={{
+                background: '#f0fdf4',
+                color: '#4d7c0f',
+                border: '1px solid #bbf7d0',
+                borderRadius: '999px',
+                padding: '4px 14px',
+                fontSize: '12px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.1em',
+                fontWeight: 600,
+              }}
+            >
               Planos
-            </p>
+            </div>
             <h2 className="font-heading text-3xl font-bold tracking-tight text-slate-900 sm:text-[2.1rem]">
               Escolha o seu plano
             </h2>
@@ -428,36 +494,81 @@ export default function LandingPage() {
             {plans.map((plan) => (
               <div
                 key={plan.name}
-                className={`relative flex flex-col rounded-2xl border p-8 transition-all ${
+                className="relative flex flex-col transition-all"
+                style={
                   plan.highlight
-                    ? 'border-slate-800 bg-slate-950 text-white shadow-xl shadow-slate-900/30 scale-[1.02]'
-                    : 'border-slate-200 bg-white text-slate-900 hover:shadow-md'
-                }`}
+                    ? {
+                        background: '#1f2937',
+                        border: '2px solid #84cc16',
+                        borderRadius: '1.5rem',
+                        padding: '2rem',
+                        position: 'relative',
+                      }
+                    : {
+                        background: 'white',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '1.5rem',
+                        padding: '2rem',
+                      }
+                }
               >
                 {plan.badge && (
-                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-lime-500 px-3 py-1 text-[10px] font-bold text-slate-900 tracking-wide uppercase">
-                      <Sparkles className="h-3 w-3" />
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: '-12px',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                    }}
+                  >
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        background: '#84cc16',
+                        color: '#1f2937',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        padding: '4px 16px',
+                        borderRadius: '999px',
+                        textTransform: 'uppercase',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      <Sparkles style={{ width: '12px', height: '12px' }} />
                       {plan.badge}
                     </span>
                   </div>
                 )}
 
                 <div className="mb-6">
-                  <p className={`mb-1 text-xs font-semibold uppercase tracking-wider ${plan.highlight ? 'text-lime-400' : 'text-slate-400'}`}>
+                  <p
+                    className="mb-1 text-xs font-semibold uppercase tracking-wider"
+                    style={{ color: plan.highlight ? '#a3e635' : '#94a3b8' }}
+                  >
                     {plan.name}
                   </p>
                   <div className="flex items-baseline gap-1 mt-2">
-                    <span className={`font-heading text-4xl font-bold tabular-nums tracking-tight ${plan.highlight ? 'text-white' : 'text-slate-900'}`}>
+                    <span
+                      className="font-heading text-4xl font-bold tabular-nums tracking-tight"
+                      style={{ color: plan.highlight ? '#84cc16' : '#0f172a' }}
+                    >
                       {plan.price}
                     </span>
                     {plan.period && (
-                      <span className={`text-sm ${plan.highlight ? 'text-slate-500' : 'text-slate-400'}`}>
+                      <span
+                        className="text-sm"
+                        style={{ color: plan.highlight ? '#6b7280' : '#94a3b8' }}
+                      >
                         {plan.period}
                       </span>
                     )}
                   </div>
-                  <p className={`mt-2.5 text-sm leading-relaxed ${plan.highlight ? 'text-slate-400' : 'text-slate-500'}`}>
+                  <p
+                    className="mt-2.5 text-sm leading-relaxed"
+                    style={{ color: plan.highlight ? '#9ca3af' : '#64748b' }}
+                  >
                     {plan.description}
                   </p>
                 </div>
@@ -466,24 +577,49 @@ export default function LandingPage() {
                   {plan.features.map((feat) => (
                     <li key={feat} className="flex items-start gap-2.5 text-sm">
                       <CheckCircle2
-                        className={`mt-0.5 h-4 w-4 flex-shrink-0 ${
-                          plan.highlight ? 'text-lime-400' : 'text-emerald-500'
-                        }`}
+                        className="mt-0.5 flex-shrink-0"
+                        style={{ color: '#84cc16', width: '16px', height: '16px' }}
                       />
-                      <span className={plan.highlight ? 'text-slate-300' : 'text-slate-600'}>{feat}</span>
+                      <span style={{ color: plan.highlight ? '#d1d5db' : '#475569' }}>{feat}</span>
                     </li>
                   ))}
                 </ul>
 
                 <Link
                   href="/login"
-                  className={`inline-flex h-11 items-center justify-center rounded-xl text-sm font-semibold transition-all ${
+                  className="inline-flex h-11 items-center justify-center rounded-xl text-sm transition-all"
+                  style={
                     plan.ctaStyle === 'primary'
-                      ? 'bg-lime-500 text-slate-900 hover:bg-lime-400 shadow-sm shadow-lime-400/30'
-                      : plan.highlight
-                      ? 'border border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800'
-                      : 'border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 hover:border-slate-300'
-                  }`}
+                      ? {
+                          background: '#84cc16',
+                          color: '#1f2937',
+                          fontWeight: 700,
+                        }
+                      : {
+                          border: '2px solid #e2e8f0',
+                          color: '#1f2937',
+                          background: 'transparent',
+                          fontWeight: 600,
+                        }
+                  }
+                  onMouseEnter={(e) => {
+                    const el = e.currentTarget
+                    if (plan.ctaStyle !== 'primary') {
+                      el.style.borderColor = '#84cc16'
+                      el.style.color = '#4d7c0f'
+                    } else {
+                      el.style.background = '#a3e635'
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    const el = e.currentTarget
+                    if (plan.ctaStyle !== 'primary') {
+                      el.style.borderColor = '#e2e8f0'
+                      el.style.color = '#1f2937'
+                    } else {
+                      el.style.background = '#84cc16'
+                    }
+                  }}
                 >
                   {plan.cta}
                 </Link>
@@ -523,7 +659,7 @@ export default function LandingPage() {
 
       {/* ── Footer ── */}
       <footer className="border-t border-slate-800 bg-slate-950 py-10">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 sm:flex-row sm:px-6">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-center gap-4 px-4 text-center sm:px-6">
           <div className="flex items-center gap-2.5">
             <div className="flex h-7 w-7 items-center justify-center rounded-md bg-lime-500 text-[9px] font-bold text-slate-900 select-none">
               PL
@@ -533,11 +669,6 @@ export default function LandingPage() {
           <p className="text-xs text-slate-600">
             © {new Date().getFullYear()} Perilab. Todos os direitos reservados.
           </p>
-          <div className="flex gap-5 text-xs text-slate-600">
-            <a href="#" className="hover:text-slate-400 transition-colors">Termos de uso</a>
-            <a href="#" className="hover:text-slate-400 transition-colors">Privacidade</a>
-            <Link href="/login" className="hover:text-slate-400 transition-colors">Entrar</Link>
-          </div>
         </div>
       </footer>
     </div>

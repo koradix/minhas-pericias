@@ -4,7 +4,9 @@ import { revalidatePath } from 'next/cache'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { radar } from '@/lib/services/radar'
+import { EscavadorService } from '@/lib/services/escavador'
 import { EscavadorError, type CitacaoResult } from '@/lib/services/radar-provider'
+import { calcularScore, type PerfilMatch } from '@/lib/utils/match-nomeacao'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -135,6 +137,112 @@ export async function setupRadar(): Promise<SetupRadarResult> {
   }
 }
 
+// ─── Action — Adicionar processo manualmente a partir de citação Escavador ────
+// Chamada pelo usuário ao clicar "Adicionar processo" em uma citação.
+
+export type AdicionarProcessoResult =
+  | { ok: true; nomeacaoId: string }
+  | { ok: false; error: string }
+
+export async function adicionarProcessoDaCitacao(
+  citacaoId: string,
+): Promise<AdicionarProcessoResult> {
+  const session = await auth()
+  const userId = session?.user?.id
+  if (!userId) return { ok: false, error: 'Não autenticado' }
+
+  try {
+    const citacao = await prisma.nomeacaoCitacao.findUnique({ where: { id: citacaoId } })
+    if (!citacao || citacao.peritoId !== userId) return { ok: false, error: 'Citação não encontrada' }
+    if (!citacao.numeroProcesso) return { ok: false, error: 'Citação não possui número de processo' }
+
+    const { numeroProcesso, diarioSigla, snippet, linkCitacao } = citacao
+
+    // Verifica se já existe Nomeacao para este processo
+    const processoExistente = await prisma.processo.findUnique({ where: { numeroProcesso } })
+    if (processoExistente) {
+      const nomeacaoExistente = await prisma.nomeacao.findUnique({
+        where: { peritoId_processoId: { peritoId: userId, processoId: processoExistente.id } },
+      })
+      if (nomeacaoExistente) return { ok: true, nomeacaoId: nomeacaoExistente.id }
+    }
+
+    // ── Busca dados completos do processo no Escavador ─────────────────────
+    let processoFields: {
+      tribunal: string; classe: string | null; assunto: string | null
+      orgaoJulgador: string | null; dataDistribuicao: string | null
+      dataUltimaAtu: string | null; partes: string
+    } = {
+      tribunal: diarioSigla, classe: null, assunto: snippet.substring(0, 200) || null,
+      orgaoJulgador: null, dataDistribuicao: null,
+      dataUltimaAtu: new Date().toISOString().split('T')[0], partes: '[]',
+    }
+
+    try {
+      const escavador = radar as EscavadorService
+      const processoEscavador = await escavador.buscarProcesso(numeroProcesso, diarioSigla)
+      if (processoEscavador) {
+        processoFields = {
+          tribunal:         processoEscavador.tribunal ?? diarioSigla,
+          classe:           processoEscavador.titulo ?? null,
+          assunto:          processoEscavador.assunto ?? null,
+          orgaoJulgador:    processoEscavador.orgao_julgador ?? null,
+          dataDistribuicao: processoEscavador.data_distribuicao ?? null,
+          dataUltimaAtu:    processoEscavador.data_ultima_movimentacao ?? processoFields.dataUltimaAtu,
+          partes: JSON.stringify(processoEscavador.partes.map((p) => ({ nome: p.nome, tipo: p.tipo_parte }))),
+        }
+      }
+    } catch {
+      // Escavador unavailable — usa dados mínimos da citação
+    }
+
+    // ── Upsert Processo ────────────────────────────────────────────────────
+    const processo = await prisma.processo.upsert({
+      where:  { numeroProcesso },
+      update: { ...processoFields, atualizadoEm: new Date() },
+      create: { numeroProcesso, ...processoFields },
+    })
+
+    // ── Score de compatibilidade ───────────────────────────────────────────
+    const peritoPerfil = await prisma.peritoPerfil.findUnique({ where: { userId } })
+    let scoreMatch = 0
+    if (peritoPerfil) {
+      const perfil: PerfilMatch = {
+        especialidades:  JSON.parse((peritoPerfil as { especialidades?: string }).especialidades  ?? '[]'),
+        especialidades2: JSON.parse((peritoPerfil as { especialidades2?: string }).especialidades2 ?? '[]'),
+        areaPrincipal:   (peritoPerfil as { areaPrincipal?: string | null }).areaPrincipal ?? null,
+        tribunais:       JSON.parse((peritoPerfil as { tribunais?: string }).tribunais  ?? '[]'),
+        estados:         JSON.parse((peritoPerfil as { estados?: string }).estados    ?? '[]'),
+        cursos:          JSON.parse((peritoPerfil as { cursos?: string }).cursos     ?? '[]'),
+        perfilCompleto:  (peritoPerfil as { perfilCompleto?: boolean }).perfilCompleto ?? false,
+      }
+      scoreMatch = calcularScore(
+        { numeroProcesso, tribunal: processoFields.tribunal, classe: processoFields.classe,
+          assunto: processoFields.assunto, orgaoJulgador: processoFields.orgaoJulgador,
+          dataDistribuicao: processoFields.dataDistribuicao, dataUltimaAtu: processoFields.dataUltimaAtu,
+          partes: JSON.parse(processoFields.partes) as { nome: string; tipo: string }[] },
+        perfil,
+      )
+    }
+
+    // ── Cria Nomeacao ──────────────────────────────────────────────────────
+    const nomeacao = await prisma.nomeacao.create({
+      data: {
+        peritoId:      userId,
+        processoId:    processo.id,
+        status:        'novo',
+        scoreMatch,
+        extractedData: JSON.stringify({ linkCitacao, citacaoId }),
+      },
+    })
+
+    revalidatePath('/nomeacoes')
+    return { ok: true, nomeacaoId: nomeacao.id }
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Erro ao adicionar processo' }
+  }
+}
+
 // ─── Action 2 — Buscar nomeações (triggered only by user click) ───────────────
 
 export type BuscarResult =
@@ -218,6 +326,7 @@ export async function buscarNomeacoes(): Promise<BuscarResult> {
       const existing = await prisma.nomeacaoCitacao.findUnique({
         where: { peritoId_externalId: { peritoId: userId, externalId: c.externalId } },
       })
+
       if (!existing) {
         const tribunalVaraId = varaIdBySigla.get(c.diarioSigla.toUpperCase()) ?? null
         await prisma.nomeacaoCitacao.create({

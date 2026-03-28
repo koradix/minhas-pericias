@@ -55,6 +55,34 @@ interface TribunalCapability {
   documentos_publicos: 0 | 1
 }
 
+// ─── Processo shapes ──────────────────────────────────────────────────────────
+
+export interface EscavadorParteProcesso {
+  nome: string
+  tipo_parte: string  // ATIVO | PASSIVO | INTERESSADO | etc.
+}
+
+export interface EscavadorProcesso {
+  id: number
+  numero: string                    // número CNJ
+  titulo: string | null             // ex: "Ação de Indenização"
+  assunto: string | null
+  tribunal: string | null           // sigla ex: "TJRJ"
+  orgao_julgador: string | null
+  data_distribuicao: string | null  // ISO date
+  data_ultima_movimentacao: string | null
+  partes: EscavadorParteProcesso[]
+}
+
+export interface EscavadorDocumento {
+  id: number
+  nome: string          // ex: "Despacho — Nomeação de Perito"
+  tipo: string | null   // ex: "Despacho", "Decisão"
+  data: string | null   // ISO date
+  url: string | null    // URL pública para download (quando disponível)
+  paginas: number | null
+}
+
 interface AparicaoItem {
   id: number
   data_diario_formatada: string // "DD/MM/YYYY"
@@ -131,12 +159,26 @@ export class EscavadorService implements RadarProvider {
   private async request<T>(
     path: string,
     options?: RequestInit,
+    timeoutMs = 15_000,
   ): Promise<T> {
-    const res = await fetch(`${this.baseUrl}${path}`, {
-      ...options,
-      headers: { ...this.headers(), ...(options?.headers ?? {}) },
-      cache: 'no-store',
-    })
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), timeoutMs)
+    let res: Response
+    try {
+      res = await fetch(`${this.baseUrl}${path}`, {
+        ...options,
+        headers: { ...this.headers(), ...(options?.headers ?? {}) },
+        cache: 'no-store',
+        signal: controller.signal,
+      })
+    } catch (err) {
+      clearTimeout(timer)
+      if ((err as Error)?.name === 'AbortError') {
+        throw new EscavadorError(408, `Timeout na requisição: ${path}`)
+      }
+      throw err
+    }
+    clearTimeout(timer)
 
     const creditosUsados = res.headers.get('Creditos-Utilizados')
     if (creditosUsados && process.env.NODE_ENV !== 'production') {
@@ -278,10 +320,18 @@ export class EscavadorService implements RadarProvider {
   // ── ENDPOINT 4a — List monitoramentos (FREE) ────────────────────────────────
 
   async listMonitoramentos(): Promise<ExistingMonitoramento[]> {
-    const res = await fetch(`${this.baseUrl}/monitoramentos?limit=50`, {
-      headers: this.headers(),
-      cache: 'no-store',
-    })
+    const controller = new AbortController()
+    setTimeout(() => controller.abort(), 15_000)
+    let res: Response
+    try {
+      res = await fetch(`${this.baseUrl}/monitoramentos?limit=50`, {
+        headers: this.headers(),
+        cache: 'no-store',
+        signal: controller.signal,
+      })
+    } catch {
+      return []
+    }
     if (!res.ok) return []
     const data = await res.json()
 
@@ -373,7 +423,84 @@ export class EscavadorService implements RadarProvider {
     }))
   }
 
-  // ── ENDPOINT 6 — Busca por nome (PAGO — R$3.00/chamada) ────────────────────
+  // ── ENDPOINT 6 — Busca processo por número CNJ (PAGO se busca_processo=1) ───
+  //
+  // Endpoint: GET /tribunal/processo?numero={numero}&tribunal_sigla={sigla}
+  // Custo: varia por tribunal (alguns são FREE, outros cobram crédito)
+  //
+  // Returns null se tribunal não suportar busca_processo ou processo não encontrado.
+
+  async buscarProcesso(
+    numero: string,
+    tribunalSigla: string,
+  ): Promise<EscavadorProcesso | null> {
+    try {
+      const q = encodeURIComponent(numero)
+      const t = encodeURIComponent(tribunalSigla)
+      const data = await this.request<{ processo: EscavadorProcesso } | EscavadorProcesso | null>(
+        `/tribunal/processo?numero=${q}&tribunal_sigla=${t}`,
+      )
+      if (!data) return null
+      // API may return { processo: {...} } or the object directly
+      const p = (data as { processo?: EscavadorProcesso }).processo ?? (data as EscavadorProcesso)
+      if (!p?.id) return null
+      return p
+    } catch {
+      return null
+    }
+  }
+
+  // ── ENDPOINT 7 — Listar documentos de um processo (depende de disponivel_autos) ─
+  //
+  // Endpoint: GET /tribunal/processo/{id}/documentos
+  // Requer: disponivel_autos=1 ou documentos_publicos=1 no tribunal
+
+  async listarDocumentos(processoEscavadorId: number): Promise<EscavadorDocumento[]> {
+    try {
+      const data = await this.request<
+        EscavadorDocumento[] | { items: EscavadorDocumento[] } | { documentos: EscavadorDocumento[] }
+      >(`/tribunal/processo/${processoEscavadorId}/documentos`)
+
+      if (Array.isArray(data)) return data
+      if (Array.isArray((data as { items?: EscavadorDocumento[] }).items)) {
+        return (data as { items: EscavadorDocumento[] }).items
+      }
+      if (Array.isArray((data as { documentos?: EscavadorDocumento[] }).documentos)) {
+        return (data as { documentos: EscavadorDocumento[] }).documentos
+      }
+      return []
+    } catch {
+      return []
+    }
+  }
+
+  // ── ENDPOINT 8 — Download de documento (retorna Buffer) ─────────────────────
+  //
+  // Endpoint: GET /tribunal/processo/{id}/documentos/{docId}/download
+  // Ou se o documento tiver url pública, faz fetch direto na url
+
+  async downloadDocumento(
+    processoEscavadorId: number,
+    docId: number,
+    docUrl?: string | null,
+  ): Promise<Buffer> {
+    // Prefer public URL to avoid spending credits
+    const targetUrl = docUrl ?? `${this.baseUrl}/tribunal/processo/${processoEscavadorId}/documentos/${docId}/download`
+
+    const res = await fetch(targetUrl, {
+      headers: docUrl ? {} : this.headers(), // só manda auth se for endpoint interno
+      cache: 'no-store',
+    })
+
+    if (!res.ok) {
+      throw new EscavadorError(500, `Falha ao baixar documento: HTTP ${res.status}`)
+    }
+
+    const ab = await res.arrayBuffer()
+    return Buffer.from(ab)
+  }
+
+  // ── ENDPOINT 9 — Busca por nome (PAGO — R$3.00/chamada) ────────────────────
 
   async buscarPorNome(nome: string, siglasFiltro: string[], page = 1): Promise<CitacaoResult[]> {
     const q = encodeURIComponent(nome)

@@ -1,24 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { del } from '@vercel/blob'
 import Anthropic from '@anthropic-ai/sdk'
 import { SYSTEM_PROMPT, buildUserPrompt, buildPdfUserPrompt } from '@/lib/ai/prompt-mestre-resumo'
 
-// Route segment config (App Router) — aumenta timeout da função Vercel para 60s
 export const maxDuration = 60
 
-/** Extrai JSON de texto que pode conter bloco markdown ```json``` ou texto antes/depois */
 function extractJson(text: string): string {
-  // 1. Markdown code block
   const block = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/)
   if (block) return block[1].trim()
-  // 2. JSON object anywhere in the text
   const obj = text.match(/\{[\s\S]*\}/)
   if (obj) return obj[0]
   return text.trim()
 }
 
 // ─── Route handler ────────────────────────────────────────────────────────────
+//
+// Aceita JSON: { blobUrl, fileName, fileSize, mimeType, tribunal, numero }
+// O arquivo já está no Vercel Blob — nunca passa pela função serverless.
+// Isso resolve o limite de 4.5 MB do Vercel Hobby.
 
 export async function POST(request: NextRequest) {
   const session = await auth()
@@ -27,61 +28,99 @@ export async function POST(request: NextRequest) {
   }
   const userId = session.user.id
 
-  let formData: FormData
-  try {
-    formData = await request.formData()
-  } catch {
-    return NextResponse.json({ ok: false, message: 'Erro ao ler o arquivo enviado' }, { status: 400 })
-  }
+  const contentType = request.headers.get('content-type') ?? ''
+  let fileName: string
+  let fileSize: number
+  let mimeType: string
+  let tribunal: string
+  let numeroRaw: string | null
+  let buffer: Buffer
+  let blobUrl: string | null = null
 
-  const file = formData.get('arquivo') as File | null
-  const tribunal = (formData.get('tribunal') as string | null) ?? 'TJRJ'
-  const numeroRaw = (formData.get('numeroProcesso') as string | null)?.trim() || null
-
-  // ── Validate file ──────────────────────────────────────────────────────────
-  if (!file || file.size === 0) {
-    return NextResponse.json({ ok: false, message: 'Arquivo obrigatório' }, { status: 400 })
-  }
   const allowed = [
     'application/pdf',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   ]
-  if (!allowed.includes(file.type)) {
-    return NextResponse.json({ ok: false, message: 'Apenas PDF ou DOCX são aceitos' }, { status: 400 })
-  }
-  if (file.size > 40 * 1024 * 1024) {
-    return NextResponse.json({ ok: false, message: 'Arquivo muito grande (máx 40 MB)' }, { status: 400 })
+
+  if (contentType.includes('multipart/form-data')) {
+    // ── Dev: arquivo enviado direto como FormData (sem Vercel Blob) ───────────
+    const formData = await request.formData()
+    const file = formData.get('file') as File | null
+    if (!file) return NextResponse.json({ ok: false, message: 'Arquivo não encontrado' }, { status: 400 })
+
+    mimeType = file.type
+    if (!allowed.includes(mimeType)) {
+      return NextResponse.json({ ok: false, message: 'Apenas PDF ou DOCX são aceitos' }, { status: 400 })
+    }
+
+    fileName  = file.name
+    fileSize  = file.size
+    tribunal  = (formData.get('tribunal') as string) ?? 'TJRJ'
+    numeroRaw = (formData.get('numero') as string | null) || null
+    buffer    = Buffer.from(await file.arrayBuffer())
+  } else {
+    // ── Prod: recebe blobUrl em JSON ─────────────────────────────────────────
+    const body = await request.json() as {
+      blobUrl:  string
+      fileName: string
+      fileSize: number
+      mimeType: string
+      tribunal: string
+      numero?:  string | null
+    }
+
+    blobUrl   = body.blobUrl
+    fileName  = body.fileName
+    fileSize  = body.fileSize
+    mimeType  = body.mimeType
+    tribunal  = body.tribunal
+    numeroRaw = body.numero ?? null
+
+    if (!blobUrl) {
+      return NextResponse.json({ ok: false, message: 'blobUrl obrigatório' }, { status: 400 })
+    }
+    if (!allowed.includes(mimeType)) {
+      return NextResponse.json({ ok: false, message: 'Apenas PDF ou DOCX são aceitos' }, { status: 400 })
+    }
+
+    // ── Download do Blob ─────────────────────────────────────────────────────
+    try {
+      const res = await fetch(blobUrl, { cache: 'no-store' })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      buffer = Buffer.from(await res.arrayBuffer())
+    } catch (err) {
+      await del(blobUrl).catch(() => {})
+      return NextResponse.json(
+        { ok: false, message: `Erro ao baixar arquivo: ${err instanceof Error ? err.message : String(err)}` },
+        { status: 500 },
+      )
+    }
   }
 
   // ── Call Anthropic ─────────────────────────────────────────────────────────
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) {
+    if (blobUrl) await del(blobUrl).catch(() => {})
     return NextResponse.json({ ok: false, message: 'ANTHROPIC_API_KEY não configurada' }, { status: 500 })
   }
 
-  const arrayBuffer = await file.arrayBuffer()
-  const buffer = Buffer.from(arrayBuffer)
-
+  const contexto = `Tribunal: ${tribunal}${numeroRaw ? `\nNúmero: ${numeroRaw}` : ''}`
   let analise: Record<string, unknown> = {}
+
   try {
     const anthropic = new Anthropic({ apiKey })
     const model = process.env.ANTHROPIC_MODEL ?? 'claude-haiku-4-5'
-
     let userContent: Anthropic.MessageParam['content']
 
-    const mbSize = (buffer.length / 1024 / 1024).toFixed(1)
-    const contexto = `Tribunal: ${tribunal}${numeroRaw ? `\nNúmero: ${numeroRaw}` : ''}`
+    if (mimeType === 'application/pdf') {
+      const mbSize = (buffer.length / 1024 / 1024).toFixed(1)
+      console.log(`[upload] PDF: ${fileName} | ${mbSize}MB | model: ${model}`)
 
-    if (file.type === 'application/pdf') {
-      console.log(`[upload] PDF: ${file.name} | ${mbSize}MB | model: ${model}`)
-
-      // Usa pdf-lib para ler o PDF e extrair primeiras páginas se necessário
       const { PDFDocument } = await import('pdf-lib')
       const pdfDoc = await PDFDocument.load(buffer, { ignoreEncryption: true })
       const totalPaginas = pdfDoc.getPageCount()
       console.log(`[upload] pdf-lib: ${totalPaginas} páginas`)
 
-      // Extrai só as primeiras 40 páginas (onde fica o despacho de nomeação)
       const MAX_PAGINAS = 40
       let pdfParaEnviar: Buffer
 
@@ -92,7 +131,7 @@ export async function POST(request: NextRequest) {
         const novoPdf = await PDFDocument.create()
         const indices = Array.from({ length: MAX_PAGINAS }, (_, i) => i)
         const copias = await novoPdf.copyPages(pdfDoc, indices)
-        copias.forEach(p => novoPdf.addPage(p))
+        copias.forEach((p) => novoPdf.addPage(p))
         pdfParaEnviar = Buffer.from(await novoPdf.save())
         console.log(`[upload] PDF extraído: ${(pdfParaEnviar.length / 1024 / 1024).toFixed(1)}MB`)
       }
@@ -106,11 +145,11 @@ export async function POST(request: NextRequest) {
       ]
     } else {
       const textoDocx = buffer.toString('utf8').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
-      console.log(`[upload] DOCX: ${file.name} | texto: ${textoDocx.length} chars`)
+      console.log(`[upload] DOCX: ${fileName} | texto: ${textoDocx.length} chars`)
       userContent = buildUserPrompt(
         textoDocx.length > 100
           ? textoDocx
-          : `Arquivo: ${file.name}\nTribunal: ${tribunal}${numeroRaw ? `\nNúmero: ${numeroRaw}` : ''}`
+          : `Arquivo: ${fileName}\nTribunal: ${tribunal}${numeroRaw ? `\nNúmero: ${numeroRaw}` : ''}`
       )
     }
 
@@ -125,18 +164,20 @@ export async function POST(request: NextRequest) {
     try {
       analise = JSON.parse(extractJson(raw))
       console.log('[upload] Parsed OK — chaves:', Object.keys(analise).join(', '))
-      console.log('[upload] numeroProcesso:', analise.numeroProcesso, '| tribunal:', analise.tribunal, '| autor:', analise.autor)
     } catch (parseErr) {
       console.error('[upload] ❌ JSON parse error:', parseErr instanceof Error ? parseErr.message : parseErr)
-      console.error('[upload] Texto completo do modelo:', raw)
     }
   } catch (err) {
+    if (blobUrl) await del(blobUrl).catch(() => {})
     const msg = err instanceof Error ? err.message : String(err)
     console.error('[upload] ❌ Anthropic API error:', msg)
     return NextResponse.json({ ok: false, message: `Erro na análise IA: ${msg}` }, { status: 500 })
   }
 
-  // ── Upsert Processo ────────────────────────────────────────────────────────
+  // Blob processado — deletar para economizar espaço
+  if (blobUrl) await del(blobUrl).catch(() => {})
+
+  // ── Upsert Processo + Nomeacao ─────────────────────────────────────────────
   const numeroProcesso = (analise.numeroProcesso as string | null) ?? numeroRaw ?? `MAN-${Date.now()}`
   const partes = JSON.stringify([
     analise.autor ? { nome: analise.autor, tipo: 'Autor' } : null,
@@ -155,32 +196,27 @@ export async function POST(request: NextRequest) {
     const processo = await prisma.processo.upsert({
       where:  { numeroProcesso },
       update: { ...processoFields, atualizadoEm: new Date() },
-      create: {
-        numeroProcesso,
-        classe:           null,
-        dataDistribuicao: null,
-        ...processoFields,
-      },
+      create: { numeroProcesso, classe: null, dataDistribuicao: null, ...processoFields },
     })
 
     const extractedData = JSON.stringify({
       numeroProcesso,
-      autor:          analise.autor ?? null,
-      reu:            analise.reu ?? null,
-      vara:           analise.vara ?? null,
-      tribunal:       analise.tribunal ?? tribunal,
-      assunto:        (analise.resumoProcesso as Record<string, string> | null)?.tipoAcao ?? null,
-      quesitos:       (analise.nomeacaoDespacho as Record<string, unknown> | null)?.quesitos ?? [],
-      endereco:       analise.enderecoVistoria ?? null,
-      tipoPericia:    analise.tipoPericia ?? null,
+      autor:       analise.autor ?? null,
+      reu:         analise.reu ?? null,
+      vara:        analise.vara ?? null,
+      tribunal:    analise.tribunal ?? tribunal,
+      assunto:     (analise.resumoProcesso as Record<string, string> | null)?.tipoAcao ?? null,
+      quesitos:    (analise.nomeacaoDespacho as Record<string, unknown> | null)?.quesitos ?? [],
+      endereco:    analise.enderecoVistoria ?? null,
+      tipoPericia: analise.tipoPericia ?? null,
     })
 
     const nomeacao = await prisma.nomeacao.upsert({
       where:  { peritoId_processoId: { peritoId: userId, processoId: processo.id } },
       update: {
-        nomeArquivo:    file.name,
-        tamanhoBytes:   file.size,
-        mimeType:       file.type,
+        nomeArquivo:    fileName,
+        tamanhoBytes:   fileSize,
+        mimeType,
         extractedData,
         processSummary: JSON.stringify(analise),
         status:         'pronta_para_pericia',
@@ -190,29 +226,31 @@ export async function POST(request: NextRequest) {
         processoId:     processo.id,
         status:         'pronta_para_pericia',
         scoreMatch:     100,
-        nomeArquivo:    file.name,
-        tamanhoBytes:   file.size,
-        mimeType:       file.type,
+        nomeArquivo:    fileName,
+        tamanhoBytes:   fileSize,
+        mimeType,
         extractedData,
         processSummary: JSON.stringify(analise),
       },
     })
 
-    const nomeacaoDespacho = analise.nomeacaoDespacho as Record<string, unknown> | null
-    const aceiteHonorarios = analise.aceiteHonorarios as Record<string, unknown> | null
+    const nd = analise.nomeacaoDespacho as Record<string, unknown> | null
+    const ah = analise.aceiteHonorarios as Record<string, unknown> | null
 
-    const preview = {
-      numeroProcesso,
-      tribunal:           processoFields.tribunal,
-      assunto:            processoFields.assunto,
-      vara:               processoFields.orgaoJulgador,
-      autor:              (analise.autor as string | null) ?? null,
-      reu:                (analise.reu   as string | null) ?? null,
-      complexidade:       (aceiteHonorarios?.complexidade as string | null) ?? null,
-      pontoControvertido: (nomeacaoDespacho?.determinacaoJuiz as string | null) ?? null,
-    }
-
-    return NextResponse.json({ ok: true, nomeacaoId: nomeacao.id, preview })
+    return NextResponse.json({
+      ok: true,
+      nomeacaoId: nomeacao.id,
+      preview: {
+        numeroProcesso,
+        tribunal:           processoFields.tribunal,
+        assunto:            processoFields.assunto,
+        vara:               processoFields.orgaoJulgador,
+        autor:              (analise.autor as string | null) ?? null,
+        reu:                (analise.reu   as string | null) ?? null,
+        complexidade:       (ah?.complexidade as string | null) ?? null,
+        pontoControvertido: (nd?.determinacaoJuiz as string | null) ?? null,
+      },
+    })
   } catch (err) {
     console.error('[upload] DB error:', err)
     return NextResponse.json(

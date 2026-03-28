@@ -20,8 +20,12 @@ export default async function NomeacoesPage() {
   if (!session?.user?.id) redirect('/login')
   const userId = session.user.id
 
-  const peritoPerfil = await prisma.peritoPerfil.findUnique({ where: { userId } })
+  const [peritoPerfil, radarConfig] = await Promise.all([
+    prisma.peritoPerfil.findUnique({ where: { userId } }),
+    prisma.radarConfig.findUnique({ where: { peritoId: userId }, select: { monitoramentoExtId: true } }),
+  ])
   const siglas: string[] = JSON.parse(peritoPerfil?.tribunais ?? '[]')
+  const radarConfigurado = !!radarConfig?.monitoramentoExtId
 
   const todas = await getNomeacoesByPerito(userId)
   const ativos    = todas.filter((n) => n.status !== 'arquivado')
@@ -37,7 +41,7 @@ export default async function NomeacoesPage() {
       />
 
       {/* CTA — registrar manualmente */}
-      <RadarBuscarBtn novas={0} siglas={siglas} />
+      <RadarBuscarBtn novas={0} siglas={siglas} radarConfigurado={radarConfigurado} />
 
       {/* Lista de processos ativos */}
       <div className="space-y-3">

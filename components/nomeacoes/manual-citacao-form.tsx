@@ -6,8 +6,8 @@ import {
   X, Upload, Loader2, AlertCircle, FileText, Sparkles,
   CheckCircle2, ChevronRight, Building2, Hash,
 } from 'lucide-react'
+import { upload } from '@vercel/blob/client'
 import { Button } from '@/components/ui/button'
-import { registrarNomeacao } from '@/lib/actions/nomeacoes-upload'
 
 interface Props {
   siglas: string[]
@@ -45,11 +45,11 @@ function Row({ label, value }: { label: string; value: string | null | undefined
 export function ManualCitacaoForm({ siglas, onClose }: Props) {
   const router = useRouter()
   const fileRef = useRef<HTMLInputElement>(null)
-  const [phase, setPhase]     = useState<Phase>('idle')
-  const [error, setError]     = useState<string | null>(null)
+  const [phase, setPhase]       = useState<Phase>('idle')
+  const [error, setError]       = useState<string | null>(null)
   const [fileName, setFileName] = useState<string | null>(null)
   const [fileSize, setFileSize] = useState(0)
-  const [preview, setPreview] = useState<Preview | null>(null)
+  const [preview, setPreview]   = useState<Preview | null>(null)
   const [nomeacaoId, setNomeacaoId] = useState<string | null>(null)
   const [sigla, setSigla]   = useState(siglas[0] ?? 'TJRJ')
   const [numero, setNumero] = useState('')
@@ -68,17 +68,57 @@ export function ManualCitacaoForm({ siglas, onClose }: Props) {
     const file = fileRef.current?.files?.[0]
     if (!file) { setError('Selecione um documento PDF ou DOCX'); return }
 
-    const fd = new FormData()
-    fd.append('arquivo', file)
-    fd.append('tribunal', sigla)
-    if (numero.trim()) fd.append('numeroProcesso', numero.trim())
+    const allowed = [
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ]
+    if (!allowed.includes(file.type)) { setError('Apenas PDF ou DOCX são aceitos'); return }
+    if (file.size > 50 * 1024 * 1024) { setError('Arquivo muito grande (máx 50 MB)'); return }
 
     setPhase('uploading')
-    const timer = setTimeout(() => setPhase('analyzing'), Math.min(800 + file.size / 60_000, 3000))
 
     try {
-      const result = await registrarNomeacao(fd)
-      clearTimeout(timer)
+      let res: Response
+
+      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+
+      if (isLocalhost) {
+        // ── Dev: envia arquivo direto como FormData (sem Vercel Blob) ──────────
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('tribunal', sigla)
+        if (numero.trim()) formData.append('numero', numero.trim())
+
+        setPhase('analyzing')
+        res = await fetch('/api/nomeacoes/upload', { method: 'POST', body: formData })
+      } else {
+        // ── Prod: upload direto para Vercel Blob (não passa pelo serverless) ───
+        const blob = await upload(file.name, file, {
+          access: 'public',
+          handleUploadUrl: '/api/nomeacoes/blob-upload',
+        })
+
+        setPhase('analyzing')
+        res = await fetch('/api/nomeacoes/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            blobUrl:  blob.url,
+            fileName: file.name,
+            fileSize: file.size,
+            mimeType: file.type,
+            tribunal: sigla,
+            numero:   numero.trim() || null,
+          }),
+        })
+      }
+
+      const result = await res.json() as {
+        ok: boolean
+        message?: string
+        nomeacaoId?: string
+        preview?: Preview
+      }
 
       if (result.ok && result.nomeacaoId) {
         setNomeacaoId(result.nomeacaoId)
@@ -89,7 +129,6 @@ export function ManualCitacaoForm({ siglas, onClose }: Props) {
         setPhase('idle')
       }
     } catch (err) {
-      clearTimeout(timer)
       console.error('[upload] ❌ Erro:', err)
       setError('Erro de conexão. Tente novamente.')
       setPhase('idle')
@@ -97,9 +136,7 @@ export function ManualCitacaoForm({ siglas, onClose }: Props) {
   }
 
   function handleConfirm() {
-    if (nomeacaoId) {
-      router.push(`/nomeacoes/${nomeacaoId}`)
-    }
+    if (nomeacaoId) router.push(`/nomeacoes/${nomeacaoId}`)
     onClose()
   }
 
@@ -134,16 +171,14 @@ export function ManualCitacaoForm({ siglas, onClose }: Props) {
           </button>
         </div>
 
-        {/* ── Results state ───────────────────────────────────────────────────── */}
+        {/* ── Results state ────────────────────────────────────────────────────── */}
         {phase === 'results' && preview ? (
           <div className="px-5 py-4 space-y-4">
-            {/* Success banner */}
             <div className="flex items-center gap-2 rounded-xl bg-lime-50 border border-lime-200 px-4 py-3">
               <CheckCircle2 className="h-4 w-4 text-lime-600 flex-shrink-0" />
-              <p className="text-sm font-semibold text-lime-800">✓ Processo registrado</p>
+              <p className="text-sm font-semibold text-lime-800">Processo registrado</p>
             </div>
 
-            {/* Extracted fields */}
             <div className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 space-y-3">
               <div className="flex items-start gap-3">
                 <Hash className="h-3.5 w-3.5 text-slate-400 flex-shrink-0 mt-0.5" />
@@ -168,14 +203,8 @@ export function ManualCitacaoForm({ siglas, onClose }: Props) {
               <Row label="Ponto controvertido" value={preview.pontoControvertido} />
             </div>
 
-            {/* Footer */}
             <div className="flex gap-2 justify-end pt-1">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={onClose}
-              >
+              <Button type="button" variant="ghost" size="sm" onClick={onClose}>
                 Fechar
               </Button>
               <Button
@@ -190,7 +219,7 @@ export function ManualCitacaoForm({ siglas, onClose }: Props) {
             </div>
           </div>
         ) : (
-          /* ── Upload / Analyzing state ──────────────────────────────────────── */
+          /* ── Upload / Analyzing state ───────────────────────────────────────── */
           <form onSubmit={handleSubmit} className="px-5 py-4 space-y-4">
 
             {/* Document upload */}
@@ -232,7 +261,7 @@ export function ManualCitacaoForm({ siglas, onClose }: Props) {
                     </div>
                     <div className="text-center">
                       <p className="text-sm font-semibold text-slate-600">Enviar nomeação ou despacho</p>
-                      <p className="text-xs text-slate-400 mt-0.5">PDF ou DOCX · máx 40 MB</p>
+                      <p className="text-xs text-slate-400 mt-0.5">PDF ou DOCX · máx 50 MB</p>
                     </div>
                   </>
                 )}
@@ -243,7 +272,7 @@ export function ManualCitacaoForm({ siglas, onClose }: Props) {
               </p>
             </div>
 
-            {/* Progress bar — só aparece durante o processamento */}
+            {/* Progress bar */}
             {isPending && (
               <div className="rounded-xl border border-violet-100 bg-violet-50 px-4 py-3 space-y-2.5">
                 <div className="flex items-center gap-2.5">
