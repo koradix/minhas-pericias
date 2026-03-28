@@ -16,7 +16,7 @@ interface Props {
 type BuscarState =
   | { fase: 'idle' }
   | { fase: 'buscando' }
-  | { fase: 'ok'; novas: number; saldo: number }
+  | { fase: 'ok'; novas: number; saldo: number; totalEncontrados: number }
   | { fase: 'erro'; mensagem: string }
 
 export function RadarBuscarBtn({ siglas, radarConfigurado }: Props) {
@@ -39,7 +39,7 @@ export function RadarBuscarBtn({ siglas, radarConfigurado }: Props) {
 
         const res = await buscarNomeacoes()
         if (res.ok) {
-          setBuscarState({ fase: 'ok', novas: res.novas, saldo: res.saldoRestante })
+          setBuscarState({ fase: 'ok', novas: res.novas, saldo: res.saldoRestante, totalEncontrados: res.totalEncontrados })
           // Limpa o banner após 5s
           setTimeout(() => setBuscarState({ fase: 'idle' }), 5000)
         } else {
@@ -84,18 +84,30 @@ export function RadarBuscarBtn({ siglas, radarConfigurado }: Props) {
 
       {/* Feedback da busca */}
       {buscarState.fase === 'ok' && (
-        <div className="flex items-center gap-2 rounded-xl bg-lime-50 border border-lime-200 px-4 py-2.5">
-          <CheckCircle2 className="h-4 w-4 text-lime-600 flex-shrink-0" />
-          <p className="text-sm font-semibold text-lime-800">
-            {buscarState.novas > 0
-              ? `${buscarState.novas} nova${buscarState.novas > 1 ? 's nomeações encontradas' : ' nomeação encontrada'}!`
-              : 'Nenhuma nomeação nova encontrada.'
-            }
-          </p>
-          {buscarState.saldo > 0 && (
-            <span className="ml-auto text-xs text-lime-600">
-              Saldo: R$ {buscarState.saldo.toFixed(2)}
-            </span>
+        <div className="rounded-xl bg-lime-50 border border-lime-200 px-4 py-2.5 space-y-0.5">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-lime-600 flex-shrink-0" />
+            <p className="text-sm font-semibold text-lime-800 flex-1">
+              {buscarState.novas > 0
+                ? `${buscarState.novas} nova${buscarState.novas > 1 ? 's' : ''} salva${buscarState.novas > 1 ? 's' : ''}!`
+                : 'Busca concluída — nenhuma nova citação.'
+              }
+            </p>
+            {buscarState.saldo > 0 && (
+              <span className="text-xs text-lime-600 flex-shrink-0">
+                Saldo: R$ {buscarState.saldo.toFixed(2)}
+              </span>
+            )}
+          </div>
+          {buscarState.totalEncontrados === 0 && (
+            <p className="text-xs text-lime-700 pl-6">
+              A API não retornou citações para esse nome nos tribunais cadastrados.
+            </p>
+          )}
+          {buscarState.totalEncontrados > 0 && buscarState.novas === 0 && (
+            <p className="text-xs text-lime-700 pl-6">
+              {buscarState.totalEncontrados} citaç{buscarState.totalEncontrados > 1 ? 'ões encontradas' : 'ão encontrada'} — todas já estavam salvas.
+            </p>
           )}
         </div>
       )}

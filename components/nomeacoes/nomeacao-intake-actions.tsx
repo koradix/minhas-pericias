@@ -169,7 +169,7 @@ export function NomeacaoIntakeActions({
             {hasSummary ? 'Resumo gerado' : 'Gerar resumo'}
           </p>
         </div>
-        {!hasExtracted && <Lock className="h-3.5 w-3.5 text-slate-300 flex-shrink-0" />}
+        {!hasExtracted && <span className="h-3.5 w-3.5 flex-shrink-0" />}
         {hasExtracted && !hasSummary && (
           <button
             onClick={handleSummary}

@@ -30,12 +30,14 @@ function isTribunalCivel(sigla: string): boolean {
 }
 
 /**
- * Retorna true se o snippet parece ser uma nomeação de perito em vara cível.
- * Aceita qualquer menção a "nomea", "perito" ou "perícia" no texto.
+ * Retorna true se o snippet provavelmente menciona nomeação de perito.
+ * Intencionalmente permissivo — melhor salvar um falso positivo do que perder
+ * uma nomeação real. O usuário pode arquivar o que não for relevante.
  */
 function isSnippetNomeacaoCivel(snippet: string): boolean {
   const lower = snippet.toLowerCase()
-  return /nomea[ç r]|perito|per[íi]cia/.test(lower)
+  // Qualquer menção a perícia, perito, vistoria, nomeação ou designação
+  return /per[íi]c|perito|vistori|nomea|designa|expert|laudo/.test(lower)
 }
 
 /** Busca o nome completo do usuário diretamente do banco (fonte mais confiável). */
@@ -271,7 +273,7 @@ export async function adicionarProcessoDaCitacao(
 // ─── Action 2 — Buscar nomeações (triggered only by user click) ───────────────
 
 export type BuscarResult =
-  | { ok: true; novas: number; saldoRestante: number }
+  | { ok: true; novas: number; saldoRestante: number; totalEncontrados: number }
   | { ok: false; novas: 0; error: string }
 
 export async function buscarNomeacoes(): Promise<BuscarResult> {
@@ -304,14 +306,16 @@ export async function buscarNomeacoes(): Promise<BuscarResult> {
       return { ok: false, novas: 0, error: 'Saldo insuficiente na API Escavador' }
     }
 
-    // Apenas tribunais estaduais cíveis (TJ*) — exclui TRT, TRF, TRE
+    // Usa todos os tribunais configurados — não filtra mais por TJ*
+    // (peritos podem atuar em TRF, TRT, etc.)
     const todasSiglas: string[] = JSON.parse(config.tribunaisMonitorados || '[]')
-    const siglasFiltro = todasSiglas.filter(isTribunalCivel)
-    if (siglasFiltro.length === 0) {
-      return { ok: false, novas: 0, error: 'Nenhum tribunal estadual (TJ) configurado no radar' }
+    if (todasSiglas.length === 0) {
+      return { ok: false, novas: 0, error: 'Nenhum tribunal configurado no radar. Configure o radar primeiro.' }
     }
+    // Mantém TJ* para o filtro pós-busca (mais restrito), mas passa todos para a query
+    const siglasFiltro = todasSiglas // busca em todos os tribunais cadastrados
 
-    console.log(`[buscarNomeacoes] Tribunais cíveis monitorados: ${siglasFiltro.join(', ')}`)
+    console.log(`[buscarNomeacoes] Tribunais monitorados: ${siglasFiltro.join(', ')}`)
 
     const citacoes: CitacaoResult[] = []
 
@@ -349,16 +353,10 @@ export async function buscarNomeacoes(): Promise<BuscarResult> {
       return true
     })
 
-    // ── Filtra apenas citações de nomeação de perito em varas cíveis ─────────
-    const unique = deduped.filter((c) => {
-      // Tribunal já está filtrado por TJ* no siglasFiltro — garante vara cível
-      if (!isTribunalCivel(c.diarioSigla)) return false
-      // Snippet deve conter menção a nomeação ou perito
-      if (!isSnippetNomeacaoCivel(c.snippet)) return false
-      return true
-    })
+    // ── Filtra citações com menção a perícia/perito/nomeação no snippet ──────
+    const unique = deduped.filter((c) => isSnippetNomeacaoCivel(c.snippet))
 
-    console.log(`[buscarNomeacoes] Após filtro cível+nomeação: ${unique.length} de ${deduped.length}`)
+    console.log(`[buscarNomeacoes] Após filtro de snippet: ${unique.length} de ${deduped.length}`)
 
     // ── Verify updated saldo after paid call ─────────────────────────────────
     const saldoPos = await radar.verificarSaldo()
@@ -433,7 +431,7 @@ export async function buscarNomeacoes(): Promise<BuscarResult> {
     })
 
     revalidatePath('/nomeacoes')
-    return { ok: true, novas, saldoRestante: saldoPos.saldo }
+    return { ok: true, novas, saldoRestante: saldoPos.saldo, totalEncontrados: unique.length }
   } catch (err) {
     if (err instanceof EscavadorError) {
       if (err.code === 402) return { ok: false, novas: 0, error: 'Saldo insuficiente na API Escavador' }

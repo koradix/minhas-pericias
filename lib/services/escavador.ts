@@ -507,37 +507,43 @@ export class EscavadorService implements RadarProvider {
   // de nomeações, mas o filtro pós-busca é a fonte definitiva de filtragem.
 
   async buscarPorNome(nome: string, siglasFiltro: string[], page = 1): Promise<CitacaoResult[]> {
-    // Compõe query: nome entre aspas (match exato) + perito para priorizar nomeações
-    const queryTermo = `"${nome}" perito`
+    // Busca sem aspas primeiro — mais ampla, captura variações de grafia
+    // (o Escavador com aspas exige match literal, sem tolera acentuação diferente)
+    const queryTermo = `${nome} perito`
     const q = encodeURIComponent(queryTermo)
+
+    // Data mínima: 1 ano atrás — garante histórico sem poluir com resultados antigos demais
+    const dataMinima = new Date()
+    dataMinima.setFullYear(dataMinima.getFullYear() - 1)
+    const dataDe = dataMinima.toISOString().split('T')[0] // YYYY-MM-DD
 
     let data: { paginator: { total: number }; items: EscavadorBuscaItem[] }
     try {
       data = await this.request<{ paginator: { total: number }; items: EscavadorBuscaItem[] }>(
-        `/busca?q=${q}&qo=d&qs=d&limit=50&page=${page}`,
+        `/busca?q=${q}&qo=d&qs=d&limit=50&page=${page}&data_de=${dataDe}`,
       )
     } catch {
-      // Fallback: tenta sem aspas se a API rejeitar a query exata
-      const qFallback = encodeURIComponent(`${nome} perito`)
+      // Fallback: sem filtro de data (caso API não suporte o parâmetro)
       data = await this.request<{ paginator: { total: number }; items: EscavadorBuscaItem[] }>(
-        `/busca?q=${qFallback}&qo=d&qs=d&limit=50&page=${page}`,
+        `/busca?q=${q}&qo=d&qs=d&limit=50&page=${page}`,
       )
     }
 
     console.log(
-      `[Escavador] buscarPorNome: query="${queryTermo}" → ${data.paginator.total} resultado(s) total`,
+      `[Escavador] buscarPorNome: query="${queryTermo}" desde=${dataDe} → ${data.paginator.total} total, ${data.items.length} nesta página`,
     )
 
     const filtroUpper = new Set(siglasFiltro.map((s) => s.toUpperCase()))
+    const semFiltro = filtroUpper.size === 0
 
     const filtrados = data.items.filter(
       (item) =>
         item.tipo_resultado === 'Diario' &&
-        filtroUpper.has(item.diario_sigla.toUpperCase()),
+        (semFiltro || filtroUpper.has(item.diario_sigla.toUpperCase())),
     )
 
     console.log(
-      `[Escavador] buscarPorNome: ${filtrados.length} de ${data.items.length} itens passaram pelo filtro de tribunal`,
+      `[Escavador] buscarPorNome: ${filtrados.length} de ${data.items.length} passaram pelo filtro de tribunal`,
     )
 
     return filtrados.map((item) => ({
