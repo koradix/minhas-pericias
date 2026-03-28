@@ -169,8 +169,16 @@ export function RotaPericiasExecucao({ rotaId, checkpoints }: Props) {
         })}
       </div>
 
+      {/* Empty state */}
+      {checkpoints.length === 0 && (
+        <div className="flex items-center gap-2 rounded-xl bg-slate-50 border border-slate-100 px-4 py-3">
+          <MapPin className="h-4 w-4 text-slate-300 flex-shrink-0" />
+          <p className="text-xs text-slate-400">Nenhum checkpoint nesta rota.</p>
+        </div>
+      )}
+
       {/* Progress footer */}
-      {checkpoints.every((c) => statusMap[c.id] === 'concluido') && (
+      {checkpoints.length > 0 && checkpoints.every((c) => statusMap[c.id] === 'concluido') && (
         <div className="mt-3 flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3">
           <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0" />
           <p className="text-xs font-semibold text-emerald-800">

@@ -98,7 +98,7 @@ export function RotasPericiasListClient({ rotas }: { rotas: Rota[] }) {
                   </Button>
                 )}
 
-                {status === 'em_execucao' && (
+                {(status === 'em_execucao' || status === 'em_andamento') && (
                   <Badge variant="warning" className="flex-shrink-0">
                     Em campo
                   </Badge>
@@ -108,7 +108,7 @@ export function RotasPericiasListClient({ rotas }: { rotas: Rota[] }) {
 
             <CardContent className="pt-0">
               <div className="mb-4 space-y-2">
-                {status === 'em_execucao' ? (
+                {(status === 'em_execucao' || status === 'em_andamento') ? (
                   <RotaPericiasExecucao
                     rotaId={rota.id}
                     checkpoints={rota.pontos.map((p) => ({
