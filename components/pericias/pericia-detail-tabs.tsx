@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   FileText,
   Navigation,
@@ -11,7 +12,6 @@ import {
   Circle,
   AlertCircle,
   Loader2,
-  Plus,
 } from 'lucide-react'
 import { criarRotaDaPericia } from '@/lib/actions/pericias-rota'
 
@@ -29,6 +29,7 @@ interface CheckpointItem {
 interface Props {
   periciaId: string
   periciaStatus: string
+  periciaTipo: string
   enderecoPericia: string | null
   checkpoints: CheckpointItem[]
   resumoContent: React.ReactNode
@@ -54,19 +55,22 @@ function RotaContent({
   enderecoPericia: string | null
   checkpoints: CheckpointItem[]
 }) {
+  const hasCheckpoints = checkpoints.length > 0
   const [endereco, setEndereco] = useState(enderecoPericia ?? '')
-  const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null)
+  const [result, setResult] = useState<{ ok: boolean; mensagem: string } | null>(null)
   const [isPending, startTransition] = useTransition()
+  const router = useRouter()
 
-  function handleCriar() {
-    setResult(null)
+  function handleCriarRota() {
     startTransition(async () => {
       const res = await criarRotaDaPericia(periciaId, endereco)
-      setResult(res)
+      if (res.ok && res.rotaId) {
+        router.push(`/pericias/${res.rotaId}`)
+      } else {
+        setResult({ ok: res.ok, mensagem: res.message })
+      }
     })
   }
-
-  const hasCheckpoints = checkpoints.length > 0
 
   return (
     <div className="space-y-5">
@@ -106,7 +110,7 @@ function RotaContent({
           </div>
         </section>
       ) : (
-        /* New vistoria form */
+        /* Agendar vistoria — formulário simples */
         <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-lime-50">
@@ -115,13 +119,11 @@ function RotaContent({
             <h2 className="text-sm font-semibold text-slate-800">Agendar vistoria</h2>
           </div>
           <div className="px-5 py-4 space-y-3">
-            {result && !result.ok && (
-              <p className="text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-xl px-3 py-2">
-                {result.message}
-              </p>
-            )}
+            <p className="text-xs text-slate-500">
+              Informe o endereço da vistoria para criar a rota e registrar chegadas e fotos em campo.
+            </p>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
                 Endereço da vistoria
               </label>
               <input
@@ -129,23 +131,26 @@ function RotaContent({
                 value={endereco}
                 onChange={(e) => setEndereco(e.target.value)}
                 placeholder="Rua, número, bairro, cidade"
-                disabled={isPending}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent disabled:opacity-50"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-lime-400 placeholder-slate-400"
               />
             </div>
+
+            {result && (
+              <p className={`text-xs rounded-xl px-3 py-2 border ${result.ok ? 'text-emerald-700 bg-emerald-50 border-emerald-100' : 'text-rose-700 bg-rose-50 border-rose-100'}`}>
+                {result.mensagem}
+              </p>
+            )}
+
             <button
-              onClick={handleCriar}
+              onClick={handleCriarRota}
               disabled={isPending || !endereco.trim()}
-              className="w-full flex items-center justify-center gap-2 rounded-xl bg-lime-500 hover:bg-lime-600 text-slate-900 font-semibold text-sm px-4 py-2.5 transition-colors disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 rounded-xl bg-lime-500 hover:bg-lime-600 text-white font-semibold text-sm px-4 py-2.5 transition-colors disabled:opacity-50"
             >
               {isPending
-                ? <><Loader2 className="h-4 w-4 animate-spin" /> Criando…</>
-                : <><Plus className="h-4 w-4" /> Criar rota de vistoria</>
+                ? <><Loader2 className="h-4 w-4 animate-spin" /> Criando rota…</>
+                : <><Navigation className="h-4 w-4" /> Criar rota de vistoria</>
               }
             </button>
-            <p className="text-xs text-slate-400">
-              Uma rota será criada com este endereço como ponto de vistoria.
-            </p>
           </div>
         </section>
       )}
@@ -158,6 +163,7 @@ function RotaContent({
 export function PericiaDetailTabs({
   periciaId,
   periciaStatus,
+  periciaTipo,
   enderecoPericia,
   checkpoints,
   resumoContent,

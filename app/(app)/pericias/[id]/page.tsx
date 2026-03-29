@@ -27,6 +27,8 @@ import { cn } from '@/lib/utils'
 import { getMidiasByPericiaId, type MidiaDaPericia } from '@/lib/data/checkpoint-media'
 import { pericias, statusMapPericias } from '@/lib/mocks/pericias'
 import { PericiaDetailTabs } from '@/components/pericias/pericia-detail-tabs'
+import { PericiaWorkflow } from '@/components/pericias/pericia-workflow'
+import { PericiaEditCard } from '@/components/pericias/pericia-edit-card'
 import type { ResumoData } from '@/lib/actions/processos-intake'
 import type { Metadata } from 'next'
 
@@ -345,6 +347,15 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
     })
   } catch {}
 
+  // Fetch linked NomeacaoCitacao (Radar flow) for tribunal info
+  let citacaoLink: { diarioSigla: string } | null = null
+  try {
+    citacaoLink = await prisma.nomeacaoCitacao.findFirst({
+      where: { periciaId: pericia.id },
+      select: { diarioSigla: true },
+    })
+  } catch {}
+
   // Fetch checkpoints linked to this pericia
   let checkpoints: CpRow[] = []
   let midias: MidiaDaPericia[] = []
@@ -463,10 +474,31 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
       <PericiaDetailTabs
         periciaId={pericia.id}
         periciaStatus={pericia.status}
+        periciaTipo={pericia.tipo}
         enderecoPericia={pericia.endereco}
         checkpoints={checkpoints}
         resumoContent={
           <div className="space-y-5">
+            {/* ── Workflow de próximos passos ─────────────────────────── */}
+            {(() => {
+              const tribunalSigla =
+                citacaoLink?.diarioSigla ??
+                pericia.vara?.match(/TJ[A-Z]{2}|DJ[A-Z]{2}/)?.[0] ??
+                'TJRJ'
+              const analiseIA = nomeacaoLink?.processSummary
+                ? (() => { try { return JSON.parse(nomeacaoLink!.processSummary!) } catch { return null } })()
+                : null
+              return (
+                <PericiaWorkflow
+                  periciaId={pericia.id}
+                  tribunalSigla={tribunalSigla}
+                  processoNumero={pericia.processo ?? null}
+                  hasAnalise={!!nomeacaoLink?.extractedData}
+                  analiseInicial={analiseIA}
+                />
+              )
+            })()}
+
             {/* Process summary from intake */}
             {resumo && intake && (
               <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -482,38 +514,24 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
               </section>
             )}
 
-            {/* Process details */}
-            <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-              <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100">
-                  <FileText className="h-3.5 w-3.5 text-slate-600" />
-                </div>
-                <h2 className="text-sm font-semibold text-slate-800">Detalhes</h2>
-              </div>
-              <div className="divide-y divide-slate-50">
-                {pericia.vara && (
-                  <div className="px-5 py-3.5">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Vara</p>
-                    <p className="text-sm text-slate-800">{pericia.vara}</p>
-                  </div>
-                )}
-                {pericia.partes && (
-                  <div className="px-5 py-3.5">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Partes</p>
-                    <p className="text-sm text-slate-800">{pericia.partes}</p>
-                  </div>
-                )}
-                {pericia.endereco && (
-                  <div className="px-5 py-3.5">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Local da vistoria</p>
-                    <p className="text-sm text-slate-800 flex items-start gap-1.5">
-                      <MapPin className="h-3.5 w-3.5 text-amber-500 flex-shrink-0 mt-0.5" />
-                      {pericia.endereco}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </section>
+            {/* Editable pericia data (inline editing + AI fill) */}
+            {(() => {
+              const analiseIA = nomeacaoLink?.processSummary
+                ? (() => { try { return JSON.parse(nomeacaoLink!.processSummary!) } catch { return null } })()
+                : null
+              return (
+                <PericiaEditCard
+                  periciaId={pericia.id}
+                  assunto={pericia.assunto}
+                  vara={pericia.vara}
+                  partes={pericia.partes}
+                  endereco={pericia.endereco}
+                  prazo={pericia.prazo}
+                  valorHonorarios={pericia.valorHonorarios}
+                  analise={analiseIA}
+                />
+              )
+            })()}
 
             {/* Timeline */}
             {(() => {
@@ -528,6 +546,9 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
 
               events.push({ label: 'Processo aberto', date: formatDate(toISO(pericia.criadoEm)), done: true })
 
+              // Proposta de honorários vem ANTES da vistoria
+              events.push({ label: 'Proposta de honorários', done: false, future: pericia.status !== 'concluida' })
+
               const cpConcluidos = checkpoints.filter((c) => c.status === 'concluido')
               if (cpConcluidos.length > 0) {
                 events.push({ label: `Vistoria${cpConcluidos.length > 1 ? 's' : ''} realizadas`, sub: `${cpConcluidos.length} checkpoint${cpConcluidos.length > 1 ? 's' : ''} concluído${cpConcluidos.length > 1 ? 's' : ''}`, done: true })
@@ -537,7 +558,6 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
                 events.push({ label: 'Vistoria em campo', done: false, future: true })
               }
 
-              events.push({ label: 'Proposta de honorários', done: false, future: pericia.status !== 'concluida' })
               events.push({ label: 'Laudo entregue', done: pericia.status === 'concluida', future: pericia.status !== 'concluida' })
 
               return (
@@ -566,6 +586,22 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
                 </section>
               )
             })()}
+
+            {/* Registros e fotos — preview no Resumo */}
+            {midias.length > 0 && (
+              <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50">
+                    <Camera className="h-3.5 w-3.5 text-blue-600" />
+                  </div>
+                  <h2 className="text-sm font-semibold text-slate-800">Registros e fotos</h2>
+                  <span className="ml-auto text-[11px] font-semibold text-slate-400 bg-slate-50 border border-slate-100 rounded-full px-2 py-0.5">
+                    {midias.length}
+                  </span>
+                </div>
+                <PericiaMediaSection pericoId={pericia.id} midias={midias} />
+              </section>
+            )}
           </div>
         }
         fotosContent={

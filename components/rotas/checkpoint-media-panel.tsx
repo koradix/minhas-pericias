@@ -19,6 +19,10 @@ import {
   ZapOff,
   Users,
   Save,
+  FolderOpen,
+  ListChecks,
+  Plus,
+  RotateCcw,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -126,6 +130,7 @@ export function CheckpointMediaPanel({
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment')
 
   const fotoInputRef = useRef<HTMLInputElement>(null)
+  const arquivoInputRef = useRef<HTMLInputElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -134,6 +139,40 @@ export function CheckpointMediaPanel({
 
   const [isPending, startTransition] = useTransition()
   const [finalizando, setFinalizando] = useState(false)
+
+  // ── Pending photo (captured or selected — awaiting caption before save) ───
+  const [pendingFoto, setPendingFoto] = useState<{ base64: string; tipo: 'foto'; nomeArquivo?: string } | null>(null)
+  const [pendingCaption, setPendingCaption] = useState('')
+
+  // ── Checklist (localStorage, persisted per checkpoint) ────────────────────
+  type ChecklistItem = { id: string; texto: string; feito: boolean }
+  const storageKey = `checklist-${checkpointId}`
+  const [checklist, setChecklist] = useState<ChecklistItem[]>(() => {
+    if (typeof window === 'undefined') return []
+    try { return JSON.parse(localStorage.getItem(storageKey) ?? '[]') } catch { return [] }
+  })
+  const [novoItem, setNovoItem] = useState('')
+  const [showChecklist, setShowChecklist] = useState(true)
+
+  function salvarChecklist(items: ChecklistItem[]) {
+    setChecklist(items)
+    try { localStorage.setItem(storageKey, JSON.stringify(items)) } catch {}
+  }
+
+  function adicionarItem() {
+    const texto = novoItem.trim()
+    if (!texto) return
+    salvarChecklist([...checklist, { id: crypto.randomUUID(), texto, feito: false }])
+    setNovoItem('')
+  }
+
+  function toggleItem(id: string) {
+    salvarChecklist(checklist.map((i) => i.id === id ? { ...i, feito: !i.feito } : i))
+  }
+
+  function removerItem(id: string) {
+    salvarChecklist(checklist.filter((i) => i.id !== id))
+  }
 
   // ── Load existing midias on mount ──────────────────────────────────────────
   useEffect(() => {
@@ -214,33 +253,76 @@ export function CheckpointMediaPanel({
     canvas.getContext('2d')?.drawImage(video, 0, 0)
     const base64 = canvas.toDataURL('image/jpeg', 0.85)
 
+    // Pause stream and show caption prompt before saving
+    streamRef.current?.getTracks().forEach((t) => t.stop())
+    streamRef.current = null
+    setModo(null)
+    setPendingFoto({ base64, tipo: 'foto' })
+    setPendingCaption('')
+  }
+
+  function handleSalvarPendingFoto() {
+    if (!pendingFoto) return
+    const caption = pendingCaption.trim()
     startTransition(async () => {
       try {
-        const { id, criadoEm } = await addCheckpointMidia(checkpointId, 'foto', { url: base64 })
+        const { id, criadoEm } = await addCheckpointMidia(checkpointId, 'foto', {
+          url: pendingFoto.base64,
+          descricao: caption || pendingFoto.nomeArquivo || undefined,
+        })
         setMidias((prev) => [
           ...prev,
-          { id, tipo: 'foto', url: base64, texto: null, descricao: null, criadoEm },
+          { id, tipo: 'foto', url: pendingFoto.base64, texto: null, descricao: caption || pendingFoto.nomeArquivo || null, criadoEm },
         ])
-      } catch { /* swallow — DB error shouldn't crash the capture flow */ }
+        setPendingFoto(null)
+        setPendingCaption('')
+      } catch { /* swallow */ }
     })
   }
 
-  // ── Foto ───────────────────────────────────────────────────────────────────
+  function handleDescartarPendingFoto() {
+    setPendingFoto(null)
+    setPendingCaption('')
+  }
+
+  // ── Foto (câmera fallback) — single file → caption prompt, multiple → auto-save ──
   async function handleFotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? [])
     if (!files.length) return
-    // Reset input so same file can be re-selected
     e.target.value = ''
-
+    if (files.length === 1) {
+      const base64 = await fileToBase64(files[0])
+      setPendingFoto({ base64, tipo: 'foto', nomeArquivo: files[0].name })
+      setPendingCaption('')
+      return
+    }
     for (const file of files) {
       const base64 = await fileToBase64(file)
       startTransition(async () => {
         try {
-          const { id, criadoEm } = await addCheckpointMidia(checkpointId, 'foto', { url: base64 })
-          setMidias((prev) => [
-            ...prev,
-            { id, tipo: 'foto', url: base64, texto: null, descricao: null, criadoEm },
-          ])
+          const { id, criadoEm } = await addCheckpointMidia(checkpointId, 'foto', { url: base64, descricao: file.name })
+          setMidias((prev) => [...prev, { id, tipo: 'foto', url: base64, texto: null, descricao: file.name, criadoEm }])
+        } catch { /* swallow */ }
+      })
+    }
+  }
+
+  // ── Arquivo (galeria / computador) ────────────────────────────────────────
+  async function handleArquivoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? [])
+    if (!files.length) return
+    e.target.value = ''
+    for (const file of files) {
+      const isImagem = file.type.startsWith('image/')
+      const tipo: 'foto' | 'documento' = isImagem ? 'foto' : 'documento'
+      const base64 = await fileToBase64(file)
+      startTransition(async () => {
+        try {
+          const { id, criadoEm } = await addCheckpointMidia(checkpointId, tipo, {
+            url: base64,
+            descricao: file.name,
+          })
+          setMidias((prev) => [...prev, { id, tipo, url: base64, texto: null, descricao: file.name, criadoEm }])
         } catch { /* swallow */ }
       })
     }
@@ -389,7 +471,7 @@ export function CheckpointMediaPanel({
 
           {/* Action row */}
           <div className="flex gap-2">
-            {/* Hidden file input — fallback when camera unavailable */}
+            {/* Hidden inputs */}
             <input
               ref={fotoInputRef}
               type="file"
@@ -397,6 +479,14 @@ export function CheckpointMediaPanel({
               multiple
               className="hidden"
               onChange={handleFotoChange}
+            />
+            <input
+              ref={arquivoInputRef}
+              type="file"
+              accept="image/*,application/pdf,.docx,.doc,.xlsx,.xls"
+              multiple
+              className="hidden"
+              onChange={handleArquivoChange}
             />
 
             {/* Câmera */}
@@ -439,6 +529,16 @@ export function CheckpointMediaPanel({
               <span className="text-[11px] font-medium">Nota</span>
             </button>
 
+            {/* Arquivo — galeria / computador */}
+            <button
+              onClick={() => { handleFecharCamera(); setModo(null); arquivoInputRef.current?.click() }}
+              disabled={isPending}
+              className="flex flex-1 flex-col items-center gap-1.5 rounded-xl border border-slate-200 bg-white py-3 text-slate-600 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700 transition-all disabled:opacity-50"
+            >
+              <FolderOpen className="h-5 w-5" />
+              <span className="text-[11px] font-medium">Arquivo</span>
+            </button>
+
             {/* Contato — only for FORUM/VARA_CIVEL */}
             {isVara && (
               <button
@@ -454,6 +554,45 @@ export function CheckpointMediaPanel({
               </button>
             )}
           </div>
+
+          {/* Pending photo — caption prompt */}
+          {pendingFoto && (
+            <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 space-y-3">
+              <p className="text-xs font-semibold text-blue-800 flex items-center gap-1.5">
+                <Camera className="h-3.5 w-3.5" />
+                Foto capturada — adicione uma legenda
+              </p>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={pendingFoto.base64}
+                alt="preview"
+                className="w-full rounded-lg object-cover max-h-48 border border-blue-100"
+              />
+              <input
+                type="text"
+                value={pendingCaption}
+                onChange={(e) => setPendingCaption(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSalvarPendingFoto() }}
+                placeholder="Ex: Fachada do imóvel, rachadura lateral…"
+                autoFocus
+                className="w-full h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400"
+              />
+              <div className="flex gap-2 justify-end">
+                <Button size="sm" variant="ghost" onClick={handleDescartarPendingFoto}>
+                  Descartar
+                </Button>
+                <Button
+                  size="sm"
+                  className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5"
+                  onClick={handleSalvarPendingFoto}
+                  disabled={isPending}
+                >
+                  {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                  Salvar foto
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* Camera viewfinder */}
           {modo === 'camera' && (
@@ -685,6 +824,88 @@ export function CheckpointMediaPanel({
               </div>
             </div>
           )}
+
+          {/* Checklist */}
+          <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+            <button
+              onClick={() => setShowChecklist((v) => !v)}
+              className="flex w-full items-center justify-between px-3 py-2.5 hover:bg-slate-50 transition-colors"
+            >
+              <span className="flex items-center gap-2 text-xs font-semibold text-slate-700">
+                <ListChecks className="h-3.5 w-3.5 text-lime-600" />
+                Checklist da vistoria
+                {checklist.length > 0 && (
+                  <span className="text-[10px] font-semibold text-slate-400">
+                    {checklist.filter((i) => i.feito).length}/{checklist.length}
+                  </span>
+                )}
+              </span>
+              <span className="text-[10px] text-slate-400">{showChecklist ? '▲' : '▼'}</span>
+            </button>
+
+            {showChecklist && (
+              <div className="border-t border-slate-100 p-3 space-y-2">
+                {checklist.length === 0 && (
+                  <p className="text-[11px] text-slate-400 text-center py-1">
+                    Adicione itens para guiar a coleta de evidências
+                  </p>
+                )}
+
+                {checklist.map((item) => (
+                  <div key={item.id} className="flex items-center gap-2 group">
+                    <button
+                      onClick={() => toggleItem(item.id)}
+                      className={`flex h-4.5 w-4.5 flex-shrink-0 items-center justify-center rounded border transition-colors ${
+                        item.feito
+                          ? 'border-emerald-400 bg-emerald-400 text-white'
+                          : 'border-slate-300 bg-white hover:border-lime-400'
+                      }`}
+                      style={{ width: 18, height: 18 }}
+                    >
+                      {item.feito && <CheckCircle2 className="h-3 w-3" />}
+                    </button>
+                    <span className={`flex-1 text-xs ${item.feito ? 'line-through text-slate-400' : 'text-slate-700'}`}>
+                      {item.texto}
+                    </span>
+                    <button
+                      onClick={() => removerItem(item.id)}
+                      className="opacity-0 group-hover:opacity-100 rounded p-0.5 text-slate-300 hover:text-red-400 transition-all"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+
+                {/* Add item */}
+                <div className="flex gap-1.5 pt-1">
+                  <input
+                    type="text"
+                    value={novoItem}
+                    onChange={(e) => setNovoItem(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') adicionarItem() }}
+                    placeholder="Novo item…"
+                    className="flex-1 h-8 rounded-lg border border-slate-200 bg-slate-50 px-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-lime-400 focus:outline-none focus:ring-1 focus:ring-lime-400"
+                  />
+                  <button
+                    onClick={adicionarItem}
+                    disabled={!novoItem.trim()}
+                    className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-lime-500 text-white hover:bg-lime-600 disabled:opacity-40 transition-colors"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                  </button>
+                  {checklist.some((i) => i.feito) && (
+                    <button
+                      onClick={() => salvarChecklist(checklist.map((i) => ({ ...i, feito: false })))}
+                      title="Resetar todos"
+                      className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                    >
+                      <RotateCcw className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Media grid */}
           <div>

@@ -195,10 +195,13 @@ export default function SignupPage() {
                   <label className={labelCls}>Nome completo *</label>
                   <input
                     className={inputCls}
-                    placeholder="Rafael Costa"
+                    placeholder="Rafael Souza Costa"
                     value={nome}
                     onChange={(e) => setNome(e.target.value)}
                   />
+                  <p className="mt-1 text-[11px] text-amber-700">
+                    Use seu nome completo exatamente como consta nos diários oficiais. O Radar de Nomeações busca pelo nome completo.
+                  </p>
                 </div>
                 <div>
                   <label className={labelCls}>E-mail *</label>

@@ -69,7 +69,7 @@ export async function createRotaFromVaras(varaIds: string[]): Promise<{ ok: bool
     })),
   })
 
-  redirect('/rotas/prospeccao')
+  redirect('/rotas/pericias')
 }
 
 export async function salvarRotaProspeccao(input: SalvarRotaInput) {
@@ -77,7 +77,7 @@ export async function salvarRotaProspeccao(input: SalvarRotaInput) {
   if (!session?.user?.id) return { ok: false, error: 'Não autenticado' }
 
   if (!input.titulo.trim()) return { ok: false, error: 'Título obrigatório' }
-  if (input.pontos.length < 2) return { ok: false, error: 'Selecione ao menos 2 paradas' }
+  if (input.pontos.length < 1) return { ok: false, error: 'Selecione ao menos 1 parada' }
 
   try {
     const rota = await prisma.rotaPericia.create({
@@ -105,10 +105,10 @@ export async function salvarRotaProspeccao(input: SalvarRotaInput) {
     return { ok: false, error: `Erro ao salvar: ${msg.slice(0, 120)}` }
   }
 
-  redirect('/rotas/prospeccao')
+  redirect('/rotas/pericias')
 }
 
-// ─── Action: Iniciar rota (planejada → em_execucao) ───────────────────────────
+// ─── Action: Iniciar rota (planejada / em_andamento → em_execucao) ───────────
 
 export async function iniciarRota(rotaId: string): Promise<{ ok: boolean; error?: string }> {
   const session = await auth()
@@ -121,9 +121,46 @@ export async function iniciarRota(rotaId: string): Promise<{ ok: boolean; error?
       select: { id: true },
     })
     revalidatePath('/rotas/pericias')
-    revalidatePath('/rotas/prospeccao')
     return { ok: true }
   } catch {
     return { ok: false, error: 'Erro ao iniciar rota' }
+  }
+}
+
+// ─── Action: Finalizar rota (em_execucao → concluida) ─────────────────────────
+
+export async function finalizarRota(rotaId: string): Promise<{ ok: boolean; error?: string }> {
+  const session = await auth()
+  if (!session?.user?.id) return { ok: false, error: 'Não autenticado' }
+
+  try {
+    await prisma.rotaPericia.update({
+      where: { id: rotaId, peritoId: session.user.id },
+      data: { status: 'concluida' },
+      select: { id: true },
+    })
+    revalidatePath('/rotas/pericias')
+    return { ok: true }
+  } catch {
+    return { ok: false, error: 'Erro ao finalizar rota' }
+  }
+}
+
+// ─── Action: Reabrir rota (concluida → em_execucao) ──────────────────────────
+
+export async function reabrirRota(rotaId: string): Promise<{ ok: boolean; error?: string }> {
+  const session = await auth()
+  if (!session?.user?.id) return { ok: false, error: 'Não autenticado' }
+
+  try {
+    await prisma.rotaPericia.update({
+      where: { id: rotaId, peritoId: session.user.id },
+      data: { status: 'em_execucao' },
+      select: { id: true },
+    })
+    revalidatePath('/rotas/pericias')
+    return { ok: true }
+  } catch {
+    return { ok: false, error: 'Erro ao reabrir rota' }
   }
 }

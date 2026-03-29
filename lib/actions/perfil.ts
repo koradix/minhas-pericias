@@ -138,7 +138,7 @@ export async function syncTribunaisReais(): Promise<
       data: { sincronizadoEm: new Date() },
     })
 
-    revalidatePath('/rotas/prospeccao')
+    try { revalidatePath('/rotas/prospeccao') } catch { /* ok se chamado durante render */ }
     return { ok: true, varasSalvas }
   } catch (e) {
     console.error('[syncTribunaisReais]', e)

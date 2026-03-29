@@ -1,16 +1,15 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Plus, Search, Loader2, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Search, Loader2, CheckCircle2, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { ManualCitacaoForm } from '@/components/nomeacoes/manual-citacao-form'
 import { buscarNomeacoes } from '@/lib/actions/nomeacoes'
 import { setupRadar } from '@/lib/actions/nomeacoes'
 
 interface Props {
   novas: number
   siglas: string[]
-  radarConfigurado: boolean  // true se RadarConfig com monitoramentoExtId existe
+  radarConfigurado: boolean
 }
 
 type BuscarState =
@@ -19,8 +18,7 @@ type BuscarState =
   | { fase: 'ok'; novas: number; saldo: number; totalEncontrados: number }
   | { fase: 'erro'; mensagem: string }
 
-export function RadarBuscarBtn({ siglas, radarConfigurado }: Props) {
-  const [showManualForm, setShowManualForm] = useState(false)
+export function RadarBuscarBtn({ radarConfigurado }: Props) {
   const [buscarState, setBuscarState] = useState<BuscarState>({ fase: 'idle' })
   const [isPending, startTransition] = useTransition()
 
@@ -28,12 +26,20 @@ export function RadarBuscarBtn({ siglas, radarConfigurado }: Props) {
     setBuscarState({ fase: 'buscando' })
     startTransition(async () => {
       try {
-        // Se radar não configurado, tenta configurar primeiro
+        // Se radar não configurado, tenta configurar (monitoramento automático)
+        // Se falhar por plano/401, continua mesmo assim — busca ativa ainda funciona
         if (!radarConfigurado) {
           const setupRes = await setupRadar()
           if (setupRes.status === 'error') {
-            setBuscarState({ fase: 'erro', mensagem: setupRes.message })
-            return
+            const isPlanoInsuficiente =
+              setupRes.message.includes('Monitoramento não disponível') ||
+              setupRes.message.includes('Token de API inválido')
+            if (!isPlanoInsuficiente) {
+              setBuscarState({ fase: 'erro', mensagem: setupRes.message })
+              return
+            }
+            // plano sem monitoramento: continua e faz só a busca ativa
+            console.log('[setupRadar] monitoramento indisponível — continuando com busca ativa')
           }
         }
 
@@ -56,9 +62,8 @@ export function RadarBuscarBtn({ siglas, radarConfigurado }: Props) {
 
   return (
     <div className="space-y-3">
-      {/* Botões principais */}
+      {/* Botão de busca */}
       <div className="flex flex-wrap gap-2">
-        {/* Busca automática via Escavador */}
         <Button
           onClick={handleBuscar}
           disabled={isBusy}
@@ -68,17 +73,6 @@ export function RadarBuscarBtn({ siglas, radarConfigurado }: Props) {
             ? <><Loader2 className="h-4 w-4 animate-spin" /> Buscando…</>
             : <><Search className="h-4 w-4" /> Buscar nomeações</>
           }
-        </Button>
-
-        {/* Registro manual com documento */}
-        <Button
-          variant="outline"
-          className="gap-2 font-semibold"
-          onClick={() => setShowManualForm(true)}
-          disabled={isBusy}
-        >
-          <Plus className="h-4 w-4" />
-          Registrar com documento
         </Button>
       </div>
 
@@ -119,10 +113,6 @@ export function RadarBuscarBtn({ siglas, radarConfigurado }: Props) {
         </div>
       )}
 
-      {/* Form de registro manual com documento */}
-      {showManualForm && (
-        <ManualCitacaoForm siglas={siglas} onClose={() => setShowManualForm(false)} />
-      )}
     </div>
   )
 }

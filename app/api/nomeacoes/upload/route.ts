@@ -36,6 +36,7 @@ export async function POST(request: NextRequest) {
   let numeroRaw: string | null
   let buffer: Buffer
   let blobUrl: string | null = null
+  let periciaIdRaw: string | null = null
 
   const allowed = [
     'application/pdf',
@@ -53,11 +54,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: false, message: 'Apenas PDF ou DOCX são aceitos' }, { status: 400 })
     }
 
-    fileName  = file.name
-    fileSize  = file.size
-    tribunal  = (formData.get('tribunal') as string) ?? 'TJRJ'
-    numeroRaw = (formData.get('numero') as string | null) || null
-    buffer    = Buffer.from(await file.arrayBuffer())
+    fileName     = file.name
+    fileSize     = file.size
+    tribunal     = (formData.get('tribunal') as string) ?? 'TJRJ'
+    numeroRaw    = (formData.get('numero') as string | null) || null
+    periciaIdRaw = (formData.get('periciaId') as string | null) || null
+    buffer       = Buffer.from(await file.arrayBuffer())
   } else {
     // ── Prod: recebe blobUrl em JSON ─────────────────────────────────────────
     const body = await request.json() as {
@@ -109,7 +111,8 @@ export async function POST(request: NextRequest) {
 
   try {
     const anthropic = new Anthropic({ apiKey })
-    const model = process.env.ANTHROPIC_MODEL ?? 'claude-haiku-4-5'
+    // Haiku tem limites de tokens/min muito maiores que Sonnet — ideal para extração de PDFs
+    const model = 'claude-haiku-4-5-20251001'
     let userContent: Anthropic.MessageParam['content']
 
     if (mimeType === 'application/pdf') {
@@ -121,7 +124,8 @@ export async function POST(request: NextRequest) {
       const totalPaginas = pdfDoc.getPageCount()
       console.log(`[upload] pdf-lib: ${totalPaginas} páginas`)
 
-      const MAX_PAGINAS = 40
+      // 20 páginas = suficiente para nomeação + despacho; reduz tokens e evita rate limit
+      const MAX_PAGINAS = 20
       let pdfParaEnviar: Buffer
 
       if (totalPaginas <= MAX_PAGINAS) {
@@ -220,6 +224,7 @@ export async function POST(request: NextRequest) {
         extractedData,
         processSummary: JSON.stringify(analise),
         status:         'pronta_para_pericia',
+        ...(periciaIdRaw ? { periciaId: periciaIdRaw } : {}),
       },
       create: {
         peritoId:       userId,
@@ -231,6 +236,7 @@ export async function POST(request: NextRequest) {
         mimeType,
         extractedData,
         processSummary: JSON.stringify(analise),
+        ...(periciaIdRaw ? { periciaId: periciaIdRaw } : {}),
       },
     })
 

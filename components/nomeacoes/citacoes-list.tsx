@@ -1,10 +1,12 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { ExternalLink, Eye, FileText, Hash } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { ExternalLink, Eye, FileText, Hash, Loader2, Plus, X } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/shared/empty-state'
 import { marcarVisualizado } from '@/lib/actions/nomeacoes'
+import { criarPericiaDeCitacao, rejeitarCitacao } from '@/lib/actions/citacao-to-pericia'
 import type { CitacaoSerializada } from '@/lib/data/nomeacoes'
 import { cn } from '@/lib/utils'
 
@@ -18,6 +20,11 @@ function CitacaoCard({ citacao }: { citacao: CitacaoSerializada }) {
   const [expanded, setExpanded] = useState(false)
   const [lida, setLida] = useState(citacao.visualizado)
   const [isPending, startTransition] = useTransition()
+  const [isCriando, startCriarTransition] = useTransition()
+  const [isRejeitando, startRejeitarTransition] = useTransition()
+  const [criarErro, setCriarErro] = useState<string | null>(null)
+  const [rejeitada, setRejeitada] = useState(false)
+  const router = useRouter()
 
   const dataFormatada = new Date(citacao.diarioData).toLocaleDateString('pt-BR', {
     day: '2-digit', month: '2-digit', year: 'numeric',
@@ -29,6 +36,28 @@ function CitacaoCard({ citacao }: { citacao: CitacaoSerializada }) {
       setLida(true)
     })
   }
+
+  function handleCriarPericia() {
+    setCriarErro(null)
+    startCriarTransition(async () => {
+      const res = await criarPericiaDeCitacao(citacao.id)
+      if (res.ok) {
+        setLida(true)
+        router.push(`/pericias/${res.periciaId}`)
+      } else {
+        setCriarErro(res.error)
+      }
+    })
+  }
+
+  function handleRejeitar() {
+    startRejeitarTransition(async () => {
+      const res = await rejeitarCitacao(citacao.id)
+      if (res.ok) setRejeitada(true)
+    })
+  }
+
+  if (rejeitada) return null
 
   const isLong = citacao.snippet.length > 220
   const snippet = !expanded && isLong ? `${citacao.snippet.slice(0, 220)}…` : citacao.snippet
@@ -101,17 +130,47 @@ function CitacaoCard({ citacao }: { citacao: CitacaoSerializada }) {
               </a>
             )}
 
-            {!lida && (
+            <div className="ml-auto flex items-center gap-2">
+              {!lida && (
+                <button
+                  onClick={handleMarcarLida}
+                  disabled={isPending || isCriando || isRejeitando}
+                  className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-slate-700 transition-colors disabled:opacity-40"
+                >
+                  <Eye className="h-3 w-3" />
+                  Marcar como lida
+                </button>
+              )}
+
               <button
-                onClick={handleMarcarLida}
-                disabled={isPending}
-                className="ml-auto flex items-center gap-1 text-[11px] text-slate-400 hover:text-slate-700 transition-colors disabled:opacity-40"
+                onClick={handleRejeitar}
+                disabled={isRejeitando || isCriando}
+                title="Descartar — não aparece mais"
+                className="flex items-center gap-1 rounded-md border border-slate-200 hover:border-rose-300 hover:text-rose-600 px-2 py-1 text-[11px] text-slate-400 transition-colors disabled:opacity-40"
               >
-                <Eye className="h-3 w-3" />
-                Marcar como lida
+                {isRejeitando
+                  ? <Loader2 className="h-3 w-3 animate-spin" />
+                  : <X className="h-3 w-3" />
+                }
+                Descartar
               </button>
-            )}
+
+              <button
+                onClick={handleCriarPericia}
+                disabled={isCriando || isPending || isRejeitando}
+                className="flex items-center gap-1 rounded-md bg-lime-500 hover:bg-lime-600 px-2.5 py-1 text-[11px] font-semibold text-white transition-colors disabled:opacity-50"
+              >
+                {isCriando
+                  ? <><Loader2 className="h-3 w-3 animate-spin" /> Criando…</>
+                  : <><Plus className="h-3 w-3" /> Criar Perícia</>
+                }
+              </button>
+            </div>
           </div>
+
+          {criarErro && (
+            <p className="mt-2 text-[11px] text-rose-600">{criarErro}</p>
+          )}
         </div>
       </div>
     </div>

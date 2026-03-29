@@ -57,7 +57,7 @@ export default async function NovaRotaPage() {
         title="Nova Rota de Perícias"
         description="Perícias com endereço disponíveis para roteirização — RJ"
         actions={
-          <Link href="/rotas/prospeccao">
+          <Link href="/rotas/pericias">
             <Button size="sm" variant="outline" className="gap-1.5">
               <ArrowLeft className="h-3.5 w-3.5" />
               Voltar

@@ -100,15 +100,15 @@ const JSON_TEMPLATE =
   '  "nomeacaoDespacho": {\n' +
   '    "peritoNomeado": true,\n' +
   '    "dataNomeacao": "data ou null",\n' +
-  '    "determinacaoJuiz": "transcrição fiel do despacho/decisão do juiz — incluindo prazo, determinações e quesitos mencionados",\n' +
-  '    "quesitos": ["lista de quesitos numerados ou []"],\n' +
-  '    "pontoCriticos": ["item ação 1 — ex: Prazo de aceite: 5 dias", "item 2", "item 3"]\n' +
+  '    "determinacaoJuiz": "TRANSCRIÇÃO COMPLETA do despacho/decisão judicial — inclua TUDO: prazo de aceite, honorários arbitrados ou sugeridos, determina\\u00e7ões ao perito, quesitos mencionados no corpo do despacho, restrições e observações do juiz. Mínimo 3 parágrafos se o texto existir.",\n' +
+  '    "quesitos": ["lista numerada COMPLETA de todos os quesitos formulados — um por item — ou []"],\n' +
+  '    "pontoCriticos": ["Prazo de aceite: X dias", "Honorários: R$ X ou a combinar", "Local: endereço", "Outros pontos urgentes"]\n' +
   '  },\n' +
   '  "aceiteHonorarios": {\n' +
-  '    "prazoAceite": "prazo ou null",\n' +
-  '    "complexidade": "baixa | média | alta",\n' +
-  '    "estrategiaHonorarios": "sugestão de estratégia",\n' +
-  '    "justificativasAumento": ["pontos que justificam aumento de honorários"]\n' +
+  '    "prazoAceite": "prazo de aceite da nomea\\u00e7ão ou null",\n' +
+  '    "complexidade": "baixa | média | alta — baseada na área técnica, número de quesitos, natureza do conflito",\n' +
+  '    "estrategiaHonorarios": "parágrafo explicando como abordar a proposta de honorários: valor de mercado, complexidade técnica, deslocamento, equipamentos necessários",\n' +
+  '    "justificativasAumento": ["cada item que justifica cobrar mais: quesitos complexos, deslocamento, equipamentos especiais, prazos curtos, risco técnico"]\n' +
   '  },\n' +
   '  "prazos": {\n' +
   '    "prazoAceite": "prazo ou null",\n' +

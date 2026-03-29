@@ -24,13 +24,14 @@ export interface CheckpointItem {
 interface Props {
   rotaId: string
   checkpoints: CheckpointItem[]
+  onFinalizar?: () => void
 }
 
 type CPStatus = 'pendente' | 'chegou' | 'concluido'
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function RotaPericiasExecucao({ rotaId, checkpoints }: Props) {
+export function RotaPericiasExecucao({ rotaId, checkpoints, onFinalizar }: Props) {
   const [statusMap, setStatusMap] = useState<Record<string, CPStatus>>(() =>
     Object.fromEntries(checkpoints.map((c) => [c.id, (c.statusCheckpoint ?? 'pendente') as CPStatus])),
   )
@@ -155,7 +156,16 @@ export function RotaPericiasExecucao({ rotaId, checkpoints }: Props) {
                 )}
 
                 {status === 'concluido' && (
-                  <Badge variant="success">Concluído</Badge>
+                  <>
+                    <button
+                      onClick={() => setActiveCheckpoint(cp)}
+                      className="flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-1 text-[10px] font-medium text-emerald-700 hover:bg-emerald-100 transition-colors"
+                    >
+                      <Camera className="h-2.5 w-2.5" />
+                      Evidências
+                    </button>
+                    <Badge variant="success">Concluído</Badge>
+                  </>
                 )}
 
                 {status !== 'concluido' && (
@@ -177,13 +187,21 @@ export function RotaPericiasExecucao({ rotaId, checkpoints }: Props) {
         </div>
       )}
 
-      {/* Progress footer */}
+      {/* Progress footer — all done, show finalize button */}
       {checkpoints.length > 0 && checkpoints.every((c) => statusMap[c.id] === 'concluido') && (
-        <div className="mt-3 flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3">
+        <div className="mt-3 flex items-center gap-3 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3">
           <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0" />
-          <p className="text-xs font-semibold text-emerald-800">
-            Todos os checkpoints concluídos — rota finalizada!
+          <p className="text-xs font-semibold text-emerald-800 flex-1">
+            Todos os checkpoints concluídos!
           </p>
+          {onFinalizar && (
+            <button
+              onClick={onFinalizar}
+              className="flex-shrink-0 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 transition-colors"
+            >
+              Finalizar rota
+            </button>
+          )}
         </div>
       )}
 

@@ -74,6 +74,7 @@ export async function updateCheckpointStatus(
         ...(chegadaEm && { chegadaEm }),
       },
     })
+    if (meta?.pericoId) revalidatePath(`/pericias/${meta.pericoId}`)
     revalidatePath('/rotas/pericias')
     return
   } catch {
@@ -124,8 +125,16 @@ export async function addCheckpointMidia(
     },
   })
 
+  // Revalidate the perícia page so photos appear there immediately
+  try {
+    const cp = await prisma.checkpoint.findUnique({
+      where: { id: checkpointId },
+      select: { periciaId: true },
+    })
+    if (cp?.periciaId) revalidatePath(`/pericias/${cp.periciaId}`)
+  } catch {}
+
   revalidatePath('/rotas/pericias')
-  // toISO guards against libsql returning DATETIME as string instead of Date
   return { id: midia.id, criadoEm: toISO(midia.criadoEm) }
 }
 
@@ -135,10 +144,19 @@ export async function deleteCheckpointMidia(midiaId: string): Promise<void> {
   if (!session?.user?.id) return
 
   try {
+    const midia = await prisma.checkpointMidia.findUnique({
+      where: { id: midiaId },
+      select: { checkpointId: true },
+    })
     await prisma.checkpointMidia.delete({ where: { id: midiaId } })
-  } catch {
-    // Row may already be gone — ignore
-  }
+    if (midia?.checkpointId) {
+      const cp = await prisma.checkpoint.findUnique({
+        where: { id: midia.checkpointId },
+        select: { periciaId: true },
+      })
+      if (cp?.periciaId) revalidatePath(`/pericias/${cp.periciaId}`)
+    }
+  } catch {}
   revalidatePath('/rotas/pericias')
 }
 

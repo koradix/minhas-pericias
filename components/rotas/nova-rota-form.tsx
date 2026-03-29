@@ -137,7 +137,7 @@ export function NovaRotaForm({ varas, grupos }: Props) {
   // ── Save ─────────────────────────────────────────────────────────────────
   function handleSalvar() {
     if (!titulo.trim()) { setError('Informe um título para a rota'); return }
-    if (selecionadas.length < 2) { setError('Selecione ao menos 2 paradas'); return }
+    if (selecionadas.length < 1) { setError('Selecione ao menos 1 parada'); return }
     setError(null)
     startTransition(async () => {
       const res = await salvarRotaProspeccao({
@@ -324,7 +324,7 @@ export function NovaRotaForm({ varas, grupos }: Props) {
       )}
 
       {/* Google Maps link */}
-      {selecionadas.length >= 2 && (
+      {selecionadas.length >= 1 && (
         <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 flex items-center gap-3">
           <ExternalLink className="h-4 w-4 text-slate-400 flex-shrink-0" />
           <div className="flex-1 min-w-0">
@@ -373,7 +373,7 @@ export function NovaRotaForm({ varas, grupos }: Props) {
         <Button
           type="button"
           onClick={handleSalvar}
-          disabled={isPending || selecionadas.length < 2 || !titulo.trim()}
+          disabled={isPending || selecionadas.length < 1 || !titulo.trim()}
           className="bg-lime-500 hover:bg-lime-600 text-slate-900 font-semibold gap-1.5"
         >
           {isPending ? (

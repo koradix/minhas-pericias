@@ -1,13 +1,21 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { MapPin, Clock, Banknote, Navigation, FileText, Loader2, ExternalLink } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import Link from 'next/link'
+import {
+  MapPin,
+  Navigation,
+  CheckCircle2,
+  Clock,
+  Loader2,
+  ExternalLink,
+  ChevronRight,
+} from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { formatCurrency } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 import { RotaPericiasExecucao } from '@/components/rotas/rota-pericias-execucao'
-import { iniciarRota } from '@/lib/actions/rotas-nova'
+import { iniciarRota, finalizarRota, reabrirRota } from '@/lib/actions/rotas-nova'
 import type { Rota, StatusRota } from '@/lib/types/rotas'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -28,164 +36,212 @@ function buildMapsUrl(pontos: Rota['pontos']): string | null {
   return waypoints ? `${base}&waypoints=${waypoints}` : base
 }
 
-const statusMap: Record<string, { label: string; variant: 'info' | 'warning' | 'success' | 'danger' | 'secondary' }> = {
-  planejada:    { label: 'Planejada',     variant: 'info'      },
-  em_execucao:  { label: 'Em execução',   variant: 'warning'   },
-  em_andamento: { label: 'Em andamento',  variant: 'warning'   },
-  concluida:    { label: 'Concluída',     variant: 'success'   },
-  cancelada:    { label: 'Cancelada',     variant: 'secondary' },
+const statusConfig: Record<string, { label: string; variant: 'info' | 'warning' | 'success' | 'secondary' }> = {
+  planejada:    { label: 'Planejada',    variant: 'secondary' },
+  em_execucao:  { label: 'Em campo',     variant: 'warning'   },
+  em_andamento: { label: 'Pronta',       variant: 'info'      },
+  concluida:    { label: 'Concluída',    variant: 'success'   },
+  cancelada:    { label: 'Cancelada',    variant: 'secondary' },
 }
 
-function formatTempo(min: number) {
-  const h = Math.floor(min / 60)
-  const m = min % 60
-  if (h === 0) return `${m}min`
-  return m === 0 ? `${h}h` : `${h}h ${m}min`
-}
+// ─── Rota card ────────────────────────────────────────────────────────────────
 
-// ─── Component ────────────────────────────────────────────────────────────────
-
-export function RotasPericiasListClient({ rotas }: { rotas: Rota[] }) {
-  const [localStatus, setLocalStatus] = useState<Record<string, StatusRota>>({})
+function RotaCard({ rota }: { rota: Rota }) {
+  const [localStatus, setLocalStatus] = useState<StatusRota>(rota.status)
   const [isPending, startTransition] = useTransition()
-  const [loadingId, setLoadingId] = useState<string | null>(null)
 
-  function getStatus(rota: Rota): StatusRota {
-    return localStatus[rota.id] ?? rota.status
+  const status = localStatus
+  const st = statusConfig[status] ?? { label: status, variant: 'secondary' as const }
+  const emCampo = status === 'em_execucao'
+  const concluida = status === 'concluida'
+  const mapsUrl = buildMapsUrl(rota.pontos)
+
+  const enderecosPrincipais = rota.pontos
+    .sort((a, b) => a.ordem - b.ordem)
+    .slice(0, 2)
+    .map((p) => p.endereco)
+    .filter(Boolean) as string[]
+
+  function handleIniciar() {
+    startTransition(async () => {
+      await iniciarRota(rota.id)
+      setLocalStatus('em_execucao')
+    })
   }
 
-  function handleIniciar(rotaId: string) {
-    setLoadingId(rotaId)
+  function handleFinalizar() {
     startTransition(async () => {
-      await iniciarRota(rotaId)
-      setLocalStatus((p) => ({ ...p, [rotaId]: 'em_execucao' }))
-      setLoadingId(null)
+      await finalizarRota(rota.id)
+      setLocalStatus('concluida')
+    })
+  }
+
+  function handleReabrir() {
+    startTransition(async () => {
+      await reabrirRota(rota.id)
+      setLocalStatus('em_execucao')
     })
   }
 
   return (
-    <div className="space-y-4">
-      {rotas.map((rota) => {
-        const status = getStatus(rota)
-        const st = statusMap[status] ?? { label: status, variant: 'secondary' as const }
-        const isLoading = loadingId === rota.id
+    <div className={cn(
+      'rounded-2xl border bg-white shadow-sm overflow-hidden transition-all',
+      emCampo ? 'border-amber-200' : concluida ? 'border-slate-100 opacity-70' : 'border-slate-200',
+    )}>
+      {/* Card header */}
+      <div className="px-5 py-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+              <Badge variant={st.variant}>{st.label}</Badge>
+              <span className="text-xs text-slate-400">{rota.data}</span>
+              {rota.pontos.length > 0 && (
+                <span className="text-xs text-slate-400">
+                  · {rota.pontos.length} local{rota.pontos.length > 1 ? 'is' : ''}
+                </span>
+              )}
+            </div>
 
-        return (
-          <Card key={rota.id} className={status === 'concluida' ? 'opacity-70' : ''}>
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <Badge variant={st.variant}>{st.label}</Badge>
-                    <span className="text-xs text-slate-400">{rota.data}</span>
-                  </div>
-                  <CardTitle className="text-base">{rota.titulo}</CardTitle>
-                </div>
+            <h3 className="text-base font-bold text-slate-900 leading-snug">{rota.titulo}</h3>
 
-                {status === 'planejada' && (
-                  <Button
-                    size="sm"
-                    className="flex-shrink-0 bg-emerald-600 hover:bg-emerald-700"
-                    onClick={() => handleIniciar(rota.id)}
-                    disabled={isPending}
-                  >
-                    {isLoading ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Navigation className="h-3.5 w-3.5" />
-                    )}
-                    Iniciar
-                  </Button>
+            {/* Endereço principal — só quando planejada */}
+            {!emCampo && !concluida && enderecosPrincipais.length > 0 && (
+              <p className="flex items-center gap-1 text-xs text-slate-500 mt-1.5">
+                <MapPin className="h-3 w-3 flex-shrink-0 text-slate-400" />
+                <span className="truncate">{enderecosPrincipais[0]}</span>
+                {enderecosPrincipais.length > 1 && (
+                  <span className="text-slate-400 flex-shrink-0">+{rota.pontos.length - 1} mais</span>
                 )}
+              </p>
+            )}
 
-                {(status === 'em_execucao' || status === 'em_andamento') && (
-                  <Badge variant="warning" className="flex-shrink-0">
-                    Em campo
-                  </Badge>
-                )}
-              </div>
-            </CardHeader>
+            {/* Link para a perícia se existir */}
+            {rota.pontos.some((p) => p.pericoId) && (
+              <Link
+                href={`/pericias/${rota.pontos.find((p) => p.pericoId)?.pericoId}`}
+                className="inline-flex items-center gap-1 mt-1.5 text-[11px] text-violet-600 hover:text-violet-800 transition-colors"
+              >
+                <ChevronRight className="h-3 w-3" />
+                Ver perícia
+              </Link>
+            )}
+          </div>
 
-            <CardContent className="pt-0">
-              <div className="mb-4 space-y-2">
-                {(status === 'em_execucao' || status === 'em_andamento') ? (
-                  <RotaPericiasExecucao
-                    rotaId={rota.id}
-                    checkpoints={rota.pontos.map((p) => ({
-                      id: p.id,
-                      titulo: p.nome,
-                      endereco: p.endereco,
-                      ordem: p.ordem,
-                      pericoId: p.pericoId,
-                      tipo: p.tipo,
-                      tribunalSigla: p.tribunalSigla,
-                      varaNome: p.varaNome,
-                      statusCheckpoint: p.statusCheckpoint,
-                    }))}
-                  />
-                ) : (
-                  rota.pontos.map((p) => (
-                    <div
-                      key={p.id}
-                      className="flex items-start gap-3 rounded-lg bg-emerald-50/60 border border-emerald-100 p-3"
-                    >
-                      <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-emerald-100">
-                        <FileText className="h-3 w-3 text-emerald-700" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs font-semibold text-emerald-900">{p.nome}</p>
-                        {p.periciaInfo && (
-                          <p className="text-[11px] font-medium text-emerald-700 mt-0.5">{p.periciaInfo.tipo}</p>
-                        )}
-                        {p.endereco && (
-                          <p className="flex items-center gap-1 text-[11px] text-emerald-700 mt-0.5">
-                            <MapPin className="h-2.5 w-2.5" />
-                            {p.endereco}
-                          </p>
-                        )}
-                      </div>
-                      <span className="text-[10px] font-bold text-emerald-600 bg-emerald-100 rounded px-1.5 py-0.5">
-                        Parada {p.ordem}
-                      </span>
-                    </div>
-                  ))
-                )}
-              </div>
+          {/* Ações */}
+          <div className="flex-shrink-0 flex flex-col items-end gap-2">
+            {(status === 'planejada' || status === 'em_andamento') && (
+              <Button
+                size="sm"
+                className="bg-lime-500 hover:bg-lime-600 text-white font-semibold gap-1.5"
+                onClick={handleIniciar}
+                disabled={isPending}
+              >
+                {isPending
+                  ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  : <Navigation className="h-3.5 w-3.5" />
+                }
+                Iniciar vistoria
+              </Button>
+            )}
 
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-5 text-xs text-slate-500">
-                  <span className="flex items-center gap-1.5">
-                    <MapPin className="h-3.5 w-3.5 text-slate-400" />
-                    {rota.distanciaKm} km
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <Clock className="h-3.5 w-3.5 text-slate-400" />
-                    {formatTempo(rota.tempoEstimadoMin)}
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <Banknote className="h-3.5 w-3.5 text-slate-400" />
-                    {formatCurrency(rota.custoEstimado)}
-                  </span>
-                </div>
-                {(() => {
-                  const mapsUrl = buildMapsUrl(rota.pontos)
-                  return mapsUrl ? (
-                    <a
-                      href={mapsUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 hover:border-blue-300 hover:text-blue-600 transition-colors"
-                    >
-                      <ExternalLink className="h-3 w-3" />
-                      Ver no Maps
-                    </a>
-                  ) : null
-                })()}
+            {concluida && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleReabrir}
+                  disabled={isPending}
+                  className="text-[11px] font-medium text-slate-400 hover:text-slate-600 underline underline-offset-2 transition-colors disabled:opacity-40"
+                >
+                  Reabrir
+                </button>
+                <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  Finalizada
+                </span>
               </div>
-            </CardContent>
-          </Card>
-        )
-      })}
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Checkpoints — só aparecem quando em campo */}
+      {emCampo && (
+        <div className="border-t border-amber-100 px-5 py-4">
+          <RotaPericiasExecucao
+            rotaId={rota.id}
+            onFinalizar={handleFinalizar}
+            checkpoints={rota.pontos.map((p) => ({
+              id: p.id,
+              titulo: p.nome,
+              endereco: p.endereco,
+              ordem: p.ordem,
+              pericoId: p.pericoId,
+              tipo: p.tipo,
+              tribunalSigla: p.tribunalSigla,
+              varaNome: p.varaNome,
+              statusCheckpoint: p.statusCheckpoint,
+            }))}
+          />
+        </div>
+      )}
+
+      {/* Rodapé — Google Maps link */}
+      {mapsUrl && (
+        <div className={cn(
+          'flex justify-end px-5 py-2.5 border-t',
+          emCampo ? 'border-amber-100 bg-amber-50/40' : 'border-slate-50 bg-slate-50/60',
+        )}>
+          <a
+            href={mapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-blue-600 transition-colors"
+          >
+            <ExternalLink className="h-3 w-3" />
+            Abrir no Google Maps
+          </a>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── List ─────────────────────────────────────────────────────────────────────
+
+export function RotasPericiasListClient({ rotas }: { rotas: Rota[] }) {
+  // Sort: em campo first, then planejada, then concluida
+  const sorted = [...rotas].sort((a, b) => {
+    const order = { em_execucao: 0, em_andamento: 1, planejada: 1, concluida: 2, cancelada: 3 }
+    return (order[a.status as keyof typeof order] ?? 1) - (order[b.status as keyof typeof order] ?? 1)
+  })
+
+  const ativas = sorted.filter((r) => r.status !== 'concluida' && r.status !== 'cancelada')
+
+  const concluidas = sorted.filter((r) => r.status === 'concluida' || r.status === 'cancelada')
+
+  return (
+    <div className="space-y-6">
+      {/* Rotas ativas */}
+      {ativas.length > 0 && (
+        <div className="space-y-3">
+          {ativas.map((rota) => (
+            <RotaCard key={rota.id} rota={rota} />
+          ))}
+        </div>
+      )}
+
+      {/* Concluídas — colapsadas */}
+      {concluidas.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+            Concluídas ({concluidas.length})
+          </p>
+          <div className="space-y-2">
+            {concluidas.map((rota) => (
+              <RotaCard key={rota.id} rota={rota} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

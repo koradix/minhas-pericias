@@ -7,6 +7,7 @@ import { radar } from '@/lib/services/radar'
 import { EscavadorService } from '@/lib/services/escavador'
 import { EscavadorError, type CitacaoResult } from '@/lib/services/radar-provider'
 import { calcularScore, type PerfilMatch } from '@/lib/utils/match-nomeacao'
+import { runInitialBackfill } from '@/lib/actions/radar-sync'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -118,6 +119,9 @@ export async function setupRadar(): Promise<SetupRadarResult> {
           create: { peritoId: userId, monitoramentoExtId: String(found.id), tribunaisMonitorados: JSON.stringify(siglas), tribunaisResolvidos: JSON.stringify(resolvidos), tribunaisIgnorados: JSON.stringify(ignorados) },
         })
         revalidatePath('/nomeacoes')
+        runInitialBackfill(userId).catch((e) =>
+          console.error('[setupRadar] backfill error (recovered):', e),
+        )
         return { status: 'recovered' }
       }
     }
@@ -144,8 +148,22 @@ export async function setupRadar(): Promise<SetupRadarResult> {
               create: { peritoId: userId, monitoramentoExtId: String(match.id), tribunaisMonitorados: JSON.stringify(siglas), tribunaisResolvidos: JSON.stringify(resolvidos), tribunaisIgnorados: JSON.stringify(ignorados) },
             })
             revalidatePath('/nomeacoes')
+            runInitialBackfill(userId).catch((e2) =>
+              console.error('[setupRadar] backfill error (422-recovered):', e2),
+            )
             return { status: 'recovered' }
           }
+        }
+        // 401 = plano sem monitoramento: salva config parcial para permitir busca ativa
+        if (e instanceof EscavadorError && e.code === 401) {
+          await prisma.radarConfig.upsert({
+            where: { peritoId: userId },
+            update: { tribunaisMonitorados: JSON.stringify(siglas), tribunaisResolvidos: JSON.stringify(resolvidos), tribunaisIgnorados: JSON.stringify(ignorados) },
+            create: { peritoId: userId, tribunaisMonitorados: JSON.stringify(siglas), tribunaisResolvidos: JSON.stringify(resolvidos), tribunaisIgnorados: JSON.stringify(ignorados) },
+          })
+          revalidatePath('/nomeacoes')
+          console.log('[setupRadar] monitoramento 401 — config parcial salvo, busca ativa disponível')
+          return { status: 'error', message: 'Monitoramento automático não disponível no plano atual. Busca ativa funcionando.' }
         }
         return { status: 'error', message: humanReadableError(e) }
       }
@@ -158,6 +176,12 @@ export async function setupRadar(): Promise<SetupRadarResult> {
     })
 
     revalidatePath('/nomeacoes')
+
+    // Kick off initial backfill in background — non-blocking
+    runInitialBackfill(userId).catch((e) =>
+      console.error('[setupRadar] backfill error:', e),
+    )
+
     return { status: 'created' }
   } catch (err) {
     return { status: 'error', message: humanReadableError(err) }
@@ -353,8 +377,14 @@ export async function buscarNomeacoes(): Promise<BuscarResult> {
       return true
     })
 
-    // ── Filtra citações com menção a perícia/perito/nomeação no snippet ──────
-    const unique = deduped.filter((c) => isSnippetNomeacaoCivel(c.snippet))
+    // ── Filtra: snippet deve mencionar perícia/perito E conter o nome do perito ─
+    // Escavador retorna páginas inteiras do DJe — o snippet pode ser de outro
+    // processo na mesma página. Exige nome no snippet para eliminar falsos positivos.
+    const nomeLower = nomePeito.toLowerCase()
+    const unique = deduped.filter((c) => {
+      if (!isSnippetNomeacaoCivel(c.snippet)) return false
+      return c.snippet.toLowerCase().includes(nomeLower)
+    })
 
     console.log(`[buscarNomeacoes] Após filtro de snippet: ${unique.length} de ${deduped.length}`)
 

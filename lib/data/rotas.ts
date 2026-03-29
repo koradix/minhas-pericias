@@ -33,7 +33,10 @@ async function _getRotas(peritoId: string): Promise<Rota[]> {
   const checkpoints: CheckpointRow[] = await prisma.checkpoint.findMany({
     where: { rotaId: { in: rotaIds } },
     orderBy: { ordem: 'asc' },
-  }).catch(() => [])
+  }).catch((err) => {
+    console.error('[rotas] checkpoint query failed:', err?.message ?? err)
+    return [] as CheckpointRow[]
+  })
 
   // Collect periciaIds to join
   const periciaIds = [...new Set(

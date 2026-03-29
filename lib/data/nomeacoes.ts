@@ -15,6 +15,8 @@ export interface CitacaoSerializada {
   linkCitacao: string
   visualizado: boolean
   fonte: string
+  status: string
+  periciaId: string | null
   criadoEm: string    // ISO string
 }
 
@@ -43,6 +45,7 @@ export async function getCitacoes(
   const rows = await prisma.nomeacaoCitacao.findMany({
     where: {
       peritoId,
+      status: 'pendente',
       ...(options?.apenasNaoLidas ? { visualizado: false } : {}),
     },
     orderBy: { diarioData: 'desc' },

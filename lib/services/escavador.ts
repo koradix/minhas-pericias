@@ -187,7 +187,12 @@ export class EscavadorService implements RadarProvider {
       )
     }
 
-    if (res.status === 401) throw new EscavadorError(401, 'Token inválido ou expirado')
+    if (res.status === 401) {
+      const isMonitoramento = path.startsWith('/monitoramentos')
+      throw new EscavadorError(401, isMonitoramento
+        ? 'Monitoramento não disponível no plano atual. Use "Buscar nomeações" manualmente.'
+        : 'Token inválido ou expirado')
+    }
     if (res.status === 402) throw new EscavadorError(402, 'Saldo insuficiente')
     if (res.status === 404) throw new EscavadorError(404, 'Recurso não encontrado')
     if (!res.ok) {
@@ -509,7 +514,7 @@ export class EscavadorService implements RadarProvider {
   async buscarPorNome(nome: string, siglasFiltro: string[], page = 1): Promise<CitacaoResult[]> {
     // Busca sem aspas primeiro — mais ampla, captura variações de grafia
     // (o Escavador com aspas exige match literal, sem tolera acentuação diferente)
-    const queryTermo = `${nome} perito`
+    const queryTermo = `"${nome}" perito`
     const q = encodeURIComponent(queryTermo)
 
     // Data mínima: 1 ano atrás — garante histórico sem poluir com resultados antigos demais
@@ -533,17 +538,31 @@ export class EscavadorService implements RadarProvider {
       `[Escavador] buscarPorNome: query="${queryTermo}" desde=${dataDe} → ${data.paginator.total} total, ${data.items.length} nesta página`,
     )
 
-    const filtroUpper = new Set(siglasFiltro.map((s) => s.toUpperCase()))
+    // Escavador usa "DJ{UF}" para os diários (ex: DJRJ, DJSP) mas nosso cadastro
+    // armazena a sigla do tribunal "TJ{UF}". Expandimos o filtro para aceitar ambos.
+    const filtroUpper = new Set<string>()
+    for (const s of siglasFiltro) {
+      const u = s.toUpperCase()
+      filtroUpper.add(u)
+      if (u.startsWith('TJ')) filtroUpper.add('DJ' + u.slice(2)) // TJRJ → DJRJ
+      if (u.startsWith('DJ')) filtroUpper.add('TJ' + u.slice(2)) // DJRJ → TJRJ
+    }
     const semFiltro = filtroUpper.size === 0
+
+    // Debug: log distinct tipos e siglas
+    if (data.items.length > 0) {
+      const tipos = [...new Set(data.items.map((i) => i.tipo_resultado))].join(', ')
+      const siglas = [...new Set(data.items.map((i) => i.diario_sigla).filter(Boolean))].slice(0, 10).join(', ')
+      console.log(`[Escavador] buscarPorNome: tipos=${tipos} | siglas=${siglas || '(vazio)'}`)
+    }
 
     const filtrados = data.items.filter(
       (item) =>
-        item.tipo_resultado === 'Diario' &&
         (semFiltro || filtroUpper.has(item.diario_sigla.toUpperCase())),
     )
 
     console.log(
-      `[Escavador] buscarPorNome: ${filtrados.length} de ${data.items.length} passaram pelo filtro de tribunal`,
+      `[Escavador] buscarPorNome: ${filtrados.length} de ${data.items.length} passaram pelo filtro (filtro: ${[...filtroUpper].join(',')})`,
     )
 
     return filtrados.map((item) => ({

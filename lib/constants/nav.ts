@@ -7,6 +7,7 @@ import {
   Inbox,
   Send,
   Search,
+  Navigation,
   type LucideIcon,
 } from "lucide-react"
 
@@ -34,9 +35,9 @@ export const navigation: NavSection[] = [
     items: [
       { title: "Dashboard",       href: "/dashboard", icon: LayoutDashboard },
       { title: "Nomeações",  href: "/nomeacoes", icon: Inbox },
-      { title: "Péricias",   href: "/pericias",  icon: FileText },
+      { title: "Péricias",          href: "/pericias",       icon: FileText },
+      { title: "Rotas e Vistorias", href: "/rotas/pericias", icon: Navigation },
       // { title: "Processos",    href: "/processos", icon: Upload },   // MVP: oculto
-      // { title: "Rotas",        href: "/rotas",     icon: Navigation }, // MVP: acessado via detalhe da perícia
     ],
   },
   {

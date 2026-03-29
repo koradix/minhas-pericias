@@ -3,6 +3,22 @@
     "app/api/nomeacoes/upload/route.ts": {
       "memory": 1024,
       "maxDuration": 60
+    },
+    "app/api/cron/radar-diario/route.ts": {
+      "maxDuration": 300
+    },
+    "app/api/cron/radar-semanal/route.ts": {
+      "maxDuration": 300
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/radar-diario",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/radar-semanal",
+      "schedule": "0 10 * * 1"
+    }
+  ]
 }
