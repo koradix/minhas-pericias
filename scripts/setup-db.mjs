@@ -1,15 +1,8 @@
 /**
- * Ensures the Turso database schema is up to date at build time.
- *
- * Strategy:
- *   1. Run `prisma migrate diff` against an in-memory SQLite (empty) to generate
- *      the full CREATE TABLE SQL for all models.
- *   2. Send each statement via the Turso HTTP API (which accepts arbitrary SQL).
- *
- * This is non-fatal — if it fails the deploy still proceeds (existing tables intact).
+ * Applies schema migrations to Turso at build time via the HTTP API.
+ * Uses only safe DDL (CREATE TABLE IF NOT EXISTS, ADD COLUMN IF NOT EXISTS).
+ * Non-fatal — if something fails the deploy still proceeds.
  */
-import { execSync } from 'child_process'
-import { writeFileSync, readFileSync, unlinkSync } from 'fs'
 
 const tursoUrl   = process.env.TURSO_DATABASE_URL
 const tursoToken = process.env.TURSO_AUTH_TOKEN
@@ -19,46 +12,143 @@ if (!tursoUrl || !tursoToken) {
   process.exit(0)
 }
 
+const httpUrl = tursoUrl.replace('libsql://', 'https://')
+
+async function exec(sql) {
+  const res = await fetch(`${httpUrl}/v2/pipeline`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${tursoToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ requests: [{ type: 'execute', stmt: { sql } }] }),
+  })
+  const data = await res.json()
+  const err = data?.results?.[0]?.error
+  if (err && !err.message?.includes('already exists') && !err.message?.includes('duplicate column')) {
+    console.warn(`[setup-db] SQL warning: ${err.message} — ${sql.slice(0, 80)}`)
+  }
+}
+
 console.log('[setup-db] Syncing schema to Turso…')
 
 try {
-  // Generate CREATE TABLE SQL by diffing empty → current schema
-  const sql = execSync(
-    'npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script',
-    { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
-  ).toString()
+  // ── NomeacaoCitacao — colunas novas ──────────────────────────────────────
+  await exec(`ALTER TABLE NomeacaoCitacao ADD COLUMN status TEXT NOT NULL DEFAULT 'pendente'`)
+  await exec(`ALTER TABLE NomeacaoCitacao ADD COLUMN periciaId TEXT`)
+  await exec(`ALTER TABLE NomeacaoCitacao ADD COLUMN tribunalVaraId TEXT`)
 
-  // Split into individual statements (skip empty lines and comments)
-  const statements = sql
-    .split(';')
-    .map((s) => s.trim())
-    .filter((s) => s && !s.startsWith('--') && !s.startsWith('/*') && !s.startsWith('PRAGMA'))
+  // ── RadarConfig — colunas novas ──────────────────────────────────────────
+  await exec(`ALTER TABLE RadarConfig ADD COLUMN tribunaisResolvidos TEXT NOT NULL DEFAULT '[]'`)
+  await exec(`ALTER TABLE RadarConfig ADD COLUMN tribunaisIgnorados TEXT NOT NULL DEFAULT '[]'`)
+  await exec(`ALTER TABLE RadarConfig ADD COLUMN monitoramentoExtId TEXT`)
+  await exec(`ALTER TABLE RadarConfig ADD COLUMN saldoUltimaVerif REAL`)
+  await exec(`ALTER TABLE RadarConfig ADD COLUMN lastMonitorSyncAt DATETIME`)
+  await exec(`ALTER TABLE RadarConfig ADD COLUMN lastSearchSyncAt DATETIME`)
+  await exec(`ALTER TABLE RadarConfig ADD COLUMN backfillCompletedAt DATETIME`)
 
-  // Turso HTTP API: POST /v2/pipeline
-  const httpUrl = tursoUrl.replace('libsql://', 'https://')
-  const body = JSON.stringify({
-    requests: statements.map((stmt) => ({
-      type: 'execute',
-      stmt: { sql: stmt + ';' },
-    })),
-  })
+  // ── Checkpoint — coluna periciaId ────────────────────────────────────────
+  await exec(`ALTER TABLE Checkpoint ADD COLUMN periciaId TEXT`)
+  await exec(`ALTER TABLE Checkpoint ADD COLUMN pericoId TEXT`)
+  await exec(`ALTER TABLE Checkpoint ADD COLUMN tribunalSigla TEXT`)
+  await exec(`ALTER TABLE Checkpoint ADD COLUMN varaNome TEXT`)
+  await exec(`ALTER TABLE Checkpoint ADD COLUMN chegadaEm DATETIME`)
 
-  const response = await fetch(`${httpUrl}/v2/pipeline`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${tursoToken}`,
-      'Content-Type': 'application/json',
-    },
-    body,
-  })
+  // ── CheckpointMidia ──────────────────────────────────────────────────────
+  await exec(`CREATE TABLE IF NOT EXISTS CheckpointMidia (
+    id TEXT PRIMARY KEY NOT NULL,
+    checkpointId TEXT NOT NULL,
+    tipo TEXT NOT NULL,
+    url TEXT,
+    texto TEXT,
+    descricao TEXT,
+    criadoEm DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  )`)
 
-  if (!response.ok) {
-    const text = await response.text()
-    console.warn('[setup-db] Turso API warning:', response.status, text.slice(0, 200))
-  } else {
-    console.log('[setup-db] Schema in sync ✓')
-  }
+  // ── RotaPericia ──────────────────────────────────────────────────────────
+  await exec(`CREATE TABLE IF NOT EXISTS RotaPericia (
+    id TEXT PRIMARY KEY NOT NULL,
+    peritoId TEXT NOT NULL,
+    titulo TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'em_andamento',
+    pericoId TEXT,
+    criadoEm DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    atualizadoEm DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  )`)
+
+  // ── Checkpoint (base table) ──────────────────────────────────────────────
+  await exec(`CREATE TABLE IF NOT EXISTS Checkpoint (
+    id TEXT PRIMARY KEY NOT NULL,
+    rotaId TEXT NOT NULL,
+    ordem INTEGER NOT NULL,
+    titulo TEXT NOT NULL,
+    endereco TEXT,
+    lat REAL,
+    lng REAL,
+    status TEXT NOT NULL DEFAULT 'pendente',
+    chegadaEm DATETIME,
+    periciaId TEXT,
+    pericoId TEXT,
+    tribunalSigla TEXT,
+    varaNome TEXT,
+    criadoEm DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  )`)
+
+  // ── VaraContato ──────────────────────────────────────────────────────────
+  await exec(`CREATE TABLE IF NOT EXISTS VaraContato (
+    id TEXT PRIMARY KEY NOT NULL,
+    tribunalSigla TEXT NOT NULL,
+    varaNome TEXT NOT NULL,
+    telefone TEXT,
+    email TEXT,
+    juizNome TEXT,
+    secretarioNome TEXT,
+    secretarioLinkedin TEXT,
+    observacoes TEXT,
+    criadoEm DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    atualizadoEm DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  )`)
+  await exec(`CREATE UNIQUE INDEX IF NOT EXISTS VaraContato_unique ON VaraContato(tribunalSigla, varaNome)`)
+
+  // ── ProcessoDocumento ────────────────────────────────────────────────────
+  await exec(`CREATE TABLE IF NOT EXISTS ProcessoDocumento (
+    id TEXT PRIMARY KEY NOT NULL,
+    processoId TEXT NOT NULL,
+    escavadorDocId INTEGER NOT NULL,
+    nome TEXT NOT NULL,
+    tipo TEXT,
+    dataPublicacao DATETIME,
+    urlPublica TEXT,
+    paginas INTEGER,
+    baixado INTEGER NOT NULL DEFAULT 0,
+    blobUrl TEXT,
+    criadoEm DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  )`)
+  await exec(`CREATE UNIQUE INDEX IF NOT EXISTS ProcessoDocumento_unique ON ProcessoDocumento(processoId, escavadorDocId)`)
+
+  // ── Nomeacao — colunas novas ─────────────────────────────────────────────
+  await exec(`ALTER TABLE Nomeacao ADD COLUMN extractedData TEXT`)
+  await exec(`ALTER TABLE Nomeacao ADD COLUMN processSummary TEXT`)
+  await exec(`ALTER TABLE Nomeacao ADD COLUMN nomeArquivo TEXT`)
+  await exec(`ALTER TABLE Nomeacao ADD COLUMN mimeType TEXT`)
+  await exec(`ALTER TABLE Nomeacao ADD COLUMN tamanhoBytes INTEGER`)
+  await exec(`ALTER TABLE Nomeacao ADD COLUMN periciaId TEXT`)
+
+  // ── TribunalVara — colunas novas ─────────────────────────────────────────
+  await exec(`ALTER TABLE TribunalVara ADD COLUMN enderecoTexto TEXT`)
+  await exec(`ALTER TABLE TribunalVara ADD COLUMN latitude REAL`)
+  await exec(`ALTER TABLE TribunalVara ADD COLUMN longitude REAL`)
+  await exec(`ALTER TABLE TribunalVara ADD COLUMN sincronizadoEm DATETIME`)
+  await exec(`ALTER TABLE TribunalVara ADD COLUMN totalNomeacoes INTEGER NOT NULL DEFAULT 0`)
+
+  // ── PeritoPerfil — colunas novas ─────────────────────────────────────────
+  await exec(`ALTER TABLE PeritoPerfil ADD COLUMN areaPrincipal TEXT`)
+  await exec(`ALTER TABLE PeritoPerfil ADD COLUMN areasSecundarias TEXT NOT NULL DEFAULT '[]'`)
+  await exec(`ALTER TABLE PeritoPerfil ADD COLUMN especialidades2 TEXT NOT NULL DEFAULT '[]'`)
+  await exec(`ALTER TABLE PeritoPerfil ADD COLUMN keywords TEXT NOT NULL DEFAULT '[]'`)
+  await exec(`ALTER TABLE PeritoPerfil ADD COLUMN perfilCompleto INTEGER NOT NULL DEFAULT 0`)
+  await exec(`ALTER TABLE PeritoPerfil ADD COLUMN sincronizadoEm DATETIME`)
+  await exec(`ALTER TABLE PeritoPerfil ADD COLUMN cpf TEXT`)
+  await exec(`ALTER TABLE PeritoPerfil ADD COLUMN formacaoCustom TEXT`)
+
+  console.log('[setup-db] Schema sync complete ✓')
 } catch (err) {
-  // Non-fatal — most likely tables already exist (expected on first diff)
-  console.warn('[setup-db] Schema sync skipped (non-fatal):', err.message?.slice(0, 200))
+  console.warn('[setup-db] Non-fatal error:', err?.message?.slice(0, 200))
 }

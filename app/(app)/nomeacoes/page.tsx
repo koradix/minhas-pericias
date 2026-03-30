@@ -23,10 +23,10 @@ export default async function NomeacoesPage() {
   const userId = session.user.id
 
   const [peritoPerfil, radarConfig, citacoes, todas] = await Promise.all([
-    prisma.peritoPerfil.findUnique({ where: { userId } }),
-    prisma.radarConfig.findUnique({ where: { peritoId: userId }, select: { monitoramentoExtId: true } }),
-    getCitacoes(userId),
-    getNomeacoesByPerito(userId),
+    prisma.peritoPerfil.findUnique({ where: { userId } }).catch(() => null),
+    prisma.radarConfig.findUnique({ where: { peritoId: userId }, select: { monitoramentoExtId: true } }).catch(() => null),
+    getCitacoes(userId).catch(() => []),
+    getNomeacoesByPerito(userId).catch(() => []),
   ])
   const siglas: string[] = JSON.parse(peritoPerfil?.tribunais ?? '[]')
   const radarConfigurado = !!radarConfig?.monitoramentoExtId
