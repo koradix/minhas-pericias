@@ -148,6 +148,44 @@ try {
   await exec(`ALTER TABLE PeritoPerfil ADD COLUMN cpf TEXT`)
   await exec(`ALTER TABLE PeritoPerfil ADD COLUMN formacaoCustom TEXT`)
 
+  // ── Pericia ───────────────────────────────────────────────────────────────
+  await exec(`CREATE TABLE IF NOT EXISTS Pericia (
+    id TEXT PRIMARY KEY NOT NULL,
+    peritoId TEXT NOT NULL,
+    numero TEXT NOT NULL,
+    assunto TEXT NOT NULL,
+    tipo TEXT NOT NULL,
+    processo TEXT,
+    vara TEXT,
+    partes TEXT,
+    endereco TEXT,
+    latitude REAL,
+    longitude REAL,
+    status TEXT NOT NULL DEFAULT 'planejada',
+    prazo TEXT,
+    valorHonorarios REAL,
+    criadoEm DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    atualizadoEm DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  )`)
+
+  // ── ProcessoIntake ────────────────────────────────────────────────────────
+  await exec(`CREATE TABLE IF NOT EXISTS ProcessoIntake (
+    id TEXT PRIMARY KEY NOT NULL,
+    peritoId TEXT NOT NULL,
+    nomeArquivo TEXT NOT NULL,
+    tamanhoBytes INTEGER,
+    mimeType TEXT,
+    status TEXT NOT NULL DEFAULT 'upload_feito',
+    dadosExtraidos TEXT,
+    resumo TEXT,
+    periciaId TEXT,
+    criadoEm DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    atualizadoEm DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  )`)
+
+  // ── NomeacaoCitacao — colunas adicionais (fonte pode estar faltando) ──────
+  await exec(`ALTER TABLE NomeacaoCitacao ADD COLUMN fonte TEXT NOT NULL DEFAULT 'escavador'`)
+
   console.log('[setup-db] Schema sync complete ✓')
 } catch (err) {
   console.warn('[setup-db] Non-fatal error:', err?.message?.slice(0, 200))

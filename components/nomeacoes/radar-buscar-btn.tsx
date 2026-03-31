@@ -67,7 +67,7 @@ export function RadarBuscarBtn({ radarConfigurado }: Props) {
         <Button
           onClick={handleBuscar}
           disabled={isBusy}
-          className="bg-slate-900 hover:bg-slate-800 text-white font-semibold gap-2 shadow-sm"
+          className="bg-[#1f2937] hover:bg-[#374151] text-white font-manrope font-semibold text-[14px] px-5 py-5 rounded-xl gap-2 shadow-none border border-[#1f2937]"
         >
           {isBusy
             ? <><Loader2 className="h-4 w-4 animate-spin" /> Buscando…</>

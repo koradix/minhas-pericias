@@ -405,7 +405,7 @@ async function main() {
   const now = new Date().toISOString()
 
   const users = [
-    ['user-mm', 'mmbonassi@gmail.com', 'M. Bonassi', hashMm, 'perito'],
+    ['user-mm', 'mmbonassi@gmail.com', 'Marcus Martins Bonassi', hashMm, 'perito'],
     ['user-demo', 'perito@demo.com', 'Matheus Perito', hash, 'perito'],
     ['user-admin', 'admin@demo.com', 'Admin', hash, 'admin'],
     ['user-esc', 'escritorio@demo.perix.com.br', 'Carvalho & Menezes Advocacia', hash, 'parceiro'],

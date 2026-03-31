@@ -1,96 +1,61 @@
 import { type LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-type KPIAccent = 'brand' | 'lime' | 'emerald' | 'amber' | 'rose' | 'slate'
-
-interface KPITrend {
-  value: number
-  label: string
-  positive?: boolean
-}
-
-interface KPICardProps {
+export interface KPICardProps {
   title: string
   value: string | number
-  subtitle?: string
   icon?: LucideIcon
-  trend?: KPITrend
-  accent?: KPIAccent
   highlight?: boolean
   className?: string
-}
-
-const accentIcon: Record<KPIAccent, string> = {
-  brand:   'bg-brand-500/10 text-brand-500',
-  lime:    'bg-lime-500/10  text-lime-500',
-  emerald: 'bg-emerald-500/10 text-emerald-500',
-  amber:   'bg-amber-500/10   text-amber-500',
-  rose:    'bg-rose-500/10    text-rose-500',
-  slate:   'bg-zinc-800/50  text-zinc-400',
+  trendText?: string
+  trendClass?: string
+  subtitle?: string
+  accent?: 'brand' | 'lime' | 'amber' | 'emerald' | 'slate'
 }
 
 export function KPICard({
   title,
   value,
-  subtitle,
   icon: Icon,
-  trend,
-  accent = 'brand',
   highlight = false,
+  trendText,
+  trendClass = "text-[#416900]",
   className,
+  subtitle,
+  accent = 'slate',
 }: KPICardProps) {
-  return (
-    <div
-      className={cn(
-        'relative rounded-xl border bg-card p-5 shadow-saas transition-all hover:shadow-saas-glow overflow-hidden group/kpi',
-        highlight ? 'border-brand-500/30 bg-zinc-900/30' : 'border-border',
-        className,
-      )}
-    >
-      {/* Accent indicator top */}
-      {highlight && (
-        <div className="absolute inset-x-0 top-0 h-0.5 bg-brand-500 rounded-t-xl" />
-      )}
+  const accentColor =
+    accent === 'brand' || accent === 'lime' ? '#84cc16'
+    : accent === 'amber' ? '#f59e0b'
+    : accent === 'emerald' ? '#10b981'
+    : '#6b7280'
 
-      <div className="flex items-start justify-between gap-3">
-        {/* Text */}
-        <div className="flex-1 min-w-0">
-          <p className="text-xs font-medium text-zinc-500 truncate">{title}</p>
-
-          <p className="mt-2 text-2xl font-semibold text-foreground tracking-tight tabular-nums">
-            {value}
-          </p>
-
-          {subtitle && (
-            <p className="mt-0.5 text-xs text-zinc-400 truncate">{subtitle}</p>
-          )}
-
-          {trend && (
-            <p
-              className={cn(
-                'mt-1.5 text-xs font-medium flex items-center gap-1',
-                trend.positive !== false ? 'text-emerald-500' : 'text-rose-500',
-              )}
-            >
-              <span>{trend.positive !== false ? '↑' : '↓'}</span>
-              <span>{Math.abs(trend.value)}%</span>
-              <span className="font-normal text-zinc-500">{trend.label}</span>
-            </p>
-          )}
+  if (highlight) {
+    return (
+      <div className={cn("p-6 bg-[#416900] border border-[#416900]/20 rounded-xl shadow-lg shadow-[#416900]/10 transition-transform hover:-translate-y-1 h-full flex flex-col justify-between", className)}>
+        <div className="flex items-center gap-3 mb-4">
+          {Icon && <Icon className="text-white/80 h-5 w-5" strokeWidth={2} />}
+          <span className="text-xs font-semibold uppercase tracking-wider text-white/80">{title}</span>
         </div>
+        <div>
+          <div className="text-3xl font-bold text-white tracking-tight">{value}</div>
+          {subtitle && <div className="mt-1 text-[11px] text-white/70">{subtitle}</div>}
+          {trendText && <div className="mt-2 text-[10px] text-white/90 font-bold">{trendText}</div>}
+        </div>
+      </div>
+    )
+  }
 
-        {/* Icon */}
-        {Icon && (
-          <div
-            className={cn(
-              'flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg border border-transparent transition-colors',
-              accent === 'brand' ? 'border-brand-500/20 group-hover/kpi:bg-brand-500/20' : 'border-zinc-700/50',
-              accentIcon[accent],
-            )}
-          >
-            <Icon className="h-4 w-4" />
-          </div>
-        )}
+  return (
+    <div className={cn("p-6 bg-white rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow h-full flex flex-col justify-between", className)}>
+      <div className="flex items-center gap-3 mb-4">
+        {Icon && <Icon className="h-5 w-5" style={{ color: accentColor }} strokeWidth={2} />}
+        <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">{title}</span>
+      </div>
+      <div>
+        <div className="text-3xl font-bold text-slate-900 tracking-tight">{value}</div>
+        {subtitle && <div className="mt-1 text-[11px] text-slate-400">{subtitle}</div>}
+        {trendText && <div className={cn("mt-2 text-[10px] font-bold", trendClass)}>{trendText}</div>}
       </div>
     </div>
   )

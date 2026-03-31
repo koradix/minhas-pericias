@@ -39,19 +39,19 @@ export function RadarStrip({ hasConfig, naoLidas, totalCitacoes, ultimaBusca, sa
   if (!hasConfig) {
     return (
       <Link href="/nomeacoes">
-        <div className="flex items-center gap-3 rounded-2xl border border-dashed border-lime-300 bg-lime-50/40 px-5 py-3.5 hover:bg-lime-50 transition-colors cursor-pointer">
-          <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-lime-100">
-            <Radar className="h-4 w-4 text-lime-700" />
+        <div className="flex items-center gap-4 rounded-xl border border-dashed border-[#d1d5db] bg-[#f8f9ff]/50 px-6 py-4 hover:border-[#416900] hover:bg-[#f4fce3]/20 transition-all cursor-pointer group font-inter">
+          <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#f4fce3]">
+            <Radar className="h-5 w-5 text-[#416900]" strokeWidth={1.5} />
           </span>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-lime-800">
+            <p className="text-[15px] font-semibold text-[#1f2937] font-manrope group-hover:text-[#416900] transition-colors">
               Configure o Radar de Nomeações
             </p>
-            <p className="text-xs text-lime-600 mt-0.5">
+            <p className="text-[13px] text-[#6b7280] mt-1">
               Monitore seus tribunais e receba alertas de citações nos diários oficiais
             </p>
           </div>
-          <span className="text-xs font-semibold text-lime-700 bg-lime-100 border border-lime-200 rounded-lg px-3 py-1.5 flex-shrink-0 whitespace-nowrap">
+          <span className="text-[12px] font-bold text-[#416900] bg-[#f4fce3] border border-[#d8f5a2] rounded-lg px-4 py-2 flex-shrink-0 whitespace-nowrap transition-all group-hover:bg-[#416900] group-hover:text-white">
             Configurar →
           </span>
         </div>
@@ -82,44 +82,44 @@ export function RadarStrip({ hasConfig, naoLidas, totalCitacoes, ultimaBusca, sa
   return (
     <div
       className={cn(
-        'flex items-center gap-3 rounded-2xl border px-5 py-3.5 transition-colors',
+        'flex items-center gap-4 rounded-xl border px-6 py-4 transition-all font-inter',
         hasNotifications
-          ? 'border-lime-200 bg-lime-50/50'
-          : 'border-slate-100 bg-white shadow-sm',
+          ? 'border-[#d8f5a2] bg-[#f4fce3]/30'
+          : 'border-[#e2e8f0] bg-white',
       )}
     >
       {/* Icon */}
       <span
         className={cn(
-          'flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full',
-          hasNotifications ? 'bg-lime-500' : 'bg-slate-100',
+          'flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full',
+          hasNotifications ? 'bg-[#416900]' : 'bg-[#f8f9ff]',
         )}
       >
         {hasNotifications ? (
-          <BellDot className="h-4 w-4 text-white" />
+          <BellDot className="h-5 w-5 text-white" />
         ) : (
-          <Radar className="h-4 w-4 text-slate-500" />
+          <Radar className="h-5 w-5 text-[#9ca3af]" strokeWidth={1.5} />
         )}
       </span>
 
       {/* Text */}
       <div className="flex-1 min-w-0">
         {novasBusca !== null && !isPending ? (
-          <p className="text-sm font-semibold text-emerald-800">
+          <p className="text-[15px] font-semibold text-[#416900] font-manrope">
             {novasBusca === 0
               ? 'Nenhuma novidade — tudo em dia'
               : `${novasBusca} nova${novasBusca > 1 ? 's' : ''} citaç${novasBusca > 1 ? 'ões' : 'ão'} encontrada${novasBusca > 1 ? 's' : ''}!`}
           </p>
         ) : hasNotifications ? (
-          <p className="text-sm font-semibold text-lime-800">
+          <p className="text-[15px] font-semibold text-[#416900] font-manrope">
             {localNaoLidas} citaç{localNaoLidas > 1 ? 'ões' : 'ão'} não {localNaoLidas > 1 ? 'lidas' : 'lida'} no radar
           </p>
         ) : (
-          <p className="text-sm font-semibold text-slate-800">
+          <p className="text-[15px] font-semibold text-[#1f2937] font-manrope">
             Radar de Nomeações · {totalCitacoes} citaç{totalCitacoes !== 1 ? 'ões' : 'ão'}
           </p>
         )}
-        <p className="text-xs text-slate-400 mt-0.5">
+        <p className="text-[12px] text-[#9ca3af] mt-1 font-inter">
           {err ? (
             <span className="text-rose-600">{err}</span>
           ) : ultimaBusca ? (
@@ -139,11 +139,11 @@ export function RadarStrip({ hasConfig, naoLidas, totalCitacoes, ultimaBusca, sa
       )}
 
       {/* Actions */}
-      <div className="flex items-center gap-2 flex-shrink-0">
+      <div className="flex items-center gap-3 flex-shrink-0">
         {hasNotifications && (
           <Link href="/nomeacoes">
-            <Button size="sm" variant="outline" className="h-8 text-xs gap-1">
-              <ExternalLink className="h-3 w-3" />
+            <Button size="sm" variant="outline" className="h-9 text-[12px] gap-1.5 border-[#e2e8f0] text-[#374151] hover:bg-[#f8f9ff] font-semibold px-4 rounded-lg">
+              <ExternalLink className="h-3.5 w-3.5" strokeWidth={1.5} />
               Ver
             </Button>
           </Link>
@@ -152,12 +152,12 @@ export function RadarStrip({ hasConfig, naoLidas, totalCitacoes, ultimaBusca, sa
           size="sm"
           onClick={handleVerificar}
           disabled={isPending}
-          className="h-8 bg-lime-500 hover:bg-lime-600 text-slate-900 font-semibold text-xs gap-1.5"
+          className="h-9 bg-[#1f2937] hover:bg-[#374151] text-white font-semibold text-[13px] gap-2 px-4 rounded-lg transition-all font-inter"
         >
           {isPending ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
+            <Loader2 className="h-4 w-4 animate-spin text-white" />
           ) : (
-            <Radar className="h-3 w-3" />
+            <Radar className="h-4 w-4" strokeWidth={2} />
           )}
           Verificar
         </Button>

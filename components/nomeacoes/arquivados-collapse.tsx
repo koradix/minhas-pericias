@@ -16,7 +16,7 @@ export function ArquivadosCollapse({ nomeacoes }: Props) {
     <div className="border-t border-slate-100 pt-4">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400 hover:text-slate-600 transition-colors"
+        className="flex items-center gap-2 text-[12px] font-inter font-semibold uppercase tracking-[0.08em] text-[#6b7280] hover:text-[#374151] transition-colors"
       >
         <Archive className="h-3.5 w-3.5" />
         Arquivados ({nomeacoes.length})

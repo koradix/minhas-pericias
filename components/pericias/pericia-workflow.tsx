@@ -65,14 +65,14 @@ type UploadState =
 // ─── Step indicator ────────────────────────────────────────────────────────────
 
 function StepDot({ done, active, num }: { done: boolean; active: boolean; num: number }) {
-  if (done) return <CheckCircle2 className="h-6 w-6 text-emerald-500 flex-shrink-0" />
+  if (done) return <CheckCircle2 className="h-7 w-7 text-[#416900] flex-shrink-0" />
   if (active) return (
-    <span className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-lime-500 bg-lime-50 text-xs font-bold text-lime-700 flex-shrink-0">
+    <span className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-[#416900] bg-[#f4fce3] text-[13px] font-bold text-[#416900] flex-shrink-0">
       {num}
     </span>
   )
   return (
-    <span className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-slate-200 bg-white text-xs font-bold text-slate-300 flex-shrink-0">
+    <span className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-[#e2e8f0] bg-white text-[13px] font-bold text-[#d1d5db] flex-shrink-0">
       {num}
     </span>
   )
@@ -86,22 +86,22 @@ function AnaliseCard({ analise }: { analise: AnaliseIA }) {
   const quesitosCount = analise.nomeacaoDespacho?.quesitos?.length ?? 0
 
   return (
-    <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 space-y-2">
-      <div className="flex items-center gap-2">
-        <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0" />
-        <p className="text-sm font-semibold text-emerald-800">
+    <div className="rounded-lg border border-[#d8f5a2] bg-[#f4fce3] p-5 space-y-2.5">
+      <div className="flex items-center gap-2.5">
+        <CheckCircle2 className="h-5 w-5 text-[#416900] flex-shrink-0" />
+        <p className="text-[15px] font-semibold text-[#416900] font-manrope">
           Análise concluída
           {quesitosCount > 0 && (
-            <span className="ml-2 font-normal text-emerald-700 text-xs">
+            <span className="ml-2 font-normal text-[#416900]/70 text-[13px]">
               · {quesitosCount} quesito{quesitosCount > 1 ? 's' : ''}
             </span>
           )}
         </p>
       </div>
-      {tipo && <p className="text-xs text-slate-700 pl-6">{tipo}</p>}
-      {partes && <p className="text-xs text-slate-500 pl-6">{partes}</p>}
-      <p className="text-[11px] text-emerald-700 pl-6 font-medium">
-        Use o botão "Usar dados da IA" abaixo para preencher os campos da perícia.
+      {tipo && <p className="text-[14px] text-[#374151] pl-8 font-inter">{tipo}</p>}
+      {partes && <p className="text-[14px] text-[#6b7280] pl-8 font-inter">{partes}</p>}
+      <p className="text-[13px] text-[#416900]/80 pl-8 font-medium font-inter">
+        Use o botão &quot;Usar dados da IA&quot; abaixo para preencher os campos da perícia.
       </p>
     </div>
   )
@@ -127,48 +127,135 @@ export function PericiaWorkflow({
 
   const analiseFeita = hasAnalise || uploadState.fase === 'ok'
 
+  async function sendToApi(blobUrl: string, file: File) {
+    const res = await fetch('/api/nomeacoes/upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        blobUrl,
+        fileName: file.name,
+        fileSize: file.size,
+        mimeType: file.type,
+        tribunal: tribunalSigla,
+        numero:   processoNumero,
+        periciaId,
+      }),
+    })
+    const json = await res.json() as { ok: boolean; message?: string; nomeacaoId?: string; preview?: AnaliseIA }
+
+    if (!json.ok) {
+      const raw = json.message ?? 'Erro ao processar documento'
+      const mensagem = raw.includes('rate_limit') || raw.includes('rate limit') || raw.includes('429')
+        ? 'Limite de requisições da IA atingido. Aguarde 1 minuto e tente novamente.'
+        : raw.length > 200 ? raw.substring(0, 200) + '…' : raw
+      setUploadState({ fase: 'erro', mensagem })
+      return
+    }
+
+    const preview = json.preview ?? {}
+    setUploadState({ fase: 'ok', nomeacaoId: json.nomeacaoId ?? '', analise: preview })
+
+    const partes = [preview.autor, preview.reu].filter(Boolean).join(' × ') || undefined
+    const vara   = preview.vara ?? undefined
+    const previewAny = preview as Record<string, unknown>
+    const end    = (previewAny.enderecoVistoria as string | null) ?? (previewAny.endereco as string | null) ?? undefined
+    await atualizarDadosPericia(periciaId, {
+      ...(partes ? { partes } : {}),
+      ...(vara   ? { vara   } : {}),
+      ...(end    ? { endereco: end } : {}),
+    })
+    router.refresh()
+  }
+
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
 
+    if (file.size > 50 * 1024 * 1024) {
+      setUploadState({ fase: 'erro', mensagem: 'Arquivo muito grande (máx. 50 MB).' })
+      if (fileRef.current) fileRef.current.value = ''
+      return
+    }
+
     setUploadState({ fase: 'uploading', progresso: 'Enviando arquivo…' })
 
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('tribunal', tribunalSigla)
-    if (processoNumero) formData.append('numero', processoNumero)
-    formData.append('periciaId', periciaId)
+    // ── Arquivos ≤ 4 MB: envia FormData direto (sem passar pelo Blob CDN) ─────
+    const DIRECT_LIMIT = 4 * 1024 * 1024
+    if (file.size <= DIRECT_LIMIT) {
+      try {
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('tribunal', tribunalSigla)
+        if (processoNumero) formData.append('numero', processoNumero)
+        formData.append('periciaId', periciaId)
 
-    try {
-      setUploadState({ fase: 'uploading', progresso: 'Analisando com IA…' })
-      const res = await fetch('/api/nomeacoes/upload', { method: 'POST', body: formData })
-      const json = await res.json() as { ok: boolean; message?: string; nomeacaoId?: string; preview?: AnaliseIA }
+        setUploadState({ fase: 'uploading', progresso: 'Analisando com IA…' })
+        const res = await fetch('/api/nomeacoes/upload', { method: 'POST', body: formData })
+        const json = await res.json() as { ok: boolean; message?: string; nomeacaoId?: string; preview?: AnaliseIA }
 
-      if (!json.ok) {
-        const raw = json.message ?? 'Erro ao processar documento'
-        const mensagem = raw.includes('rate_limit') || raw.includes('rate limit') || raw.includes('429')
-          ? 'Limite de requisições da IA atingido. Aguarde 1 minuto e tente novamente.'
-          : raw.length > 200 ? raw.substring(0, 200) + '…' : raw
-        setUploadState({ fase: 'erro', mensagem })
-        return
+        if (!json.ok) {
+          const raw = json.message ?? 'Erro ao processar documento'
+          setUploadState({ fase: 'erro', mensagem: raw.length > 200 ? raw.substring(0, 200) + '…' : raw })
+          return
+        }
+
+        const preview = json.preview ?? {}
+        setUploadState({ fase: 'ok', nomeacaoId: json.nomeacaoId ?? '', analise: preview })
+
+        const partes = [preview.autor, preview.reu].filter(Boolean).join(' × ') || undefined
+        const vara   = preview.vara ?? undefined
+        const previewAny = preview as Record<string, unknown>
+        const end    = (previewAny.enderecoVistoria as string | null) ?? (previewAny.endereco as string | null) ?? undefined
+        await atualizarDadosPericia(periciaId, {
+          ...(partes ? { partes } : {}),
+          ...(vara   ? { vara   } : {}),
+          ...(end    ? { endereco: end } : {}),
+        })
+        router.refresh()
+      } catch {
+        setUploadState({ fase: 'erro', mensagem: 'Erro de conexão. Tente novamente.' })
       }
+      return
+    }
 
-      const preview = json.preview ?? {}
-      setUploadState({ fase: 'ok', nomeacaoId: json.nomeacaoId ?? '', analise: preview })
-
-      // Salva automaticamente os dados extraídos na perícia e recarrega o servidor
-      const partes = [preview.autor, preview.reu].filter(Boolean).join(' × ') || undefined
-      const vara   = preview.vara ?? undefined
-      const previewAny = preview as Record<string, unknown>
-      const end    = (previewAny.enderecoVistoria as string | null) ?? (previewAny.endereco as string | null) ?? undefined
-      await atualizarDadosPericia(periciaId, {
-        ...(partes ? { partes } : {}),
-        ...(vara   ? { vara   } : {}),
-        ...(end    ? { endereco: end } : {}),
+    // ── Arquivos > 4 MB: upload direto ao Vercel Blob CDN (não passa pela função) ─
+    try {
+      // 1. Pede token ao servidor
+      const tokenRes = await fetch('/api/nomeacoes/blob-upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'blob.generate-client-token',
+          payload: { pathname: `pericias/${periciaId}/${Date.now()}_${file.name}`, callbackUrl: '', multipart: false },
+        }),
       })
-      router.refresh()
+      if (!tokenRes.ok) throw new Error('Falha ao obter token de upload')
+      const { clientToken } = await tokenRes.json() as { clientToken: string }
+
+      // 2. Envia o arquivo diretamente ao Vercel Blob com o token
+      const putRes = await fetch(
+        `https://vercel.com/api/blob/?clientToken=${encodeURIComponent(clientToken)}`,
+        { method: 'PUT', body: file, headers: { 'content-type': file.type } },
+      )
+      if (!putRes.ok) {
+        throw new TypeError('CORS_OR_NETWORK')
+      }
+      const { url: blobUrl } = await putRes.json() as { url: string }
+
+      // 3. Processa via API (recebe só a URL, sem limite de tamanho)
+      setUploadState({ fase: 'uploading', progresso: 'Analisando com IA…' })
+      await sendToApi(blobUrl, file)
+
     } catch (err) {
-      setUploadState({ fase: 'erro', mensagem: 'Erro de conexão. Tente novamente.' })
+      const msg = err instanceof Error ? err.message : ''
+      if (msg === 'CORS_OR_NETWORK' || err instanceof TypeError) {
+        setUploadState({
+          fase: 'erro',
+          mensagem: 'Erro de CORS no upload. Acesse perilab.vercel.app (domínio de produção) e tente novamente.',
+        })
+      } else {
+        setUploadState({ fase: 'erro', mensagem: 'Erro ao enviar arquivo. Tente novamente.' })
+      }
     }
   }
 
@@ -181,51 +268,48 @@ export function PericiaWorkflow({
   const activeStep = steps.find((s) => !s.done)?.num ?? 3
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-      <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
-        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-lime-50">
-          <Circle className="h-3.5 w-3.5 text-lime-600" />
-        </div>
-        <h2 className="text-sm font-semibold text-slate-800">Próximos passos</h2>
+    <section className="rounded-xl border border-[#e2e8f0] bg-white overflow-hidden">
+      <div className="flex items-center gap-3 px-6 py-5">
+        <h2 className="text-[16px] font-semibold text-[#1f2937] font-manrope">Próximos passos</h2>
         {analiseFeita && (
-          <span className="ml-auto flex items-center gap-1 text-[11px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-full px-2 py-0.5">
-            <CheckCircle2 className="h-3 w-3" />
+          <span className="ml-auto flex items-center gap-1.5 text-[12px] font-semibold text-[#416900] bg-[#f4fce3] border border-[#d8f5a2] rounded-md px-2.5 py-1">
+            <CheckCircle2 className="h-3.5 w-3.5" />
             Concluído
           </span>
         )}
       </div>
 
-      <div className="divide-y divide-slate-50">
+      <div className="divide-y divide-[#f2f3f9]">
 
         {/* ── Step 1: Acessar tribunal ─────────────────────────────────────── */}
-        <div className={cn('px-5 py-4 flex gap-4', step1Done || analiseFeita ? 'opacity-60' : '')}>
+        <div className={cn('px-6 py-5 flex gap-4', step1Done || analiseFeita ? 'opacity-60' : '')}>
           <StepDot done={step1Done || analiseFeita} active={activeStep === 1} num={1} />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-slate-800">
+            <p className="text-[15px] font-semibold text-[#1f2937] font-manrope">
               Baixe o processo no portal do tribunal
             </p>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-[14px] text-[#6b7280] mt-1 font-inter">
               Acesse o portal, localize o processo pelo número e baixe o PDF da nomeação.
             </p>
-            <div className="mt-3 flex flex-wrap gap-2">
+            <div className="mt-4 flex flex-wrap gap-2">
               {tribunal ? (
                 <a
                   href={tribunal.url}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => setStep1Done(true)}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-[#e2e8f0] hover:bg-[#f8f9ff] px-3 py-2 text-[13px] font-semibold text-[#374151] transition-all"
                 >
-                  <ExternalLink className="h-3.5 w-3.5" />
+                  <ExternalLink className="h-4 w-4" strokeWidth={1.5} />
                   {tribunal.label}
                 </a>
               ) : (
-                <p className="text-xs text-slate-400 italic">
+                <p className="text-[14px] text-[#9ca3af] italic font-inter">
                   Acesse o portal do {tribunalSigla} e procure pelo número {processoNumero ?? 'do processo'}.
                 </p>
               )}
               {processoNumero && (
-                <span className="inline-flex items-center gap-1 rounded-lg bg-blue-50 border border-blue-100 px-2 py-1.5 text-xs font-mono text-blue-700">
+                <span className="inline-flex items-center gap-1 rounded-lg bg-[#f2f3f9] border border-[#e2e8f0] px-3 py-2 text-[13px] font-mono text-[#374151]">
                   {processoNumero}
                 </span>
               )}
@@ -233,7 +317,7 @@ export function PericiaWorkflow({
             {!step1Done && !analiseFeita && (
               <button
                 onClick={() => setStep1Done(true)}
-                className="mt-2 text-[11px] text-slate-400 hover:text-slate-600 underline underline-offset-2"
+                className="mt-3 text-[13px] text-[#9ca3af] hover:text-[#374151] underline underline-offset-2 transition-colors"
               >
                 Já baixei o documento
               </button>
@@ -242,18 +326,19 @@ export function PericiaWorkflow({
         </div>
 
         {/* ── Step 2: Upload do documento ──────────────────────────────────── */}
-        <div className={cn('px-5 py-4 flex gap-4', !step1Done && !analiseFeita ? 'opacity-50 pointer-events-none' : '')}>
+        {/* ── Step 2: Upload do documento ──────────────────────────────────── */}
+        <div className={cn('px-6 py-5 flex gap-4', !step1Done && !analiseFeita ? 'opacity-50 pointer-events-none' : '')}>
           <StepDot done={analiseFeita} active={activeStep === 2} num={2} />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-slate-800">
+            <p className="text-[15px] font-semibold text-[#1f2937] font-manrope">
               Suba o documento para análise da IA
             </p>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-[14px] text-[#6b7280] mt-1 font-inter">
               Envie o PDF do processo. A IA extrai partes, vara, quesitos e complexidade automaticamente.
             </p>
 
             {uploadState.fase === 'idle' && !analiseFeita && (
-              <div className="mt-3">
+              <div className="mt-4">
                 <input
                   ref={fileRef}
                   type="file"
@@ -263,30 +348,30 @@ export function PericiaWorkflow({
                 />
                 <button
                   onClick={() => fileRef.current?.click()}
-                  className="inline-flex items-center gap-2 rounded-xl bg-slate-900 hover:bg-slate-800 px-4 py-2 text-xs font-semibold text-white transition-colors"
+                  className="inline-flex items-center gap-2 rounded-lg bg-[#1f2937] hover:bg-[#374151] px-4 py-2.5 text-[14px] font-semibold text-white transition-all"
                 >
-                  <Upload className="h-3.5 w-3.5" />
+                  <Upload className="h-4 w-4" />
                   Selecionar PDF ou DOCX
                 </button>
-                <p className="mt-1.5 text-[11px] text-slate-400">Máx. 50 MB · PDF ou DOCX</p>
+                <p className="mt-2 text-[12px] text-[#9ca3af] font-inter">Máx. 50 MB · PDF ou DOCX</p>
               </div>
             )}
 
             {uploadState.fase === 'uploading' && (
-              <div className="mt-3 flex items-center gap-2 text-sm text-slate-600">
-                <Loader2 className="h-4 w-4 animate-spin text-lime-500 flex-shrink-0" />
+              <div className="mt-4 flex items-center gap-2.5 text-[14px] text-[#6b7280] font-inter">
+                <Loader2 className="h-4 w-4 animate-spin text-[#416900] flex-shrink-0" />
                 {uploadState.progresso}
               </div>
             )}
 
             {uploadState.fase === 'erro' && (
-              <div className="mt-3 flex items-start gap-2 rounded-xl bg-rose-50 border border-rose-100 px-3 py-2.5">
-                <AlertCircle className="h-4 w-4 text-rose-500 flex-shrink-0 mt-0.5" />
+              <div className="mt-4 flex items-start gap-2.5 rounded-lg bg-rose-50 border border-rose-100 px-4 py-3">
+                <AlertCircle className="h-5 w-5 text-rose-500 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-xs font-semibold text-rose-700">{uploadState.mensagem}</p>
+                  <p className="text-[14px] font-semibold text-rose-700 font-inter">{uploadState.mensagem}</p>
                   <button
                     onClick={() => { setUploadState({ fase: 'idle' }); if (fileRef.current) fileRef.current.value = '' }}
-                    className="mt-1 text-[11px] text-rose-500 hover:text-rose-700 underline underline-offset-2"
+                    className="mt-1.5 text-[13px] text-rose-500 hover:text-rose-700 underline underline-offset-2"
                   >
                     Tentar novamente
                   </button>
@@ -297,25 +382,25 @@ export function PericiaWorkflow({
         </div>
 
         {/* ── Step 3: Resultado IA ─────────────────────────────────────────── */}
-        <div className="px-5 py-4 flex gap-4">
+        <div className="px-6 py-5 flex gap-4">
           <StepDot done={analiseFeita} active={activeStep === 3} num={3} />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-slate-800">
+            <p className="text-[15px] font-semibold text-[#1f2937] font-manrope">
               Resultado da análise
             </p>
             {!analiseFeita && uploadState.fase !== 'uploading' && (
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-[14px] text-[#9ca3af] mt-1 font-inter">
                 Aguardando documento para análise.
               </p>
             )}
             {uploadState.fase === 'uploading' && (
-              <div className="mt-2 flex items-center gap-2 text-xs text-slate-500">
-                <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-400 flex-shrink-0" />
+              <div className="mt-2 flex items-center gap-2.5 text-[14px] text-[#6b7280] font-inter">
+                <Loader2 className="h-4 w-4 animate-spin text-[#416900] flex-shrink-0" />
                 Processando…
               </div>
             )}
             {analise && (
-              <div className="mt-3">
+              <div className="mt-4">
                 <AnaliseCard analise={analise} />
               </div>
             )}

@@ -4,14 +4,22 @@
   font-family: var(--font-montserrat), ui-sans-serif, system-ui, sans-serif;
 }
 
+.font-manrope {
+  font-family: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+}
+
+.font-inter {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+
 @theme inline {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --background: #f8f9ff;
+  --foreground: #1f2937;
 }
 
 /* Scrollbar styling */
@@ -36,6 +44,10 @@
 body {
   background: var(--background);
   color: var(--foreground);
+  font-family: var(--font-inter), var(--font-geist-sans), system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.7;
 }
 
 /* ── Responsive sidebar offset ──────────────────────────────── */
@@ -55,29 +67,38 @@ body {
   font-family: var(--font-montserrat), var(--font-geist-sans), system-ui, sans-serif;
 }
 
-/* ── Global heading scale ───────────────────────────────────── */
-h1 {
+/* ── Landing page heading scale (scoped) ──────────────────── */
+/* Only applies to landing/marketing pages, NOT inside .app-content */
+:not(.app-content) > h1,
+.font-display h1 {
   font-size: clamp(2.5rem, 5vw, 4rem);
   font-weight: 800;
   letter-spacing: -0.03em;
   line-height: 1.1;
 }
 
-h2 {
+:not(.app-content) > h2,
+.font-display h2 {
   font-size: clamp(1.8rem, 3vw, 2.5rem);
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.2;
 }
 
-h3 {
+:not(.app-content) > h3,
+.font-display h3 {
   font-size: 1.25rem;
   font-weight: 600;
   letter-spacing: -0.01em;
 }
 
-body {
-  font-size: 1rem;
-  font-weight: 400;
-  line-height: 1.7;
+/* ── App content heading reset ──────────────────────────────── */
+.app-content h1,
+.app-content h2,
+.app-content h3 {
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  line-height: inherit;
 }
+

@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import {
   ArrowRight,
@@ -13,11 +12,6 @@ import {
   DollarSign,
   Users,
   Star,
-  Mail,
-  Send,
-  BarChart3,
-  Zap,
-  Shield,
   Sparkles,
 } from 'lucide-react'
 
@@ -117,7 +111,7 @@ const plans = [
   },
 ]
 
-// ─── Logo component (uses Montserrat via CSS var) ────────────────────────────
+// ─── Logo components ─────────────────────────────────────────────────────────
 
 function PeriLabLogo({ dark = true }: { dark?: boolean }) {
   return (
@@ -129,6 +123,26 @@ function PeriLabLogo({ dark = true }: { dark?: boolean }) {
       <div style={{ fontSize: '0.6rem', color: dark ? '#9ca3af' : 'rgba(255,255,255,0.5)', fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', marginTop: '3px' }}>
         de perito para perito
       </div>
+    </div>
+  )
+}
+
+/** Compact two-letter mark: P (preto/branco) + B (lime) */
+function PeriLabMark({ size = 32, dark = false }: { size?: number; dark?: boolean }) {
+  const textColor = dark ? '#ffffff' : '#111827'
+  return (
+    <div
+      style={{
+        fontFamily: 'var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif',
+        fontWeight: 900,
+        letterSpacing: '-0.05em',
+        lineHeight: 1,
+        fontSize: size * 0.65,
+        userSelect: 'none',
+      }}
+    >
+      <span style={{ color: textColor }}>P</span>
+      <span style={{ color: '#84cc16' }}>B</span>
     </div>
   )
 }
@@ -249,10 +263,8 @@ export default function LandingPage() {
         <div
           className="relative w-full"
           style={{
-            background: 'rgba(255,255,255,0.7)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
-            borderTop: '1px solid rgba(0,0,0,0.08)',
+            background: 'rgba(255,255,255,0.96)',
+            borderTop: '1px solid #e2e8f0',
           }}
         >
           <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-center px-4 sm:px-6">
@@ -389,13 +401,11 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Right column — glassmorphism card */}
+            {/* Right column — clean dark card */}
             <div
               style={{
-                background: 'rgba(255,255,255,0.05)',
-                backdropFilter: 'blur(20px)',
-                WebkitBackdropFilter: 'blur(20px)',
-                border: '1px solid rgba(255,255,255,0.1)',
+                background: '#1e293b',
+                border: '1px solid rgba(255,255,255,0.07)',
                 borderRadius: '1.5rem',
                 padding: '1.5rem',
               }}
@@ -637,7 +647,9 @@ export default function LandingPage() {
       <section className="bg-slate-950 py-16">
         <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
           <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-slate-800 bg-slate-900 px-4 py-1.5 text-xs text-slate-400">
-            <Shield className="h-3.5 w-3.5 text-lime-400" />
+            <span style={{ fontFamily: 'var(--font-montserrat), ui-sans-serif', fontWeight: 900, fontSize: '11px', letterSpacing: '-0.03em', lineHeight: 1 }}>
+              <span style={{ color: 'white' }}>P</span><span style={{ color: '#84cc16' }}>B</span>
+            </span>
             Dados seguros · LGPD compliant
           </div>
           <h2 className="font-heading mb-4 text-2xl font-bold tracking-tight text-white sm:text-3xl">
@@ -658,17 +670,50 @@ export default function LandingPage() {
       </section>
 
       {/* ── Footer ── */}
-      <footer className="border-t border-slate-800 bg-slate-950 py-10">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-center gap-4 px-4 text-center sm:px-6">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-lime-500 text-[9px] font-bold text-slate-900 select-none">
-              PL
+      <footer className="border-t border-slate-800 bg-slate-950 py-12">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <div className="grid gap-10 sm:grid-cols-3 sm:gap-8">
+            {/* Brand */}
+            <div>
+              <div className="flex items-center gap-2.5 mb-3">
+                <PeriLabMark size={30} dark />
+                <span style={{ fontFamily: 'var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif', fontWeight: 700, color: '#e2e8f0', fontSize: '1.05rem', letterSpacing: '-0.02em' }}>
+                  Peri<span style={{ color: '#84cc16' }}>LaB</span>
+                </span>
+              </div>
+              <p className="text-xs leading-relaxed text-slate-500">
+                Plataforma de gestão pericial para profissionais do direito.
+              </p>
             </div>
-            <span className="font-heading text-sm font-semibold text-slate-400">Perilab</span>
+
+            {/* Links */}
+            <div className="flex flex-col gap-2.5">
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-slate-600">Produto</p>
+              {['Funcionalidades', 'Prospecção', 'Planos'].map((item) => (
+                <a
+                  key={item}
+                  href={`#${item.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ç/g, 'c').replace(/ã/g, 'a')}`}
+                  className="text-xs text-slate-500 transition-colors hover:text-lime-400"
+                >
+                  {item}
+                </a>
+              ))}
+            </div>
+
+            {/* Legal */}
+            <div className="flex flex-col gap-2.5">
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-slate-600">Legal</p>
+              {['Termos de uso', 'Privacidade', 'LGPD'].map((item) => (
+                <span key={item} className="text-xs text-slate-500">{item}</span>
+              ))}
+            </div>
           </div>
-          <p className="text-xs text-slate-600">
-            © {new Date().getFullYear()} Perilab. Todos os direitos reservados.
-          </p>
+
+          <div className="mt-10 border-t border-slate-800 pt-6">
+            <p className="text-center text-[11px] text-slate-600">
+              © {new Date().getFullYear()} Perilab — de perito para perito. Todos os direitos reservados.
+            </p>
+          </div>
         </div>
       </footer>
     </div>

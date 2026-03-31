@@ -39,7 +39,7 @@ export default function Sidebar({
   return (
     <aside
       className={cn(
-        'fixed inset-y-0 left-0 z-30 flex flex-col bg-white border-r border-slate-200/80 transition-all duration-300',
+        'fixed inset-y-0 left-0 z-30 flex flex-col bg-[#f8f9ff] transition-all duration-300',
         collapsed ? 'w-16' : 'w-[220px]',
         mobileOpen ? 'translate-x-0' : '-translate-x-full',
         'lg:translate-x-0',
@@ -48,22 +48,22 @@ export default function Sidebar({
       {/* ── Logo ── */}
       <div
         className={cn(
-          'flex h-14 flex-shrink-0 items-center border-b border-slate-100',
-          collapsed ? 'justify-center px-2' : 'justify-between px-4',
+          'flex h-16 flex-shrink-0 items-center',
+          collapsed ? 'justify-center px-2' : 'justify-between px-5',
         )}
       >
         {collapsed ? (
           <Link href="/dashboard" title="Perilab">
-            <Image src="/logo-icon.svg" alt="PL" width={32} height={32} priority />
+            <Image src="/logo-icon.svg" alt="PL" width={28} height={28} priority />
           </Link>
         ) : (
           <>
             <Link href="/dashboard" className="flex items-center min-w-0">
-              <Image src="/logo.svg" alt="Perilab" width={120} height={44} priority />
+              <Image src="/logo.svg" alt="Perilab" width={110} height={40} priority />
             </Link>
             <button
               onClick={onMobileClose}
-              className="lg:hidden flex h-7 w-7 items-center justify-center rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+              className="lg:hidden flex h-7 w-7 items-center justify-center rounded-md text-[#6b7280] hover:text-[#1f2937] hover:bg-[#e7e8ee] transition-colors"
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -72,18 +72,18 @@ export default function Sidebar({
       </div>
 
       {/* ── Nav ── */}
-      <nav className="flex-1 overflow-y-auto py-4 space-y-5 px-2">
+      <nav className="flex-1 overflow-y-auto py-6 space-y-6 px-3">
         {activeNav.map((section) => (
           <div key={section.title}>
             {/* Section label */}
             {!collapsed && (
-              <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400/80">
+              <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#9ca3af]">
                 {section.title}
               </p>
             )}
-            {collapsed && <div className="mx-3 mb-2 border-t border-slate-100" />}
+            {collapsed && <div className="mx-3 mb-2 border-t border-[#e2e8f0]" />}
 
-            <ul className="space-y-0.5">
+            <ul className="space-y-1">
               {section.items.map((item) => {
                 const active = isActive(item.href)
                 const Icon = item.icon
@@ -94,32 +94,35 @@ export default function Sidebar({
                       title={collapsed ? item.title : undefined}
                       onClick={onMobileClose}
                       className={cn(
-                        'flex items-center rounded-md transition-colors duration-150',
+                        'flex items-center rounded-lg transition-all duration-200',
                         collapsed
                           ? cn(
-                              'justify-center h-9 w-9 mx-auto',
-                              active ? 'bg-lime-50 text-lime-700' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600',
+                              'justify-center h-10 w-10 mx-auto',
+                              active
+                                ? 'bg-white text-[#416900] shadow-sm'
+                                : 'text-[#6b7280] hover:bg-white/60 hover:text-[#374151]',
                             )
                           : cn(
-                              'gap-2.5 py-2 w-full pl-2.5 pr-3 border-l-2',
+                              'gap-3 py-2.5 w-full pl-3 pr-3',
                               active
-                                ? 'border-l-lime-500 bg-lime-50 text-lime-700'
-                                : 'border-l-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-700',
+                                ? 'bg-white text-[#416900] font-semibold shadow-sm'
+                                : 'text-[#6b7280] hover:bg-white/60 hover:text-[#374151]',
                             ),
                       )}
                     >
                       <Icon
                         className={cn(
                           'flex-shrink-0',
-                          collapsed ? 'h-[17px] w-[17px]' : 'h-4 w-4',
-                          active ? 'text-lime-600' : 'text-slate-400',
+                          collapsed ? 'h-[18px] w-[18px]' : 'h-[18px] w-[18px]',
+                          active ? 'text-[#416900]' : 'text-[#9ca3af]',
                         )}
+                        strokeWidth={active ? 2.2 : 1.5}
                       />
                       {!collapsed && (
                         <>
-                          <span className="flex-1 text-[13px] font-medium">{item.title}</span>
+                          <span className="flex-1 text-[13px] font-medium tracking-wide">{item.title}</span>
                           {item.badge != null && (
-                            <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-lime-500 px-1 text-[10px] font-bold text-white">
+                            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#416900] px-1.5 text-[10px] font-bold text-white">
                               {item.badge}
                             </span>
                           )}
@@ -135,7 +138,7 @@ export default function Sidebar({
       </nav>
 
       {/* ── Bottom ── */}
-      <div className="flex-shrink-0 border-t border-slate-100 p-2 space-y-0.5">
+      <div className="flex-shrink-0 p-3 space-y-1">
         {activeBottom.map((item) => {
           const active = isActive(item.href)
           const Icon = item.icon
@@ -145,28 +148,30 @@ export default function Sidebar({
               href={item.href}
               title={collapsed ? item.title : undefined}
               className={cn(
-                'flex items-center rounded-md transition-colors duration-150',
+                'flex items-center rounded-lg transition-all duration-200',
                 collapsed
                   ? cn(
-                      'justify-center h-9 w-9 mx-auto',
-                      active ? 'bg-lime-50 text-lime-700' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600',
+                      'justify-center h-10 w-10 mx-auto',
+                      active
+                        ? 'bg-white text-[#416900] shadow-sm'
+                        : 'text-[#9ca3af] hover:bg-white/60 hover:text-[#374151]',
                     )
                   : cn(
-                      'gap-2.5 px-3 py-2 w-full',
+                      'gap-3 px-3 py-2.5 w-full',
                       active
-                        ? 'bg-lime-50 text-lime-700'
-                        : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700',
+                        ? 'bg-white text-[#416900] font-semibold shadow-sm'
+                        : 'text-[#6b7280] hover:bg-white/60 hover:text-[#374151]',
                     ),
               )}
             >
               <Icon
                 className={cn(
-                  'flex-shrink-0',
-                  collapsed ? 'h-[17px] w-[17px]' : 'h-4 w-4',
-                  active ? 'text-lime-600' : 'text-slate-400',
+                  'flex-shrink-0 h-[18px] w-[18px]',
+                  active ? 'text-[#416900]' : 'text-[#9ca3af]',
                 )}
+                strokeWidth={active ? 2.2 : 1.5}
               />
-              {!collapsed && <span className="text-[13px] font-medium">{item.title}</span>}
+              {!collapsed && <span className="text-[13px] font-medium tracking-wide">{item.title}</span>}
             </Link>
           )
         })}
@@ -176,16 +181,16 @@ export default function Sidebar({
           onClick={onToggleCollapse}
           title={collapsed ? 'Expandir menu' : 'Recolher menu'}
           className={cn(
-            'hidden lg:flex items-center rounded-md transition-colors duration-150 text-slate-400 hover:bg-slate-50 hover:text-slate-600',
-            collapsed ? 'justify-center h-9 w-9 mx-auto' : 'gap-2.5 px-3 py-2 w-full',
+            'hidden lg:flex items-center rounded-lg transition-all duration-200 text-[#9ca3af] hover:bg-white/60 hover:text-[#374151]',
+            collapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-3 px-3 py-2.5 w-full',
           )}
         >
           {collapsed ? (
-            <ChevronRight className="h-3.5 w-3.5" />
+            <ChevronRight className="h-4 w-4" />
           ) : (
             <>
-              <ChevronLeft className="h-3.5 w-3.5 flex-shrink-0" />
-              <span className="text-[13px] font-medium">Recolher</span>
+              <ChevronLeft className="h-4 w-4 flex-shrink-0" />
+              <span className="text-[13px] font-medium tracking-wide">Recolher</span>
             </>
           )}
         </button>

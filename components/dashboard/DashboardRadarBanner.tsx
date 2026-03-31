@@ -74,28 +74,28 @@ export function DashboardRadarBanner({ ultimaBusca, saldo, naoLidas: initialNaoL
 
   return (
     <div className={cn(
-      'rounded-2xl border-l-4 border border-slate-100 bg-white px-5 py-4 shadow-sm',
-      'flex flex-col sm:flex-row sm:items-center gap-4',
-      naoLidas > 0 ? 'border-l-lime-500' : 'border-l-slate-300',
+      'rounded-xl border border-[#e2e8f0] bg-white px-6 py-5',
+      'flex flex-col sm:flex-row sm:items-center gap-5',
+      naoLidas > 0 ? 'border-l-4 border-l-[#416900]' : 'border-l-4 border-l-[#d1d5db]',
     )}>
       {/* Left — status */}
-      <div className="flex items-center gap-3 flex-1 min-w-0">
+      <div className="flex items-center gap-4 flex-1 min-w-0">
         <span className={cn(
-          'flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full',
-          naoLidas > 0 ? 'bg-lime-100' : 'bg-slate-100',
+          'flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full',
+          naoLidas > 0 ? 'bg-[#f4fce3]' : 'bg-[#f8f9ff]',
         )}>
-          <Radar className={cn('h-4 w-4', naoLidas > 0 ? 'text-lime-700' : 'text-slate-500')} />
+          <Radar className={cn('h-5 w-5', naoLidas > 0 ? 'text-[#416900]' : 'text-[#9ca3af]')} strokeWidth={1.5} />
         </span>
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-slate-900 truncate">
+          <p className="text-[15px] font-semibold text-[#1f2937] truncate font-manrope">
             Radar de Nomeações ativo
             {naoLidas > 0 && (
-              <span className="ml-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-lime-500 text-white text-[10px] font-bold px-1.5">
+              <span className="ml-2.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#416900] text-white text-[11px] font-bold px-2">
                 {naoLidas}
               </span>
             )}
           </p>
-          <p className="text-xs text-slate-400 mt-0.5 truncate">
+          <p className="text-[13px] text-[#6b7280] mt-1 truncate font-inter">
             {feedback
               ? feedback.msg
               : subtitulo}
@@ -112,11 +112,11 @@ export function DashboardRadarBanner({ ultimaBusca, saldo, naoLidas: initialNaoL
       </div>
 
       {/* Right — CTA */}
-      <div className="flex flex-col items-end gap-1 flex-shrink-0">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col items-end gap-2 flex-shrink-0">
+        <div className="flex items-center gap-3">
           {naoLidas > 0 && !isPending && (
             <Link href="/nomeacoes">
-              <Button size="sm" variant="outline" className="h-9 text-xs border-lime-200 text-lime-700 hover:bg-lime-50">
+              <Button size="sm" variant="outline" className="h-10 text-[13px] border-[#e2e8f0] text-[#374151] hover:bg-[#f8f9ff] font-semibold px-4 rounded-lg">
                 Ver {naoLidas} pendente{naoLidas > 1 ? 's' : ''}
               </Button>
             </Link>
@@ -125,26 +125,26 @@ export function DashboardRadarBanner({ ultimaBusca, saldo, naoLidas: initialNaoL
             onClick={handleBuscar}
             disabled={isPending}
             className={cn(
-              'h-9 px-4 font-semibold text-sm gap-2',
-              'bg-lime-500 hover:bg-lime-600 text-slate-900',
+              'h-10 px-5 font-semibold text-[14px] gap-2.5 rounded-lg transition-all font-inter',
+              'bg-[#1f2937] hover:bg-[#374151] text-white',
             )}
           >
             {isPending ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Buscando nos diários…
+                <Loader2 className="h-4 w-4 animate-spin text-white" />
+                Buscando…
               </>
             ) : (
               <>
-                <Radar className="h-4 w-4" />
-                {ultimaBusca ? 'Buscar Nomeações Agora' : 'Fazer Primeira Busca'}
+                <Radar className="h-4 w-4" strokeWidth={2} />
+                {ultimaBusca ? 'Buscar Agora' : 'Primeira Busca'}
               </>
             )}
           </Button>
         </div>
         {/* Credit cost notice — always visible */}
-        <p className="text-[10px] text-slate-400">
-          Busca manual · R$ 3,00 por chamada
+        <p className="text-[11px] text-[#9ca3af] font-inter">
+          Busca manual · R$ 3,00 / chamada
           {saldo !== null && ` · Saldo: R$ ${saldo.toFixed(2)}`}
         </p>
       </div>

@@ -32,8 +32,8 @@ export const KANBAN_COLUMNS: KanbanColumn[] = [
     id:       'nomeacao',
     label:    'Nomeação recebida',
     statuses: ['nomeado'],
-    color:    'border-l-violet-400',
-    badge:    'bg-violet-100 text-violet-700',
+    color:    'border-l-[#1f2937]',
+    badge:    'bg-[#f2f3f9] text-[#1f2937]',
   },
   {
     id:       'proposta_pendente',
@@ -53,8 +53,8 @@ export const KANBAN_COLUMNS: KanbanColumn[] = [
     id:       'em_andamento',
     label:    'Em andamento',
     statuses: ['em_andamento'],
-    color:    'border-l-lime-500',
-    badge:    'bg-lime-100 text-lime-700',
+    color:    'border-l-[#416900]',
+    badge:    'bg-[#f4fce3] text-[#416900]',
   },
   {
     id:       'laudo',
@@ -67,8 +67,8 @@ export const KANBAN_COLUMNS: KanbanColumn[] = [
     id:       'concluida',
     label:    'Entregue',
     statuses: ['concluida'],
-    color:    'border-l-emerald-500',
-    badge:    'bg-emerald-100 text-emerald-700',
+    color:    'border-l-[#416900]',
+    badge:    'bg-[#f4fce3] text-[#416900]',
   },
   {
     id:       'cancelada',
@@ -112,39 +112,39 @@ function KanbanCard({ p, effectiveStatus }: KanbanCardProps) {
 
   return (
     <Link href={`/pericias/${p.id}`} className="block group">
-      <div className="rounded-xl border border-slate-200 bg-white shadow-sm hover:shadow-md hover:border-slate-300 transition-all p-4 space-y-3 cursor-pointer">
+      <div className="rounded-xl border border-[#e2e8f0] bg-white hover:border-[#416900]/30 transition-all p-5 space-y-4 cursor-pointer">
 
         {/* Header */}
         <div className="flex items-start justify-between gap-2">
-          <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+          <span className="text-[11px] font-semibold tracking-[0.1em] text-[#9ca3af] uppercase font-inter">
             {p.numero}
           </span>
         </div>
 
         {/* Subject */}
-        <p className="text-sm font-semibold text-slate-800 leading-snug line-clamp-2 group-hover:text-slate-900">
+        <p className="text-[15px] font-semibold text-[#1f2937] leading-tight line-clamp-2 group-hover:text-[#374151] font-manrope">
           {p.assunto}
         </p>
 
         {/* Meta rows */}
-        <div className="space-y-1.5">
-          <div className="flex items-start gap-1.5">
-            <User className="h-3 w-3 text-slate-400 flex-shrink-0 mt-0.5" />
-            <span className="text-xs text-slate-500 leading-snug line-clamp-1">{p.cliente}</span>
+        <div className="space-y-2">
+          <div className="flex items-start gap-2">
+            <User className="h-4 w-4 text-[#9ca3af] flex-shrink-0 mt-0.5" strokeWidth={1.5} />
+            <span className="text-[14px] text-[#6b7280] leading-snug line-clamp-1 font-inter">{p.cliente}</span>
           </div>
-          <div className="flex items-start gap-1.5">
-            <Building2 className="h-3 w-3 text-slate-400 flex-shrink-0 mt-0.5" />
-            <span className="text-xs text-slate-400 leading-snug line-clamp-2">{p.vara}</span>
+          <div className="flex items-start gap-2">
+            <Building2 className="h-4 w-4 text-[#9ca3af] flex-shrink-0 mt-0.5" strokeWidth={1.5} />
+            <span className="text-[14px] text-[#9ca3af] leading-snug line-clamp-2 font-inter">{p.vara}</span>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between pt-1 border-t border-slate-100">
-          <span className="flex items-center gap-1 text-[11px] text-slate-400">
-            <Calendar className="h-3 w-3" />
+        <div className="flex items-center justify-between pt-2 border-t border-[#f2f3f9]">
+          <span className="flex items-center gap-1.5 text-[12px] text-[#9ca3af] font-inter">
+            <Calendar className="h-4 w-4" strokeWidth={1.5} />
             {p.prazo}
           </span>
-          <span className="text-[11px] font-semibold text-emerald-700">{p.valor}</span>
+          <span className="text-[13px] font-bold text-[#416900] font-inter">{p.valor}</span>
         </div>
 
         {/* Advance button */}
@@ -152,12 +152,12 @@ function KanbanCard({ p, effectiveStatus }: KanbanCardProps) {
           <button
             onClick={handleAdvance}
             disabled={pending}
-            className="w-full flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-lime-50 hover:border-lime-300 hover:text-lime-700 text-slate-500 text-[11px] font-medium py-1.5 transition-colors disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-2 rounded-lg border border-[#e2e8f0] bg-[#f8f9ff] hover:bg-[#f4fce3]/50 hover:border-[#416900]/30 hover:text-[#416900] text-[#6b7280] text-[12px] font-semibold py-2 transition-all disabled:opacity-50 font-inter"
           >
             {pending ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
-              <ChevronRight className="h-3 w-3" />
+              <ChevronRight className="h-3.5 w-3.5" strokeWidth={2} />
             )}
             {nextLabel}
           </button>
@@ -177,17 +177,17 @@ interface CardEntry {
 
 function KanbanCol({ col, entries }: { col: KanbanColumn; entries: CardEntry[] }) {
   return (
-    <div className="flex flex-col min-w-[272px] w-[272px]">
+    <div className="flex flex-col min-w-[300px] w-[300px]">
       {/* Column header */}
-      <div className="flex items-center gap-2 mb-3 px-1">
-        <p className="text-xs font-semibold text-slate-700 truncate flex-1">{col.label}</p>
-        <span className={`text-[10px] font-bold rounded-full px-2 py-0.5 ${col.badge}`}>
+      <div className="flex items-center gap-2.5 mb-4 px-1">
+        <p className="text-[15px] font-semibold text-[#1f2937] truncate flex-1 font-manrope">{col.label}</p>
+        <span className={`text-[11px] font-bold rounded-md px-2.5 py-0.5 font-inter ${col.badge}`}>
           {entries.length}
         </span>
       </div>
 
       {/* Card list */}
-      <div className={`flex-1 rounded-2xl border border-slate-200 bg-slate-50/60 border-l-4 ${col.color} p-3 space-y-2.5 min-h-[120px]`}>
+      <div className={`flex-1 rounded-2xl border border-[#e2e8f0] bg-[#f8f9ff]/50 border-l-4 ${col.color} p-4 space-y-4 min-h-[200px]`}>
         {entries.length === 0 ? (
           <div className="flex items-center justify-center h-20">
             <p className="text-xs text-slate-400 italic">Nenhum processo</p>
@@ -246,20 +246,20 @@ export function KanbanBoard({ pericias, statusOverrides }: KanbanBoardProps) {
 
       {/* ── Search bar ─────────────────────────────────────────────────────── */}
       <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#9ca3af] pointer-events-none" strokeWidth={1.5} />
         <input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Buscar por número, assunto, parte ou vara…"
-          className="w-full h-9 rounded-lg border border-slate-300 bg-white pl-9 pr-8 text-sm text-slate-800 placeholder:text-slate-400 focus:border-lime-500 focus:outline-none focus:ring-1 focus:ring-lime-500/40"
+          className="w-full h-11 rounded-lg border border-[#e2e8f0] bg-white pl-10 pr-10 text-[14px] text-[#1f2937] placeholder:text-[#9ca3af] focus:border-[#416900] focus:outline-none focus:ring-4 focus:ring-[#416900]/5 transition-all font-inter"
         />
         {search && (
           <button
             onClick={() => setSearch('')}
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#9ca3af] hover:text-[#374151] transition-colors"
           >
-            <X className="h-3.5 w-3.5" />
+            <X className="h-4 w-4" />
           </button>
         )}
       </div>

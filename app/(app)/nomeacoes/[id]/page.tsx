@@ -223,6 +223,8 @@ export default async function NomeacaoDetailPage({ params }: { params: Promise<{
           {/* Documents */}
           <NomeacaoDocumentosSection
             nomeacaoId={nomeacao.id}
+            tribunal={nomeacao.processo.tribunal}
+            numeroProcesso={nomeacao.processo.numeroProcesso}
             nomeArquivo={nomeacao.nomeArquivo ?? null}
             tamanhoBytes={nomeacao.tamanhoBytes ?? null}
           />

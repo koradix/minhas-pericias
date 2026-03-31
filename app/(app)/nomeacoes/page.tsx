@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
 import { redirect } from 'next/navigation'
@@ -15,6 +16,11 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Nomeações' }
 
+function safeJsonParse<T>(value: string | null | undefined, fallback: T): T {
+  if (!value) return fallback
+  try { return JSON.parse(value) as T } catch { return fallback }
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function NomeacoesPage() {
@@ -23,12 +29,25 @@ export default async function NomeacoesPage() {
   const userId = session.user.id
 
   const [peritoPerfil, radarConfig, citacoes, todas] = await Promise.all([
-    prisma.peritoPerfil.findUnique({ where: { userId } }).catch(() => null),
-    prisma.radarConfig.findUnique({ where: { peritoId: userId }, select: { monitoramentoExtId: true } }).catch(() => null),
-    getCitacoes(userId).catch(() => []),
-    getNomeacoesByPerito(userId).catch(() => []),
+    prisma.peritoPerfil.findUnique({ where: { userId } }).catch((e) => {
+      console.error('[Nomeacoes] peritoPerfil:', e?.message)
+      return null
+    }),
+    prisma.radarConfig.findUnique({ where: { peritoId: userId }, select: { monitoramentoExtId: true } }).catch((e) => {
+      console.error('[Nomeacoes] radarConfig:', e?.message)
+      return null
+    }),
+    getCitacoes(userId).catch((e) => {
+      console.error('[Nomeacoes] getCitacoes:', e?.message)
+      return []
+    }),
+    getNomeacoesByPerito(userId).catch((e) => {
+      console.error('[Nomeacoes] getNomeacoesByPerito:', e?.message)
+      return []
+    }),
   ])
-  const siglas: string[] = JSON.parse(peritoPerfil?.tribunais ?? '[]')
+
+  const siglas: string[] = safeJsonParse(peritoPerfil?.tribunais, [])
   const radarConfigurado = !!radarConfig?.monitoramentoExtId
 
   const ativos    = todas.filter((n) => n.status !== 'arquivado')
@@ -48,8 +67,8 @@ export default async function NomeacoesPage() {
 
       {/* Citações do Escavador */}
       {citacoes.length > 0 && (
-        <div className="space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+        <div className="space-y-4">
+          <p className="text-[12px] font-inter font-semibold uppercase tracking-[0.08em] text-[#6b7280]">
             {citacoes.length} citaç{citacoes.length > 1 ? 'ões' : 'ão'} nos diários
           </p>
           <CitacoesList citacoes={citacoes} />
@@ -57,9 +76,9 @@ export default async function NomeacoesPage() {
       )}
 
       {/* Lista de processos ativos */}
-      <div className="space-y-3">
+      <div className="space-y-4">
         {ativos.length > 0 && (
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+          <p className="text-[12px] font-inter font-semibold uppercase tracking-[0.08em] text-[#6b7280]">
             {ativos.length} processo{ativos.length > 1 ? 's' : ''} registrado{ativos.length > 1 ? 's' : ''}
           </p>
         )}

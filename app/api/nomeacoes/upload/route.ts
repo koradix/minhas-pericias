@@ -63,20 +63,22 @@ export async function POST(request: NextRequest) {
   } else {
     // ── Prod: recebe blobUrl em JSON ─────────────────────────────────────────
     const body = await request.json() as {
-      blobUrl:  string
-      fileName: string
-      fileSize: number
-      mimeType: string
-      tribunal: string
-      numero?:  string | null
+      blobUrl:   string
+      fileName:  string
+      fileSize:  number
+      mimeType:  string
+      tribunal:  string
+      numero?:   string | null
+      periciaId?: string | null
     }
 
-    blobUrl   = body.blobUrl
-    fileName  = body.fileName
-    fileSize  = body.fileSize
-    mimeType  = body.mimeType
-    tribunal  = body.tribunal
-    numeroRaw = body.numero ?? null
+    blobUrl      = body.blobUrl
+    fileName     = body.fileName
+    fileSize     = body.fileSize
+    mimeType     = body.mimeType
+    tribunal     = body.tribunal
+    numeroRaw    = body.numero ?? null
+    periciaIdRaw = body.periciaId ?? null
 
     if (!blobUrl) {
       return NextResponse.json({ ok: false, message: 'blobUrl obrigatório' }, { status: 400 })

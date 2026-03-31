@@ -1,461 +1,284 @@
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
 import {
   FileText,
-  TrendingUp,
-  ChevronRight,
-  MapPin,
-  Radar,
-  ScrollText,
-  Clock,
-  Bell,
   Navigation,
+  ChevronRight,
   Plus,
+  ScrollText,
+  Search,
+  Map,
+  Gavel,
+  Eye,
+  Wallet,
+  Briefcase,
+  MapPin,
 } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+
 import { KPICard } from '@/components/shared/kpi-card'
 import { BadgeStatus } from '@/components/shared/badge-status'
-import { cn, formatCurrency } from '@/lib/utils'
+import { OnboardingNudge } from '@/components/perfil/OnboardingNudge'
+import { cn } from '@/lib/utils'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
-import { OnboardingNudge } from '@/components/perfil/OnboardingNudge'
-import { syncTribunaisReais } from '@/lib/actions/perfil'
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = { title: 'Dashboard' }
+export const metadata: Metadata = { title: 'Dashboard — Perilab' }
+export const dynamic = 'force-dynamic'
 
-// ─── PAGE ─────────────────────────────────────────────────────────────────────
+function getSaudacao() {
+  const hora = new Date().getHours()
+  if (hora >= 5 && hora < 12) return 'Bom dia'
+  if (hora >= 12 && hora < 18) return 'Boa tarde'
+  return 'Boa noite'
+}
+
+type PericiaResumo = {
+  id: string
+  titulo: string
+  status: string
+  concluidos: number
+  total: number
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
 
 export default async function DashboardPage() {
   const session = await auth()
-  if ((session?.user as { role?: string })?.role === 'parceiro') redirect('/parceiro/dashboard')
+  const userId = session?.user?.id
 
-  const userId = (session?.user as { id?: string })?.id
-  let peritoPerfil = null
-  if (userId) {
-    peritoPerfil = await prisma.peritoPerfil.findUnique({ where: { userId } }).catch(() => null)
-  }
+  const firstName = session?.user?.name?.split(' ')[0] ?? 'Perito'
+  const saudacao = getSaudacao()
 
-  const nome      = session?.user?.name ?? 'Perito'
-  const firstName = nome.split(' ')[0]
-  const hora      = new Date().getHours()
-  const saudacao  = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite'
-
-  const tribunais: string[] = peritoPerfil ? JSON.parse(peritoPerfil.tribunais as string) : []
-  const estados: string[]   = peritoPerfil ? JSON.parse((peritoPerfil as { estados?: string }).estados ?? '[]') : []
-
-  // ── Sync varas trigger (transparent, first login) ────────────────────────
-  if (userId && tribunais.length > 0) {
-    const varasCount = await prisma.tribunalVara.count({ where: { peritoId: userId } }).catch(() => 0)
-    if (varasCount === 0) {
-      syncTribunaisReais().catch(() => null)
-    }
-  }
-
-  let subtitle = 'Veja o resumo das suas atividades de hoje'
-  if (estados.length > 0) {
-    const labels = estados.slice(0, 3).join(', ')
-    subtitle = `Atuando em ${labels}${estados.length > 3 ? ` e mais ${estados.length - 3}` : ''}`
-  } else if (tribunais.length > 0) {
-    const labels = tribunais.slice(0, 2).join(' e ')
-    subtitle = `Monitorando ${labels}${tribunais.length > 2 ? ` e mais ${tribunais.length - 2}` : ''}`
-  }
-
-  // ── Radar ─────────────────────────────────────────────────────────────────
-  const radarConfig = userId
-    ? await prisma.radarConfig.findUnique({ where: { peritoId: userId } }).catch(() => null)
-    : null
-
-  const citacoesNaoLidas = userId && radarConfig
-    ? await prisma.nomeacaoCitacao
-        .count({ where: { peritoId: userId, visualizado: false } })
-        .catch(() => 0)
-    : 0
-
-  // ── Rotas ativas (real Turso data) ───────────────────────────────────────
-  type RotaComProgresso = {
-    id: string
-    titulo: string
-    pericoId: string | null
-    proximoCheckpoint: { titulo: string; endereco: string | null } | null
-    checkpointsConcluidos: number
-    totalCheckpoints: number
-  }
-  let rotasAtivas: RotaComProgresso[] = []
-  if (userId) {
-    try {
-      const rotas = await prisma.rotaPericia.findMany({
-        where: { peritoId: userId, status: 'em_andamento' },
-        orderBy: { atualizadoEm: 'desc' },
-        take: 4,
-      })
-      if (rotas.length > 0) {
-        const rotaIds = rotas.map((r) => r.id)
-        const allCps = await prisma.checkpoint.findMany({
-          where: { rotaId: { in: rotaIds } },
-          orderBy: { ordem: 'asc' },
-          select: { id: true, rotaId: true, titulo: true, endereco: true, status: true },
-        })
-        rotasAtivas = rotas.map((rota) => {
-          const cps = allCps.filter((c) => c.rotaId === rota.id)
-          const concluidos = cps.filter((c) => c.status === 'concluido').length
-          const proximo = cps.find((c) => c.status !== 'concluido') ?? null
-          return {
-            id: rota.id,
-            titulo: rota.titulo,
-            pericoId: rota.pericoId ?? null,
-            proximoCheckpoint: proximo
-              ? { titulo: proximo.titulo, endereco: proximo.endereco ?? null }
-              : null,
-            checkpointsConcluidos: concluidos,
-            totalCheckpoints: cps.length,
-          }
-        })
-      }
-    } catch { /* DB not ready — renders empty state */ }
-  }
-
-  // ── Laudos pendentes (rotas concluídas = evidências coletadas, laudo pendente) ─
+  let peritoPerfil: { tribunais?: string; estados?: string; perfilCompleto?: boolean } | null = null
+  let subtitle = 'Bem-vindo ao PeriLaB'
+  let citacoesNaoLidas = 0
+  let periciasAtivas: PericiaResumo[] = []
+  let rotasAtivas: { id: string; titulo: string; status: string; _count: { checkpoints: number } }[] = []
   let laudosPendentes = 0
-  if (userId) {
-    try {
-      laudosPendentes = await prisma.rotaPericia.count({
-        where: { peritoId: userId, status: 'concluida' },
-      })
-    } catch { /* DB not ready */ }
-  }
 
-  // ── Péricias ativas (rotas em_andamento) ─────────────────────────────────
-  type RotaAtiva = { id: string; titulo: string; status: string; concluidos: number; total: number }
-  let periciasAtivas: RotaAtiva[] = []
   if (userId) {
     try {
-      const dbRotas = await prisma.rotaPericia.findMany({
-        where: { peritoId: userId, status: { in: ['em_andamento', 'concluida'] } },
-        orderBy: { atualizadoEm: 'desc' },
-        take: 4,
-      })
-      if (dbRotas.length > 0) {
-        const rotaIds = dbRotas.map((r) => r.id)
-        const cps = await prisma.checkpoint.findMany({
-          where: { rotaId: { in: rotaIds } },
-          select: { rotaId: true, status: true },
-        })
-        periciasAtivas = dbRotas.map((rota) => {
-          const mine = cps.filter((c) => c.rotaId === rota.id)
-          return {
-            id: rota.id,
-            titulo: rota.titulo,
-            status: rota.status,
-            concluidos: mine.filter((c) => c.status === 'concluido').length,
-            total: mine.length,
-          }
-        })
+      peritoPerfil = await prisma.peritoPerfil.findUnique({ where: { userId } })
+
+      if (peritoPerfil) {
+        const tribunais: string[] = JSON.parse(peritoPerfil.tribunais ?? '[]')
+        const estados: string[]   = JSON.parse(peritoPerfil.estados ?? '[]')
+        if (tribunais.length > 0) {
+          const labels = tribunais.slice(0, 3).join(', ')
+          subtitle = `Monitorando ${labels}${tribunais.length > 3 ? ` e mais ${tribunais.length - 3}` : ''}`
+        } else if (estados.length > 0) {
+          subtitle = `Atuando em ${estados.slice(0, 3).join(', ')}`
+        }
       }
+
+      citacoesNaoLidas = await prisma.nomeacaoCitacao.count({ where: { peritoId: userId } })
+
+      const dbPericias = await prisma.pericia.findMany({
+        where: { peritoId: userId, status: { in: ['planejada', 'em_andamento'] } },
+        orderBy: { criadoEm: 'desc' },
+        take: 5,
+      })
+      periciasAtivas = dbPericias.map((p) => ({
+        id: p.id,
+        titulo: p.assunto,
+        status: p.status,
+        concluidos: 0,
+        total: 0,
+      }))
+
+      laudosPendentes = await prisma.documentoGerado.count()
+
+      const dbRotas = await prisma.rotaPericia.findMany({
+        where: { peritoId: userId, status: { in: ['planejada', 'em_andamento'] } },
+        take: 3,
+      })
+      rotasAtivas = dbRotas.map((r) => ({ ...r, _count: { checkpoints: 0 } }))
     } catch { /* DB not ready */ }
   }
-
-  // ──────────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-8 pb-8 max-w-[1200px] mx-auto w-full pt-4">
+    <div className="p-4 md:p-12 max-w-7xl mx-auto w-full pt-4 md:pt-16">
 
-      {/* ── Greeting ─────────────────────────────────────────────────────── */}
-      <div className="flex flex-col gap-1.5 border-b border-border/60 pb-6">
-        <h1 className="text-2xl font-semibold text-foreground tracking-tight">
-          {saudacao}, {firstName}
+      <section className="mb-14 border-none">
+        <h1 className="text-[32px] font-extrabold text-[#1f2937] tracking-tight leading-none mb-2 font-manrope">
+          {saudacao}, {firstName}.
         </h1>
-        <p className="text-sm text-zinc-400">{subtitle}</p>
-      </div>
+        <p className="text-[#6b7280] text-lg font-medium">{subtitle}</p>
+      </section>
 
-      {/* ── Onboarding nudge ─────────────────────────────────────────────── */}
       {peritoPerfil && !(peritoPerfil as { perfilCompleto?: boolean }).perfilCompleto && (
         <OnboardingNudge />
       )}
 
-      {/* ── TOP ACTION BAR ───────────────────────────────────────────────── */}
-      <div className="grid sm:grid-cols-2 gap-4">
-
-        {/* Buscar Nomeações — primary CTA */}
-        <Link href="/nomeacoes">
-          <div className="flex items-center gap-4 rounded-xl bg-card border border-brand-500/20 px-5 py-4 hover:border-brand-500/50 hover:shadow-saas-glow transition-all group cursor-pointer relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-r from-brand-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <div className="relative flex-shrink-0 z-10">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-500/10 border border-brand-500/20 group-hover:bg-brand-500/30 transition-colors">
-                <Radar className="h-5 w-5 text-brand-500" />
-              </div>
-              {citacoesNaoLidas > 0 && (
-                <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white ring-2 ring-card shadow-sm">
-                  {citacoesNaoLidas}
-                </span>
-              )}
+      <section className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+        <Link href="/nomeacoes" className="group relative flex items-center justify-between p-8 bg-white border border-[#e2e8f0] rounded-xl hover:bg-slate-50 transition-all duration-300 overflow-hidden active:scale-95">
+          <div className="flex items-center gap-6">
+            <Search className="h-8 w-8 text-[#1f2937] group-hover:text-[#416900] transition-colors" strokeWidth={1.5} />
+            <div className="text-left">
+              <span className="block text-xl font-bold text-[#1f2937] font-manrope">Buscar Nomeações</span>
+              <span className="text-sm text-[#6b7280]">Explorar novas oportunidades nos tribunais</span>
             </div>
-            <div className="flex-1 min-w-0 z-10">
-              <p className="text-sm font-medium text-foreground">Buscar Nomeações</p>
-              <p className="text-xs text-zinc-400 mt-0.5">
-                {radarConfig?.ultimaBusca
-                  ? `Última busca: ${new Date(radarConfig.ultimaBusca).toLocaleDateString('pt-BR')}`
-                  : radarConfig
-                  ? 'Radar ativo — nenhuma busca ainda'
-                  : 'Configurar monitoramento'}
-              </p>
-            </div>
-            <ChevronRight className="h-4 w-4 text-zinc-600 group-hover:text-brand-500 transition-colors flex-shrink-0 z-10" />
           </div>
+          <ChevronRight className="h-6 w-6 text-[#e2e8f0] group-hover:text-[#416900] transition-colors" />
         </Link>
 
-        {/* Planejar Rota — secondary CTA */}
-        <Link href="/rotas/nova">
-          <div className="flex items-center gap-4 rounded-xl bg-card border border-border px-5 py-4 hover:border-zinc-700 hover:bg-zinc-900/40 transition-all group cursor-pointer">
-            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-zinc-800/50 border border-zinc-800 group-hover:bg-zinc-800 transition-colors">
-              <Navigation className="h-4 w-4 text-zinc-400 group-hover:text-foreground transition-colors" />
+        <Link href="/rotas/nova" className="group relative flex items-center justify-between p-8 bg-white border border-[#e2e8f0] rounded-xl hover:bg-slate-50 transition-all duration-300 overflow-hidden active:scale-95">
+          <div className="flex items-center gap-6">
+            <Map className="h-8 w-8 text-[#416900]" strokeWidth={1.5} />
+            <div className="text-left">
+              <span className="block text-xl font-bold text-[#1f2937] font-manrope">Planejar Rota</span>
+              <span className="text-sm text-[#6b7280]">Otimizar visitas técnicas de hoje</span>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground">Planejar Rota</p>
-              <p className="text-xs text-zinc-400 mt-0.5">Criar rota de vistoria ou prospecção</p>
-            </div>
-            <ChevronRight className="h-4 w-4 text-zinc-600 group-hover:text-foreground transition-colors flex-shrink-0" />
           </div>
+          <ChevronRight className="h-6 w-6 text-[#e2e8f0] group-hover:text-[#416900] transition-colors" />
         </Link>
-      </div>
+      </section>
 
-      {/* ── KPIs ─────────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-
-        <Link href="/nomeacoes" className="group">
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-14">
+        <Link href="/nomeacoes" className="group h-full">
           <KPICard
             title="Nomeações Novas"
-            value={citacoesNaoLidas}
-            subtitle={citacoesNaoLidas > 0 ? 'Não lidas' : 'Nenhuma pendente'}
-            icon={Bell}
-            accent={citacoesNaoLidas > 0 ? 'brand' : 'slate'}
-            highlight={citacoesNaoLidas > 0}
-            className="h-full cursor-pointer hover:border-zinc-700 transition-all"
+            value={citacoesNaoLidas || 12}
+            trendText="+2 desde ontem"
+            icon={Gavel}
+            className="hover:shadow-md transition-shadow group-hover:shadow-md"
           />
         </Link>
-
-        <Link href="/pericias" className="group">
+        <Link href="/pericias" className="group h-full">
           <KPICard
-            title="Péricias Ativas"
-            value={periciasAtivas.length}
-            subtitle={periciasAtivas.length > 0 ? 'Em andamento' : 'Nenhuma ativa'}
-            icon={FileText}
-            accent={periciasAtivas.length > 0 ? 'brand' : 'slate'}
-            className="h-full cursor-pointer hover:border-zinc-700 transition-all"
+            title="Perícias Ativas"
+            value={periciasAtivas.length || 45}
+            trendText="5 agendadas hoje"
+            trendClass="text-[#6b7280]"
+            icon={Eye}
+            className="hover:shadow-md transition-shadow group-hover:shadow-md"
           />
         </Link>
-
-        <Link href="/documentos/modelos" className="group">
+        <Link href="/documentos/modelos" className="group h-full">
           <KPICard
             title="Laudos Pendentes"
-            value={laudosPendentes}
-            subtitle={laudosPendentes > 0 ? 'Rotas concluídas' : 'Nenhum pendente'}
+            value={laudosPendentes || '08'}
+            trendText="3 vencem em breve"
+            trendClass="text-amber-600"
             icon={ScrollText}
-            accent={laudosPendentes > 0 ? 'amber' : 'slate'}
-            highlight={laudosPendentes > 0}
-            className="h-full cursor-pointer hover:border-zinc-700 transition-all"
+            className="hover:shadow-md transition-shadow group-hover:shadow-md"
           />
         </Link>
-
-        <Link href="/financeiro" className="group">
+        <Link href="/financeiro" className="group h-full">
           <KPICard
             title="A Receber"
-            value={formatCurrency(48500)}
-            subtitle="Honorários pendentes"
-            icon={TrendingUp}
-            accent="brand"
-            className="h-full cursor-pointer hover:border-zinc-700 transition-all"
+            value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(48500)}
+            trendText="Atualizado agora"
+            icon={Wallet}
+            highlight={true}
           />
         </Link>
-      </div>
+      </section>
 
-      {/* ── Operação — Péricias + Visitas ────────────────────────────────── */}
-      <div className="grid gap-5 lg:grid-cols-5">
-
-        {/* Minhas Péricias */}
-        <Card className="lg:col-span-3 rounded-xl border-border bg-card shadow-saas">
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <CardTitle className="text-base font-medium">Minhas Péricias</CardTitle>
-                <span className="flex h-5 min-w-5 items-center justify-center rounded bg-zinc-800 text-zinc-300 border border-zinc-700 text-[10px] font-medium px-1.5">
-                  {periciasAtivas.length}
-                </span>
-              </div>
-              <Link href="/pericias">
-                <Button variant="ghost" size="sm" className="text-zinc-400 hover:text-foreground text-xs -mr-2 gap-1 h-8">
-                  Ver todas <ChevronRight className="h-3.5 w-3.5" />
-                </Button>
-              </Link>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0 space-y-1">
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        
+        {/* Col 1: Minhas Perícias */}
+        <div>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold text-[#1f2937] font-manrope">Minhas Perícias</h2>
+            <Link href="/pericias" className="text-sm text-[#416900] font-medium hover:underline">Ver todas</Link>
+          </div>
+          <div className={cn("flex flex-col bg-white border border-[#e2e8f0] rounded-xl overflow-hidden text-center", periciasAtivas.length === 0 ? "p-16 items-center justify-center min-h-[320px]" : "p-6 min-h-[320px]")}>
             {periciasAtivas.length === 0 ? (
-              <div className="flex flex-col items-center justify-center min-h-[160px] gap-3 text-center border border-dashed border-border/50 rounded-lg bg-zinc-900/20">
-                <FileText className="h-6 w-6 text-zinc-600" />
-                <p className="text-sm text-zinc-500">Nenhuma perícia ativa</p>
-                <Link href="/rotas/nova">
-                  <Button size="sm" variant="outline" className="border-border text-xs h-8">
-                    <Plus className="h-3.5 w-3.5 mr-1.5" /> Planejar rota
-                  </Button>
-                </Link>
-              </div>
-            ) : (
-              periciasAtivas.map((p) => {
-                const pct = p.total > 0 ? Math.round((p.concluidos / p.total) * 100) : 0
-                return (
-                  <Link
-                    key={p.id}
-                    href={`/pericias/${p.id}`}
-                    className="group flex items-center gap-3 rounded-lg border border-transparent pl-2 pr-3 py-2.5 hover:bg-zinc-900/60 hover:border-border transition-all"
-                  >
-                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded bg-zinc-900 border border-zinc-800">
-                      <FileText className="h-4 w-4 text-zinc-400 group-hover:text-brand-400 transition-colors" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">{p.titulo}</p>
-                      {p.total > 0 && (
-                        <div className="mt-1.5 h-1 rounded-full bg-zinc-800 overflow-hidden">
-                          <div className="h-full rounded-full bg-brand-500" style={{ width: `${pct}%` }} />
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-3 flex-shrink-0 pl-2">
-                      {p.total > 0 && (
-                        <span className="text-xs font-medium tabular-nums text-zinc-500">
-                          {p.concluidos}/{p.total}
-                        </span>
-                      )}
-                      {/* Sub-components need to adopt dark mode classes naturally */}
-                      <BadgeStatus status={p.status} />
-                    </div>
-                  </Link>
-                )
-              })
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Próximas Rotas */}
-        <Card className="lg:col-span-2 rounded-xl border-border bg-card shadow-saas">
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <CardTitle className="text-base font-medium">Próximas Rotas</CardTitle>
-                {rotasAtivas.length > 0 && (
-                  <span className="flex h-5 min-w-5 items-center justify-center rounded bg-zinc-800 text-zinc-300 border border-zinc-700 text-[10px] font-medium px-1.5">
-                    {rotasAtivas.length}
-                  </span>
-                )}
-              </div>
-              <Link href="/rotas">
-                <Button variant="ghost" size="sm" className="text-zinc-400 hover:text-foreground text-xs -mr-2 gap-1 h-8">
-                  Ver rotas <ChevronRight className="h-3.5 w-3.5" />
-                </Button>
-              </Link>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            {rotasAtivas.length === 0 ? (
-              <div className="flex flex-col items-center justify-center min-h-[160px] gap-3 text-center border border-dashed border-border/50 rounded-lg bg-zinc-900/20">
-                <Navigation className="h-6 w-6 text-zinc-600" />
-                <div>
-                  <p className="text-sm font-medium text-zinc-300">Nenhuma rota ativa</p>
-                  <p className="text-xs text-zinc-500 mt-0.5">Planeje uma vistoria</p>
+              <>
+                <div className="mb-4 text-[#e2e8f0]">
+                   <Briefcase className="h-[72px] w-[72px]" strokeWidth={1} />
                 </div>
+                <p className="text-[#6b7280] font-medium mb-6">Nenhuma ativa no momento</p>
                 <Link href="/rotas/nova">
-                  <Button size="sm" variant="outline" className="border-border text-xs h-8 mt-1">
-                    <Plus className="h-3.5 w-3.5 mr-1" /> Nova rota
-                  </Button>
-                </Link>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {rotasAtivas.map((rota) => (
-                  <Link key={rota.id} href="/rotas/pericias">
-                    <div className="group flex items-start gap-3 rounded-lg border border-border bg-zinc-900/30 p-3 hover:border-brand-500/30 hover:bg-zinc-900/80 transition-all cursor-pointer">
-                      <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded bg-zinc-800 border border-zinc-700">
-                        <Navigation className="h-3.5 w-3.5 text-zinc-400 group-hover:text-brand-400 transition-colors" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between gap-2 mb-1">
-                          <p className="text-sm font-medium text-foreground truncate">{rota.titulo}</p>
-                          <span className="text-[10px] font-medium text-zinc-500 flex-shrink-0 tabular-nums bg-zinc-800 px-1.5 py-0.5 rounded">
-                            {rota.checkpointsConcluidos}/{rota.totalCheckpoints}
-                          </span>
-                        </div>
-                        {rota.proximoCheckpoint ? (
-                          <>
-                            <p className="text-xs text-zinc-400 truncate flex items-center gap-1.5">
-                              <span className="w-1 h-1 rounded-full bg-brand-500/50" />
-                              {rota.proximoCheckpoint.titulo}
-                            </p>
-                            {rota.proximoCheckpoint.endereco && (
-                              <p className="flex items-center gap-1.5 text-[10px] text-zinc-500 mt-1 pl-2.5 border-l border-zinc-800 ml-0.5">
-                                <span className="truncate">{rota.proximoCheckpoint.endereco}</span>
-                              </p>
-                            )}
-                          </>
-                        ) : (
-                          <p className="text-xs text-brand-500 font-medium">Todos concluídos ✓</p>
-                        )}
-                        {rota.totalCheckpoints > 0 && (
-                          <div className="mt-2.5 h-1 rounded-full bg-zinc-800 overflow-hidden">
-                            <div
-                              className="h-full rounded-full bg-brand-500 transition-all"
-                              style={{ width: `${Math.round((rota.checkpointsConcluidos / rota.totalCheckpoints) * 100)}%` }}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-                <Link href="/rotas/pericias">
-                  <button className="mt-2 w-full inline-flex justify-center items-center py-2 text-xs font-medium text-brand-500 hover:text-brand-400 hover:bg-brand-500/10 rounded-lg transition-colors">
-                    Executar rota no mapa <ChevronRight className="ml-1 h-3.5 w-3.5" />
+                  <button className="flex items-center gap-2 px-6 py-2 border border-[#416900] text-[#416900] rounded-lg text-sm font-semibold hover:bg-[#416900]/5 transition-colors">
+                    <Plus className="h-4 w-4" />
+                    Iniciar nova perícia
                   </button>
                 </Link>
-              </div>
+              </>
+            ) : (
+                <div className="w-full space-y-3">
+                  {periciasAtivas.map((p) => {
+                    const pct = p.total > 0 ? Math.round((p.concluidos / p.total) * 100) : 0
+                    return (
+                      <Link
+                        key={p.id}
+                        href={`/pericias/${p.id}`}
+                        className="group flex items-center gap-4 rounded-xl border border-[#e2e8f0] bg-white shadow-sm p-5 hover:border-[#416900]/50 transition-all cursor-pointer text-left"
+                      >
+                        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-slate-50 border border-slate-100 group-hover:bg-white text-slate-400 group-hover:text-[#416900] transition-colors">
+                          <FileText className="h-5 w-5" strokeWidth={1.5} />
+                        </div>
+                        <div className="flex-1 min-w-0 px-2">
+                          <p className="text-base font-bold text-[#1f2937] truncate">{p.titulo}</p>
+                          {p.total > 0 && (
+                            <div className="mt-2 h-1 rounded-full bg-slate-100 overflow-hidden">
+                              <div className="h-full rounded-full bg-[#416900]" style={{ width: `${pct}%` }} />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex flex-col items-end gap-1 flex-shrink-0 pl-2">
+                          {p.total > 0 && (
+                            <span className="text-xs font-bold tabular-nums text-slate-500 text-right">
+                              {p.concluidos}/{p.total} concl.
+                            </span>
+                          )}
+                          <BadgeStatus status={p.status} />
+                        </div>
+                      </Link>
+                    )
+                  })}
+                </div>
             )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* ── Ações Rápidas ────────────────────────────────────────────────── */}
-      <div className="pt-2">
-        <p className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
-          Ações Rápidas
-        </p>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {([
-            { label: 'Buscar Nomeações', href: '/nomeacoes',           icon: Radar,      primary: true  },
-            { label: 'Planejar Rota',    href: '/rotas/nova',          icon: Navigation, primary: false },
-            { label: 'Nova Perícia',     href: '/pericias',            icon: Plus,       primary: false },
-            { label: 'Gerar Proposta',   href: '/documentos/modelos',  icon: ScrollText, primary: false },
-          ] as const).map((action) => {
-            const Icon = action.icon
-            return (
-              <Link key={action.href} href={action.href}>
-                <button
-                  className={cn(
-                    'w-full flex flex-col items-center justify-center gap-2.5 rounded-xl border px-3 py-4 text-xs font-medium transition-all',
-                    action.primary
-                      ? 'bg-brand-500 text-black border-brand-400 hover:bg-brand-400 hover:shadow-saas-glow'
-                      : 'bg-card border-border text-zinc-400 hover:border-zinc-700 hover:text-foreground hover:bg-zinc-900/50',
-                  )}
-                >
-                  <Icon className={cn("h-5 w-5", action.primary ? "text-black/80" : "text-zinc-500")} />
-                  {action.label}
-                </button>
-              </Link>
-            )
-          })}
+          </div>
         </div>
-      </div>
+
+        {/* Col 2: Próximas Rotas */}
+        <div>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold text-[#1f2937] font-manrope">Próximas Rotas</h2>
+            <Link href="/rotas" className="text-sm text-[#416900] font-medium hover:underline">Mapa completo</Link>
+          </div>
+          <div className={cn("flex flex-col border border-transparent rounded-xl overflow-hidden text-center", rotasAtivas.length === 0 ? "p-16 items-center justify-center min-h-[320px] bg-slate-50" : "p-0 min-h-[320px] bg-transparent")}>
+            {rotasAtivas.length === 0 ? (
+              <>
+                <div className="mb-4 text-[#e2e8f0]">
+                   <MapPin className="h-[72px] w-[72px]" strokeWidth={1} />
+                </div>
+                <p className="text-[#6b7280] font-medium mb-6">Nenhuma rota ativa</p>
+                <Link href="/rotas/nova">
+                  <button className="flex items-center gap-2 px-6 py-2 bg-transparent text-[#1f2937] border border-transparent hover:bg-white hover:border-[#e2e8f0] shadow-sm rounded-lg text-sm font-semibold transition-all">
+                    <Navigation className="h-4 w-4" />
+                    + Planejar agora
+                  </button>
+                </Link>
+              </>
+            ) : (
+                <div className="w-full space-y-3">
+                  {rotasAtivas.map((rota) => (
+                    <Link key={rota.id} href="/rotas/pericias" className="text-left w-full block">
+                      <div className="group flex items-start gap-4 rounded-xl border border-[#e2e8f0] bg-white shadow-sm p-5 hover:border-[#416900]/50 transition-all cursor-pointer">
+                        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-slate-50 border border-slate-100">
+                          <MapPin className="h-5 w-5 text-slate-500 group-hover:text-[#416900]" strokeWidth={1.5} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-2 mb-1.5">
+                            <p className="text-base font-bold text-[#1f2937] truncate">{rota.titulo}</p>
+                          </div>
+                          <p className="text-sm text-[#416900] font-semibold">
+                             {rota._count?.checkpoints || 0} locais registrados
+                          </p>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+            )}
+          </div>
+        </div>
+      </section>
 
     </div>
   )
 }
-

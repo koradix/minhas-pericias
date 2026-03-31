@@ -359,6 +359,22 @@ export async function buscarNomeacoes(): Promise<BuscarResult> {
     console.log(`[buscarNomeacoes] Busca por nome: ${fromBusca.length} resultados antes do filtro`)
     citacoes.push(...fromBusca)
 
+    // ── PAID: fallback — busca por primeiro+último nome se nome completo não trouxe nada ─
+    // DJe frequentemente exibe só primeiro e último nome sem nome do meio.
+    if (fromBusca.length === 0) {
+      const variacoes = buildVariacoes(nomePeito, cpfPerfil)
+      const primeiroUltimo = variacoes[0] // "Primeiro Último"
+      if (primeiroUltimo && primeiroUltimo.toLowerCase() !== nomePeito.toLowerCase()) {
+        try {
+          const fromAbrev = await radar.buscarPorNome(primeiroUltimo, siglasFiltro)
+          console.log(`[buscarNomeacoes] Fallback primeiro+último: ${fromAbrev.length} resultados`)
+          citacoes.push(...fromAbrev)
+        } catch {
+          // Non-blocking
+        }
+      }
+    }
+
     // ── PAID: busca por CPF (alguns diários listam CPF junto ao nome) ───────
     if (cpfPerfil && cpfPerfil.replace(/\D/g, '').length === 11) {
       try {
@@ -377,13 +393,18 @@ export async function buscarNomeacoes(): Promise<BuscarResult> {
       return true
     })
 
-    // ── Filtra: snippet deve mencionar perícia/perito E conter o nome do perito ─
-    // Escavador retorna páginas inteiras do DJe — o snippet pode ser de outro
-    // processo na mesma página. Exige nome no snippet para eliminar falsos positivos.
+    // ── Filtra: snippet deve mencionar perícia/perito E o nome completo ─────────
+    // Usa o nome completo do cadastro (User.name) para eliminar falsos positivos.
     const nomeLower = nomePeito.toLowerCase()
+    // Também aceita primeiro+último (sem nome do meio) para tolerância ao DJe
+    const parts = nomePeito.trim().split(/\s+/).filter(Boolean)
+    const primeiroUltimo = parts.length >= 3
+      ? `${parts[0]} ${parts[parts.length - 1]}`.toLowerCase()
+      : nomeLower
     const unique = deduped.filter((c) => {
       if (!isSnippetNomeacaoCivel(c.snippet)) return false
-      return c.snippet.toLowerCase().includes(nomeLower)
+      const snipLower = c.snippet.toLowerCase()
+      return snipLower.includes(nomeLower) || snipLower.includes(primeiroUltimo)
     })
 
     console.log(`[buscarNomeacoes] Após filtro de snippet: ${unique.length} de ${deduped.length}`)

@@ -546,7 +546,10 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
 
               events.push({ label: 'Processo aberto', date: formatDate(toISO(pericia.criadoEm)), done: true })
 
-              // Proposta de honorários vem ANTES da vistoria
+              // Intimação — entre nomeação e proposta de honorários
+              events.push({ label: 'Intimação recebida', done: false, future: true })
+
+              // Proposta de honorários vem DEPOIS da intimação
               events.push({ label: 'Proposta de honorários', done: false, future: pericia.status !== 'concluida' })
 
               const cpConcluidos = checkpoints.filter((c) => c.status === 'concluido')

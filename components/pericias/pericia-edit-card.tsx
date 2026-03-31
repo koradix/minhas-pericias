@@ -135,10 +135,10 @@ function Field({
   children?: React.ReactNode
 }) {
   return (
-    <div className="px-5 py-3.5">
-      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">{label}</p>
+    <div className="px-6 py-4">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af] mb-1.5 font-inter">{label}</p>
       {editing ? children : (
-        <p className={cn('text-sm', value ? 'text-slate-800' : 'text-slate-400 italic')}>
+        <p className={cn('text-[14px] font-medium', value ? 'text-[#1f2937]' : 'text-[#d1d5db] italic')}>
           {value || 'Não informado'}
         </p>
       )}
@@ -164,10 +164,10 @@ export function PericiaEditCard(props: Props) {
   // atualiza o form automaticamente sem exigir clique do usuário
   useEffect(() => {
     if (analise && !prevAnaliseRef.current) {
-      setForm(buildInitialForm({ ...props, analise }))
+      setTimeout(() => setForm(buildInitialForm({ ...props, analise })), 0)
     }
     prevAnaliseRef.current = analise
-  }, [analise]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [analise, props]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Live display values (reflect saves without full page reload)
   const [display, setDisplay] = useState<{
@@ -227,7 +227,7 @@ export function PericiaEditCard(props: Props) {
     })
   }
 
-  const inputCls = 'w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent placeholder-slate-400'
+  const inputCls = 'w-full rounded-lg border border-[#e2e8f0] bg-white px-3 py-2.5 text-[14px] text-[#1f2937] focus:outline-none focus:ring-2 focus:ring-[#416900]/20 focus:border-[#416900] placeholder-[#d1d5db] transition-all'
 
   // AI extras — full AnaliseProcesso fields
   const quesitos             = analise?.nomeacaoDespacho?.quesitos ?? []
@@ -266,40 +266,37 @@ export function PericiaEditCard(props: Props) {
   )
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <section className="rounded-xl bg-white border border-[#e2e8f0]">
       {/* Header */}
-      <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
-        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100">
-          <FileText className="h-3.5 w-3.5 text-slate-600" />
-        </div>
+      <div className="flex items-center gap-3 px-6 py-5">
         <div className="flex-1 min-w-0">
-          <h2 className="text-sm font-semibold text-slate-800">Dados da perícia</h2>
+          <h2 className="text-[16px] font-semibold text-[#1f2937] font-manrope tracking-tight">Dados da perícia</h2>
           {autoFilled && !editing && (
-            <p className="text-[11px] text-violet-600 mt-0.5">Campos pré-preenchidos pela IA — revise e salve</p>
+            <p className="text-[12px] text-[#416900] mt-1 font-medium">Campos pré-preenchidos pela IA — revise e salve</p>
           )}
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
           {saved && (
-            <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
-              <Check className="h-3 w-3" /> Salvo
+            <span className="flex items-center gap-1 text-[12px] font-semibold text-[#416900]">
+              <Check className="h-3.5 w-3.5" /> Salvo
             </span>
           )}
           {analise && !editing && (
             <button
               onClick={preencherComIA}
-              className="flex items-center gap-1.5 rounded-lg bg-violet-50 hover:bg-violet-100 border border-violet-200 px-2.5 py-1 text-[11px] font-semibold text-violet-700 transition-colors"
+              className="flex items-center gap-1.5 rounded-lg bg-[#f4fce3] hover:bg-[#ecfccb] border border-[#d8f5a2] px-3 py-1.5 text-[12px] font-semibold text-[#416900] transition-all"
             >
-              <Sparkles className="h-3 w-3" />
+              <Sparkles className="h-3.5 w-3.5" />
               Usar dados da IA
             </button>
           )}
           {!editing ? (
             <button
               onClick={() => setEditing(true)}
-              className="flex items-center gap-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600 transition-colors"
+              className="flex items-center gap-1.5 rounded-lg border border-[#e2e8f0] hover:bg-[#f8f9ff] px-3 py-1.5 text-[12px] font-medium text-[#6b7280] transition-all"
             >
-              <Pencil className="h-3 w-3" />
+              <Pencil className="h-3.5 w-3.5" />
               Editar
             </button>
           ) : (
@@ -307,18 +304,18 @@ export function PericiaEditCard(props: Props) {
               <button
                 onClick={handleCancel}
                 disabled={isPending}
-                className="flex items-center gap-1 rounded-lg border border-slate-200 hover:bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-500 transition-colors disabled:opacity-40"
+                className="flex items-center gap-1.5 rounded-lg border border-[#e2e8f0] hover:bg-[#f8f9ff] px-3 py-1.5 text-[12px] font-medium text-[#6b7280] transition-all disabled:opacity-40"
               >
-                <X className="h-3 w-3" /> Cancelar
+                <X className="h-3.5 w-3.5" /> Cancelar
               </button>
               <button
                 onClick={handleSave}
                 disabled={isPending}
-                className="flex items-center gap-1.5 rounded-lg bg-lime-500 hover:bg-lime-600 px-3 py-1 text-[11px] font-semibold text-white transition-colors disabled:opacity-50"
+                className="flex items-center gap-1.5 rounded-lg bg-[#416900] hover:bg-[#84cc16] hover:text-[#102000] px-3.5 py-1.5 text-[12px] font-semibold text-white transition-all disabled:opacity-50"
               >
                 {isPending
-                  ? <><Loader2 className="h-3 w-3 animate-spin" /> Salvando…</>
-                  : <><Check className="h-3 w-3" /> Salvar</>
+                  ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Salvando…</>
+                  : <><Check className="h-3.5 w-3.5" /> Salvar</>
                 }
               </button>
             </>
@@ -334,7 +331,7 @@ export function PericiaEditCard(props: Props) {
       )}
 
       {/* Editable fields */}
-      <div className="divide-y divide-slate-50">
+      <div className="divide-y divide-[#f2f3f9] border-t border-[#f2f3f9]">
 
         <Field label="Título / assunto" value={display.assunto ?? form.assunto} editing={editing}>
           <input
@@ -396,30 +393,30 @@ export function PericiaEditCard(props: Props) {
 
       {/* ── Análise completa do processo (IA) ────────────────────────────────── */}
       {analise && (
-        <div className="border-t border-slate-200">
+        <div className="border-t border-[#e2e8f0]">
 
           {/* Cabeçalho da seção de análise */}
-          <div className="flex items-center gap-2 px-5 py-3.5 bg-slate-50 border-b border-slate-100">
-            <Sparkles className="h-3.5 w-3.5 text-violet-500 flex-shrink-0" />
-            <p className="text-xs font-bold text-slate-700 uppercase tracking-wider">Análise do processo — IA</p>
+          <div className="flex items-center gap-3 px-6 py-5 bg-[#f8f9ff]">
+            <Sparkles className="h-5 w-5 text-[#416900] flex-shrink-0" />
+            <p className="text-[16px] font-semibold text-[#1f2937] font-manrope tracking-tight">Análise do processo — IA</p>
           </div>
 
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-[#f2f3f9]">
 
           {/* Despacho saneador / determinação do juiz */}
           {despacho && (
-            <div className="px-5 py-4">
+            <div className="px-6 py-5">
               <button
                 onClick={() => setShowDespacho((v) => !v)}
-                className="flex w-full items-center gap-2 text-sm font-semibold text-slate-800 hover:text-slate-900 transition-colors"
+                className="flex w-full items-center gap-2.5 text-[15px] font-semibold text-[#1f2937] hover:text-[#374151] transition-colors font-manrope"
               >
-                <FileText className="h-4 w-4 text-slate-500 flex-shrink-0" />
+                <FileText className="h-5 w-5 text-[#6b7280] flex-shrink-0" strokeWidth={1.5} />
                 <span className="flex-1 text-left">Despacho do juiz / Decisão</span>
-                {showDespacho ? <ChevronUp className="h-3.5 w-3.5 text-slate-400" /> : <ChevronDown className="h-3.5 w-3.5 text-slate-400" />}
+                {showDespacho ? <ChevronUp className="h-4 w-4 text-[#9ca3af]" /> : <ChevronDown className="h-4 w-4 text-[#9ca3af]" />}
               </button>
               {showDespacho && (
-                <div className="mt-3 rounded-xl border border-violet-100 bg-violet-50 px-4 py-4">
-                  <p className="text-sm text-slate-800 leading-relaxed whitespace-pre-line">{despacho}</p>
+                <div className="mt-4 rounded-lg border border-[#e2e8f0] bg-[#f8f9ff] px-5 py-4">
+                  <p className="text-[14px] text-[#374151] leading-relaxed whitespace-pre-line font-inter">{despacho}</p>
                 </div>
               )}
             </div>
@@ -427,19 +424,19 @@ export function PericiaEditCard(props: Props) {
 
           {/* Quesitos */}
           {quesitos.length > 0 && (
-            <div className="px-5 py-4">
+            <div className="px-6 py-5">
               <button
                 onClick={() => setShowQuesitos((v) => !v)}
-                className="flex w-full items-center gap-2 text-xs font-semibold text-slate-700 hover:text-slate-900 transition-colors"
+                className="flex w-full items-center gap-2.5 text-[15px] font-semibold text-[#1f2937] hover:text-[#374151] transition-colors font-manrope"
               >
-                <Scale className="h-3.5 w-3.5 text-violet-500 flex-shrink-0" />
+                <Scale className="h-5 w-5 text-[#416900] flex-shrink-0" strokeWidth={1.5} />
                 <span className="flex-1 text-left">{quesitos.length} quesito{quesitos.length !== 1 ? 's' : ''}</span>
-                {showQuesitos ? <ChevronUp className="h-3.5 w-3.5 text-slate-400" /> : <ChevronDown className="h-3.5 w-3.5 text-slate-400" />}
+                {showQuesitos ? <ChevronUp className="h-4 w-4 text-[#9ca3af]" /> : <ChevronDown className="h-4 w-4 text-[#9ca3af]" />}
               </button>
               {showQuesitos && (
-                <ol className="mt-3 space-y-2 pl-4 list-decimal">
+                <ol className="mt-4 space-y-3 pl-5 list-decimal">
                   {quesitos.map((q, i) => (
-                    <li key={i} className="text-xs text-slate-700 leading-relaxed">{q}</li>
+                    <li key={i} className="text-[14px] text-[#374151] leading-relaxed font-inter">{q}</li>
                   ))}
                 </ol>
               )}
@@ -448,53 +445,53 @@ export function PericiaEditCard(props: Props) {
 
           {/* Honorários */}
           {(complexidade || estrategia || justificativas.length > 0 || pontoCriticos.length > 0) && (
-            <div className="px-5 py-4">
+            <div className="px-6 py-5">
               <button
                 onClick={() => setShowHonorarios((v) => !v)}
-                className="flex w-full items-center gap-2 text-xs font-semibold text-slate-700 hover:text-slate-900 transition-colors"
+                className="flex w-full items-center gap-2.5 text-[15px] font-semibold text-[#1f2937] hover:text-[#374151] transition-colors font-manrope"
               >
-                <Scale className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" />
+                <Scale className="h-5 w-5 text-[#416900] flex-shrink-0" strokeWidth={1.5} />
                 <span className="flex-1 text-left">Proposta de honorários</span>
                 {complexidade && (
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full mr-1 ${
+                  <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-md mr-1 ${
                     complexidade === 'alta' ? 'bg-rose-100 text-rose-700' :
                     complexidade === 'média' ? 'bg-amber-100 text-amber-700' :
-                    'bg-slate-100 text-slate-600'
+                    'bg-[#f2f3f9] text-[#6b7280]'
                   }`}>{complexidade}</span>
                 )}
-                {showHonorarios ? <ChevronUp className="h-3.5 w-3.5 text-slate-400" /> : <ChevronDown className="h-3.5 w-3.5 text-slate-400" />}
+                {showHonorarios ? <ChevronUp className="h-4 w-4 text-[#9ca3af]" /> : <ChevronDown className="h-4 w-4 text-[#9ca3af]" />}
               </button>
               {showHonorarios && (
-                <div className="mt-3 space-y-3">
+                <div className="mt-4 space-y-5">
                   {(objetoPericia || areaTecnica) && (
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-4">
                       {objetoPericia && (
                         <div>
-                          <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Objeto</p>
-                          <p className="text-xs text-slate-700">{objetoPericia}</p>
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af] mb-1.5 font-inter">Objeto</p>
+                          <p className="text-[14px] text-[#374151] font-inter">{objetoPericia}</p>
                         </div>
                       )}
                       {areaTecnica && (
                         <div>
-                          <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Área técnica</p>
-                          <p className="text-xs text-slate-700">{areaTecnica}</p>
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af] mb-1.5 font-inter">Área técnica</p>
+                          <p className="text-[14px] text-[#374151] font-inter">{areaTecnica}</p>
                         </div>
                       )}
                     </div>
                   )}
                   {estrategia && (
                     <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Estratégia sugerida</p>
-                      <p className="text-xs text-slate-700 leading-relaxed bg-violet-50 border border-violet-100 rounded-xl px-3 py-2">{estrategia}</p>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af] mb-2 font-inter">Estratégia sugerida</p>
+                      <p className="text-[14px] text-[#374151] leading-relaxed bg-[#f8f9ff] border border-[#e2e8f0] rounded-lg px-5 py-4 font-inter">{estrategia}</p>
                     </div>
                   )}
                   {justificativas.length > 0 && (
                     <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Justificativas para aumento</p>
-                      <ul className="space-y-1">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af] mb-2 font-inter">Justificativas para aumento</p>
+                      <ul className="space-y-2">
                         {justificativas.map((j, i) => (
-                          <li key={i} className="flex items-start gap-1.5 text-xs text-slate-700">
-                            <span className="text-emerald-500 flex-shrink-0 mt-0.5">•</span>
+                          <li key={i} className="flex items-start gap-2 text-[14px] text-[#374151] font-inter">
+                            <span className="text-[#416900] flex-shrink-0 mt-0.5">•</span>
                             {j}
                           </li>
                         ))}
@@ -503,11 +500,11 @@ export function PericiaEditCard(props: Props) {
                   )}
                   {pontoCriticos.length > 0 && (
                     <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Pontos críticos</p>
-                      <ul className="space-y-1">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af] mb-2 font-inter">Pontos críticos</p>
+                      <ul className="space-y-2">
                         {pontoCriticos.map((p, i) => (
-                          <li key={i} className="flex items-start gap-1.5 text-xs text-amber-800">
-                            <AlertCircle className="h-3 w-3 text-amber-500 flex-shrink-0 mt-0.5" />
+                          <li key={i} className="flex items-start gap-2 text-[14px] text-amber-800 font-inter">
+                            <AlertCircle className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
                             {p}
                           </li>
                         ))}
@@ -521,29 +518,29 @@ export function PericiaEditCard(props: Props) {
 
           {/* Prazos */}
           {(prazoAceite || prazoLaudo || outrosPrazos.length > 0) && (
-            <div className="px-5 py-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Clock className="h-3.5 w-3.5 text-amber-500 flex-shrink-0" />
-                <p className="text-xs font-semibold text-slate-700">Prazos</p>
+            <div className="px-6 py-5">
+              <div className="flex items-center gap-2.5 mb-4">
+                <Clock className="h-5 w-5 text-amber-500 flex-shrink-0" strokeWidth={1.5} />
+                <p className="text-[15px] font-semibold text-[#1f2937] font-manrope">Prazos</p>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-4">
                 {prazoAceite && (
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5">Aceite da nomeação</p>
-                    <p className="text-xs font-semibold text-amber-700">{prazoAceite}</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af] mb-1.5 font-inter">Aceite da nomeação</p>
+                    <p className="text-[14px] font-semibold text-amber-700 font-inter">{prazoAceite}</p>
                   </div>
                 )}
                 {prazoLaudo && (
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5">Entrega do laudo</p>
-                    <p className="text-xs font-semibold text-slate-700">{prazoLaudo}</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af] mb-1.5 font-inter">Entrega do laudo</p>
+                    <p className="text-[14px] font-semibold text-[#374151] font-inter">{prazoLaudo}</p>
                   </div>
                 )}
               </div>
               {outrosPrazos.length > 0 && (
-                <ul className="mt-2 space-y-0.5">
+                <ul className="mt-3 space-y-1.5">
                   {outrosPrazos.map((p, i) => (
-                    <li key={i} className="text-xs text-slate-600">• {p}</li>
+                    <li key={i} className="text-[14px] text-[#6b7280] font-inter">• {p}</li>
                   ))}
                 </ul>
               )}
@@ -552,51 +549,51 @@ export function PericiaEditCard(props: Props) {
 
           {/* Necessidades técnicas */}
           {(tipoVistoria || equipamentos.length > 0 || assistentes || coletaDados.length > 0) && (
-            <div className="px-5 py-4">
+            <div className="px-6 py-5">
               <button
                 onClick={() => setShowTecnico((v) => !v)}
-                className="flex w-full items-center gap-2 text-xs font-semibold text-slate-700 hover:text-slate-900 transition-colors"
+                className="flex w-full items-center gap-2.5 text-[15px] font-semibold text-[#1f2937] hover:text-[#374151] transition-colors font-manrope"
               >
-                <Wrench className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
+                <Wrench className="h-5 w-5 text-[#6b7280] flex-shrink-0" strokeWidth={1.5} />
                 <span className="flex-1 text-left">Necessidades técnicas</span>
-                {showTecnico ? <ChevronUp className="h-3.5 w-3.5 text-slate-400" /> : <ChevronDown className="h-3.5 w-3.5 text-slate-400" />}
+                {showTecnico ? <ChevronUp className="h-4 w-4 text-[#9ca3af]" /> : <ChevronDown className="h-4 w-4 text-[#9ca3af]" />}
               </button>
               {showTecnico && (
-                <div className="mt-3 space-y-2">
+                <div className="mt-4 space-y-4">
                   {tipoVistoria && (
                     <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5">Tipo de vistoria</p>
-                      <p className="text-xs text-slate-700">{tipoVistoria}</p>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af] mb-1.5 font-inter">Tipo de vistoria</p>
+                      <p className="text-[14px] text-[#374151] font-inter">{tipoVistoria}</p>
                     </div>
                   )}
                   {equipamentos.length > 0 && (
                     <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Equipamentos</p>
-                      <div className="flex flex-wrap gap-1">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af] mb-2 font-inter">Equipamentos</p>
+                      <div className="flex flex-wrap gap-2">
                         {equipamentos.map((e, i) => (
-                          <span key={i} className="text-[11px] bg-blue-50 border border-blue-100 text-blue-700 rounded-lg px-2 py-0.5">{e}</span>
+                          <span key={i} className="text-[13px] bg-[#f4fce3] border border-[#d8f5a2] text-[#416900] rounded-md px-2.5 py-1 font-inter">{e}</span>
                         ))}
                       </div>
                     </div>
                   )}
                   {assistentes && (
                     <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5">Assistentes técnicos</p>
-                      <p className="text-xs text-slate-700">{assistentes}</p>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af] mb-1.5 font-inter">Assistentes técnicos</p>
+                      <p className="text-[14px] text-[#374151] font-inter">{assistentes}</p>
                     </div>
                   )}
                   {coletaDados.length > 0 && (
                     <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Dados a coletar</p>
-                      <ul className="space-y-0.5">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af] mb-2 font-inter">Dados a coletar</p>
+                      <ul className="space-y-1.5">
                         {coletaDados.map((d, i) => (
-                          <li key={i} className="text-xs text-slate-600">• {d}</li>
+                          <li key={i} className="text-[14px] text-[#6b7280] font-inter">• {d}</li>
                         ))}
                       </ul>
                     </div>
                   )}
                   {necessitaDeslocamento && (
-                    <p className="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-2 py-1">
+                    <p className="text-[14px] text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 font-inter">
                       Necessita deslocamento{custosLogisticos ? ` — ${custosLogisticos}` : ''}
                     </p>
                   )}
@@ -607,38 +604,38 @@ export function PericiaEditCard(props: Props) {
 
           {/* Riscos */}
           {(riscosTecnicos.length > 0 || riscosJuridicos.length > 0 || infoFaltando.length > 0) && (
-            <div className="px-5 py-4">
+            <div className="px-6 py-5">
               <button
                 onClick={() => setShowRiscos((v) => !v)}
-                className="flex w-full items-center gap-2 text-xs font-semibold text-slate-700 hover:text-slate-900 transition-colors"
+                className="flex w-full items-center gap-2.5 text-[15px] font-semibold text-[#1f2937] hover:text-[#374151] transition-colors font-manrope"
               >
-                <ShieldAlert className="h-3.5 w-3.5 text-rose-500 flex-shrink-0" />
+                <ShieldAlert className="h-5 w-5 text-rose-500 flex-shrink-0" strokeWidth={1.5} />
                 <span className="flex-1 text-left">Riscos e informações faltando</span>
-                {showRiscos ? <ChevronUp className="h-3.5 w-3.5 text-slate-400" /> : <ChevronDown className="h-3.5 w-3.5 text-slate-400" />}
+                {showRiscos ? <ChevronUp className="h-4 w-4 text-[#9ca3af]" /> : <ChevronDown className="h-4 w-4 text-[#9ca3af]" />}
               </button>
               {showRiscos && (
-                <div className="mt-3 space-y-2">
+                <div className="mt-4 space-y-4">
                   {riscosTecnicos.length > 0 && (
                     <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Técnicos</p>
-                      <ul className="space-y-0.5">
-                        {riscosTecnicos.map((r, i) => <li key={i} className="text-xs text-slate-600">• {r}</li>)}
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af] mb-2 font-inter">Técnicos</p>
+                      <ul className="space-y-1.5">
+                        {riscosTecnicos.map((r, i) => <li key={i} className="text-[14px] text-[#6b7280] font-inter">• {r}</li>)}
                       </ul>
                     </div>
                   )}
                   {riscosJuridicos.length > 0 && (
                     <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Jurídicos</p>
-                      <ul className="space-y-0.5">
-                        {riscosJuridicos.map((r, i) => <li key={i} className="text-xs text-slate-600">• {r}</li>)}
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af] mb-2 font-inter">Jurídicos</p>
+                      <ul className="space-y-1.5">
+                        {riscosJuridicos.map((r, i) => <li key={i} className="text-[14px] text-[#6b7280] font-inter">• {r}</li>)}
                       </ul>
                     </div>
                   )}
                   {infoFaltando.length > 0 && (
                     <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Informações faltando</p>
-                      <ul className="space-y-0.5">
-                        {infoFaltando.map((r, i) => <li key={i} className="text-xs text-rose-700">• {r}</li>)}
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af] mb-2 font-inter">Informações faltando</p>
+                      <ul className="space-y-1.5">
+                        {infoFaltando.map((r, i) => <li key={i} className="text-[14px] text-rose-700 font-inter">• {r}</li>)}
                       </ul>
                     </div>
                   )}
@@ -649,15 +646,15 @@ export function PericiaEditCard(props: Props) {
 
           {/* Checklist */}
           {checklist.length > 0 && (
-            <div className="px-5 py-4">
-              <div className="flex items-center gap-2 mb-2">
-                <CheckSquare className="h-3.5 w-3.5 text-lime-600 flex-shrink-0" />
-                <p className="text-xs font-semibold text-slate-700">Próximos passos (IA)</p>
+            <div className="px-6 py-5">
+              <div className="flex items-center gap-2.5 mb-4">
+                <CheckSquare className="h-5 w-5 text-[#416900] flex-shrink-0" strokeWidth={1.5} />
+                <p className="text-[15px] font-semibold text-[#1f2937] font-manrope">Próximos passos (IA)</p>
               </div>
-              <ul className="space-y-1">
+              <ul className="space-y-2">
                 {checklist.map((item, i) => (
-                  <li key={i} className="flex items-start gap-1.5 text-xs text-slate-700">
-                    <span className="text-lime-500 flex-shrink-0 mt-0.5">☐</span>
+                  <li key={i} className="flex items-start gap-2 text-[14px] text-[#374151] font-inter">
+                    <span className="text-[#416900] flex-shrink-0 mt-0.5">☐</span>
                     {item}
                   </li>
                 ))}

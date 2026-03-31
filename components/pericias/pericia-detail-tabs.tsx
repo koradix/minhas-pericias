@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import {
   FileText,
   Navigation,
@@ -77,30 +78,27 @@ function RotaContent({
 
       {/* Checkpoints list */}
       {hasCheckpoints ? (
-        <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100">
-              <MapPin className="h-3.5 w-3.5 text-slate-600" />
-            </div>
-            <h2 className="text-sm font-semibold text-slate-800">Checkpoints</h2>
-            <span className="ml-auto text-[11px] font-semibold text-slate-400 bg-slate-50 border border-slate-100 rounded-full px-2 py-0.5">
+        <section className="rounded-xl border border-[#e2e8f0] bg-white">
+          <div className="flex items-center gap-3 px-6 py-5">
+            <h2 className="text-[15px] font-semibold text-[#1f2937] font-manrope">Checkpoints</h2>
+            <span className="ml-auto text-[11px] font-semibold text-[#6b7280] bg-[#f2f3f9] rounded-md px-2 py-0.5">
               {checkpoints.filter(c => c.status === 'concluido').length}/{checkpoints.length}
             </span>
           </div>
-          <div className="divide-y divide-slate-50">
+          <div className="divide-y divide-[#f2f3f9]">
             {checkpoints.map((cp) => (
-              <div key={cp.id} className="flex items-start gap-3 px-5 py-3.5">
+              <div key={cp.id} className="flex items-start gap-3 px-6 py-4">
                 {CP_STATUS_ICON[cp.status] ?? CP_STATUS_ICON.pendente}
                 <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-medium leading-snug ${cp.status === 'concluido' ? 'text-slate-400 line-through' : 'text-slate-800'}`}>
+                  <p className={`text-[14px] font-medium leading-snug ${cp.status === 'concluido' ? 'text-[#9ca3af] line-through' : 'text-[#1f2937]'}`}>
                     {cp.titulo}
                   </p>
                   {cp.endereco && (
-                    <p className="text-xs text-slate-400 mt-0.5 truncate">{cp.endereco}</p>
+                    <p className="text-[12px] text-[#9ca3af] mt-1 truncate">{cp.endereco}</p>
                   )}
                 </div>
                 {cp.midiaCount > 0 && (
-                  <span className="flex items-center gap-1 text-[11px] font-medium text-blue-600 bg-blue-50 rounded-full px-2 py-0.5 flex-shrink-0">
+                  <span className="flex items-center gap-1 text-[11px] font-medium text-[#416900] bg-[#f4fce3] rounded-md px-2 py-0.5 flex-shrink-0">
                     <Camera className="h-3 w-3" />
                     {cp.midiaCount}
                   </span>
@@ -111,19 +109,16 @@ function RotaContent({
         </section>
       ) : (
         /* Agendar vistoria — formulário simples */
-        <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-lime-50">
-              <Navigation className="h-3.5 w-3.5 text-lime-600" />
-            </div>
-            <h2 className="text-sm font-semibold text-slate-800">Agendar vistoria</h2>
+        <section className="rounded-xl border border-[#e2e8f0] bg-white">
+          <div className="flex items-center gap-3 px-6 py-5">
+            <h2 className="text-[15px] font-semibold text-[#1f2937] font-manrope">Agendar vistoria</h2>
           </div>
-          <div className="px-5 py-4 space-y-3">
-            <p className="text-xs text-slate-500">
+          <div className="px-6 pb-6 space-y-4">
+            <p className="text-[13px] text-[#6b7280]">
               Informe o endereço da vistoria para criar a rota e registrar chegadas e fotos em campo.
             </p>
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+            <div className="space-y-2">
+              <label className="text-[10px] font-semibold text-[#9ca3af] uppercase tracking-[0.1em] font-inter">
                 Endereço da vistoria
               </label>
               <input
@@ -131,12 +126,12 @@ function RotaContent({
                 value={endereco}
                 onChange={(e) => setEndereco(e.target.value)}
                 placeholder="Rua, número, bairro, cidade"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-lime-400 placeholder-slate-400"
+                className="w-full rounded-lg border border-[#e2e8f0] bg-white px-3 py-2.5 text-[14px] focus:outline-none focus:ring-2 focus:ring-[#416900]/20 focus:border-[#416900] placeholder-[#d1d5db] transition-all"
               />
             </div>
 
             {result && (
-              <p className={`text-xs rounded-xl px-3 py-2 border ${result.ok ? 'text-emerald-700 bg-emerald-50 border-emerald-100' : 'text-rose-700 bg-rose-50 border-rose-100'}`}>
+              <p className={`text-[13px] rounded-lg px-4 py-2.5 border ${result.ok ? 'text-[#416900] bg-[#f4fce3] border-[#d8f5a2]' : 'text-rose-700 bg-rose-50 border-rose-100'}`}>
                 {result.mensagem}
               </p>
             )}
@@ -144,7 +139,7 @@ function RotaContent({
             <button
               onClick={handleCriarRota}
               disabled={isPending || !endereco.trim()}
-              className="w-full flex items-center justify-center gap-2 rounded-xl bg-lime-500 hover:bg-lime-600 text-white font-semibold text-sm px-4 py-2.5 transition-colors disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 rounded-lg bg-[#416900] hover:bg-[#84cc16] hover:text-[#102000] text-white font-semibold text-[14px] px-4 py-3 transition-all disabled:opacity-50"
             >
               {isPending
                 ? <><Loader2 className="h-4 w-4 animate-spin" /> Criando rota…</>
@@ -181,15 +176,15 @@ export function PericiaDetailTabs({
   return (
     <div className="space-y-5">
       {/* Tab bar */}
-      <div className="flex gap-1 rounded-2xl bg-slate-100 p-1">
+      <div className="flex gap-1 rounded-xl bg-[#f2f3f9] p-1">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex-1 flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition-all ${
+            className={`flex-1 flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-all ${
               activeTab === tab.id
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-500 hover:text-slate-700'
+                ? 'bg-white text-[#1f2937] shadow-sm font-semibold'
+                : 'text-[#9ca3af] hover:text-[#374151]'
             }`}
           >
             {tab.icon}
@@ -216,44 +211,41 @@ export function PericiaDetailTabs({
       )}
 
       {activeTab === 'laudo' && (
-        <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-50">
-              <ScrollText className="h-3.5 w-3.5 text-violet-600" />
-            </div>
-            <h2 className="text-sm font-semibold text-slate-800">Laudo pericial</h2>
+        <section className="rounded-xl border border-[#e2e8f0] bg-white">
+          <div className="flex items-center gap-3 px-6 py-5">
+            <h2 className="text-[15px] font-semibold text-[#1f2937] font-manrope">Laudo pericial</h2>
           </div>
-          <div className="px-5 py-4 space-y-2.5">
+          <div className="px-6 pb-6 space-y-3">
             {periciaStatus === 'concluida' ? (
-              <a href="/documentos/modelos">
-                <button className="w-full flex items-center justify-center gap-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm px-4 py-2.5 transition-colors">
+              <Link href="/documentos/modelos" className="w-full">
+                <button className="w-full flex items-center justify-center gap-2 rounded-lg bg-[#416900] hover:bg-[#84cc16] hover:text-[#102000] text-white font-semibold text-[14px] px-4 py-3 transition-all">
                   <ScrollText className="h-4 w-4" />
                   Gerar laudo
                 </button>
-              </a>
+              </Link>
             ) : (
               <>
                 <button
                   disabled
-                  className="w-full flex items-center justify-between gap-2 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 text-left cursor-not-allowed"
+                  className="w-full flex items-center justify-between gap-2 rounded-lg border border-[#e2e8f0] bg-[#f8f9ff] px-4 py-3 text-left cursor-not-allowed"
                 >
                   <div className="flex items-center gap-2">
-                    <ScrollText className="h-3.5 w-3.5 text-slate-300 flex-shrink-0" />
-                    <span className="text-sm font-semibold text-slate-300">Estrutura do laudo</span>
+                    <ScrollText className="h-4 w-4 text-[#d1d5db] flex-shrink-0" />
+                    <span className="text-[14px] font-medium text-[#d1d5db]">Estrutura do laudo</span>
                   </div>
-                  <span className="text-[10px] font-semibold text-slate-300 uppercase tracking-wider">Em breve</span>
+                  <span className="text-[10px] font-semibold text-[#d1d5db] uppercase tracking-[0.1em]">Em breve</span>
                 </button>
                 <button
                   disabled
-                  className="w-full flex items-center justify-between gap-2 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 text-left cursor-not-allowed"
+                  className="w-full flex items-center justify-between gap-2 rounded-lg border border-[#e2e8f0] bg-[#f8f9ff] px-4 py-3 text-left cursor-not-allowed"
                 >
                   <div className="flex items-center gap-2">
-                    <FileText className="h-3.5 w-3.5 text-slate-300 flex-shrink-0" />
-                    <span className="text-sm font-semibold text-slate-300">Rascunho do laudo</span>
+                    <FileText className="h-4 w-4 text-[#d1d5db] flex-shrink-0" />
+                    <span className="text-[14px] font-medium text-[#d1d5db]">Rascunho do laudo</span>
                   </div>
-                  <span className="text-[10px] font-semibold text-slate-300 uppercase tracking-wider">Em breve</span>
+                  <span className="text-[10px] font-semibold text-[#d1d5db] uppercase tracking-[0.1em]">Em breve</span>
                 </button>
-                <p className="text-xs text-slate-400 pt-1">
+                <p className="text-[13px] text-[#9ca3af] pt-1">
                   Conclua a perícia para gerar o laudo.
                 </p>
               </>

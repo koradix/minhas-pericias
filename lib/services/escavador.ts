@@ -512,9 +512,12 @@ export class EscavadorService implements RadarProvider {
   // de nomeações, mas o filtro pós-busca é a fonte definitiva de filtragem.
 
   async buscarPorNome(nome: string, siglasFiltro: string[], page = 1): Promise<CitacaoResult[]> {
-    // Busca sem aspas primeiro — mais ampla, captura variações de grafia
-    // (o Escavador com aspas exige match literal, sem tolera acentuação diferente)
-    const queryTermo = `"${nome}" perito`
+    // Busca COM aspas — exige que o nome completo apareça como frase exata no documento.
+    // Isso evita falsos positivos onde partes do nome pertencem a pessoas diferentes
+    // (ex: "MARCUS FREDERICO" e "BONASSI SEMMLER" no mesmo despacho mas como advogados distintos).
+    // Não adicionamos "perito" porque não é parte do nome cadastrado pelo usuário —
+    // a relevância de nomeação é verificada depois em isSnippetNomeacao.
+    const queryTermo = `"${nome}"`
     const q = encodeURIComponent(queryTermo)
 
     // Data mínima: 1 ano atrás — garante histórico sem poluir com resultados antigos demais
@@ -556,16 +559,24 @@ export class EscavadorService implements RadarProvider {
       console.log(`[Escavador] buscarPorNome: tipos=${tipos} | siglas=${siglas || '(vazio)'}`)
     }
 
-    const filtrados = data.items.filter(
-      (item) =>
-        (semFiltro || filtroUpper.has(item.diario_sigla.toUpperCase())),
+    // Filtro 1: tribunal
+    const porTribunal = data.items.filter(
+      (item) => semFiltro || filtroUpper.has(item.diario_sigla.toUpperCase()),
     )
+
+    // Filtro 2: nome completo deve aparecer como frase contínua no snippet
+    // Remove acentos e normaliza caixa para comparar sem depender de encoding do DJE.
+    const normalize = (s: string) =>
+      s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
+    const nomeNorm = normalize(nome)
+
+    const comNome = porTribunal.filter((item) => normalize(item.texto).includes(nomeNorm))
 
     console.log(
-      `[Escavador] buscarPorNome: ${filtrados.length} de ${data.items.length} passaram pelo filtro (filtro: ${[...filtroUpper].join(',')})`,
+      `[Escavador] buscarPorNome: ${porTribunal.length} passaram pelo tribunal → ${comNome.length} com nome completo "${nome}"`,
     )
 
-    return filtrados.map((item) => ({
+    return comNome.map((item) => ({
       externalId: `busca-${item.id}`,
       diarioSigla: item.diario_sigla,
       diarioNome: item.diario_nome,

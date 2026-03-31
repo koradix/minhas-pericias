@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next"
-import { Geist, Geist_Mono, Montserrat } from "next/font/google"
+import { Geist, Geist_Mono, Montserrat, Manrope, Inter } from "next/font/google"
 import "./globals.css"
 import { SwRegister } from "@/components/shared/sw-register"
 
@@ -18,6 +18,18 @@ const montserrat = Montserrat({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800", "900"],
   style: ["normal", "italic"],
+})
+
+const manrope = Manrope({
+  variable: "--font-manrope",
+  subsets: ["latin"],
+  weight: ["500", "600", "700", "800"],
+})
+
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
 })
 
 export const metadata: Metadata = {
@@ -47,7 +59,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} ${montserrat.variable} antialiased`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} ${montserrat.variable} ${manrope.variable} ${inter.variable} antialiased`}>
         {children}
         <SwRegister />
       </body>

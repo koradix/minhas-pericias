@@ -36,38 +36,38 @@ export function DashboardBuscarNomeacoes({
     : 'Nunca'
 
   return (
-    <div className="bg-white border border-lime-200 rounded-2xl overflow-hidden">
+    <div className="bg-white border border-[#e2e8f0] rounded-xl overflow-hidden">
 
       {/* ── Header row ─────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between p-4">
+      <div className="flex items-center justify-between p-6 border-b border-[#f2f3f9]">
         <div>
-          <p className="font-medium text-sm">
+          <p className="text-[15px] font-semibold text-[#1f2937] font-manrope">
             Buscar Nomeações
             {naoLidas > 0 && (
-              <span className="ml-2 bg-amber-400 text-white text-xs px-2 py-0.5 rounded-full">
+              <span className="ml-2.5 bg-[#416900] text-white text-[11px] font-bold px-2 py-0.5 rounded-full">
                 {naoLidas} não lida(s)
               </span>
             )}
           </p>
-          <p className="text-xs text-gray-400">Última busca: {dataFormatada}</p>
+          <p className="text-[12px] text-[#9ca3af] mt-1 font-inter">Última busca: {dataFormatada}</p>
         </div>
-        <div className="text-right">
+        <div className="text-right flex flex-col items-end gap-1.5">
           <button
             onClick={handleClick}
             disabled={isPending}
-            className="bg-lime-500 hover:bg-lime-600 disabled:bg-gray-300
-                       text-white font-semibold px-5 py-2 rounded-xl text-sm"
+            className="bg-[#1f2937] hover:bg-[#374151] disabled:bg-[#d1d5db]
+                       text-white font-semibold px-5 py-2.5 rounded-lg text-[14px] font-inter transition-all"
           >
-            {isPending ? 'Buscando...' : 'Buscar Nomeações'}
+            {isPending ? 'Buscando...' : 'Buscar Agora'}
           </button>
-          <p className="text-xs text-gray-400 mt-1">R$ 3,00 por chamada</p>
+          <p className="text-[11px] text-[#9ca3af] font-inter">R$ 3,00 / chamada</p>
         </div>
       </div>
 
       {/* ── Error ──────────────────────────────────────────────────────────── */}
       {error && (
-        <div className="px-4 pb-4">
-          <p className="text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-xl px-3 py-2">
+        <div className="px-6 py-4">
+          <p className="text-[13px] text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-4 py-3 font-inter">
             {error}
           </p>
         </div>
@@ -75,29 +75,29 @@ export function DashboardBuscarNomeacoes({
 
       {/* ── Results ────────────────────────────────────────────────────────── */}
       {resultados !== null && (
-        <div className="px-4 pb-4">
+        <div className="px-6 py-6 border-t border-[#f2f3f9]">
           {resultados.length === 0 ? (
-            <p className="text-xs text-slate-500 text-center py-3 border border-dashed border-slate-200 rounded-xl">
+            <p className="text-[13px] text-[#9ca3af] text-center py-5 border border-dashed border-[#d1d5db] rounded-lg font-inter">
               Nenhuma nomeação nova nos últimos 7 dias
             </p>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-4">
               {resultados.map((r) => (
                 <div
                   key={r.id}
-                  className="flex items-start gap-3 rounded-xl border border-slate-100 p-3 hover:border-lime-200 hover:bg-lime-50/30 transition-all"
+                  className="flex items-start gap-4 rounded-lg border border-[#e2e8f0] p-4 hover:border-[#416900]/30 hover:bg-[#f4fce3]/20 transition-all font-inter"
                 >
-                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-lime-50">
-                    <FileText className="h-3.5 w-3.5 text-lime-600" />
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-[#f4fce3]">
+                    <FileText className="h-5 w-5 text-[#416900]" strokeWidth={1.5} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-slate-800 truncate">{r.titulo}</p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">{r.tribunal}</p>
-                    <p className="text-[11px] text-slate-400 mt-1 line-clamp-2">{r.snippet}</p>
+                    <p className="text-[14px] font-semibold text-[#1f2937] truncate font-manrope">{r.titulo}</p>
+                    <p className="text-[12px] text-[#6b7280] mt-1 font-inter">{r.tribunal}</p>
+                    <p className="text-[12px] text-[#9ca3af] mt-1.5 line-clamp-2 leading-relaxed font-inter">{r.snippet}</p>
                   </div>
-                  <div className="flex-shrink-0 flex flex-col items-end gap-1.5">
-                    <span className="flex items-center gap-1 text-[10px] text-slate-400">
-                      <Calendar className="h-3 w-3" />
+                  <div className="flex-shrink-0 flex flex-col items-end gap-2">
+                    <span className="flex items-center gap-1 text-[11px] text-[#9ca3af] font-inter">
+                      <Calendar className="h-3.5 w-3.5" strokeWidth={1.5} />
                       {new Date(r.data).toLocaleDateString('pt-BR')}
                     </span>
                     {r.link && (
@@ -105,10 +105,10 @@ export function DashboardBuscarNomeacoes({
                         href={r.link}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-[10px] text-lime-600 hover:underline flex items-center gap-0.5"
+                        className="text-[12px] text-[#416900] hover:text-[#325200] font-semibold flex items-center gap-1 transition-colors"
                       >
                         <ExternalLink className="h-3 w-3" />
-                        Ver
+                        Ver detalhes
                       </a>
                     )}
                   </div>

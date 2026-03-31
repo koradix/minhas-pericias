@@ -74,44 +74,40 @@ export function NomeacaoCard({ nomeacao }: Props) {
 
   return (
     <div className={cn(
-      'rounded-2xl border bg-white shadow-sm overflow-hidden transition-all',
-      isNovo      ? 'border-lime-200'     :
-      isIntake    ? 'border-violet-200'   :
-      isArquivado ? 'border-slate-100 opacity-60' :
-      isEntregue  ? 'border-emerald-200'  :
-                    'border-slate-200',
+      'rounded-xl border border-slate-200 bg-white overflow-hidden transition-all',
+      isArquivado && 'opacity-60 bg-slate-50/50'
     )}>
       {/* Header */}
       <div className="px-5 pt-4 pb-3 flex flex-wrap items-start gap-3">
         {/* Tribunal + número */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-1">
-            <span className="inline-flex items-center gap-1 rounded-md bg-slate-900 px-2 py-0.5 text-[10px] font-bold text-white">
-              <Building2 className="h-2.5 w-2.5" />
+            <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700 border border-slate-200">
+              <Building2 className="h-3 w-3 text-slate-500" />
               {processo.tribunal}
             </span>
             {scoreMatch < 100 && (
               <span className={cn(
-                'inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-semibold',
-                scoreBadgeClass(scoreMatch),
+                'inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold border',
+                scoreBadgeClass(scoreMatch).replace('border', 'border-opacity-50'),
               )}>
                 {scoreMatch}% · {scoreBadgeLabel(scoreMatch)}
               </span>
             )}
             <span className={cn(
-              'inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-medium',
-              isNovo      ? 'bg-lime-100 text-lime-700'       :
-              isIntake    ? 'bg-violet-100 text-violet-700'   :
-              isEntregue  ? 'bg-emerald-100 text-emerald-700' :
-              isArquivado ? 'bg-slate-100 text-slate-500'     :
-                            'bg-blue-100 text-blue-700',
+              'inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-bold tracking-wide',
+              isNovo      ? 'bg-[#f4fce3] text-[#416900] border border-[#d8f5a2]' :
+              isIntake    ? 'bg-violet-50 text-violet-700 border border-violet-100' :
+              isEntregue  ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
+              isArquivado ? 'bg-slate-100 text-slate-500 border border-slate-200' :
+                            'bg-blue-50 text-blue-700 border border-blue-100',
             )}>
               {STATUS_LABELS[status] ?? status}
             </span>
           </div>
-          <div className="flex items-center gap-1.5 text-xs text-slate-500">
-            <Hash className="h-3 w-3 flex-shrink-0" />
-            <span className="font-mono truncate">{processo.numeroProcesso}</span>
+          <div className="flex items-center gap-1.5 text-sm text-slate-500 mt-2">
+            <Hash className="h-3.5 w-3.5 flex-shrink-0 text-slate-400" />
+            <span className="font-mono font-medium truncate">{processo.numeroProcesso}</span>
           </div>
         </div>
 
@@ -132,15 +128,15 @@ export function NomeacaoCard({ nomeacao }: Props) {
       </div>
 
       {/* Process info */}
-      <div className="px-5 pb-3 space-y-1">
+      <div className="px-5 pb-4 space-y-1.5 mt-1">
         {processo.classe && (
-          <p className="text-sm font-semibold text-slate-800 leading-snug">{processo.classe}</p>
+          <p className="text-[15px] font-manrope font-semibold text-[#1f2937] leading-snug">{processo.classe}</p>
         )}
         {processo.assunto && (
-          <p className="text-xs text-slate-500 leading-snug">{processo.assunto}</p>
+          <p className="text-sm font-inter text-slate-600 leading-snug">{processo.assunto}</p>
         )}
         {processo.orgaoJulgador && (
-          <p className="text-xs text-slate-400">{processo.orgaoJulgador}</p>
+          <p className="text-[13px] font-inter text-slate-400">{processo.orgaoJulgador}</p>
         )}
       </div>
 
@@ -180,17 +176,17 @@ export function NomeacaoCard({ nomeacao }: Props) {
           {isIntake && (
             <>
               <Link href={`/nomeacoes/${nomeacao.id}`}>
-                <button className="flex items-center gap-1.5 rounded-xl bg-lime-500 hover:bg-lime-600 text-slate-900 font-semibold text-xs px-3 py-1.5 transition-colors">
-                  <FileText className="h-3.5 w-3.5" />
+                <button className="flex items-center gap-1.5 rounded-lg bg-white border border-[#416900] hover:bg-[#f4fce3] text-[#416900] font-semibold text-[13px] px-3.5 py-1.5 transition-colors">
+                  <FileText className="h-4 w-4" />
                   Ver análise
                 </button>
               </Link>
               <button
                 onClick={() => handleStatus('arquivado')}
                 disabled={isPending}
-                className="flex items-center gap-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-500 text-xs px-3 py-1.5 transition-colors disabled:opacity-50"
+                className="flex items-center gap-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-500 font-medium text-[13px] px-3.5 py-1.5 transition-colors disabled:opacity-50"
               >
-                <Archive className="h-3.5 w-3.5" />
+                <Archive className="h-4 w-4" />
                 Arquivar
               </button>
             </>
@@ -201,17 +197,17 @@ export function NomeacaoCard({ nomeacao }: Props) {
               <button
                 onClick={() => handleStatus('proposta')}
                 disabled={isPending}
-                className="flex items-center gap-1.5 rounded-xl bg-lime-500 hover:bg-lime-600 text-slate-900 font-semibold text-xs px-3 py-1.5 transition-colors disabled:opacity-50"
+                className="flex items-center gap-1.5 rounded-lg bg-[#416900] hover:bg-[#84cc16] hover:text-[#102000] text-white font-semibold text-[13px] px-3.5 py-1.5 transition-colors disabled:opacity-50"
               >
-                <FileText className="h-3.5 w-3.5" />
+                <FileText className="h-4 w-4" />
                 Aceitar e gerar proposta
               </button>
               <button
                 onClick={() => handleStatus('arquivado')}
                 disabled={isPending}
-                className="flex items-center gap-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-500 text-xs px-3 py-1.5 transition-colors disabled:opacity-50"
+                className="flex items-center gap-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-500 font-medium text-[13px] px-3.5 py-1.5 transition-colors disabled:opacity-50"
               >
-                <Archive className="h-3.5 w-3.5" />
+                <Archive className="h-4 w-4" />
                 Arquivar
               </button>
             </>
@@ -220,17 +216,17 @@ export function NomeacaoCard({ nomeacao }: Props) {
           {status === 'proposta' && (
             <>
               <Link href="/pericias">
-                <button className="flex items-center gap-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 font-medium text-xs px-3 py-1.5 transition-colors">
-                  <FileText className="h-3.5 w-3.5" />
+                <button className="flex items-center gap-1.5 rounded-lg bg-white border border-[#416900] hover:bg-[#f4fce3] text-[#416900] font-semibold text-[13px] px-3.5 py-1.5 transition-colors">
+                  <FileText className="h-4 w-4" />
                   Ver proposta
                 </button>
               </Link>
               <button
                 onClick={() => handleStatus('em_andamento')}
                 disabled={isPending}
-                className="flex items-center gap-1.5 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-semibold text-xs px-3 py-1.5 transition-colors disabled:opacity-50"
+                className="flex items-center gap-1.5 rounded-lg bg-[#416900] hover:bg-[#84cc16] hover:text-[#102000] text-white font-semibold text-[13px] px-3.5 py-1.5 transition-colors disabled:opacity-50"
               >
-                <Play className="h-3.5 w-3.5" />
+                <Play className="h-4 w-4" />
                 Iniciar perícia
               </button>
             </>
@@ -239,17 +235,17 @@ export function NomeacaoCard({ nomeacao }: Props) {
           {status === 'em_andamento' && (
             <>
               <Link href="/pericias">
-                <button className="flex items-center gap-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 font-medium text-xs px-3 py-1.5 transition-colors">
-                  <Play className="h-3.5 w-3.5" />
+                <button className="flex items-center gap-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 font-medium text-[13px] px-3.5 py-1.5 transition-colors">
+                  <Play className="h-4 w-4" />
                   Ver perícia
                 </button>
               </Link>
               <button
                 onClick={() => handleStatus('laudo')}
                 disabled={isPending}
-                className="flex items-center gap-1.5 rounded-xl bg-violet-500 hover:bg-violet-600 text-white font-semibold text-xs px-3 py-1.5 transition-colors disabled:opacity-50"
+                className="flex items-center gap-1.5 rounded-lg bg-[#416900] hover:bg-[#84cc16] hover:text-[#102000] text-white font-semibold text-[13px] px-3.5 py-1.5 transition-colors disabled:opacity-50"
               >
-                <ScrollText className="h-3.5 w-3.5" />
+                <ScrollText className="h-4 w-4" />
                 Registrar laudo
               </button>
             </>
@@ -259,9 +255,9 @@ export function NomeacaoCard({ nomeacao }: Props) {
             <button
               onClick={() => handleStatus('entregue')}
               disabled={isPending}
-              className="flex items-center gap-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-xs px-3 py-1.5 transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-lg bg-[#1f2937] hover:bg-[#374151] text-white font-semibold text-[13px] px-3.5 py-1.5 transition-colors disabled:opacity-50"
             >
-              <PackageCheck className="h-3.5 w-3.5" />
+              <PackageCheck className="h-4 w-4" />
               Marcar como entregue
             </button>
           )}

@@ -118,7 +118,7 @@ export function PropostasClient({ propostas }: { propostas: Proposta[] }) {
 
                   {p.mensagem && (
                     <p className="mt-2 text-xs text-slate-500 leading-relaxed line-clamp-2 italic">
-                      "{p.mensagem}"
+                      &quot;{p.mensagem}&quot;
                     </p>
                   )}
 

@@ -13,6 +13,19 @@ function isSnippetNomeacao(snippet: string): boolean {
   )
 }
 
+// ─── Filtro de nome completo ─────────────────────────────────────────────────
+// Remove acentos e normaliza caixa para comparar sem depender de encoding do DJE.
+// Exige que o nome completo apareça como frase contínua no snippet.
+
+function normalize(s: string): string {
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
+}
+
+function snippetContemNomeCompleto(snippet: string, nomeCompleto: string): boolean {
+  if (!nomeCompleto.trim()) return true // sem nome cadastrado, aceita tudo
+  return normalize(snippet).includes(normalize(nomeCompleto))
+}
+
 // ─── Shared persistence — usada pelo botão e pelos crons ─────────────────────
 
 export async function persistirCitacoes(
@@ -28,7 +41,13 @@ export async function persistirCitacoes(
     return true
   })
 
-  const relevantes = unicas.filter((c) => isSnippetNomeacao(c.snippet))
+  // Busca nome completo do perito para filtrar por frase exata
+  const user = await prisma.user.findUnique({ where: { id: peritoId }, select: { name: true } })
+  const nomeCompleto = user?.name?.trim() ?? ''
+
+  const relevantes = unicas.filter((c) =>
+    isSnippetNomeacao(c.snippet) && snippetContemNomeCompleto(c.snippet, nomeCompleto),
+  )
 
   // Lookup de varas para linking
   const varasBySigla = await prisma.tribunalVara.findMany({
