@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { upload } from '@vercel/blob/client'
 import {
   Paperclip,
   Upload,
@@ -39,6 +40,7 @@ export function NomeacaoDocumentosSection({
   const [nomeArquivo, setNomeArquivo] = useState(initial)
   const [tamanho, setTamanho] = useState(initialBytes ?? null)
   const [fase, setFase] = useState<UploadFase>('idle')
+  const [progresso, setProgresso] = useState(0)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   const isPending = fase === 'enviando' || fase === 'analisando'
@@ -46,55 +48,72 @@ export function NomeacaoDocumentosSection({
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    // reset input so same file can be re-selected
     e.target.value = ''
     setErrorMsg(null)
+    setProgresso(0)
 
-    const DIRECT_LIMIT = 4 * 1024 * 1024
-
-    if (file.size > DIRECT_LIMIT) {
-      setErrorMsg(`Arquivo muito grande para upload direto (${formatBytes(file.size)}). Máximo 4 MB via upload manual. Para PDFs maiores, baixe o arquivo e tente novamente com um PDF menor.`)
+    const allowed = [
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ]
+    if (!allowed.includes(file.type)) {
+      setErrorMsg('Apenas PDF ou DOCX são aceitos.')
       return
     }
 
+    // ── 1. Upload direto para Vercel Blob (sem passar pelo serverless) ─────────
     setFase('enviando')
-    const fd = new FormData()
-    fd.append('file', file)
-    fd.append('tribunal', tribunal)
-    fd.append('numero', numeroProcesso)
+    let blobUrl: string
+    try {
+      const blob = await upload(file.name, file, {
+        access: 'public',
+        handleUploadUrl: '/api/nomeacoes/blob-upload',
+        onUploadProgress: ({ percentage }) => setProgresso(Math.round(percentage)),
+      })
+      blobUrl = blob.url
+    } catch (err) {
+      setFase('erro')
+      setErrorMsg(err instanceof Error ? err.message : 'Erro ao enviar arquivo.')
+      return
+    }
 
+    // ── 2. Análise IA (servidor baixa do Blob, processa, deleta) ──────────────
+    setFase('analisando')
     let res: Response
     try {
-      res = await fetch('/api/nomeacoes/upload', { method: 'POST', body: fd })
+      res = await fetch('/api/nomeacoes/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          blobUrl,
+          fileName: file.name,
+          fileSize: file.size,
+          mimeType: file.type,
+          tribunal,
+          numero: numeroProcesso || null,
+        }),
+      })
     } catch {
       setFase('erro')
       setErrorMsg('Erro de conexão. Verifique sua internet e tente novamente.')
       return
     }
 
-    if (!res.ok && res.status !== 200) {
-      setFase('erro')
-      const data = await res.json().catch(() => ({})) as { message?: string }
-      setErrorMsg(data.message ?? `Erro HTTP ${res.status}`)
-      return
-    }
-
-    setFase('analisando')
-    const data = await res.json() as { ok: boolean; message?: string }
-    if (data.ok) {
+    const data = await res.json().catch(() => ({})) as { ok?: boolean; message?: string }
+    if (res.ok && data.ok) {
       setNomeArquivo(file.name)
       setTamanho(file.size)
       setFase('ok')
       router.refresh()
     } else {
       setFase('erro')
-      setErrorMsg(data.message ?? 'Erro ao processar documento.')
+      setErrorMsg(data.message ?? `Erro HTTP ${res.status}`)
     }
   }
 
   const faseLabel =
-    fase === 'enviando'   ? 'Enviando…'     :
-    fase === 'analisando' ? 'Analisando com IA…' :
+    fase === 'enviando'   ? `Enviando… ${progresso}%` :
+    fase === 'analisando' ? 'Analisando com IA…'       :
     nomeArquivo ? 'Substituir' : 'Adicionar documento'
 
   return (
@@ -112,7 +131,7 @@ export function NomeacaoDocumentosSection({
           disabled={isPending}
           className="flex items-center gap-1.5 rounded-xl bg-slate-900 hover:bg-slate-700 text-white font-semibold text-xs px-3 py-1.5 transition-colors disabled:opacity-50"
         >
-          {fase === 'enviando' || fase === 'analisando'
+          {isPending
             ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
             : <Upload className="h-3.5 w-3.5" />
           }
@@ -136,7 +155,23 @@ export function NomeacaoDocumentosSection({
           </p>
         )}
 
-        {/* Analyzing progress */}
+        {/* Enviando: barra de progresso */}
+        {fase === 'enviando' && (
+          <div className="mb-3 rounded-xl bg-slate-50 border border-slate-100 px-3 py-2.5">
+            <div className="flex justify-between text-xs text-slate-500 mb-1.5">
+              <span>Enviando arquivo…</span>
+              <span>{progresso}%</span>
+            </div>
+            <div className="h-1.5 w-full rounded-full bg-slate-200 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-lime-500 transition-all duration-200"
+                style={{ width: `${progresso}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Analisando */}
         {fase === 'analisando' && (
           <div className="mb-3 flex items-center gap-2 rounded-xl bg-violet-50 border border-violet-100 px-3 py-2.5">
             <Sparkles className="h-3.5 w-3.5 text-violet-500 animate-pulse flex-shrink-0" />
@@ -176,7 +211,7 @@ export function NomeacaoDocumentosSection({
             </div>
             <div className="text-center">
               <p className="text-sm font-semibold text-slate-600">Clique para enviar</p>
-              <p className="text-xs text-slate-400 mt-0.5">PDF ou DOCX · máx 4 MB · análise IA automática</p>
+              <p className="text-xs text-slate-400 mt-0.5">PDF ou DOCX · sem limite de tamanho · análise IA automática</p>
             </div>
           </button>
         )}
