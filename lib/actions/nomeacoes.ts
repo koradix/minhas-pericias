@@ -567,3 +567,123 @@ export async function criarCitacaoManual(data: ManualCitacaoInput): Promise<{ ok
     return { ok: false, error: err instanceof Error ? err.message : 'Erro desconhecido' }
   }
 }
+
+// ─── Action 6 — Busca em tribunais via Escavador v2 /envolvido/processos ────
+// Usa CPF como identificador principal (obrigatório) para evitar homônimos.
+// Percorre todas as páginas da resposta e persiste como NomeacaoCitacao.
+
+export type BuscarTribunaisResult =
+  | { ok: true; novas: number; totalEncontrados: number; saldoRestante: number }
+  | { ok: false; novas: 0; error: string }
+
+export async function buscarProcessosTribunais(): Promise<BuscarTribunaisResult> {
+  const session = await auth()
+  const userId = session?.user?.id
+  if (!userId) return { ok: false, novas: 0, error: 'Não autenticado' }
+
+  // CPF é obrigatório para essa busca
+  const peritoPerfil = await prisma.peritoPerfil.findUnique({
+    where: { userId },
+    select: { cpf: true },
+  })
+  const cpfDigits = peritoPerfil?.cpf?.replace(/\D/g, '') ?? ''
+  if (cpfDigits.length !== 11) {
+    return { ok: false, novas: 0, error: 'CPF não cadastrado no perfil. Acesse Perfil e preencha o CPF para usar esta busca.' }
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { name: true } })
+  const nome = user?.name?.trim() ?? ''
+  if (!nome) return { ok: false, novas: 0, error: 'Nome não cadastrado' }
+
+  const svc = new EscavadorService()
+
+  // Verifica saldo antes
+  const saldoInfo = await svc.verificarSaldo()
+  if (saldoInfo.saldo === 0) return { ok: false, novas: 0, error: 'Saldo insuficiente na API Escavador' }
+
+  const todasCitacoes: import('@/lib/services/radar-provider').CitacaoResult[] = []
+
+  try {
+    // Página 1
+    const { citacoes: pg1, totalPages } = await svc.buscarProcessosEnvolvido(nome, cpfDigits, 1)
+    todasCitacoes.push(...pg1)
+
+    // Páginas adicionais (max 5 para não gastar créditos demais)
+    const maxPaginas = Math.min(totalPages, 5)
+    for (let pg = 2; pg <= maxPaginas; pg++) {
+      const { citacoes } = await svc.buscarProcessosEnvolvido(nome, cpfDigits, pg)
+      todasCitacoes.push(...citacoes)
+    }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error('[buscarProcessosTribunais] erro:', msg)
+    return { ok: false, novas: 0, error: msg }
+  }
+
+  // Persiste — sem filtro isSnippetNomeacao pois o v2 já filtrou por tipo=PERITO
+  const seen = new Set<string>()
+  const unicas = todasCitacoes.filter((c) => {
+    if (seen.has(c.externalId)) return false
+    seen.add(c.externalId)
+    return true
+  })
+
+  const varasBySigla = await prisma.tribunalVara.findMany({
+    where: { peritoId: userId, ativa: true },
+    select: { id: true, tribunalSigla: true, varaNome: true },
+  })
+  const varaIdMap = new Map(varasBySigla.map((v) => [v.tribunalSigla.toUpperCase(), v.id]))
+
+  let novas = 0
+  for (const c of unicas) {
+    const exists = await prisma.nomeacaoCitacao.findUnique({
+      where: { peritoId_externalId: { peritoId: userId, externalId: c.externalId } },
+      select: { id: true },
+    })
+    if (exists) continue
+
+    const tribunalVaraId = varaIdMap.get(c.diarioSigla.toUpperCase()) ?? null
+    try {
+      await prisma.nomeacaoCitacao.create({
+        data: {
+          peritoId:      userId,
+          externalId:    c.externalId,
+          diarioSigla:   c.diarioSigla,
+          diarioNome:    c.diarioNome,
+          diarioData:    new Date(c.diarioData),
+          snippet:       c.snippet,
+          numeroProcesso: c.numeroProcesso ?? null,
+          linkCitacao:   c.linkCitacao,
+          fonte:         'v2_tribunal',
+          tribunalVaraId,
+        },
+      })
+      if (tribunalVaraId) {
+        await prisma.tribunalVara.update({
+          where: { id: tribunalVaraId },
+          data: { totalNomeacoes: { increment: 1 } },
+        })
+      }
+      novas++
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : ''
+      if (!msg.includes('Unique constraint')) console.error('[buscarTribunais] erro create:', err)
+    }
+  }
+
+  const saldoPos = await svc.verificarSaldo()
+  await prisma.radarConfig.updateMany({
+    where: { peritoId: userId },
+    data: { saldoUltimaVerif: saldoPos.saldo, ultimaBusca: new Date() },
+  })
+
+  revalidatePath('/nomeacoes')
+  revalidatePath('/dashboard')
+
+  return {
+    ok: true,
+    novas,
+    totalEncontrados: unicas.length,
+    saldoRestante: saldoPos.saldo,
+  }
+}

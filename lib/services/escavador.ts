@@ -128,10 +128,38 @@ for (const [uf, tribunais] of Object.entries(TRIBUNAIS_POR_ESTADO)) {
 let cachedOrigens: EscavadorOrigem[] | null = null
 let cachedTribunalCapabilities: TribunalCapability[] | null = null
 
+// ─── v2 response shapes ───────────────────────────────────────────────────────
+
+export interface EscavadorEnvolvidoItem {
+  id: number
+  numero_cnj: string | null
+  titulo_polo_ativo: string | null
+  titulo_polo_passivo: string | null
+  data_inicio: string | null
+  data_ultima_movimentacao: string | null
+  tribunal: string | null
+  orgao_julgador: string | null
+  envolvidos: Array<{
+    nome: string
+    tipo: string | null
+    tipo_normalizado: string | null
+    polo: string | null
+  }>
+}
+
+interface EscavadorEnvolvidoResponse {
+  resposta: {
+    envolvido_encontrado: { nome: string; quantidade_processos: number } | null
+    items: EscavadorEnvolvidoItem[]
+    paginator: { total: number; current_page: number; total_pages: number }
+  }
+}
+
 // ─── Service ──────────────────────────────────────────────────────────────────
 
 export class EscavadorService implements RadarProvider {
-  private readonly baseUrl = 'https://api.escavador.com/api/v1'
+  private readonly baseUrl   = 'https://api.escavador.com/api/v1'
+  private readonly baseUrlV2 = 'https://api.escavador.com/api/v2'
 
   constructor() {
     if (!process.env.ESCAVADOR_API_TOKEN) {
@@ -503,6 +531,109 @@ export class EscavadorService implements RadarProvider {
 
     const ab = await res.arrayBuffer()
     return Buffer.from(ab)
+  }
+
+  // ── ENDPOINT v2 — Busca processos por envolvido (nome + CPF) ────────────────
+  //
+  // Escavador v2 /api/v2/envolvido/processos
+  // Cobre 440 sistemas de tribunais (não só Diários Oficiais).
+  // Quando CPF é fornecido, é usado como identificador único — elimina ambiguidades de homônimos.
+  // Retorna processos onde a pessoa é envolvida; filtramos por tipo "PERITO".
+
+  async buscarProcessosEnvolvido(
+    nome: string,
+    cpf: string | null,
+    page = 1,
+  ): Promise<{ citacoes: CitacaoResult[]; totalProcessos: number; totalPages: number }> {
+    // Monta query string
+    const params = new URLSearchParams()
+    if (cpf) {
+      params.set('cpf', cpf.replace(/\D/g, '')) // só dígitos
+    } else {
+      params.set('nome', nome)
+    }
+    params.set('page', String(page))
+    params.set('limit', '50')
+    params.set('ordena_por', 'data_ultima_movimentacao')
+    params.set('ordem', 'desc')
+
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 20_000)
+
+    let res: Response
+    try {
+      res = await fetch(`${this.baseUrlV2}/envolvido/processos?${params.toString()}`, {
+        headers: this.headers(),
+        cache: 'no-store',
+        signal: controller.signal,
+      })
+    } catch (err) {
+      clearTimeout(timer)
+      if ((err as Error)?.name === 'AbortError') throw new EscavadorError(408, 'Timeout v2/envolvido')
+      throw err
+    }
+    clearTimeout(timer)
+
+    if (res.status === 402) throw new EscavadorError(402, 'Saldo insuficiente')
+    if (!res.ok) {
+      const body = await res.text().catch(() => '')
+      throw new EscavadorError(500, `v2/envolvido erro ${res.status}: ${body.slice(0, 200)}`)
+    }
+
+    const data = await res.json() as EscavadorEnvolvidoResponse
+    const items = data?.resposta?.items ?? []
+    const total = data?.resposta?.paginator?.total ?? 0
+    const totalPages = data?.resposta?.paginator?.total_pages ?? 1
+
+    console.log(
+      `[Escavador v2] envolvido/processos: ${total} total, página ${page}/${totalPages}, ${items.length} itens`,
+    )
+
+    // Normaliza nome para comparação
+    const norm = (s: string) =>
+      s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
+    const nomeNorm = norm(nome)
+
+    const citacoes: CitacaoResult[] = []
+
+    for (const item of items) {
+      if (!item.numero_cnj) continue
+
+      // Verifica se o perito está como "PERITO" nos envolvidos
+      const envolvidos = item.envolvidos ?? []
+      const ehPerito = envolvidos.some((e) => {
+        const tipoNorm = (e.tipo_normalizado ?? e.tipo ?? '').toLowerCase()
+        const nomeEnv = norm(e.nome ?? '')
+        const matchNome = cpf ? true : nomeEnv.includes(nomeNorm) || nomeNorm.includes(nomeEnv)
+        return tipoNorm.includes('perit') && matchNome
+      })
+
+      if (!ehPerito) continue
+
+      // Constrói snippet informativo (inclui "perito" para passar filtro isSnippetNomeacao)
+      const partes = [item.titulo_polo_ativo, item.titulo_polo_passivo].filter(Boolean).join(' × ')
+      const orgao = item.orgao_julgador ?? item.tribunal ?? ''
+      const snippet = [
+        `Perito nomeado no processo ${item.numero_cnj}`,
+        orgao ? `| ${orgao}` : '',
+        partes ? `| ${partes}` : '',
+      ].filter(Boolean).join(' ')
+
+      const data_ref = item.data_ultima_movimentacao ?? item.data_inicio ?? new Date().toISOString().split('T')[0]
+      const dataFormatada = data_ref.split('T')[0] // garante YYYY-MM-DD
+
+      citacoes.push({
+        externalId: `v2p-${item.id}`,
+        diarioSigla: item.tribunal ?? 'OUTROS',
+        diarioNome: item.orgao_julgador ?? item.tribunal ?? 'Tribunal',
+        diarioData: dataFormatada,
+        snippet,
+        numeroProcesso: item.numero_cnj,
+        linkCitacao: `https://www.escavador.com/processos/${item.id}`,
+      })
+    }
+
+    return { citacoes, totalProcessos: total, totalPages }
   }
 
   // ── ENDPOINT 9 — Busca por nome em diários (PAGO) ──────────────────────────

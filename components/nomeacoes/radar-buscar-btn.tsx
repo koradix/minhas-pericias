@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Search, Loader2, CheckCircle2, AlertCircle, Plus } from 'lucide-react'
+import { Search, Loader2, CheckCircle2, AlertCircle, Plus, Building2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { buscarNomeacoes, setupRadar } from '@/lib/actions/nomeacoes'
+import { buscarNomeacoes, buscarProcessosTribunais, setupRadar } from '@/lib/actions/nomeacoes'
 import { ManualCitacaoForm } from './manual-citacao-form'
 
 interface Props {
@@ -15,7 +15,7 @@ interface Props {
 type BuscarState =
   | { fase: 'idle' }
   | { fase: 'buscando' }
-  | { fase: 'ok'; novas: number; saldo: number; totalEncontrados: number }
+  | { fase: 'ok'; novas: number; saldo: number; totalEncontrados: number; fonte: 'diario' | 'tribunal' }
   | { fase: 'erro'; mensagem: string }
 
 export function RadarBuscarBtn({ radarConfigurado, siglas }: Props) {
@@ -37,19 +37,36 @@ export function RadarBuscarBtn({ radarConfigurado, siglas }: Props) {
               setBuscarState({ fase: 'erro', mensagem: setupRes.message })
               return
             }
-            console.log('[setupRadar] monitoramento indisponível — continuando com busca ativa')
           }
         }
 
         const res = await buscarNomeacoes()
         if (res.ok) {
-          setBuscarState({ fase: 'ok', novas: res.novas, saldo: res.saldoRestante, totalEncontrados: res.totalEncontrados })
-          setTimeout(() => setBuscarState({ fase: 'idle' }), 5000)
+          setBuscarState({ fase: 'ok', novas: res.novas, saldo: res.saldoRestante, totalEncontrados: res.totalEncontrados, fonte: 'diario' })
+          setTimeout(() => setBuscarState({ fase: 'idle' }), 6000)
         } else {
           setBuscarState({ fase: 'erro', mensagem: res.error })
         }
       } catch (err) {
         console.error('[buscar] erro:', err)
+        setBuscarState({ fase: 'erro', mensagem: 'Erro de conexão. Tente novamente.' })
+      }
+    })
+  }
+
+  function handleBuscarTribunais() {
+    setBuscarState({ fase: 'buscando' })
+    startTransition(async () => {
+      try {
+        const res = await buscarProcessosTribunais()
+        if (res.ok) {
+          setBuscarState({ fase: 'ok', novas: res.novas, saldo: res.saldoRestante, totalEncontrados: res.totalEncontrados, fonte: 'tribunal' })
+          setTimeout(() => setBuscarState({ fase: 'idle' }), 6000)
+        } else {
+          setBuscarState({ fase: 'erro', mensagem: res.error })
+        }
+      } catch (err) {
+        console.error('[buscarTribunais] erro:', err)
         setBuscarState({ fase: 'erro', mensagem: 'Erro de conexão. Tente novamente.' })
       }
     })
@@ -68,7 +85,20 @@ export function RadarBuscarBtn({ radarConfigurado, siglas }: Props) {
         >
           {isBusy
             ? <><Loader2 className="h-4 w-4 animate-spin" /> Buscando…</>
-            : <><Search className="h-4 w-4" /> Buscar nomeações</>
+            : <><Search className="h-4 w-4" /> Buscar no DJe</>
+          }
+        </Button>
+
+        <Button
+          onClick={handleBuscarTribunais}
+          disabled={isBusy}
+          variant="outline"
+          className="border-slate-300 text-[#1f2937] hover:bg-slate-50 font-manrope font-semibold text-[14px] px-6 py-5 rounded-xl gap-2 shadow-none transition-all"
+          title="Busca por CPF em 440 sistemas de tribunais (além do Diário Oficial)"
+        >
+          {isBusy
+            ? <><Loader2 className="h-4 w-4 animate-spin" /> Buscando…</>
+            : <><Building2 className="h-4 w-4" /> Buscar em tribunais</>
           }
         </Button>
 
@@ -95,7 +125,7 @@ export function RadarBuscarBtn({ radarConfigurado, siglas }: Props) {
             <p className="text-sm font-semibold text-lime-800 flex-1">
               {buscarState.novas > 0
                 ? `${buscarState.novas} nova${buscarState.novas > 1 ? 's' : ''} salva${buscarState.novas > 1 ? 's' : ''}!`
-                : 'Busca concluída — nenhuma nova citação.'
+                : 'Busca concluída — nenhuma nova encontrada.'
               }
             </p>
             {buscarState.saldo > 0 && (
@@ -106,20 +136,28 @@ export function RadarBuscarBtn({ radarConfigurado, siglas }: Props) {
           </div>
           {buscarState.totalEncontrados === 0 && (
             <p className="text-xs text-lime-700 pl-6">
-              A API não retornou citações para esse nome nos tribunais cadastrados.
+              {buscarState.fonte === 'tribunal'
+                ? 'CPF não encontrado como perito em nenhum processo nos tribunais.'
+                : 'A API não retornou citações para esse nome nos tribunais cadastrados.'
+              }
             </p>
           )}
           {buscarState.totalEncontrados > 0 && buscarState.novas === 0 && (
             <p className="text-xs text-lime-700 pl-6">
-              {buscarState.totalEncontrados} citaç{buscarState.totalEncontrados > 1 ? 'ões encontradas' : 'ão encontrada'} — todas já estavam salvas.
+              {buscarState.totalEncontrados} processo{buscarState.totalEncontrados > 1 ? 's encontrados' : ' encontrado'} — {buscarState.totalEncontrados > 1 ? 'todos já estavam salvos' : 'já estava salvo'}.
+            </p>
+          )}
+          {buscarState.totalEncontrados > 0 && buscarState.novas > 0 && (
+            <p className="text-xs text-lime-700 pl-6">
+              {buscarState.totalEncontrados} processo{buscarState.totalEncontrados > 1 ? 's' : ''} encontrado{buscarState.totalEncontrados > 1 ? 's' : ''} nos tribunais.
             </p>
           )}
         </div>
       )}
 
       {buscarState.fase === 'erro' && (
-        <div className="flex items-center gap-2.5 rounded-xl bg-rose-50 border border-rose-200 px-4 py-3 animate-in fade-in slide-in-from-top-2 duration-300">
-          <AlertCircle className="h-4 w-4 text-rose-500 flex-shrink-0" />
+        <div className="flex items-start gap-2.5 rounded-xl bg-rose-50 border border-rose-200 px-4 py-3 animate-in fade-in slide-in-from-top-2 duration-300">
+          <AlertCircle className="h-4 w-4 text-rose-500 flex-shrink-0 mt-0.5" />
           <p className="text-sm font-semibold text-rose-700 leading-tight">{buscarState.mensagem}</p>
         </div>
       )}
