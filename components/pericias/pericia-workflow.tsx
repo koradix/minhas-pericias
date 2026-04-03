@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import { upload } from '@vercel/blob/client'
 import { atualizarDadosPericia } from '@/lib/actions/pericias-update'
 import {
   ExternalLink,
@@ -170,93 +171,32 @@ export function PericiaWorkflow({
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-
-    if (file.size > 50 * 1024 * 1024) {
-      setUploadState({ fase: 'erro', mensagem: 'Arquivo muito grande (máx. 50 MB).' })
-      if (fileRef.current) fileRef.current.value = ''
-      return
-    }
+    if (fileRef.current) fileRef.current.value = ''
 
     setUploadState({ fase: 'uploading', progresso: 'Enviando arquivo…' })
 
-    // ── Arquivos ≤ 4 MB: envia FormData direto (sem passar pelo Blob CDN) ─────
-    const DIRECT_LIMIT = 4 * 1024 * 1024
-    if (file.size <= DIRECT_LIMIT) {
-      try {
-        const formData = new FormData()
-        formData.append('file', file)
-        formData.append('tribunal', tribunalSigla)
-        if (processoNumero) formData.append('numero', processoNumero)
-        formData.append('periciaId', periciaId)
-
-        setUploadState({ fase: 'uploading', progresso: 'Analisando com IA…' })
-        const res = await fetch('/api/nomeacoes/upload', { method: 'POST', body: formData })
-        const json = await res.json() as { ok: boolean; message?: string; nomeacaoId?: string; preview?: AnaliseIA }
-
-        if (!json.ok) {
-          const raw = json.message ?? 'Erro ao processar documento'
-          setUploadState({ fase: 'erro', mensagem: raw.length > 200 ? raw.substring(0, 200) + '…' : raw })
-          return
-        }
-
-        const preview = json.preview ?? {}
-        setUploadState({ fase: 'ok', nomeacaoId: json.nomeacaoId ?? '', analise: preview })
-
-        const partes = [preview.autor, preview.reu].filter(Boolean).join(' × ') || undefined
-        const vara   = preview.vara ?? undefined
-        const previewAny = preview as Record<string, unknown>
-        const end    = (previewAny.enderecoVistoria as string | null) ?? (previewAny.endereco as string | null) ?? undefined
-        await atualizarDadosPericia(periciaId, {
-          ...(partes ? { partes } : {}),
-          ...(vara   ? { vara   } : {}),
-          ...(end    ? { endereco: end } : {}),
-        })
-        router.refresh()
-      } catch {
-        setUploadState({ fase: 'erro', mensagem: 'Erro de conexão. Tente novamente.' })
-      }
+    // ── Upload direto browser → Vercel Blob (sem limite de tamanho) ──────────
+    let blobUrl: string
+    try {
+      const blob = await upload(file.name, file, {
+        access: 'public',
+        handleUploadUrl: '/api/nomeacoes/blob-upload',
+        onUploadProgress: ({ percentage }) => {
+          setUploadState({ fase: 'uploading', progresso: `Enviando… ${Math.round(percentage)}%` })
+        },
+      })
+      blobUrl = blob.url
+    } catch (err) {
+      setUploadState({
+        fase: 'erro',
+        mensagem: err instanceof Error ? err.message : 'Erro ao enviar arquivo. Tente novamente.',
+      })
       return
     }
 
-    // ── Arquivos > 4 MB: upload direto ao Vercel Blob CDN (não passa pela função) ─
-    try {
-      // 1. Pede token ao servidor
-      const tokenRes = await fetch('/api/nomeacoes/blob-upload', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'blob.generate-client-token',
-          payload: { pathname: `pericias/${periciaId}/${Date.now()}_${file.name}`, callbackUrl: '', multipart: false },
-        }),
-      })
-      if (!tokenRes.ok) throw new Error('Falha ao obter token de upload')
-      const { clientToken } = await tokenRes.json() as { clientToken: string }
-
-      // 2. Envia o arquivo diretamente ao Vercel Blob com o token
-      const putRes = await fetch(
-        `https://vercel.com/api/blob/?clientToken=${encodeURIComponent(clientToken)}`,
-        { method: 'PUT', body: file, headers: { 'content-type': file.type } },
-      )
-      if (!putRes.ok) {
-        throw new TypeError('CORS_OR_NETWORK')
-      }
-      const { url: blobUrl } = await putRes.json() as { url: string }
-
-      // 3. Processa via API (recebe só a URL, sem limite de tamanho)
-      setUploadState({ fase: 'uploading', progresso: 'Analisando com IA…' })
-      await sendToApi(blobUrl, file)
-
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : ''
-      if (msg === 'CORS_OR_NETWORK' || err instanceof TypeError) {
-        setUploadState({
-          fase: 'erro',
-          mensagem: 'Erro de CORS no upload. Acesse perilab.vercel.app (domínio de produção) e tente novamente.',
-        })
-      } else {
-        setUploadState({ fase: 'erro', mensagem: 'Erro ao enviar arquivo. Tente novamente.' })
-      }
-    }
+    // ── IA: servidor baixa do Blob, analisa, deleta ───────────────────────────
+    setUploadState({ fase: 'uploading', progresso: 'Analisando com IA…' })
+    await sendToApi(blobUrl, file)
   }
 
   const steps = [
