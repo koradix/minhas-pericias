@@ -546,11 +546,12 @@ export class EscavadorService implements RadarProvider {
     page = 1,
   ): Promise<{ citacoes: CitacaoResult[]; totalProcessos: number; totalPages: number }> {
     // Monta query string
+    // `nome` é SEMPRE obrigatório pela API v2.
+    // `cpf` é enviado adicionalmente quando disponível para desambiguar homônimos.
     const params = new URLSearchParams()
+    params.set('nome', nome)
     if (cpf) {
-      params.set('cpf', cpf.replace(/\D/g, '')) // só dígitos
-    } else {
-      params.set('nome', nome)
+      params.set('cpf', cpf.replace(/\D/g, '')) // só dígitos, para desambiguar
     }
     params.set('page', String(page))
     params.set('limit', '50')

@@ -581,15 +581,13 @@ export async function buscarProcessosTribunais(): Promise<BuscarTribunaisResult>
   const userId = session?.user?.id
   if (!userId) return { ok: false, novas: 0, error: 'Não autenticado' }
 
-  // CPF é obrigatório para essa busca
+  // CPF melhora a precisão mas não é obrigatório — busca por nome funciona sem ele
   const peritoPerfil = await prisma.peritoPerfil.findUnique({
     where: { userId },
     select: { cpf: true },
   })
   const cpfDigits = peritoPerfil?.cpf?.replace(/\D/g, '') ?? ''
-  if (cpfDigits.length !== 11) {
-    return { ok: false, novas: 0, error: 'CPF não cadastrado no perfil. Acesse Perfil e preencha o CPF para usar esta busca.' }
-  }
+  const cpf = cpfDigits.length === 11 ? cpfDigits : null
 
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { name: true } })
   const nome = user?.name?.trim() ?? ''
@@ -605,13 +603,13 @@ export async function buscarProcessosTribunais(): Promise<BuscarTribunaisResult>
 
   try {
     // Página 1
-    const { citacoes: pg1, totalPages } = await svc.buscarProcessosEnvolvido(nome, cpfDigits, 1)
+    const { citacoes: pg1, totalPages } = await svc.buscarProcessosEnvolvido(nome, cpf, 1)
     todasCitacoes.push(...pg1)
 
     // Páginas adicionais (max 5 para não gastar créditos demais)
     const maxPaginas = Math.min(totalPages, 5)
     for (let pg = 2; pg <= maxPaginas; pg++) {
-      const { citacoes } = await svc.buscarProcessosEnvolvido(nome, cpfDigits, pg)
+      const { citacoes } = await svc.buscarProcessosEnvolvido(nome, cpf, pg)
       todasCitacoes.push(...citacoes)
     }
   } catch (err) {
