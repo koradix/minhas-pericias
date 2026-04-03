@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npx prisma db push)"
+      "Bash(npx prisma db push)",
+      "Bash(cat .next/dev/server/app/\\\\\\(app\\\\\\)/nomeacoes/page.js)"
     ]
   }
 }

@@ -384,7 +384,6 @@ export async function buscarNomeacoes(): Promise<BuscarResult> {
         // Non-blocking
       }
     }
-
     // ── Dedup por externalId ─────────────────────────────────────────────────
     const seen = new Set<string>()
     const deduped = citacoes.filter((c) => {
@@ -438,6 +437,7 @@ export async function buscarNomeacoes(): Promise<BuscarResult> {
             snippet: c.snippet,
             numeroProcesso: c.numeroProcesso ?? null,
             linkCitacao: c.linkCitacao,
+            fonte: c.fonte || 'escavador',
             tribunalVaraId,
           },
         })

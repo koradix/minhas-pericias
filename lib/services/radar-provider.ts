@@ -17,6 +17,7 @@ export interface CitacaoResult {
   snippet: string
   numeroProcesso: string | null
   linkCitacao: string
+  fonte?: string
 }
 
 export interface SaldoInfo {

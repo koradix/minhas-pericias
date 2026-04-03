@@ -1,10 +1,10 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Search, Loader2, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Search, Loader2, CheckCircle2, AlertCircle, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { buscarNomeacoes } from '@/lib/actions/nomeacoes'
-import { setupRadar } from '@/lib/actions/nomeacoes'
+import { buscarNomeacoes, setupRadar } from '@/lib/actions/nomeacoes'
+import { ManualCitacaoForm } from './manual-citacao-form'
 
 interface Props {
   novas: number
@@ -18,16 +18,15 @@ type BuscarState =
   | { fase: 'ok'; novas: number; saldo: number; totalEncontrados: number }
   | { fase: 'erro'; mensagem: string }
 
-export function RadarBuscarBtn({ radarConfigurado }: Props) {
+export function RadarBuscarBtn({ radarConfigurado, siglas }: Props) {
   const [buscarState, setBuscarState] = useState<BuscarState>({ fase: 'idle' })
   const [isPending, startTransition] = useTransition()
+  const [showManual, setShowManual] = useState(false)
 
   function handleBuscar() {
     setBuscarState({ fase: 'buscando' })
     startTransition(async () => {
       try {
-        // Se radar não configurado, tenta configurar (monitoramento automático)
-        // Se falhar por plano/401, continua mesmo assim — busca ativa ainda funciona
         if (!radarConfigurado) {
           const setupRes = await setupRadar()
           if (setupRes.status === 'error') {
@@ -38,7 +37,6 @@ export function RadarBuscarBtn({ radarConfigurado }: Props) {
               setBuscarState({ fase: 'erro', mensagem: setupRes.message })
               return
             }
-            // plano sem monitoramento: continua e faz só a busca ativa
             console.log('[setupRadar] monitoramento indisponível — continuando com busca ativa')
           }
         }
@@ -46,7 +44,6 @@ export function RadarBuscarBtn({ radarConfigurado }: Props) {
         const res = await buscarNomeacoes()
         if (res.ok) {
           setBuscarState({ fase: 'ok', novas: res.novas, saldo: res.saldoRestante, totalEncontrados: res.totalEncontrados })
-          // Limpa o banner após 5s
           setTimeout(() => setBuscarState({ fase: 'idle' }), 5000)
         } else {
           setBuscarState({ fase: 'erro', mensagem: res.error })
@@ -61,24 +58,38 @@ export function RadarBuscarBtn({ radarConfigurado }: Props) {
   const isBusy = isPending || buscarState.fase === 'buscando'
 
   return (
-    <div className="space-y-3">
-      {/* Botão de busca */}
-      <div className="flex flex-wrap gap-2">
+    <div className="space-y-4">
+      {/* Botões de comando */}
+      <div className="flex flex-wrap items-center gap-3">
         <Button
           onClick={handleBuscar}
           disabled={isBusy}
-          className="bg-[#1f2937] hover:bg-[#374151] text-white font-manrope font-semibold text-[14px] px-5 py-5 rounded-xl gap-2 shadow-none border border-[#1f2937]"
+          className="bg-[#1f2937] hover:bg-[#374151] text-white font-manrope font-semibold text-[14px] px-6 py-5 rounded-xl gap-2 shadow-none border border-[#1f2937]"
         >
           {isBusy
             ? <><Loader2 className="h-4 w-4 animate-spin" /> Buscando…</>
             : <><Search className="h-4 w-4" /> Buscar nomeações</>
           }
         </Button>
+
+        <Button
+          onClick={() => setShowManual(true)}
+          variant="outline"
+          disabled={isBusy}
+          className="border-slate-200 text-[#4b5563] hover:bg-slate-50 hover:text-[#1f2937] font-manrope font-semibold text-[14px] px-6 py-5 rounded-xl gap-2 shadow-none transition-all"
+        >
+          <Plus className="h-4 w-4" /> Registrar processo
+        </Button>
       </div>
+
+      {/* Manual Upload Modal */}
+      {showManual && (
+        <ManualCitacaoForm siglas={siglas} onClose={() => setShowManual(false)} />
+      )}
 
       {/* Feedback da busca */}
       {buscarState.fase === 'ok' && (
-        <div className="rounded-xl bg-lime-50 border border-lime-200 px-4 py-2.5 space-y-0.5">
+        <div className="rounded-xl bg-lime-50 border border-lime-200 px-4 py-3 space-y-0.5 animate-in fade-in slide-in-from-top-2 duration-300">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 text-lime-600 flex-shrink-0" />
             <p className="text-sm font-semibold text-lime-800 flex-1">
@@ -88,7 +99,7 @@ export function RadarBuscarBtn({ radarConfigurado }: Props) {
               }
             </p>
             {buscarState.saldo > 0 && (
-              <span className="text-xs text-lime-600 flex-shrink-0">
+              <span className="text-xs text-lime-600 font-bold">
                 Saldo: R$ {buscarState.saldo.toFixed(2)}
               </span>
             )}
@@ -107,9 +118,9 @@ export function RadarBuscarBtn({ radarConfigurado }: Props) {
       )}
 
       {buscarState.fase === 'erro' && (
-        <div className="flex items-center gap-2 rounded-xl bg-rose-50 border border-rose-200 px-4 py-2.5">
+        <div className="flex items-center gap-2.5 rounded-xl bg-rose-50 border border-rose-200 px-4 py-3 animate-in fade-in slide-in-from-top-2 duration-300">
           <AlertCircle className="h-4 w-4 text-rose-500 flex-shrink-0" />
-          <p className="text-sm text-rose-700">{buscarState.mensagem}</p>
+          <p className="text-sm font-semibold text-rose-700 leading-tight">{buscarState.mensagem}</p>
         </div>
       )}
 

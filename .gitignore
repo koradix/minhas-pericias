@@ -58,3 +58,5 @@ prisma/*.db
 prisma/*.db-journal
 
 .vercel
+
+.vercel

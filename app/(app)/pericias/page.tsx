@@ -92,11 +92,18 @@ export default async function PericiasPage() {
         title="Péricias"
         description={`${dbPericias.length} perícia${dbPericias.length !== 1 ? 's' : ''}`}
         actions={
-          <Link href="/nomeacoes">
-            <Button size="sm" className="bg-[#416900] hover:bg-[#345300] text-white font-semibold rounded-lg px-6 h-10 gap-1.5 transition-colors border border-transparent shadow-sm">
-              <Plus className="h-4 w-4" /> Ver nomeações
-            </Button>
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link href="/pericias/nova">
+              <Button size="sm" variant="outline" className="font-semibold rounded-lg px-4 h-10 gap-1.5">
+                <Plus className="h-4 w-4" /> Nova perícia
+              </Button>
+            </Link>
+            <Link href="/nomeacoes">
+              <Button size="sm" className="bg-[#416900] hover:bg-[#345300] text-white font-semibold rounded-lg px-6 h-10 gap-1.5 transition-colors border border-transparent shadow-sm">
+                Ver nomeações <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
         }
       />
 

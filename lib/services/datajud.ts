@@ -10,6 +10,14 @@ function getApiKey(): string {
   return process.env.DATAJUD_API_KEY ?? PUBLIC_KEY
 }
 
+/**
+ * Mapeia sigla (TJRJ) para alias DataJud (tjrj).
+ * CNJ usa a sigla minúscula sem traços.
+ */
+export function mapSiglaToDatajudAlias(sigla: string): string {
+  return sigla.toLowerCase().replace(/-/g, '')
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface ParteDataJud {
