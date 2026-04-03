@@ -5,6 +5,7 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { PageHeader } from '@/components/shared/page-header'
 import { TribunaisForm } from '@/components/perfil/TribunaisForm'
+import { DadosCadastraisForm } from '@/components/perfil/dados-cadastrais-form'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Configurações' }
@@ -16,23 +17,37 @@ export default async function ConfiguracoesPage() {
 
   let tribunais: string[] = []
   let estados: string[] = []
+  let nomeUsuario = ''
+  let cpfPerfil = ''
 
   try {
-    const perfil = await prisma.peritoPerfil.findUnique({
-      where: { userId },
-      select: { tribunais: true, estados: true },
-    })
-    tribunais = JSON.parse(perfil?.tribunais ?? '[]')
-    estados   = JSON.parse(perfil?.estados   ?? '[]')
+    const [user, perfil] = await Promise.all([
+      prisma.user.findUnique({ where: { id: userId }, select: { name: true } }),
+      prisma.peritoPerfil.findUnique({
+        where: { userId },
+        select: { tribunais: true, estados: true, cpf: true },
+      }),
+    ])
+    nomeUsuario = user?.name ?? ''
+    cpfPerfil   = perfil?.cpf ?? ''
+    tribunais   = JSON.parse(perfil?.tribunais ?? '[]')
+    estados     = JSON.parse(perfil?.estados   ?? '[]')
   } catch { /* DB not ready */ }
 
   return (
     <div className="space-y-6 max-w-2xl">
       <PageHeader
         title="Configurações"
-        description="Gerencie seus tribunais e preferências de monitoramento"
+        description="Gerencie seus dados, tribunais e preferências de monitoramento"
       />
 
+      {/* Dados cadastrais */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 className="text-sm font-semibold text-slate-800 mb-4">Dados cadastrais</h2>
+        <DadosCadastraisForm initialNome={nomeUsuario} initialCpf={cpfPerfil} />
+      </div>
+
+      {/* Tribunais */}
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <TribunaisForm
           initialEstados={estados}

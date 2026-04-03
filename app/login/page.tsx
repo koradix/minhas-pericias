@@ -1,17 +1,18 @@
-import type { Metadata } from 'next'
+'use client'
+
+import React from 'react'
 import Link from 'next/link'
 import LoginForm from './login-form'
-
-export const metadata: Metadata = { title: 'Entrar — Perilab' }
+import { cn } from '@/lib/utils'
 
 function PeriLabLogo() {
   return (
-    <div style={{ fontFamily: '"Montserrat", ui-sans-serif, system-ui, sans-serif', lineHeight: 1 }}>
-      <div style={{ fontSize: '2rem', fontWeight: 900, letterSpacing: '-0.03em' }}>
-        <span style={{ color: 'white' }}>Peri</span>
-        <span style={{ color: '#84cc16' }}>LaB</span>
+    <div className="font-display leading-tight select-none">
+      <div className="text-[2rem] font-black tracking-tightest leading-none">
+        <span className="text-white">Peri</span>
+        <span className="text-[#84cc16]">LaB</span>
       </div>
-      <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)', fontWeight: 500, letterSpacing: '0.14em', textTransform: 'uppercase', marginTop: '4px' }}>
+      <div className="text-[0.6rem] font-medium tracking-[0.14em] uppercase mt-1.5 text-white/40">
         de perito para perito
       </div>
     </div>
@@ -20,9 +21,9 @@ function PeriLabLogo() {
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-white font-display">
 
-      {/* ── Lado esquerdo — branding dark ── */}
+      {/* ── Lado esquerdo — branding dark (Restaurado conforme Print) ── */}
       <div
         className="hidden lg:flex lg:w-[480px] xl:w-[540px] flex-col justify-between p-12 flex-shrink-0"
         style={{ background: '#0f172a' }}
@@ -35,11 +36,11 @@ export default function LoginPage() {
         {/* Benefícios */}
         <div className="space-y-8">
           <div>
-            <h2 style={{ color: 'white', fontSize: '1.75rem', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.25 }}>
+            <h2 className="text-white text-[1.75rem] font-extrabold tracking-tight leading-[1.25]">
               Gestão pericial<br />
-              <span style={{ color: '#84cc16' }}>do processo ao laudo.</span>
+              <span className="text-[#84cc16]">do processo ao laudo.</span>
             </h2>
-            <p style={{ color: '#64748b', fontSize: '0.9rem', marginTop: '1rem', lineHeight: 1.7 }}>
+            <p className="text-[#64748b] text-[0.9rem] mt-4 leading-[1.7]">
               Radar de nomeações, rotas, documentos e IA — tudo num só lugar.
             </p>
           </div>
@@ -53,58 +54,63 @@ export default function LoginPage() {
               <li key={item} className="flex items-center gap-3">
                 <span
                   className="flex-shrink-0 flex items-center justify-center rounded-full"
-                  style={{ width: 20, height: 20, background: 'rgba(132,204,22,0.15)', border: '1px solid rgba(132,204,22,0.3)' }}
+                  style={{ width: 22, height: 22, background: 'rgba(132,204,22,0.15)', border: '1px solid rgba(132,204,22,0.3)' }}
                 >
-                  <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                    <path d="M1 4l2.5 2.5L9 1" stroke="#84cc16" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <svg width="11" height="9" viewBox="0 0 10 8" fill="none">
+                    <path d="M1 4l2.5 2.5L9 1" stroke="#84cc16" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </span>
-                <span style={{ color: '#94a3b8', fontSize: '0.875rem' }}>{item}</span>
+                <span className="text-[#94a3b8] text-[0.875rem] font-medium">{item}</span>
               </li>
             ))}
           </ul>
         </div>
 
         {/* Rodapé do painel */}
-        <p style={{ color: '#334155', fontSize: '0.75rem' }}>
+        <p className="text-[#334155] text-[0.75rem] font-medium tracking-wide">
           © {new Date().getFullYear()} Perilab · Todos os direitos reservados
         </p>
       </div>
 
-      {/* ── Lado direito — formulário ── */}
-      <div className="flex flex-1 flex-col items-center justify-center bg-white px-6 py-12">
+      {/* ── Lado direito — formulário (Opção Stitch) ── */}
+      <main className="flex flex-1 flex-col items-center justify-center px-8 lg:px-12 py-16">
+        
         {/* Logo mobile */}
-        <div className="mb-8 lg:hidden">
+        <div className="mb-12 lg:hidden">
           <Link href="/">
-            <div style={{ fontFamily: '"Montserrat", ui-sans-serif, system-ui, sans-serif', lineHeight: 1, textAlign: 'center' }}>
-              <div style={{ fontSize: '2rem', fontWeight: 900, letterSpacing: '-0.03em' }}>
-                <span style={{ color: '#1f2937' }}>Peri</span>
-                <span style={{ color: '#84cc16' }}>LaB</span>
-              </div>
+            <div className="text-3xl font-black tracking-tighter">
+              <span className="text-slate-900">Peri</span>
+              <span className="text-[#84cc16]">LaB</span>
             </div>
           </Link>
         </div>
 
-        <div className="w-full max-w-[380px]">
-          <div className="mb-8">
-            <h1 style={{ color: '#0f172a', fontSize: '1.5rem', fontWeight: 700, letterSpacing: '-0.02em' }}>
+        <div className="w-full max-w-[400px]">
+          <div className="mb-10 text-center lg:text-left">
+            <h1 className="text-[2.25rem] font-black text-slate-900 tracking-tightest font-display leading-tight">
               Bem-vindo de volta
             </h1>
-            <p style={{ color: '#64748b', fontSize: '0.875rem', marginTop: '4px' }}>
-              Entre na sua conta para continuar
+            <p className="mt-2 text-slate-500 text-sm font-medium">
+              Acesse sua conta para gerenciar suas perícias.
             </p>
           </div>
 
-          <LoginForm />
+          {/* Form Container (Aesthetic Stitch Option) */}
+          <div className="p-1">
+            <LoginForm />
+          </div>
 
-          <p className="mt-5 text-center text-xs text-slate-400">
-            Não tem conta?{' '}
-            <Link href="/signup" className="font-medium text-lime-600 hover:text-lime-700">
-              Criar conta grátis
+          <p className="mt-10 text-center text-sm text-slate-400 font-medium tracking-tight">
+            Não tem uma conta?{' '}
+            <Link 
+              href="/signup" 
+              className="font-bold text-[#84cc16] hover:text-[#345300] transition-colors underline decoration-[#84cc16]/30 underline-offset-4 hover:decoration-[#84cc16]"
+            >
+              Crie sua conta gratuitamente
             </Link>
           </p>
         </div>
-      </div>
+      </main>
 
     </div>
   )

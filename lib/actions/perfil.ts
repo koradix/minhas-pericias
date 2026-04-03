@@ -256,3 +256,42 @@ export async function previewVarasCount(
   const tribunais = new Set(varas.map((v) => v.tribunal)).size
   return { varas: varas.length, tribunais }
 }
+
+// ─── Action — Atualizar dados cadastrais (nome + CPF) ─────────────────────────
+
+export async function updateDadosCadastrais(data: {
+  nome: string
+  cpf: string
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const session = await auth()
+  if (!session?.user?.id) return { ok: false, error: 'Não autenticado' }
+  const userId = session.user.id
+
+  const nome = data.nome.trim()
+  if (!nome) return { ok: false, error: 'Nome é obrigatório' }
+
+  const cpfDigits = data.cpf.replace(/\D/g, '')
+  if (cpfDigits && cpfDigits.length !== 11) {
+    return { ok: false, error: 'CPF inválido — informe 11 dígitos' }
+  }
+
+  try {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { name: nome },
+    })
+
+    await prisma.peritoPerfil.upsert({
+      where: { userId },
+      create: { userId, cpf: cpfDigits || null },
+      update: { cpf: cpfDigits || null },
+    })
+
+    revalidatePath('/configuracoes')
+    revalidatePath('/dashboard')
+    return { ok: true }
+  } catch (e) {
+    console.error('[updateDadosCadastrais]', e)
+    return { ok: false, error: 'Erro ao salvar dados' }
+  }
+}

@@ -60,3 +60,10 @@ prisma/*.db-journal
 .vercel
 
 .vercel
+
+# Debug files
+node_processes*.txt
+eslint*.txt
+eslint.json
+test-results/
+playwright-report/

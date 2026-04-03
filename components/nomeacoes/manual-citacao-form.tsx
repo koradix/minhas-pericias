@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useRef, useState } from 'react'
@@ -47,13 +48,13 @@ function Row({ label, value }: { label: string; value: string | null | undefined
 export function ManualCitacaoForm({ siglas, onClose }: Props) {
   const router = useRouter()
   const fileRef = useRef<HTMLInputElement>(null)
-  const [phase, setPhase]       = useState<Phase>('idle')
-  const [error, setError]       = useState<string | null>(null)
+  const [phase, setPhase] = useState<Phase>('idle')
+  const [error, setError] = useState<string | null>(null)
   const [fileName, setFileName] = useState<string | null>(null)
   const [fileSize, setFileSize] = useState(0)
-  const [preview, setPreview]   = useState<Preview | null>(null)
+  const [preview, setPreview] = useState<Preview | null>(null)
   const [nomeacaoId, setNomeacaoId] = useState<string | null>(null)
-  const [sigla, setSigla]   = useState(siglas[0] ?? 'TJRJ')
+  const [sigla, setSigla] = useState(siglas[0] ?? 'TJRJ')
   const [numero, setNumero] = useState('')
   const [snippet, setSnippet] = useState('')
   const [mode, setMode] = useState<'upload' | 'manual'>('upload')
