@@ -16,6 +16,8 @@ import { Badge } from '@/components/ui/badge'
 import { DadosExtraidosBlock } from '@/components/processos/dados-extraidos-block'
 import { NomeacaoIntakeActions } from '@/components/nomeacoes/nomeacao-intake-actions'
 import { NomeacaoDocumentosSection } from '@/components/nomeacoes/nomeacao-documentos'
+import { EscavadorDocumentosSection } from '@/components/nomeacoes/escavador-documentos'
+import { listarDocumentosNomeacao } from '@/lib/actions/nomeacoes-documentos'
 import { AnaliseProcessoBlock } from '@/components/nomeacoes/analise-processo-block'
 import { scoreBadgeLabel, scoreBadgeClass } from '@/lib/utils/match-nomeacao'
 import { cn } from '@/lib/utils'
@@ -73,6 +75,9 @@ export default async function NomeacaoDetailPage({ params }: { params: Promise<{
   }).catch(() => null)
 
   if (!nomeacao || nomeacao.peritoId !== userId) notFound()
+
+  // Fetch documentos do Escavador (já salvos no banco)
+  const docsEscavador = await listarDocumentosNomeacao(nomeacao.id).catch(() => [])
 
   // Fetch linked perícia if exists
   let pericia: { id: string; numero: string } | null = null
@@ -219,6 +224,12 @@ export default async function NomeacaoDetailPage({ params }: { params: Promise<{
 
         {/* Left — main content */}
         <div className="lg:col-span-2 space-y-5">
+
+          {/* Documentos do Escavador */}
+          <EscavadorDocumentosSection
+            nomeacaoId={nomeacao.id}
+            initialDocs={docsEscavador}
+          />
 
           {/* Documents */}
           <NomeacaoDocumentosSection
