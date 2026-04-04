@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Search, Loader2, CheckCircle2, AlertCircle, Plus, Building2 } from 'lucide-react'
+import { Search, Loader2, CheckCircle2, AlertCircle, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { buscarNomeacoes, buscarProcessosTribunais, setupRadar } from '@/lib/actions/nomeacoes'
 import { ManualCitacaoForm } from './manual-citacao-form'
@@ -15,7 +15,7 @@ interface Props {
 type BuscarState =
   | { fase: 'idle' }
   | { fase: 'buscando' }
-  | { fase: 'ok'; novas: number; saldo: number; totalEncontrados: number; fonte: 'diario' | 'tribunal' }
+  | { fase: 'ok'; novas: number; saldo: number; totalEncontrados: number }
   | { fase: 'erro'; mensagem: string }
 
 export function RadarBuscarBtn({ radarConfigurado, siglas }: Props) {
@@ -40,33 +40,32 @@ export function RadarBuscarBtn({ radarConfigurado, siglas }: Props) {
           }
         }
 
-        const res = await buscarNomeacoes()
-        if (res.ok) {
-          setBuscarState({ fase: 'ok', novas: res.novas, saldo: res.saldoRestante, totalEncontrados: res.totalEncontrados, fonte: 'diario' })
-          setTimeout(() => setBuscarState({ fase: 'idle' }), 6000)
+        // Roda DJe e tribunais em paralelo
+        const [djeRes, tribRes] = await Promise.allSettled([
+          buscarNomeacoes(),
+          buscarProcessosTribunais(),
+        ])
+
+        const dje   = djeRes.status   === 'fulfilled' ? djeRes.value   : null
+        const trib  = tribRes.status  === 'fulfilled' ? tribRes.value  : null
+
+        const novas           = (dje?.ok ? dje.novas           : 0) + (trib?.ok ? trib.novas           : 0)
+        const totalEncontrados= (dje?.ok ? dje.totalEncontrados : 0) + (trib?.ok ? trib.totalEncontrados : 0)
+        const saldo           = dje?.ok ? dje.saldoRestante : (trib?.ok ? trib.saldoRestante : 0)
+
+        const erroMsg = [
+          !dje?.ok  ? dje?.error  : null,
+          !trib?.ok ? trib?.error : null,
+        ].filter(Boolean).join(' | ')
+
+        if (!dje?.ok && !trib?.ok && erroMsg) {
+          setBuscarState({ fase: 'erro', mensagem: erroMsg })
         } else {
-          setBuscarState({ fase: 'erro', mensagem: res.error })
+          setBuscarState({ fase: 'ok', novas, saldo, totalEncontrados })
+          setTimeout(() => setBuscarState({ fase: 'idle' }), 6000)
         }
       } catch (err) {
         console.error('[buscar] erro:', err)
-        setBuscarState({ fase: 'erro', mensagem: 'Erro de conexão. Tente novamente.' })
-      }
-    })
-  }
-
-  function handleBuscarTribunais() {
-    setBuscarState({ fase: 'buscando' })
-    startTransition(async () => {
-      try {
-        const res = await buscarProcessosTribunais()
-        if (res.ok) {
-          setBuscarState({ fase: 'ok', novas: res.novas, saldo: res.saldoRestante, totalEncontrados: res.totalEncontrados, fonte: 'tribunal' })
-          setTimeout(() => setBuscarState({ fase: 'idle' }), 6000)
-        } else {
-          setBuscarState({ fase: 'erro', mensagem: res.error })
-        }
-      } catch (err) {
-        console.error('[buscarTribunais] erro:', err)
         setBuscarState({ fase: 'erro', mensagem: 'Erro de conexão. Tente novamente.' })
       }
     })
@@ -76,7 +75,6 @@ export function RadarBuscarBtn({ radarConfigurado, siglas }: Props) {
 
   return (
     <div className="space-y-4">
-      {/* Botões de comando */}
       <div className="flex flex-wrap items-center gap-3">
         <Button
           onClick={handleBuscar}
@@ -85,20 +83,7 @@ export function RadarBuscarBtn({ radarConfigurado, siglas }: Props) {
         >
           {isBusy
             ? <><Loader2 className="h-4 w-4 animate-spin" /> Buscando…</>
-            : <><Search className="h-4 w-4" /> Buscar no DJe</>
-          }
-        </Button>
-
-        <Button
-          onClick={handleBuscarTribunais}
-          disabled={isBusy}
-          variant="outline"
-          className="border-slate-300 text-[#1f2937] hover:bg-slate-50 font-manrope font-semibold text-[14px] px-6 py-5 rounded-xl gap-2 shadow-none transition-all"
-          title="Busca por CPF em 440 sistemas de tribunais (além do Diário Oficial)"
-        >
-          {isBusy
-            ? <><Loader2 className="h-4 w-4 animate-spin" /> Buscando…</>
-            : <><Building2 className="h-4 w-4" /> Buscar em tribunais</>
+            : <><Search className="h-4 w-4" /> Buscar nomeações</>
           }
         </Button>
 
@@ -108,23 +93,21 @@ export function RadarBuscarBtn({ radarConfigurado, siglas }: Props) {
           disabled={isBusy}
           className="border-slate-200 text-[#4b5563] hover:bg-slate-50 hover:text-[#1f2937] font-manrope font-semibold text-[14px] px-6 py-5 rounded-xl gap-2 shadow-none transition-all"
         >
-          <Plus className="h-4 w-4" /> Registrar processo
+          <Plus className="h-4 w-4" /> Registrar manualmente
         </Button>
       </div>
 
-      {/* Manual Upload Modal */}
       {showManual && (
         <ManualCitacaoForm siglas={siglas} onClose={() => setShowManual(false)} />
       )}
 
-      {/* Feedback da busca */}
       {buscarState.fase === 'ok' && (
         <div className="rounded-xl bg-lime-50 border border-lime-200 px-4 py-3 space-y-0.5 animate-in fade-in slide-in-from-top-2 duration-300">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 text-lime-600 flex-shrink-0" />
             <p className="text-sm font-semibold text-lime-800 flex-1">
               {buscarState.novas > 0
-                ? `${buscarState.novas} nova${buscarState.novas > 1 ? 's' : ''} salva${buscarState.novas > 1 ? 's' : ''}!`
+                ? `${buscarState.novas} nova${buscarState.novas > 1 ? 's' : ''} nomeaç${buscarState.novas > 1 ? 'ões salvas' : 'ão salva'}!`
                 : 'Busca concluída — nenhuma nova encontrada.'
               }
             </p>
@@ -134,14 +117,6 @@ export function RadarBuscarBtn({ radarConfigurado, siglas }: Props) {
               </span>
             )}
           </div>
-          {buscarState.totalEncontrados === 0 && (
-            <p className="text-xs text-lime-700 pl-6">
-              {buscarState.fonte === 'tribunal'
-                ? 'CPF não encontrado como perito em nenhum processo nos tribunais.'
-                : 'A API não retornou citações para esse nome nos tribunais cadastrados.'
-              }
-            </p>
-          )}
           {buscarState.totalEncontrados > 0 && buscarState.novas === 0 && (
             <p className="text-xs text-lime-700 pl-6">
               {buscarState.totalEncontrados} processo{buscarState.totalEncontrados > 1 ? 's encontrados' : ' encontrado'} — {buscarState.totalEncontrados > 1 ? 'todos já estavam salvos' : 'já estava salvo'}.
@@ -149,7 +124,7 @@ export function RadarBuscarBtn({ radarConfigurado, siglas }: Props) {
           )}
           {buscarState.totalEncontrados > 0 && buscarState.novas > 0 && (
             <p className="text-xs text-lime-700 pl-6">
-              {buscarState.totalEncontrados} processo{buscarState.totalEncontrados > 1 ? 's' : ''} encontrado{buscarState.totalEncontrados > 1 ? 's' : ''} nos tribunais.
+              {buscarState.totalEncontrados} processo{buscarState.totalEncontrados > 1 ? 's' : ''} encontrado{buscarState.totalEncontrados > 1 ? 's' : ''}.
             </p>
           )}
         </div>
@@ -161,7 +136,6 @@ export function RadarBuscarBtn({ radarConfigurado, siglas }: Props) {
           <p className="text-sm font-semibold text-rose-700 leading-tight">{buscarState.mensagem}</p>
         </div>
       )}
-
     </div>
   )
 }
