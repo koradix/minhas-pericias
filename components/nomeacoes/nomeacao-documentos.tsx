@@ -2,7 +2,6 @@
 
 import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { upload } from '@vercel/blob/client'
 import {
   Paperclip,
   Upload,
@@ -61,16 +60,22 @@ export function NomeacaoDocumentosSection({
       return
     }
 
-    // ── 1. Upload direto para Vercel Blob (sem passar pelo serverless) ─────────
+    // ── 1. Upload via proxy Edge (mesmo domínio — sem CORS) ──────────────────
     setFase('enviando')
     let blobUrl: string
     try {
-      const blob = await upload(file.name, file, {
-        access: 'public',
-        handleUploadUrl: '/api/nomeacoes/blob-upload',
-        onUploadProgress: ({ percentage }) => setProgresso(Math.round(percentage)),
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: {
+          'Content-Type': file.type,
+          'x-filename': file.name,
+        },
+        body: file,
       })
-      blobUrl = blob.url
+      const json = await res.json() as { ok: boolean; url?: string; message?: string }
+      if (!json.ok || !json.url) throw new Error(json.message ?? 'Falha no upload')
+      blobUrl = json.url
+      setProgresso(100)
     } catch (err) {
       setFase('erro')
       setErrorMsg(err instanceof Error ? err.message : 'Erro ao enviar arquivo.')

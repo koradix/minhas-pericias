@@ -2,7 +2,6 @@
 
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { upload } from '@vercel/blob/client'
 import { atualizarDadosPericia } from '@/lib/actions/pericias-update'
 import {
   ExternalLink,
@@ -175,17 +174,20 @@ export function PericiaWorkflow({
 
     setUploadState({ fase: 'uploading', progresso: 'Enviando arquivo…' })
 
-    // ── Upload direto browser → Vercel Blob (sem limite de tamanho) ──────────
+    // ── Upload via proxy Edge (mesmo domínio — sem CORS) ─────────────────────
     let blobUrl: string
     try {
-      const blob = await upload(file.name, file, {
-        access: 'public',
-        handleUploadUrl: '/api/nomeacoes/blob-upload',
-        onUploadProgress: ({ percentage }) => {
-          setUploadState({ fase: 'uploading', progresso: `Enviando… ${Math.round(percentage)}%` })
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: {
+          'Content-Type': file.type,
+          'x-filename': file.name,
         },
+        body: file,
       })
-      blobUrl = blob.url
+      const json = await res.json() as { ok: boolean; url?: string; message?: string }
+      if (!json.ok || !json.url) throw new Error(json.message ?? 'Falha no upload')
+      blobUrl = json.url
     } catch (err) {
       setUploadState({
         fase: 'erro',
