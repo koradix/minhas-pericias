@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import { uploadFile } from '@/lib/client/upload'
 import { atualizarDadosPericia } from '@/lib/actions/pericias-update'
 import {
   ExternalLink,
@@ -174,20 +175,12 @@ export function PericiaWorkflow({
 
     setUploadState({ fase: 'uploading', progresso: 'Enviando arquivo…' })
 
-    // ── Upload via proxy Edge (mesmo domínio — sem CORS) ─────────────────────
+    // ── Upload chunked (mesmo domínio, sem CORS, sem limite de tamanho) ────────
     let blobUrl: string
     try {
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        headers: {
-          'Content-Type': file.type,
-          'x-filename': file.name,
-        },
-        body: file,
+      blobUrl = await uploadFile(file, (pct) => {
+        setUploadState({ fase: 'uploading', progresso: `Enviando… ${pct}%` })
       })
-      const json = await res.json() as { ok: boolean; url?: string; message?: string }
-      if (!json.ok || !json.url) throw new Error(json.message ?? 'Falha no upload')
-      blobUrl = json.url
     } catch (err) {
       setUploadState({
         fase: 'erro',

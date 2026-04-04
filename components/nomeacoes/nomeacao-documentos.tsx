@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { uploadFile } from '@/lib/client/upload'
 import {
   Paperclip,
   Upload,
@@ -60,22 +61,11 @@ export function NomeacaoDocumentosSection({
       return
     }
 
-    // ── 1. Upload via proxy Edge (mesmo domínio — sem CORS) ──────────────────
+    // ── 1. Upload chunked (mesmo domínio, sem CORS, sem limite de tamanho) ────
     setFase('enviando')
     let blobUrl: string
     try {
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        headers: {
-          'Content-Type': file.type,
-          'x-filename': file.name,
-        },
-        body: file,
-      })
-      const json = await res.json() as { ok: boolean; url?: string; message?: string }
-      if (!json.ok || !json.url) throw new Error(json.message ?? 'Falha no upload')
-      blobUrl = json.url
-      setProgresso(100)
+      blobUrl = await uploadFile(file, (pct) => setProgresso(pct))
     } catch (err) {
       setFase('erro')
       setErrorMsg(err instanceof Error ? err.message : 'Erro ao enviar arquivo.')
