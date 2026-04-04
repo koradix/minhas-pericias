@@ -1,10 +1,9 @@
 // ─── Montagem dos chunks em arquivo final ─────────────────────────────────────
-// Baixa todos os chunk blobs, concatena em memória, salva como blob final.
+// Baixa todos os chunk blobs (privados), concatena em memória, salva como blob final.
 // Deleta os chunks temporários.
-// Chamado uma vez depois que todos os chunks foram enviados.
 
 import { NextRequest, NextResponse } from 'next/server'
-import { put, del } from '@vercel/blob'
+import { put, get, del } from '@vercel/blob'
 import { auth } from '@/auth'
 
 export const maxDuration = 60
@@ -27,26 +26,34 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // Download e concatena todos os chunks (server-side, sem limite de tamanho)
+    // Baixa e concatena todos os chunks via SDK (suporta blobs privados)
     const buffers: Buffer[] = []
     for (const url of chunkUrls) {
-      const res = await fetch(url, { cache: 'no-store' })
-      if (!res.ok) throw new Error(`Falha ao baixar chunk: ${url} (HTTP ${res.status})`)
-      buffers.push(Buffer.from(await res.arrayBuffer()))
+      const result = await get(url, { access: 'private' })
+      if (!result || result.statusCode !== 200 || !result.stream) {
+        throw new Error(`Falha ao baixar chunk: ${url}`)
+      }
+      const reader = result.stream.getReader()
+      const parts: Uint8Array[] = []
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        parts.push(value)
+      }
+      buffers.push(Buffer.concat(parts.map(p => Buffer.from(p))))
     }
 
     const finalBuffer = Buffer.concat(buffers)
     console.log(`[upload-assemble] ${chunkUrls.length} chunks → ${(finalBuffer.length / 1024 / 1024).toFixed(1)} MB`)
 
-    // Salva arquivo final
     const safeName = filename.replace(/[^a-zA-Z0-9._\-]/g, '_').slice(0, 200)
     const blob = await put(safeName, finalBuffer, {
-      access: 'public',
+      access: 'private',
       contentType: mimeType,
       addRandomSuffix: true,
     })
 
-    // Deleta chunks temporários (fire-and-forget)
+    // Deleta chunks (fire-and-forget)
     del(chunkUrls).catch((e) => console.warn('[upload-assemble] del chunks:', e))
 
     return NextResponse.json({ ok: true, url: blob.url })

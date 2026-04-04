@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
   try {
     const chunkName = `tmp/${sessionId}/chunk-${index.padStart(4, '0')}-of-${total}`
     const blob = await put(chunkName, request.body, {
-      access: 'public',
+      access: 'private',
       contentType: 'application/octet-stream',
       addRandomSuffix: false,
       allowOverwrite: true,

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
-import { del } from '@vercel/blob'
+import { del, get as blobGet } from '@vercel/blob'
 import Anthropic from '@anthropic-ai/sdk'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { SYSTEM_PROMPT, buildUserPrompt, buildPdfUserPrompt } from '@/lib/ai/prompt-mestre-resumo'
@@ -88,11 +88,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: false, message: 'Apenas PDF ou DOCX são aceitos' }, { status: 400 })
     }
 
-    // ── Download do Blob ─────────────────────────────────────────────────────
+    // ── Download do Blob (privado via SDK) ───────────────────────────────────
     try {
-      const res = await fetch(blobUrl, { cache: 'no-store' })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      buffer = Buffer.from(await res.arrayBuffer())
+      const result = await blobGet(blobUrl, { access: 'private' })
+      if (!result || result.statusCode !== 200 || !result.stream) throw new Error('Blob não encontrado')
+      const reader = result.stream.getReader()
+      const parts: Uint8Array[] = []
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        parts.push(value)
+      }
+      buffer = Buffer.concat(parts.map(p => Buffer.from(p)))
     } catch (err) {
       await del(blobUrl).catch(() => {})
       return NextResponse.json(
