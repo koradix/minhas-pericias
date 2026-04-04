@@ -3,6 +3,7 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { del } from '@vercel/blob'
 import Anthropic from '@anthropic-ai/sdk'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 import { SYSTEM_PROMPT, buildUserPrompt, buildPdfUserPrompt } from '@/lib/ai/prompt-mestre-resumo'
 
 export const maxDuration = 60
@@ -101,83 +102,142 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // ── Call Anthropic ─────────────────────────────────────────────────────────
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) {
-    if (blobUrl) await del(blobUrl).catch(() => {})
-    return NextResponse.json({ ok: false, message: 'ANTHROPIC_API_KEY não configurada' }, { status: 500 })
-  }
-
   const contexto = `Tribunal: ${tribunal}${numeroRaw ? `\nNúmero: ${numeroRaw}` : ''}`
   let analise: Record<string, unknown> = {}
 
-  try {
-    const anthropic = new Anthropic({ apiKey })
-    // Haiku tem limites de tokens/min muito maiores que Sonnet — ideal para extração de PDFs
-    const model = 'claude-haiku-4-5-20251001'
-    let userContent: Anthropic.MessageParam['content']
+  // ── Prepara PDF (truncado a 20 páginas) ───────────────────────────────────
+  let pdfParaEnviar: Buffer = buffer
+  if (mimeType === 'application/pdf') {
+    const mbSize = (buffer.length / 1024 / 1024).toFixed(1)
+    const { PDFDocument } = await import('pdf-lib')
+    const pdfDoc = await PDFDocument.load(buffer, { ignoreEncryption: true })
+    const totalPaginas = pdfDoc.getPageCount()
+    console.log(`[upload] PDF: ${fileName} | ${mbSize}MB | ${totalPaginas} páginas`)
+    const MAX_PAGINAS = 20
+    if (totalPaginas > MAX_PAGINAS) {
+      const novoPdf = await PDFDocument.create()
+      const indices = Array.from({ length: MAX_PAGINAS }, (_, i) => i)
+      const copias = await novoPdf.copyPages(pdfDoc, indices)
+      copias.forEach((p) => novoPdf.addPage(p))
+      pdfParaEnviar = Buffer.from(await novoPdf.save())
+      console.log(`[upload] PDF truncado: ${(pdfParaEnviar.length / 1024 / 1024).toFixed(1)}MB`)
+    }
+  }
 
-    if (mimeType === 'application/pdf') {
-      const mbSize = (buffer.length / 1024 / 1024).toFixed(1)
-      console.log(`[upload] PDF: ${fileName} | ${mbSize}MB | model: ${model}`)
+  // ── Retorna true se o erro Anthropic é de rate limit / crédito ────────────
+  function isRateLimitOrCredit(err: unknown): boolean {
+    const msg = (err instanceof Error ? err.message : String(err)).toLowerCase()
+    return msg.includes('rate_limit') || msg.includes('rate limit') ||
+      msg.includes('429') || msg.includes('credit') || msg.includes('overloaded') ||
+      msg.includes('529') || msg.includes('quota')
+  }
 
-      const { PDFDocument } = await import('pdf-lib')
-      const pdfDoc = await PDFDocument.load(buffer, { ignoreEncryption: true })
-      const totalPaginas = pdfDoc.getPageCount()
-      console.log(`[upload] pdf-lib: ${totalPaginas} páginas`)
+  // ── Call Anthropic ────────────────────────────────────────────────────────
+  const anthropicKey = process.env.ANTHROPIC_API_KEY
+  let anthropicOk = false
 
-      // 20 páginas = suficiente para nomeação + despacho; reduz tokens e evita rate limit
-      const MAX_PAGINAS = 20
-      let pdfParaEnviar: Buffer
+  if (anthropicKey) {
+    try {
+      const anthropic = new Anthropic({ apiKey: anthropicKey })
+      const model = 'claude-haiku-4-5-20251001'
+      let userContent: Anthropic.MessageParam['content']
 
-      if (totalPaginas <= MAX_PAGINAS) {
-        pdfParaEnviar = buffer
+      if (mimeType === 'application/pdf') {
+        userContent = [
+          {
+            type: 'document',
+            source: { type: 'base64', media_type: 'application/pdf', data: pdfParaEnviar.toString('base64') },
+          } as Anthropic.DocumentBlockParam,
+          { type: 'text', text: buildPdfUserPrompt(contexto) },
+        ]
       } else {
-        console.log(`[upload] Extraindo páginas 1-${MAX_PAGINAS} de ${totalPaginas}`)
-        const novoPdf = await PDFDocument.create()
-        const indices = Array.from({ length: MAX_PAGINAS }, (_, i) => i)
-        const copias = await novoPdf.copyPages(pdfDoc, indices)
-        copias.forEach((p) => novoPdf.addPage(p))
-        pdfParaEnviar = Buffer.from(await novoPdf.save())
-        console.log(`[upload] PDF extraído: ${(pdfParaEnviar.length / 1024 / 1024).toFixed(1)}MB`)
+        const textoDocx = buffer.toString('utf8').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+        console.log(`[upload] DOCX: ${fileName} | texto: ${textoDocx.length} chars`)
+        userContent = buildUserPrompt(
+          textoDocx.length > 100
+            ? textoDocx
+            : `Arquivo: ${fileName}\nTribunal: ${tribunal}${numeroRaw ? `\nNúmero: ${numeroRaw}` : ''}`
+        )
       }
 
-      userContent = [
-        {
-          type: 'document',
-          source: { type: 'base64', media_type: 'application/pdf', data: pdfParaEnviar.toString('base64') },
-        } as Anthropic.DocumentBlockParam,
-        { type: 'text', text: buildPdfUserPrompt(contexto) },
-      ]
-    } else {
-      const textoDocx = buffer.toString('utf8').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
-      console.log(`[upload] DOCX: ${fileName} | texto: ${textoDocx.length} chars`)
-      userContent = buildUserPrompt(
-        textoDocx.length > 100
-          ? textoDocx
-          : `Arquivo: ${fileName}\nTribunal: ${tribunal}${numeroRaw ? `\nNúmero: ${numeroRaw}` : ''}`
+      const res = await anthropic.messages.create({
+        model,
+        max_tokens: 4096,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: userContent }],
+      })
+      const raw = res.content[0]?.type === 'text' ? res.content[0].text : '{}'
+      console.log(`[upload] Claude raw (primeiros 500 chars):\n${raw.substring(0, 500)}`)
+      analise = JSON.parse(extractJson(raw))
+      console.log('[upload] Claude OK — chaves:', Object.keys(analise).join(', '))
+      anthropicOk = true
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      console.warn(`[upload] Claude falhou (${isRateLimitOrCredit(err) ? 'rate_limit/credit' : 'erro'}): ${msg}`)
+      if (!isRateLimitOrCredit(err)) {
+        // Erro não-recuperável (ex: JSON parse, payload inválido) — não tenta Gemini
+        if (blobUrl) await del(blobUrl).catch(() => {})
+        return NextResponse.json({ ok: false, message: `Erro na análise IA: ${msg}` }, { status: 500 })
+      }
+      // Rate limit / crédito → cai no fallback Gemini abaixo
+    }
+  }
+
+  // ── Fallback: Google Gemini ───────────────────────────────────────────────
+  if (!anthropicOk) {
+    const geminiKey = process.env.GEMINI_API_KEY
+    if (!geminiKey) {
+      if (blobUrl) await del(blobUrl).catch(() => {})
+      return NextResponse.json(
+        { ok: false, message: 'IA indisponível: sem créditos Claude e GEMINI_API_KEY não configurada' },
+        { status: 500 },
       )
     }
 
-    const res = await anthropic.messages.create({
-      model,
-      max_tokens: 4096,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: userContent }],
-    })
-    const raw = res.content[0]?.type === 'text' ? res.content[0].text : '{}'
-    console.log(`[upload] Claude raw (primeiros 500 chars):\n${raw.substring(0, 500)}`)
     try {
+      console.log('[upload] Usando fallback Gemini Flash…')
+      const genAI = new GoogleGenerativeAI(geminiKey)
+      const geminiModel = genAI.getGenerativeModel({
+        model: 'gemini-2.0-flash',
+        systemInstruction: SYSTEM_PROMPT,
+      })
+
+      let geminiResult
+      if (mimeType === 'application/pdf') {
+        geminiResult = await geminiModel.generateContent([
+          {
+            inlineData: {
+              mimeType: 'application/pdf',
+              data: pdfParaEnviar.toString('base64'),
+            },
+          },
+          buildPdfUserPrompt(contexto),
+        ])
+      } else {
+        const textoDocx = buffer.toString('utf8').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+        const prompt = buildUserPrompt(
+          textoDocx.length > 100
+            ? textoDocx
+            : `Arquivo: ${fileName}\nTribunal: ${tribunal}${numeroRaw ? `\nNúmero: ${numeroRaw}` : ''}`
+        )
+        geminiResult = await geminiModel.generateContent(
+          typeof prompt === 'string' ? prompt : JSON.stringify(prompt)
+        )
+      }
+
+      const raw = geminiResult.response.text()
+      console.log(`[upload] Gemini raw (primeiros 500 chars):\n${raw.substring(0, 500)}`)
       analise = JSON.parse(extractJson(raw))
-      console.log('[upload] Parsed OK — chaves:', Object.keys(analise).join(', '))
-    } catch (parseErr) {
-      console.error('[upload] ❌ JSON parse error:', parseErr instanceof Error ? parseErr.message : parseErr)
+      console.log('[upload] Gemini OK — chaves:', Object.keys(analise).join(', '))
+    } catch (err) {
+      if (blobUrl) await del(blobUrl).catch(() => {})
+      const msg = err instanceof Error ? err.message : String(err)
+      console.error('[upload] ❌ Gemini fallback error:', msg)
+      return NextResponse.json(
+        { ok: false, message: `Erro na análise IA (fallback): ${msg}` },
+        { status: 500 },
+      )
     }
-  } catch (err) {
-    if (blobUrl) await del(blobUrl).catch(() => {})
-    const msg = err instanceof Error ? err.message : String(err)
-    console.error('[upload] ❌ Anthropic API error:', msg)
-    return NextResponse.json({ ok: false, message: `Erro na análise IA: ${msg}` }, { status: 500 })
   }
 
   // Blob processado — deletar para economizar espaço

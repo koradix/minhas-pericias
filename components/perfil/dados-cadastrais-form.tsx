@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useActionState } from 'react'
 import { CheckCircle2, Loader2, User, Hash } from 'lucide-react'
 import { updateDadosCadastrais } from '@/lib/actions/perfil'
 
@@ -9,84 +9,79 @@ interface Props {
   initialCpf: string
 }
 
+type FormState = { ok: true; nome: string; cpf: string } | { ok: false; error: string } | null
+
+async function formAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const nome = (formData.get('nome') as string | null) ?? ''
+  const cpf  = (formData.get('cpf')  as string | null) ?? ''
+  const res = await updateDadosCadastrais({ nome, cpf })
+  if (res.ok) return { ok: true, nome: nome.trim(), cpf: cpf.trim() }
+  return { ok: false, error: res.error }
+}
+
+function formatCpf(value: string) {
+  const digits = value.replace(/\D/g, '').slice(0, 11)
+  return digits
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
+    .replace(/(\d{3})\.(\d{3})\.(\d{3})(\d)/, '$1.$2.$3-$4')
+}
+
 export function DadosCadastraisForm({ initialNome, initialCpf }: Props) {
-  const [nome, setNome] = useState(initialNome)
-  const [cpf, setCpf] = useState(initialCpf)
-  const [status, setStatus] = useState<'idle' | 'ok' | 'erro'>('idle')
-  const [errorMsg, setErrorMsg] = useState('')
-  const [isPending, startTransition] = useTransition()
+  const [state, dispatch, isPending] = useActionState(formAction, null)
 
-  function formatCpf(value: string) {
-    const digits = value.replace(/\D/g, '').slice(0, 11)
-    return digits
-      .replace(/(\d{3})(\d)/, '$1.$2')
-      .replace(/(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
-      .replace(/(\d{3})\.(\d{3})\.(\d{3})(\d)/, '$1.$2.$3-$4')
-  }
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setStatus('idle')
-    startTransition(async () => {
-      const res = await updateDadosCadastrais({ nome, cpf })
-      if (res.ok) {
-        setStatus('ok')
-        setTimeout(() => setStatus('idle'), 3000)
-      } else {
-        setStatus('erro')
-        setErrorMsg(res.error)
-      }
-    })
-  }
+  const nomeCurrent  = state?.ok ? state.nome : initialNome
+  const cpfCurrent   = state?.ok ? formatCpf(state.cpf) : formatCpf(initialCpf)
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form action={dispatch} className="space-y-4">
       <div className="space-y-3">
         <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+          <label htmlFor="nome" className="block text-xs font-semibold text-slate-700 mb-1.5">
             Nome completo
           </label>
           <div className="relative">
-            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
             <input
+              id="nome"
+              name="nome"
               type="text"
-              value={nome}
-              onChange={(e) => setNome(e.target.value)}
+              defaultValue={nomeCurrent}
+              key={nomeCurrent}
               disabled={isPending}
               placeholder="Seu nome completo"
               className="w-full h-10 rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-800 focus:border-lime-400 focus:ring-1 focus:ring-lime-400 disabled:opacity-60"
             />
           </div>
           <p className="mt-1 text-xs text-slate-400">
-            Nome usado nas buscas de nomeação — deve ser idêntico ao do Diário Oficial
+            Deve ser idêntico ao que aparece no Diário Oficial
           </p>
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-            CPF <span className="font-normal text-slate-400">(opcional, melhora precisão da busca)</span>
+          <label htmlFor="cpf" className="block text-xs font-semibold text-slate-700 mb-1.5">
+            CPF <span className="font-normal text-slate-400">(melhora a busca em tribunais)</span>
           </label>
           <div className="relative">
-            <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
             <input
+              id="cpf"
+              name="cpf"
               type="text"
-              value={cpf}
-              onChange={(e) => setCpf(formatCpf(e.target.value))}
+              defaultValue={cpfCurrent}
+              key={cpfCurrent}
               disabled={isPending}
               placeholder="000.000.000-00"
               inputMode="numeric"
               className="w-full h-10 rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-800 font-mono focus:border-lime-400 focus:ring-1 focus:ring-lime-400 disabled:opacity-60"
             />
           </div>
-          <p className="mt-1 text-xs text-slate-400">
-            Usado na busca em tribunais para evitar homônimos
-          </p>
         </div>
       </div>
 
-      {status === 'erro' && (
+      {state?.ok === false && (
         <p className="text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-xl px-3 py-2">
-          {errorMsg}
+          {state.error}
         </p>
       )}
 
@@ -96,10 +91,10 @@ export function DadosCadastraisForm({ initialNome, initialCpf }: Props) {
           disabled={isPending}
           className="flex items-center gap-1.5 rounded-xl bg-slate-900 hover:bg-slate-700 text-white font-semibold text-sm px-4 py-2 transition-colors disabled:opacity-50"
         >
-          {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+          {isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
           Salvar
         </button>
-        {status === 'ok' && (
+        {state?.ok === true && (
           <div className="flex items-center gap-1.5 text-sm text-lime-700">
             <CheckCircle2 className="h-4 w-4" />
             Salvo!

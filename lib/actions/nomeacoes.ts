@@ -354,26 +354,21 @@ export async function buscarNomeacoes(): Promise<BuscarResult> {
       }
     }
 
-    // ── PAID: busca por nome completo nos diários cíveis ────────────────────
-    const fromBusca = await radar.buscarPorNome(nomePeito, siglasFiltro)
-    console.log(`[buscarNomeacoes] Busca por nome: ${fromBusca.length} resultados antes do filtro`)
-    citacoes.push(...fromBusca)
-
-    // ── PAID: fallback — busca por primeiro+último nome se nome completo não trouxe nada ─
-    // DJe frequentemente exibe só primeiro e último nome sem nome do meio.
-    if (fromBusca.length === 0) {
-      const variacoes = buildVariacoes(nomePeito, cpfPerfil)
-      const primeiroUltimo = variacoes[0] // "Primeiro Último"
-      if (primeiroUltimo && primeiroUltimo.toLowerCase() !== nomePeito.toLowerCase()) {
-        try {
-          const fromAbrev = await radar.buscarPorNome(primeiroUltimo, siglasFiltro)
-          console.log(`[buscarNomeacoes] Fallback primeiro+último: ${fromAbrev.length} resultados`)
-          citacoes.push(...fromAbrev)
-        } catch {
-          // Non-blocking
-        }
-      }
+    // ── PAID: busca em paralelo — nome completo + primeiro+último (DJe abrevia nomes) ─
+    // Roda ambas as buscas simultaneamente. Dedup posterior remove sobreposições.
+    const variacoes = buildVariacoes(nomePeito, cpfPerfil)
+    const primeiroUltimo = variacoes[0] // "Primeiro Último"
+    const buscas: Promise<CitacaoResult[]>[] = [
+      radar.buscarPorNome(nomePeito, siglasFiltro).catch(() => []),
+    ]
+    if (primeiroUltimo && primeiroUltimo.toLowerCase() !== nomePeito.toLowerCase()) {
+      buscas.push(radar.buscarPorNome(primeiroUltimo, siglasFiltro).catch(() => []))
     }
+    const resultados = await Promise.all(buscas)
+    const fromNome = resultados[0]
+    const fromAbrev = resultados[1] ?? []
+    console.log(`[buscarNomeacoes] Busca nome completo: ${fromNome.length} | primeiro+último: ${fromAbrev.length}`)
+    citacoes.push(...fromNome, ...fromAbrev)
 
     // ── PAID: busca por CPF (alguns diários listam CPF junto ao nome) ───────
     if (cpfPerfil && cpfPerfil.replace(/\D/g, '').length === 11) {
@@ -397,13 +392,13 @@ export async function buscarNomeacoes(): Promise<BuscarResult> {
     const nomeLower = nomePeito.toLowerCase()
     // Também aceita primeiro+último (sem nome do meio) para tolerância ao DJe
     const parts = nomePeito.trim().split(/\s+/).filter(Boolean)
-    const primeiroUltimo = parts.length >= 3
+    const primeiroUltimoFiltro = parts.length >= 3
       ? `${parts[0]} ${parts[parts.length - 1]}`.toLowerCase()
       : nomeLower
     const unique = deduped.filter((c) => {
       if (!isSnippetNomeacaoCivel(c.snippet)) return false
       const snipLower = c.snippet.toLowerCase()
-      return snipLower.includes(nomeLower) || snipLower.includes(primeiroUltimo)
+      return snipLower.includes(nomeLower) || snipLower.includes(primeiroUltimoFiltro)
     })
 
     console.log(`[buscarNomeacoes] Após filtro de snippet: ${unique.length} de ${deduped.length}`)
