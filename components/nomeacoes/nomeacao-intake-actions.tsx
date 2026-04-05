@@ -9,7 +9,6 @@ import {
   CheckCircle2,
   Loader2,
   ChevronRight,
-  ClipboardList,
 } from 'lucide-react'
 import {
   extrairDadosNomeacao,
@@ -159,20 +158,6 @@ export function NomeacaoIntakeActions({
           </button>
         )}
       </div>
-
-      {/* Proposta de Honorários — aparece após extração */}
-      {hasExtracted && !periciaId && (
-        <Link href={`/nomeacoes/${nomeacaoId}/proposta`}>
-          <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 hover:bg-amber-100 transition-colors cursor-pointer">
-            <ClipboardList className="h-4 w-4 text-amber-600 flex-shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-amber-800">Proposta de honorários</p>
-              <p className="text-[10px] text-amber-600 mt-0.5">Gerar com IA ou usar modelo próprio</p>
-            </div>
-            <ChevronRight className="h-3.5 w-3.5 text-amber-500 flex-shrink-0" />
-          </div>
-        </Link>
-      )}
 
       {/* Step 2 — Gerar resumo */}
       <div className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 ${
