@@ -29,6 +29,8 @@ import { pericias, statusMapPericias } from '@/lib/mocks/pericias'
 import { PericiaDetailTabs } from '@/components/pericias/pericia-detail-tabs'
 import { PericiaWorkflow } from '@/components/pericias/pericia-workflow'
 import { PericiaEditCard } from '@/components/pericias/pericia-edit-card'
+import { getFeeProposal, getFeeProposalVersions } from '@/lib/actions/fee-proposal'
+import { getProposalTemplates } from '@/lib/actions/proposal-template'
 import type { ResumoData } from '@/lib/actions/processos-intake'
 import type { Metadata } from 'next'
 
@@ -382,6 +384,21 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
     }
   } catch {}
 
+  // Fetch proposal data
+  const session2 = await import('@/auth').then((m) => m.auth())
+  const userId2  = session2?.user?.id ?? ''
+
+  const analiseIA2: Record<string, unknown> | null = nomeacaoLink?.processSummary
+    ? (() => { try { return JSON.parse(nomeacaoLink!.processSummary!) as Record<string, unknown> } catch { return null } })()
+    : null
+
+  const [feeProposal, feeVersoes, proposalTemplates, peritoPerfil2] = await Promise.all([
+    getFeeProposal(pericia.id, userId2),
+    getFeeProposalVersions(pericia.id, userId2),
+    getProposalTemplates(userId2),
+    prisma.peritoPerfil.findUnique({ where: { userId: userId2 }, select: { formacao: true } }).catch(() => null),
+  ])
+
   const st = PERICIA_STATUS[pericia.status] ?? { label: pericia.status, variant: 'secondary' as const }
   const concluidos = checkpoints.filter((c) => c.status === 'concluido').length
   const total = checkpoints.length
@@ -460,23 +477,30 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
         )}
       </div>
 
-      {/* Proposta link — right-aligned quick action */}
-      <div className="flex justify-end">
-        <Link href={`/pericias/${pericia.id}/proposta`}>
-          <button className="flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 px-3 py-2 text-xs font-semibold text-emerald-700 transition-colors">
-            <FileText className="h-3.5 w-3.5" />
-            Proposta de honorários
-          </button>
-        </Link>
-      </div>
-
       {/* ── Tabs ── */}
       <PericiaDetailTabs
         periciaId={pericia.id}
         periciaStatus={pericia.status}
-        periciaTipo={pericia.tipo}
         enderecoPericia={pericia.endereco}
         checkpoints={checkpoints}
+        hasAnalise={!!nomeacaoLink?.extractedData}
+        hasProposta={!!feeProposal}
+        propostaProps={{
+          pericia: {
+            numero:   pericia.numero,
+            assunto:  pericia.assunto,
+            processo: pericia.processo,
+            vara:     pericia.vara,
+            partes:   pericia.partes,
+            tribunal: citacaoLink?.diarioSigla ?? pericia.vara?.match(/TJ[A-Z]{2}|DJ[A-Z]{2}/)?.[0] ?? 'TJRJ',
+          },
+          analise:       analiseIA2,
+          peritoNome:    session2?.user?.name ?? '',
+          peritoFormacao: peritoPerfil2?.formacao ?? '',
+          rascunho:      feeProposal,
+          versoes:       feeVersoes,
+          templates:     proposalTemplates,
+        }}
         resumoContent={
           <div className="space-y-5">
             {/* ── Workflow de próximos passos ─────────────────────────── */}

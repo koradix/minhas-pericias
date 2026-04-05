@@ -1,20 +1,23 @@
 'use client'
 
-import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useTransition, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import {
   FileText,
   Navigation,
   Camera,
   ScrollText,
-  MapPin,
   CheckCircle2,
   Circle,
   AlertCircle,
   Loader2,
+  ClipboardList,
+  Lock,
 } from 'lucide-react'
 import { criarRotaDaPericia } from '@/lib/actions/pericias-rota'
+import { PropostaTab } from '@/components/pericias/proposta-tab'
+import type { PropostaTabProps } from '@/components/pericias/proposta-tab'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -28,16 +31,20 @@ interface CheckpointItem {
 }
 
 interface Props {
-  periciaId: string
-  periciaStatus: string
-  periciaTipo: string
+  periciaId:      string
+  periciaStatus:  string
   enderecoPericia: string | null
-  checkpoints: CheckpointItem[]
-  resumoContent: React.ReactNode
-  fotosContent: React.ReactNode
+  checkpoints:    CheckpointItem[]
+  resumoContent:  React.ReactNode
+  fotosContent:   React.ReactNode
+  // Proposta
+  propostaProps:  Omit<PropostaTabProps, 'periciaId'>
+  hasAnalise:     boolean
+  hasProposta:    boolean
+  defaultTab?:    Tab
 }
 
-type Tab = 'resumo' | 'rota' | 'fotos' | 'laudo'
+type Tab = 'resumo' | 'proposta' | 'rota' | 'fotos' | 'laudo'
 
 const CP_STATUS_ICON: Record<string, React.ReactNode> = {
   concluido: <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0" />,
@@ -45,7 +52,7 @@ const CP_STATUS_ICON: Record<string, React.ReactNode> = {
   pendente:  <Circle       className="h-4 w-4 text-slate-300  flex-shrink-0" />,
 }
 
-// ─── Rota tab inner content ────────────────────────────────────────────────────
+// ─── Rota tab ─────────────────────────────────────────────────────────────────
 
 function RotaContent({
   periciaId,
@@ -58,7 +65,7 @@ function RotaContent({
 }) {
   const hasCheckpoints = checkpoints.length > 0
   const [endereco, setEndereco] = useState(enderecoPericia ?? '')
-  const [result, setResult] = useState<{ ok: boolean; mensagem: string } | null>(null)
+  const [result,   setResult]   = useState<{ ok: boolean; mensagem: string } | null>(null)
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
 
@@ -75,8 +82,6 @@ function RotaContent({
 
   return (
     <div className="space-y-5">
-
-      {/* Checkpoints list */}
       {hasCheckpoints ? (
         <section className="rounded-xl border border-[#e2e8f0] bg-white">
           <div className="flex items-center gap-3 px-6 py-5">
@@ -108,7 +113,6 @@ function RotaContent({
           </div>
         </section>
       ) : (
-        /* Agendar vistoria — formulário simples */
         <section className="rounded-xl border border-[#e2e8f0] bg-white">
           <div className="flex items-center gap-3 px-6 py-5">
             <h2 className="text-[15px] font-semibold text-[#1f2937] font-manrope">Agendar vistoria</h2>
@@ -129,13 +133,11 @@ function RotaContent({
                 className="w-full rounded-lg border border-[#e2e8f0] bg-white px-3 py-2.5 text-[14px] focus:outline-none focus:ring-2 focus:ring-[#416900]/20 focus:border-[#416900] placeholder-[#d1d5db] transition-all"
               />
             </div>
-
             {result && (
               <p className={`text-[13px] rounded-lg px-4 py-2.5 border ${result.ok ? 'text-[#416900] bg-[#f4fce3] border-[#d8f5a2]' : 'text-rose-700 bg-rose-50 border-rose-100'}`}>
                 {result.mensagem}
               </p>
             )}
-
             <button
               onClick={handleCriarRota}
               disabled={isPending || !endereco.trim()}
@@ -153,24 +155,74 @@ function RotaContent({
   )
 }
 
-// ─── Main tab component ────────────────────────────────────────────────────────
+// ─── Main component ───────────────────────────────────────────────────────────
 
 export function PericiaDetailTabs({
   periciaId,
   periciaStatus,
-  periciaTipo,
   enderecoPericia,
   checkpoints,
   resumoContent,
   fotosContent,
+  propostaProps,
+  hasAnalise,
+  hasProposta,
+  defaultTab,
 }: Props) {
-  const [activeTab, setActiveTab] = useState<Tab>('resumo')
+  const searchParams = useSearchParams()
+  const urlTab       = searchParams.get('tab') as Tab | null
 
-  const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
-    { id: 'resumo', label: 'Resumo',  icon: <FileText   className="h-3.5 w-3.5" /> },
-    { id: 'rota',   label: 'Rota',    icon: <Navigation  className="h-3.5 w-3.5" /> },
-    { id: 'fotos',  label: 'Fotos',   icon: <Camera      className="h-3.5 w-3.5" /> },
-    { id: 'laudo',  label: 'Laudo',   icon: <ScrollText  className="h-3.5 w-3.5" /> },
+  const [activeTab, setActiveTab] = useState<Tab>(
+    defaultTab ?? urlTab ?? 'resumo',
+  )
+
+  // Sync with URL param on navigation (e.g. clicking "Proposta de honorários" button)
+  useEffect(() => {
+    if (urlTab && urlTab !== activeTab) setActiveTab(urlTab)
+  }, [urlTab]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const tabs: {
+    id:       Tab
+    label:    string
+    icon:     React.ReactNode
+    disabled: boolean
+    badge?:   React.ReactNode
+  }[] = [
+    {
+      id:       'resumo',
+      label:    'Resumo',
+      icon:     <FileText   className="h-3.5 w-3.5" />,
+      disabled: false,
+    },
+    {
+      id:       'proposta',
+      label:    'Proposta',
+      icon:     !hasAnalise
+        ? <Lock          className="h-3.5 w-3.5" />
+        : <ClipboardList className="h-3.5 w-3.5" />,
+      disabled: false, // always clickable — shows locked state inside
+      badge:    hasProposta && hasAnalise
+        ? <span className="ml-1 flex h-2 w-2 rounded-full bg-[#416900]" />
+        : undefined,
+    },
+    {
+      id:       'rota',
+      label:    'Rota',
+      icon:     <Navigation className="h-3.5 w-3.5" />,
+      disabled: false,
+    },
+    {
+      id:       'fotos',
+      label:    'Fotos',
+      icon:     <Camera     className="h-3.5 w-3.5" />,
+      disabled: false,
+    },
+    {
+      id:       'laudo',
+      label:    'Laudo',
+      icon:     <ScrollText className="h-3.5 w-3.5" />,
+      disabled: false,
+    },
   ]
 
   return (
@@ -180,15 +232,18 @@ export function PericiaDetailTabs({
         {tabs.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => !tab.disabled && setActiveTab(tab.id)}
             className={`flex-1 flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-all ${
               activeTab === tab.id
                 ? 'bg-white text-[#1f2937] shadow-sm font-semibold'
-                : 'text-[#9ca3af] hover:text-[#374151]'
+                : tab.disabled
+                  ? 'text-[#d1d5db] cursor-not-allowed'
+                  : 'text-[#9ca3af] hover:text-[#374151]'
             }`}
           >
             {tab.icon}
             {tab.label}
+            {tab.badge}
           </button>
         ))}
       </div>
@@ -196,6 +251,13 @@ export function PericiaDetailTabs({
       {/* Tab content */}
       {activeTab === 'resumo' && (
         <div>{resumoContent}</div>
+      )}
+
+      {activeTab === 'proposta' && (
+        <PropostaTab
+          periciaId={periciaId}
+          {...propostaProps}
+        />
       )}
 
       {activeTab === 'rota' && (
@@ -225,20 +287,14 @@ export function PericiaDetailTabs({
               </Link>
             ) : (
               <>
-                <button
-                  disabled
-                  className="w-full flex items-center justify-between gap-2 rounded-lg border border-[#e2e8f0] bg-[#f8f9ff] px-4 py-3 text-left cursor-not-allowed"
-                >
+                <button disabled className="w-full flex items-center justify-between gap-2 rounded-lg border border-[#e2e8f0] bg-[#f8f9ff] px-4 py-3 text-left cursor-not-allowed">
                   <div className="flex items-center gap-2">
                     <ScrollText className="h-4 w-4 text-[#d1d5db] flex-shrink-0" />
                     <span className="text-[14px] font-medium text-[#d1d5db]">Estrutura do laudo</span>
                   </div>
                   <span className="text-[10px] font-semibold text-[#d1d5db] uppercase tracking-[0.1em]">Em breve</span>
                 </button>
-                <button
-                  disabled
-                  className="w-full flex items-center justify-between gap-2 rounded-lg border border-[#e2e8f0] bg-[#f8f9ff] px-4 py-3 text-left cursor-not-allowed"
-                >
+                <button disabled className="w-full flex items-center justify-between gap-2 rounded-lg border border-[#e2e8f0] bg-[#f8f9ff] px-4 py-3 text-left cursor-not-allowed">
                   <div className="flex items-center gap-2">
                     <FileText className="h-4 w-4 text-[#d1d5db] flex-shrink-0" />
                     <span className="text-[14px] font-medium text-[#d1d5db]">Rascunho do laudo</span>

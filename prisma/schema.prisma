@@ -407,3 +407,86 @@ model ProcessoIntake {
   criadoEm       DateTime @default(now())
   atualizadoEm   DateTime @updatedAt
 }
+
+// ─── Proposta de Honorários ───────────────────────────────────────────────────
+
+model ProposalTemplate {
+  id           String    @id @default(cuid())
+  userId       String
+  nome         String
+  descricao    String?
+  blobUrl      String
+  nomeArquivo  String
+  tamanhoBytes Int
+  tagsDetected String    @default("[]")  // JSON: string[]
+  ativo        Boolean   @default(true)
+  criadoEm     DateTime  @default(now())
+  atualizadoEm DateTime  @updatedAt
+  proposals    FeeProposal[]
+
+  @@index([userId])
+}
+
+model FeeProposal {
+  id                 String    @id @default(cuid())
+  periciaId          String
+  userId             String
+
+  // Snapshot do processo no momento da geração
+  numeroProcesso     String    @default("")
+  tribunal           String    @default("")
+  vara               String    @default("")
+  assunto            String    @default("")
+  partes             String    @default("")
+  tipoPericia        String    @default("")
+  endereco           String    @default("")
+  quesitos           String    @default("[]")   // JSON: string[]
+
+  // Dados do perito
+  peritoNome         String    @default("")
+  peritoQualificacao String    @default("")
+
+  // Conteúdo gerado (editável)
+  descricaoServicos  String    @default("")
+  resumoTecnico      String    @default("")
+  metodologia        String    @default("")
+  fasesEstimadas     String    @default("[]")   // JSON: string[]
+  horasEstimadas     Float?
+  despesasPrevistas  String    @default("")
+  valorHonorarios    Float?
+  custoDeslocamento  Float?
+  prazoEntrega       String    @default("")
+  condicoesPagamento String    @default("")
+  observacoes        String    @default("")
+  riscosEPendencias  String    @default("[]")   // JSON: string[]
+  complexidade       String    @default("")
+
+  // Controle de geração
+  templateId         String?
+  template           ProposalTemplate? @relation(fields: [templateId], references: [id])
+  iaModel            String    @default("")
+  iaRawOutput        String    @default("")     // JSON bruto — auditoria
+  status             String    @default("rascunho") // rascunho | gerada | enviada
+  versaoAtual        Int       @default(1)
+  dataProposta       String    @default("")
+
+  criadoEm           DateTime  @default(now())
+  atualizadoEm       DateTime  @updatedAt
+  versoes            FeeProposalVersion[]
+
+  @@unique([periciaId, userId])
+  @@index([userId])
+}
+
+model FeeProposalVersion {
+  id         String   @id @default(cuid())
+  proposalId String
+  versao     Int
+  snapshot   String   // JSON completo dos campos da proposta naquele momento
+  iaModel    String   @default("")
+  criadoEm   DateTime @default(now())
+
+  proposal   FeeProposal @relation(fields: [proposalId], references: [id])
+
+  @@index([proposalId])
+}
