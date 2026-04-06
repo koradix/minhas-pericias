@@ -42,6 +42,7 @@ export async function POST(request: NextRequest) {
   let buffer: Buffer
   let blobUrl: string | null = null
   let periciaIdRaw: string | null = null
+  let forceProvider: 'claude' | 'gemini' | null = null
 
   const allowed = [
     'application/pdf',
@@ -75,6 +76,7 @@ export async function POST(request: NextRequest) {
       tribunal:  string
       numero?:   string | null
       periciaId?: string | null
+      provider?: 'claude' | 'gemini'
     }
 
     blobUrl      = body.blobUrl
@@ -84,6 +86,7 @@ export async function POST(request: NextRequest) {
     tribunal     = body.tribunal
     numeroRaw    = body.numero ?? null
     periciaIdRaw = body.periciaId ?? null
+    forceProvider = body.provider ?? null
 
     if (!blobUrl) {
       return NextResponse.json({ ok: false, message: 'blobUrl obrigatório' }, { status: 400 })
@@ -147,7 +150,7 @@ export async function POST(request: NextRequest) {
   const anthropicKey = process.env.ANTHROPIC_API_KEY
   let anthropicOk = false
 
-  if (anthropicKey) {
+  if (anthropicKey && forceProvider !== 'gemini') {
     try {
       const anthropic = new Anthropic({ apiKey: anthropicKey })
       const model = 'claude-haiku-4-5-20251001'
@@ -199,8 +202,11 @@ export async function POST(request: NextRequest) {
     const geminiKey = process.env.GEMINI_API_KEY
     if (!geminiKey) {
       if (blobUrl) await del(blobUrl).catch(() => {})
+      const msg = forceProvider === 'gemini'
+        ? 'GEMINI_API_KEY não configurada'
+        : 'IA indisponível: sem créditos Claude e GEMINI_API_KEY não configurada'
       return NextResponse.json(
-        { ok: false, message: 'IA indisponível: sem créditos Claude e GEMINI_API_KEY não configurada' },
+        { ok: false, message: msg },
         { status: 500 },
       )
     }
