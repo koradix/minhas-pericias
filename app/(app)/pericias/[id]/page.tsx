@@ -32,6 +32,7 @@ import { PericiaEditCard } from '@/components/pericias/pericia-edit-card'
 import { getFeeProposal, getFeeProposalVersions } from '@/lib/actions/fee-proposal'
 import { getProposalTemplates } from '@/lib/actions/proposal-template'
 import type { ResumoData } from '@/lib/actions/processos-intake'
+import { isAnaliseProcessoV2, toAnaliseCompativel } from '@/lib/ai/prompt-mestre-resumo'
 import type { Metadata } from 'next'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -388,8 +389,15 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
   const session2 = await import('@/auth').then((m) => m.auth())
   const userId2  = session2?.user?.id ?? ''
 
+  // Parse processSummary — normalise v2 → v1-compat shape so PropostaTab always sees the same structure
   const analiseIA2: Record<string, unknown> | null = nomeacaoLink?.processSummary
-    ? (() => { try { return JSON.parse(nomeacaoLink!.processSummary!) as Record<string, unknown> } catch { return null } })()
+    ? (() => {
+        try {
+          const parsed = JSON.parse(nomeacaoLink!.processSummary!) as Record<string, unknown>
+          if (isAnaliseProcessoV2(parsed)) return toAnaliseCompativel(parsed) as unknown as Record<string, unknown>
+          return parsed
+        } catch { return null }
+      })()
     : null
 
   const [feeProposal, feeVersoes, proposalTemplates, peritoPerfil2] = await Promise.all([

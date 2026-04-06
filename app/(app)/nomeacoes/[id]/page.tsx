@@ -19,12 +19,13 @@ import { NomeacaoDocumentosSection } from '@/components/nomeacoes/nomeacao-docum
 import { EscavadorDocumentosSection } from '@/components/nomeacoes/escavador-documentos'
 import { listarDocumentosNomeacao } from '@/lib/actions/nomeacoes-documentos'
 import { AnaliseProcessoBlock } from '@/components/nomeacoes/analise-processo-block'
+import { AnaliseProcessoV2Block } from '@/components/nomeacoes/analise-processo-v2-block'
 import { scoreBadgeLabel, scoreBadgeClass } from '@/lib/utils/match-nomeacao'
 import { cn } from '@/lib/utils'
 import type { ExtractProcessDataOutput } from '@/lib/ai/types'
 import type { ResumoNomeacao } from '@/lib/actions/nomeacoes-intake'
-import { isAnaliseProcesso } from '@/lib/ai/prompt-mestre-resumo'
-import type { AnaliseProcesso } from '@/lib/ai/prompt-mestre-resumo'
+import { isAnaliseProcesso, isAnaliseProcessoV2 } from '@/lib/ai/prompt-mestre-resumo'
+import type { AnaliseProcesso, AnaliseProcessoV2 } from '@/lib/ai/prompt-mestre-resumo'
 import type { Metadata } from 'next'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -100,13 +101,16 @@ export default async function NomeacaoDetailPage({ params }: { params: Promise<{
     try { dadosExtraidos = JSON.parse(nomeacao.extractedData) as ExtractProcessDataOutput } catch {}
   }
 
-  // Parse process summary — suporta AnaliseProcesso (novo) e ResumoNomeacao (legado)
+  // Parse process summary — suporta V2, V1 e ResumoNomeacao (legado)
+  let analiseV2: AnaliseProcessoV2 | null = null
   let analise: AnaliseProcesso | null = null
   let resumo: ResumoNomeacao | null = null
   if (nomeacao.processSummary) {
     try {
       const parsed = JSON.parse(nomeacao.processSummary) as Record<string, unknown>
-      if (isAnaliseProcesso(parsed)) {
+      if (isAnaliseProcessoV2(parsed)) {
+        analiseV2 = parsed
+      } else if (isAnaliseProcesso(parsed)) {
         analise = parsed
       } else {
         resumo = parsed as unknown as ResumoNomeacao
@@ -264,19 +268,19 @@ export default async function NomeacaoDetailPage({ params }: { params: Promise<{
             </section>
           )}
 
-          {/* Process summary — AnaliseProcesso (novo) ou ResumoNomeacao (legado) */}
-          {(analise || resumo) && (
+          {/* Process summary — V2, V1 ou ResumoNomeacao (legado) */}
+          {(analiseV2 || analise || resumo) && (
             <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
               <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
                 <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-50">
                   <FileText className="h-3.5 w-3.5 text-violet-600" />
                 </div>
-                <h2 className="text-sm font-semibold text-slate-800">
-                  {analise ? 'Análise do processo' : 'Resumo do processo'}
-                </h2>
+                <h2 className="text-sm font-semibold text-slate-800">Análise do processo</h2>
               </div>
               <div className="px-5 py-4">
-                {analise ? (
+                {analiseV2 ? (
+                  <AnaliseProcessoV2Block analise={analiseV2} nomeacaoId={nomeacao.id} />
+                ) : analise ? (
                   <AnaliseProcessoBlock analise={analise} nomeacaoId={nomeacao.id} />
                 ) : resumo ? (
                   <div className="space-y-4">

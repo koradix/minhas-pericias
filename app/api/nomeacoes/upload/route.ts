@@ -4,7 +4,11 @@ import { prisma } from '@/lib/prisma'
 import { del, get as blobGet } from '@vercel/blob'
 import Anthropic from '@anthropic-ai/sdk'
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import { SYSTEM_PROMPT, buildUserPrompt, buildPdfUserPrompt } from '@/lib/ai/prompt-mestre-resumo'
+import {
+  SYSTEM_PROMPT_V2,
+  buildUserPromptV2,
+  buildPdfUserPromptV2,
+} from '@/lib/ai/prompt-mestre-resumo'
 
 export const maxDuration = 60
 
@@ -155,12 +159,12 @@ export async function POST(request: NextRequest) {
             type: 'document',
             source: { type: 'base64', media_type: 'application/pdf', data: pdfParaEnviar.toString('base64') },
           } as Anthropic.DocumentBlockParam,
-          { type: 'text', text: buildPdfUserPrompt(contexto) },
+          { type: 'text', text: buildPdfUserPromptV2(contexto) },
         ]
       } else {
         const textoDocx = buffer.toString('utf8').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
         console.log(`[upload] DOCX: ${fileName} | texto: ${textoDocx.length} chars`)
-        userContent = buildUserPrompt(
+        userContent = buildUserPromptV2(
           textoDocx.length > 100
             ? textoDocx
             : `Arquivo: ${fileName}\nTribunal: ${tribunal}${numeroRaw ? `\nNúmero: ${numeroRaw}` : ''}`
@@ -170,7 +174,7 @@ export async function POST(request: NextRequest) {
       const res = await anthropic.messages.create({
         model,
         max_tokens: 4096,
-        system: SYSTEM_PROMPT,
+        system: SYSTEM_PROMPT_V2,
         messages: [{ role: 'user', content: userContent }],
       })
       const raw = res.content[0]?.type === 'text' ? res.content[0].text : '{}'
@@ -206,7 +210,7 @@ export async function POST(request: NextRequest) {
       const genAI = new GoogleGenerativeAI(geminiKey)
       const geminiModel = genAI.getGenerativeModel({
         model: 'gemini-2.0-flash',
-        systemInstruction: SYSTEM_PROMPT,
+        systemInstruction: SYSTEM_PROMPT_V2,
       })
 
       let geminiResult
@@ -218,11 +222,11 @@ export async function POST(request: NextRequest) {
               data: pdfParaEnviar.toString('base64'),
             },
           },
-          buildPdfUserPrompt(contexto),
+          buildPdfUserPromptV2(contexto),
         ])
       } else {
         const textoDocx = buffer.toString('utf8').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
-        const prompt = buildUserPrompt(
+        const prompt = buildUserPromptV2(
           textoDocx.length > 100
             ? textoDocx
             : `Arquivo: ${fileName}\nTribunal: ${tribunal}${numeroRaw ? `\nNúmero: ${numeroRaw}` : ''}`
@@ -250,18 +254,45 @@ export async function POST(request: NextRequest) {
   // Blob processado — deletar para economizar espaço
   if (blobUrl) await del(blobUrl).catch(() => {})
 
+  // ── Extract fields — v2 and v1 both handled ───────────────────────────────
+  const isV2   = analise.analysis_version === '2.0'
+  const op     = isV2 ? (analise.operacional as Record<string, unknown>) : null
+  const nd2    = op ? (op.nomeacaoDespacho as Record<string, unknown> | null) : null
+  const ah2    = op ? (op.aceiteHonorarios as Record<string, unknown> | null) : null
+  const pt     = isV2 ? (analise.partes as Record<string, unknown>) : null
+
+  const autorStr  = isV2 ? (pt?.autor as string | null) ?? null : (analise.autor as string | null) ?? null
+  const reuStr    = isV2 ? (pt?.reu   as string | null) ?? null : (analise.reu   as string | null) ?? null
+  const varaStr   = isV2 ? (op?.vara  as string | null) ?? null : (analise.vara  as string | null) ?? null
+  const tribStr   = isV2 ? (op?.tribunal as string | null) ?? tribunal : (analise.tribunal as string | null) ?? tribunal
+  const tipoAcao  = isV2
+    ? ((analise.tipo_processo as Record<string, string | null>)?.natureza ?? (analise.tipo_processo as Record<string, string | null>)?.classe ?? null)
+    : (analise.resumoProcesso as Record<string, string> | null)?.tipoAcao ?? null
+  const quesitos  = isV2
+    ? ((nd2?.quesitos as string[] | undefined) ?? [])
+    : ((analise.nomeacaoDespacho as Record<string, unknown> | null)?.quesitos as string[] | undefined) ?? []
+  const enderecoStr = isV2
+    ? (op?.enderecoVistoria as string | null) ?? null
+    : (analise.enderecoVistoria as string | null) ?? null
+  const tipoPericia = isV2
+    ? (op?.tipoPericia as string | null) ?? null
+    : (analise.tipoPericia as string | null) ?? null
+
   // ── Upsert Processo + Nomeacao ─────────────────────────────────────────────
-  const numeroProcesso = (analise.numeroProcesso as string | null) ?? numeroRaw ?? `MAN-${Date.now()}`
+  const numeroProcesso = isV2
+    ? (op?.numeroProcesso as string | null) ?? numeroRaw ?? `MAN-${Date.now()}`
+    : (analise.numeroProcesso as string | null) ?? numeroRaw ?? `MAN-${Date.now()}`
+
   const partes = JSON.stringify([
-    analise.autor ? { nome: analise.autor, tipo: 'Autor' } : null,
-    analise.reu   ? { nome: analise.reu,   tipo: 'Réu'   } : null,
+    autorStr ? { nome: autorStr, tipo: 'Autor' } : null,
+    reuStr   ? { nome: reuStr,   tipo: 'Réu'   } : null,
   ].filter(Boolean))
 
   try {
     const processoFields = {
-      tribunal:      (analise.tribunal as string | null) ?? tribunal,
-      assunto:       (analise.resumoProcesso as Record<string, string> | null)?.tipoAcao ?? null,
-      orgaoJulgador: (analise.vara as string | null) ?? null,
+      tribunal:      tribStr,
+      assunto:       tipoAcao,
+      orgaoJulgador: varaStr,
       dataUltimaAtu: new Date().toISOString().split('T')[0],
       partes,
     }
@@ -274,14 +305,14 @@ export async function POST(request: NextRequest) {
 
     const extractedData = JSON.stringify({
       numeroProcesso,
-      autor:       analise.autor ?? null,
-      reu:         analise.reu ?? null,
-      vara:        analise.vara ?? null,
-      tribunal:    analise.tribunal ?? tribunal,
-      assunto:     (analise.resumoProcesso as Record<string, string> | null)?.tipoAcao ?? null,
-      quesitos:    (analise.nomeacaoDespacho as Record<string, unknown> | null)?.quesitos ?? [],
-      endereco:    analise.enderecoVistoria ?? null,
-      tipoPericia: analise.tipoPericia ?? null,
+      autor:       autorStr,
+      reu:         reuStr,
+      vara:        varaStr,
+      tribunal:    tribStr,
+      assunto:     tipoAcao,
+      quesitos,
+      endereco:    enderecoStr,
+      tipoPericia,
     })
 
     const nomeacao = await prisma.nomeacao.upsert({
@@ -309,9 +340,6 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    const nd = analise.nomeacaoDespacho as Record<string, unknown> | null
-    const ah = analise.aceiteHonorarios as Record<string, unknown> | null
-
     return NextResponse.json({
       ok: true,
       nomeacaoId: nomeacao.id,
@@ -320,10 +348,12 @@ export async function POST(request: NextRequest) {
         tribunal:           processoFields.tribunal,
         assunto:            processoFields.assunto,
         vara:               processoFields.orgaoJulgador,
-        autor:              (analise.autor as string | null) ?? null,
-        reu:                (analise.reu   as string | null) ?? null,
-        complexidade:       (ah?.complexidade as string | null) ?? null,
-        pontoControvertido: (nd?.determinacaoJuiz as string | null) ?? null,
+        autor:              autorStr,
+        reu:                reuStr,
+        complexidade:       (ah2?.complexidade as string | null) ?? null,
+        pontoControvertido: isV2
+          ? (analise.ponto_controvertido as Record<string, string | null>)?.resumo ?? null
+          : (nd2?.determinacaoJuiz as string | null) ?? null,
       },
     })
   } catch (err) {
