@@ -2,12 +2,14 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { ExternalLink, Eye, FileText, Hash, Loader2, Plus, X } from 'lucide-react'
+import { ExternalLink, Eye, FileText, Hash, Loader2, Plus, X, ShieldCheck, Download, Calendar } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/shared/empty-state'
 import { marcarVisualizado } from '@/lib/actions/nomeacoes'
 import { criarPericiaDeCitacao, rejeitarCitacao } from '@/lib/actions/citacao-to-pericia'
+import { buscarDocumentosPorCitacao, listarDocumentosPorCitacao } from '@/lib/actions/citacao-documentos'
 import type { CitacaoSerializada } from '@/lib/data/nomeacoes'
+import type { CitacaoDocumento } from '@/lib/actions/citacao-documentos'
 import { cn } from '@/lib/utils'
 
 interface Props {
@@ -22,8 +24,12 @@ function CitacaoCard({ citacao }: { citacao: CitacaoSerializada }) {
   const [isPending, startTransition] = useTransition()
   const [isCriando, startCriarTransition] = useTransition()
   const [isRejeitando, startRejeitarTransition] = useTransition()
+  const [isBuscandoDocs, startBuscarDocs] = useTransition()
   const [criarErro, setCriarErro] = useState<string | null>(null)
   const [rejeitada, setRejeitada] = useState(false)
+  const [docsStatus, setDocsStatus] = useState<'idle' | 'aguardando' | 'encontrado' | 'erro'>('idle')
+  const [docsErro, setDocsErro] = useState('')
+  const [docs, setDocs] = useState<CitacaoDocumento[]>([])
   const router = useRouter()
 
   const dataFormatada = new Date(citacao.diarioData).toLocaleDateString('pt-BR', {
@@ -54,6 +60,21 @@ function CitacaoCard({ citacao }: { citacao: CitacaoSerializada }) {
     startRejeitarTransition(async () => {
       const res = await rejeitarCitacao(citacao.id)
       if (res.ok) setRejeitada(true)
+    })
+  }
+
+  function handleBuscarDocs() {
+    setDocsStatus('idle')
+    setDocsErro('')
+    startBuscarDocs(async () => {
+      const res = await buscarDocumentosPorCitacao(citacao.id)
+      if (!res.ok) { setDocsStatus('erro'); setDocsErro(res.error); return }
+      if (res.status === 'aguardando') { setDocsStatus('aguardando'); return }
+      // Encontrado — busca a lista
+      const lista = await listarDocumentosPorCitacao(citacao.id)
+      setDocs(lista)
+      setDocsStatus('encontrado')
+      setLida(true)
     })
   }
 
@@ -130,7 +151,7 @@ function CitacaoCard({ citacao }: { citacao: CitacaoSerializada }) {
               </a>
             )}
 
-            <div className="ml-auto flex items-center gap-2">
+            <div className="ml-auto flex items-center gap-2 flex-wrap justify-end">
               {!lida && (
                 <button
                   onClick={handleMarcarLida}
@@ -145,15 +166,37 @@ function CitacaoCard({ citacao }: { citacao: CitacaoSerializada }) {
               <button
                 onClick={handleRejeitar}
                 disabled={isRejeitando || isCriando}
-                title="Descartar — não aparece mais"
+                title="Descartar"
                 className="flex items-center gap-1 rounded-md border border-slate-200 hover:border-rose-300 hover:text-rose-600 px-2 py-1 text-[11px] text-slate-400 transition-colors disabled:opacity-40"
               >
-                {isRejeitando
-                  ? <Loader2 className="h-3 w-3 animate-spin" />
-                  : <X className="h-3 w-3" />
-                }
+                {isRejeitando ? <Loader2 className="h-3 w-3 animate-spin" /> : <X className="h-3 w-3" />}
                 Descartar
               </button>
+
+              {/* Buscar documentos via PJe — ação primária quando tem CNJ */}
+              {citacao.numeroProcesso && docsStatus === 'idle' && (
+                <button
+                  onClick={handleBuscarDocs}
+                  disabled={isBuscandoDocs}
+                  className="flex items-center gap-1 rounded-md bg-[#1f2937] hover:bg-[#374151] px-2.5 py-1 text-[11px] font-semibold text-white transition-colors disabled:opacity-50"
+                >
+                  {isBuscandoDocs
+                    ? <><Loader2 className="h-3 w-3 animate-spin" /> Buscando…</>
+                    : <><ShieldCheck className="h-3 w-3" /> Buscar via PJe</>
+                  }
+                </button>
+              )}
+
+              {docsStatus === 'aguardando' && (
+                <button
+                  onClick={handleBuscarDocs}
+                  disabled={isBuscandoDocs}
+                  className="flex items-center gap-1 rounded-md border border-blue-200 bg-blue-50 text-blue-700 px-2.5 py-1 text-[11px] font-semibold transition-colors disabled:opacity-50"
+                >
+                  {isBuscandoDocs ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+                  Aguardando PJe… verificar
+                </button>
+              )}
 
               <button
                 onClick={handleCriarPericia}
@@ -167,6 +210,41 @@ function CitacaoCard({ citacao }: { citacao: CitacaoSerializada }) {
               </button>
             </div>
           </div>
+
+          {docsStatus === 'erro' && (
+            <p className="mt-2 text-[11px] text-rose-600">{docsErro}</p>
+          )}
+
+          {docsStatus === 'encontrado' && docs.length > 0 && (
+            <div className="mt-3 space-y-1.5">
+              <p className="text-[10px] font-semibold text-[#416900] uppercase tracking-wider">
+                {docs.length} documento{docs.length !== 1 ? 's' : ''} encontrado{docs.length !== 1 ? 's' : ''} no processo
+              </p>
+              {docs.map((doc) => (
+                <div key={doc.id} className="flex items-center gap-2 rounded-lg border border-[#d8f5a2] bg-[#f4fce3] px-3 py-2">
+                  <FileText className="h-3.5 w-3.5 text-[#416900] flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[12px] font-semibold text-[#1f2937] truncate">{doc.nome}</p>
+                    {doc.dataPublicacao && (
+                      <p className="flex items-center gap-1 text-[10px] text-[#9ca3af]">
+                        <Calendar className="h-2.5 w-2.5" />
+                        {doc.dataPublicacao.split('-').reverse().join('/')}
+                        {doc.paginas ? ` · ${doc.paginas} pág.` : ''}
+                      </p>
+                    )}
+                  </div>
+                  <a
+                    href={`/api/nomeacoes/doc-download?docId=${doc.id}`}
+                    download
+                    title="Baixar PDF"
+                    className="flex items-center justify-center h-7 w-7 rounded-md hover:bg-[#d8f5a2] text-[#416900] transition-colors flex-shrink-0"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                  </a>
+                </div>
+              ))}
+            </div>
+          )}
 
           {criarErro && (
             <p className="mt-2 text-[11px] text-rose-600">{criarErro}</p>

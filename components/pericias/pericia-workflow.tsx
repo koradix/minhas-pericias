@@ -4,8 +4,8 @@ import { useState, useRef, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { uploadFile } from '@/lib/client/upload'
 import { atualizarDadosPericia } from '@/lib/actions/pericias-update'
-import { buscarDocumentosPorPericia, listarDocumentosPorPericia } from '@/lib/actions/nomeacoes-documentos'
-import type { ProcessoDocumentoRow } from '@/lib/actions/nomeacoes-documentos'
+import { buscarDocumentosPorPericia, listarDocumentosPorPericia, sugerirProcessosSemCNJ, vincularProcessoPericia } from '@/lib/actions/nomeacoes-documentos'
+import type { ProcessoDocumentoRow, ProcessoSugestao } from '@/lib/actions/nomeacoes-documentos'
 import {
   ExternalLink,
   Upload,
@@ -70,6 +70,9 @@ type EscavadorFase =
   | { fase: 'found'; docs: ProcessoDocumentoRow[] }
   | { fase: 'nenhum' }
   | { fase: 'erro'; mensagem: string }
+  | { fase: 'buscando_processo' }
+  | { fase: 'escolher_processo'; sugestoes: ProcessoSugestao[] }
+  | { fase: 'nenhum_processo' }
 
 type UploadState =
   | { fase: 'idle' }
@@ -136,6 +139,7 @@ export function PericiaWorkflow({
   const [step1Done, setStep1Done] = useState(false)
   const [escavadorFase, setEscavadorFase] = useState<EscavadorFase>({ fase: 'idle' })
   const [isPendingEscavador, startEscavador] = useTransition()
+  const [cnj, setCnj] = useState<string | null>(processoNumero)
   const router = useRouter()
 
   const tribunal = TRIBUNAL_URLS[tribunalSigla.toUpperCase()]
@@ -184,6 +188,7 @@ export function PericiaWorkflow({
     router.refresh()
   }
 
+  // Busca com CNJ conhecido
   function handleBuscarEscavador() {
     setEscavadorFase({ fase: 'buscando' })
     startEscavador(async () => {
@@ -194,6 +199,26 @@ export function PericiaWorkflow({
       const docs = await listarDocumentosPorPericia(periciaId)
       setEscavadorFase(docs.length > 0 ? { fase: 'found', docs } : { fase: 'nenhum' })
     })
+  }
+
+  // Busca por nome quando não há CNJ
+  function handleBuscarPorNome() {
+    setEscavadorFase({ fase: 'buscando_processo' })
+    startEscavador(async () => {
+      const res = await sugerirProcessosSemCNJ(periciaId)
+      if (!res.ok) { setEscavadorFase({ fase: 'erro', mensagem: res.error }); return }
+      if (res.processos.length === 0) { setEscavadorFase({ fase: 'nenhum_processo' }); return }
+      setEscavadorFase({ fase: 'escolher_processo', sugestoes: res.processos })
+    })
+  }
+
+  // Vincula CNJ selecionado à perícia e inicia busca de docs
+  async function handleSelecionarProcesso(sugestao: ProcessoSugestao) {
+    const vinc = await vincularProcessoPericia(periciaId, sugestao.cnj)
+    if (!vinc.ok) { setEscavadorFase({ fase: 'erro', mensagem: vinc.error ?? 'Erro ao vincular' }); return }
+    setCnj(sugestao.cnj)
+    router.refresh()
+    handleBuscarEscavador()
   }
 
   async function handleAnalisarDocEscavador(doc: ProcessoDocumentoRow) {
@@ -273,7 +298,20 @@ export function PericiaWorkflow({
 
             {/* ── Busca automática de documentos ─────────────────────────────── */}
             <div className="mt-4 space-y-2">
-              {escavadorFase.fase === 'idle' && !analiseFeita && (
+
+              {/* Sem CNJ: botão para buscar por nome */}
+              {escavadorFase.fase === 'idle' && !analiseFeita && !cnj && (
+                <button
+                  onClick={handleBuscarPorNome}
+                  disabled={isPendingEscavador}
+                  className="inline-flex items-center gap-2 rounded-lg bg-[#1f2937] hover:bg-[#374151] px-4 py-2.5 text-[14px] font-semibold text-white transition-all disabled:opacity-50"
+                >
+                  <Search className="h-4 w-4" /> Buscar processos onde fui nomeado
+                </button>
+              )}
+
+              {/* Com CNJ: botão para buscar documentos */}
+              {escavadorFase.fase === 'idle' && !analiseFeita && cnj && (
                 <button
                   onClick={handleBuscarEscavador}
                   disabled={isPendingEscavador}
@@ -283,7 +321,44 @@ export function PericiaWorkflow({
                 </button>
               )}
 
-              {(escavadorFase.fase === 'buscando' || isPendingEscavador) && (
+              {/* Buscando processo por nome */}
+              {(escavadorFase.fase === 'buscando_processo' || (isPendingEscavador && !cnj)) && (
+                <div className="flex items-center gap-2 text-[14px] text-[#6b7280]">
+                  <Loader2 className="h-4 w-4 animate-spin text-[#416900]" />
+                  Buscando processos com seu nome…
+                </div>
+              )}
+
+              {/* Lista de processos sugeridos */}
+              {escavadorFase.fase === 'escolher_processo' && (
+                <div className="space-y-2">
+                  <p className="text-[12px] font-semibold text-[#6b7280] uppercase tracking-wider">
+                    {escavadorFase.sugestoes.length} processo{escavadorFase.sugestoes.length !== 1 ? 's' : ''} encontrado{escavadorFase.sugestoes.length !== 1 ? 's' : ''} — selecione para continuar
+                  </p>
+                  {escavadorFase.sugestoes.map((s) => (
+                    <div key={s.cnj} className="flex items-start gap-3 rounded-lg border border-[#e2e8f0] bg-[#f8f9ff] px-4 py-3">
+                      <FileText className="h-4 w-4 text-[#9ca3af] flex-shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13px] font-semibold text-[#1f2937] font-mono leading-snug">{s.cnj}</p>
+                        <p className="text-[12px] text-[#6b7280] truncate mt-0.5">{s.orgao}</p>
+                        {s.partes && <p className="text-[11px] text-[#9ca3af] truncate">{s.partes}</p>}
+                      </div>
+                      <button
+                        onClick={() => handleSelecionarProcesso(s)}
+                        className="flex items-center gap-1 flex-shrink-0 rounded-md bg-[#416900] hover:bg-[#2d4a00] text-white text-[12px] font-semibold px-3 py-1.5 transition-all"
+                      >
+                        Usar <ChevronRight className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {escavadorFase.fase === 'nenhum_processo' && (
+                <p className="text-[13px] text-[#9ca3af]">Nenhum processo encontrado com seu nome. Informe o número do processo na perícia ou use o upload manual.</p>
+              )}
+
+              {(escavadorFase.fase === 'buscando' || (isPendingEscavador && !!cnj)) && (
                 <div className="flex items-center gap-2 text-[14px] text-[#6b7280]">
                   <Loader2 className="h-4 w-4 animate-spin text-[#416900]" />
                   Buscando documentos…

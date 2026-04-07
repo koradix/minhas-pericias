@@ -628,22 +628,31 @@ export class EscavadorService implements RadarProvider {
     for (const item of items) {
       if (!item.numero_cnj) continue
 
-      // Verifica se o perito está como "PERITO" nos envolvidos
+      // Verifica o papel da pessoa no processo (se CPF fornecido, confia no match do Escavador;
+      // se só nome, confirma que o nome bate). Aceita qualquer tipo de envolvimento —
+      // tribunais tagueiam como "PERITO", "AUXILIAR DA JUSTIÇA", "TÉCNICO", "EXPERT", etc.
       const envolvidos = item.envolvidos ?? []
-      const ehPerito = envolvidos.some((e) => {
-        const tipoNorm = (e.tipo_normalizado ?? e.tipo ?? '').toLowerCase()
-        const nomeEnv = norm(e.nome ?? '')
-        const matchNome = cpf ? true : nomeEnv.includes(nomeNorm) || nomeNorm.includes(nomeEnv)
-        return tipoNorm.includes('perit') && matchNome
-      })
+      if (!cpf) {
+        // Sem CPF: confirma que o nome está de fato nos envolvidos
+        const nomePresente = envolvidos.some((e) => {
+          const nomeEnv = norm(e.nome ?? '')
+          return nomeEnv.includes(nomeNorm) || nomeNorm.includes(nomeEnv)
+        })
+        if (!nomePresente) continue
+      }
 
-      if (!ehPerito) continue
+      // Detecta o tipo para exibir no snippet
+      const tipoEnvolvido = envolvidos
+        .find((e) => {
+          const n = norm(e.nome ?? '')
+          return cpf || n.includes(nomeNorm) || nomeNorm.includes(n)
+        })
+        ?.tipo_normalizado ?? 'Envolvido'
 
-      // Constrói snippet informativo (inclui "perito" para passar filtro isSnippetNomeacao)
       const partes = [item.titulo_polo_ativo, item.titulo_polo_passivo].filter(Boolean).join(' × ')
       const orgao = item.orgao_julgador ?? item.tribunal ?? ''
       const snippet = [
-        `Perito nomeado no processo ${item.numero_cnj}`,
+        `${tipoEnvolvido} no processo ${item.numero_cnj}`,
         orgao ? `| ${orgao}` : '',
         partes ? `| ${partes}` : '',
       ].filter(Boolean).join(' ')
@@ -813,13 +822,24 @@ export class EscavadorService implements RadarProvider {
 
   async solicitarAtualizacaoV2(
     cnj: string,
-    flags: { documentos_publicos?: boolean; autos?: boolean } = {},
+    flags: {
+      documentos_publicos?: boolean
+      autos?: boolean
+      usuario?: string
+      senha?: string
+      utilizar_certificado?: boolean  // certificado A1 pré-cadastrado no painel Escavador
+      documentos_especificos?: string // ex: "INICIAIS"
+    } = {},
   ): Promise<{ ok: boolean; message?: string }> {
     try {
       const cnj2 = encodeURIComponent(cnj)
-      const body: Record<string, number> = {}
+      const body: Record<string, number | string> = {}
       if (flags.documentos_publicos) body.documentos_publicos = 1
       if (flags.autos) body.autos = 1
+      if (flags.usuario) body.usuario = flags.usuario
+      if (flags.senha) body.senha = flags.senha
+      if (flags.utilizar_certificado) body.utilizar_certificado = 1
+      if (flags.documentos_especificos) body.documentos_especificos = flags.documentos_especificos
 
       const controller = new AbortController()
       const timer = setTimeout(() => controller.abort(), 20_000)
@@ -849,6 +869,123 @@ export class EscavadorService implements RadarProvider {
     } catch (err) {
       return { ok: false, message: (err as Error).message }
     }
+  }
+
+  // ── V2 ENDPOINT — Status da atualização solicitada ───────────────────────────
+  //
+  // GET api/v2/processos/numero_cnj/{cnj}/status-atualizacao
+  // Retorna: PENDENTE | SUCESSO | ERRO
+  // Usar após solicitarAtualizacaoV2 com autos/certificado para saber quando buscar.
+
+  async getStatusAtualizacaoV2(cnj: string): Promise<'PENDENTE' | 'SUCESSO' | 'ERRO' | null> {
+    try {
+      const cnj2 = encodeURIComponent(cnj)
+      const controller = new AbortController()
+      const timer = setTimeout(() => controller.abort(), 10_000)
+      let res: Response
+      try {
+        res = await fetch(
+          `${this.baseUrlV2}/processos/numero_cnj/${cnj2}/status-atualizacao`,
+          { headers: this.headers(), cache: 'no-store', signal: controller.signal },
+        )
+      } catch { clearTimeout(timer); return null }
+      clearTimeout(timer)
+      if (!res.ok) return null
+      const data = await res.json() as { status?: string }
+      const s = (data?.status ?? '').toUpperCase()
+      if (s === 'PENDENTE' || s === 'SUCESSO' || s === 'ERRO') return s
+      return null
+    } catch { return null }
+  }
+
+  // ── V2 ENDPOINTS — Certificados Digitais A1 ──────────────────────────────────
+  //
+  // POST /api/v2/certificados          — upload .pfx + senha (multipart)
+  // GET  /api/v2/certificados          — listar certificados cadastrados
+  // DELETE /api/v2/certificados/{id}   — remover certificado
+
+  async uploadCertificado(
+    pfxBuffer: Buffer,
+    nomeArquivo: string,
+    senha: string,
+  ): Promise<{ ok: true; id: number; titular: string } | { ok: false; message: string }> {
+    try {
+      const form = new FormData()
+      const ab = pfxBuffer.buffer instanceof ArrayBuffer
+        ? pfxBuffer.buffer.slice(pfxBuffer.byteOffset, pfxBuffer.byteOffset + pfxBuffer.byteLength) as ArrayBuffer
+        : new Uint8Array(pfxBuffer).buffer as ArrayBuffer
+      form.append('certificado', new Blob([ab], { type: 'application/x-pkcs12' }), nomeArquivo)
+      form.append('senha', senha)
+
+      const controller = new AbortController()
+      const timer = setTimeout(() => controller.abort(), 30_000)
+      let res: Response
+      try {
+        res = await fetch(`${this.baseUrlV2}/certificados`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+            'X-Requested-With': 'XMLHttpRequest',
+            // NÃO definir Content-Type — o fetch define automaticamente com boundary para multipart
+          },
+          body: form,
+          cache: 'no-store',
+          signal: controller.signal,
+        })
+      } catch (err) { clearTimeout(timer); return { ok: false, message: (err as Error).message } }
+      clearTimeout(timer)
+
+      if (!res.ok) {
+        const txt = await res.text().catch(() => '')
+        return { ok: false, message: `HTTP ${res.status}: ${txt.slice(0, 300)}` }
+      }
+      const data = await res.json() as { id?: number; nome_titular?: string; cpf?: string }
+      return { ok: true, id: data.id ?? 0, titular: data.nome_titular ?? data.cpf ?? 'Certificado' }
+    } catch (err) {
+      return { ok: false, message: (err as Error).message }
+    }
+  }
+
+  async listarCertificados(): Promise<Array<{ id: number; titular: string; cpf: string; validade: string | null }>> {
+    try {
+      const controller = new AbortController()
+      const timer = setTimeout(() => controller.abort(), 10_000)
+      let res: Response
+      try {
+        res = await fetch(`${this.baseUrlV2}/certificados`, {
+          headers: this.headers(),
+          cache: 'no-store',
+          signal: controller.signal,
+        })
+      } catch { clearTimeout(timer); return [] }
+      clearTimeout(timer)
+      if (!res.ok) return []
+      const data = await res.json() as Array<{ id: number; nome_titular?: string; cpf?: string; data_validade?: string }>
+      return (Array.isArray(data) ? data : []).map((c) => ({
+        id: c.id,
+        titular: c.nome_titular ?? c.cpf ?? `Cert #${c.id}`,
+        cpf: c.cpf ?? '',
+        validade: c.data_validade ?? null,
+      }))
+    } catch { return [] }
+  }
+
+  async removerCertificado(id: number): Promise<boolean> {
+    try {
+      const controller = new AbortController()
+      const timer = setTimeout(() => controller.abort(), 10_000)
+      let res: Response
+      try {
+        res = await fetch(`${this.baseUrlV2}/certificados/${id}`, {
+          method: 'DELETE',
+          headers: this.headers(),
+          cache: 'no-store',
+          signal: controller.signal,
+        })
+      } catch { clearTimeout(timer); return false }
+      clearTimeout(timer)
+      return res.ok
+    } catch { return false }
   }
 
   // ── V2 ENDPOINT B — Listar documentos públicos por CNJ ───────────────────────

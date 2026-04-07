@@ -4,8 +4,21 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { radar } from '@/lib/services/radar'
 import { EscavadorService } from '@/lib/services/escavador'
+import { getCredenciaisTribunal } from '@/lib/actions/credenciais-tribunais'
+
+function siglaParaTribunal(sigla: string): string {
+  return sigla.replace(/^DJE?[-_]?/, 'TJ').toUpperCase()
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+
+export type ProcessoSugestao = {
+  cnj: string
+  tribunal: string
+  orgao: string
+  partes: string
+  dataUltMov: string | null
+}
 
 export type BuscarDocumentosResult =
   | { ok: true; novos: number; total: number; suportado: boolean; atualizacaoSolicitada?: boolean }
@@ -52,14 +65,30 @@ export async function buscarDocumentosNomeacao(
     const escavador = radar as EscavadorService
     const cnj = nomeacao.processo.numeroProcesso
 
+    // Busca credenciais PJe do tribunal associado ao processo
+    const tribunalSigla = nomeacao.processo.tribunal ?? 'DESCONHECIDO'
+    const credenciais = await getCredenciaisTribunal(tribunalSigla)
+
     // ── Passo 1 — Solicitar atualização v2 (aciona robôs para buscar docs) ──
-    const atualizacao = await escavador.solicitarAtualizacaoV2(cnj, { documentos_publicos: true })
+    const atualizacao = await escavador.solicitarAtualizacaoV2(cnj, {
+      documentos_publicos: true,
+      autos: true,
+      ...(credenciais ? { usuario: credenciais.usuario, senha: credenciais.senha } : {}),
+    })
     if (!atualizacao.ok) {
       console.warn('[nomeacoes-documentos] solicitar-atualizacao falhou:', atualizacao.message)
     }
 
-    // ── Passo 2 — Listar documentos públicos v2 ──────────────────────────────
-    const docsV2 = await escavador.listarDocumentosPublicosV2(cnj)
+    // ── Passo 2 — Listar documentos públicos v2 + autos ─────────────────────
+    const [docsPublicos, docsAutos] = await Promise.all([
+      escavador.listarDocumentosPublicosV2(cnj),
+      escavador.listarAutosV2(cnj),
+    ])
+    const seenKeys = new Set<string>()
+    const docsV2: typeof docsPublicos = []
+    for (const d of [...docsPublicos, ...docsAutos]) {
+      if (!seenKeys.has(d.key)) { seenKeys.add(d.key); docsV2.push(d) }
+    }
 
     let novos = 0
 
@@ -152,8 +181,34 @@ export async function buscarDocumentosPorPericia(
       select: { peritoId: true, processo: true, vara: true },
     })
     if (!pericia || pericia.peritoId !== userId) return { ok: false, error: 'Perícia não encontrada' }
-    const cnj = pericia.processo
-    if (!cnj) return { ok: false, error: 'Número do processo não informado' }
+
+    // Se a pericia não tem CNJ, tenta achar pela nomeação vinculada (Nomeacao ou NomeacaoCitacao)
+    let cnj = pericia.processo
+    if (!cnj) {
+      // Tenta Nomeacao (processo formal)
+      const nomeacaoVinculada = await prisma.nomeacao.findFirst({
+        where: { periciaId },
+        include: { processo: { select: { numeroProcesso: true } } },
+      })
+      if (nomeacaoVinculada?.processo?.numeroProcesso) {
+        cnj = nomeacaoVinculada.processo.numeroProcesso
+      }
+    }
+    if (!cnj) {
+      // Tenta NomeacaoCitacao (citação do Diário Oficial vinculada a esta perícia)
+      const citacao = await prisma.nomeacaoCitacao.findFirst({
+        where: { periciaId, numeroProcesso: { not: null } },
+        select: { numeroProcesso: true },
+      })
+      if (citacao?.numeroProcesso) {
+        cnj = citacao.numeroProcesso
+      }
+    }
+    if (cnj) {
+      // Salva o CNJ encontrado na perícia para futuras buscas
+      await prisma.pericia.update({ where: { id: periciaId }, data: { processo: cnj } }).catch(() => {})
+    }
+    if (!cnj) return { ok: false, error: 'Número do processo não informado. Vincule uma nomeação ou informe o CNJ.' }
 
     // Extrair sigla do tribunal da vara (ex: "15ª Vara Cível — TJRJ" → "TJRJ")
     const tribunalSigla = pericia.vara?.match(/\b(TJ[A-Z]{2,4}|TRF\d|TST|STJ|STF)\b/)?.[1] ?? 'DESCONHECIDO'
@@ -187,9 +242,14 @@ export async function buscarDocumentosPorPericia(
     }
 
     // ── Passo 1: solicitar atualização com documentos públicos E autos ────────────
-    // autos: 1 permite que o Escavador busque também documentos restritos (quando
-    // o tribunal for suportado sem credenciais ou com credenciais já cadastradas).
-    const atualizacao = await escavador.solicitarAtualizacaoV2(cnj, { documentos_publicos: true, autos: true })
+    // Se o perito tiver credenciais cadastradas para o tribunal, passá-las para que
+    // o Escavador possa autenticar no PJe e baixar documentos restritos.
+    const credenciais = await getCredenciaisTribunal(tribunalSigla)
+    const atualizacao = await escavador.solicitarAtualizacaoV2(cnj, {
+      documentos_publicos: true,
+      autos: true,
+      ...(credenciais ? { usuario: credenciais.usuario, senha: credenciais.senha } : {}),
+    })
     if (!atualizacao.ok) console.warn('[buscarDocumentosPorPericia] solicitar-atualizacao falhou:', atualizacao.message)
 
     // ── Passo 2: listar documentos-publicos e autos (em paralelo) ─────────────────
@@ -324,5 +384,85 @@ export async function listarDocumentosNomeacao(
     }))
   } catch {
     return []
+  }
+}
+
+// ─── Action: Buscar processos por nome do perito (sem CNJ) ───────────────────
+//
+// Usa Escavador v2 /envolvido/processos — encontra processos onde o perito
+// foi nomeado, mesmo sem saber o número do processo de antemão.
+
+export async function sugerirProcessosSemCNJ(
+  periciaId: string,
+): Promise<{ ok: true; processos: ProcessoSugestao[] } | { ok: false; error: string }> {
+  const session = await auth()
+  const userId = session?.user?.id
+  if (!userId) return { ok: false, error: 'Não autenticado' }
+
+  try {
+    // Verifica posse da perícia
+    const pericia = await prisma.pericia.findUnique({
+      where: { id: periciaId },
+      select: { peritoId: true },
+    })
+    if (!pericia || pericia.peritoId !== userId) return { ok: false, error: 'Perícia não encontrada' }
+
+    // Nome do perito (User) + CPF (PeritoPerfil)
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { name: true } })
+    const perfil = await prisma.peritoPerfil.findUnique({ where: { userId }, select: { cpf: true } })
+    const nome = user?.name
+    if (!nome) return { ok: false, error: 'Nome do perito não encontrado no perfil' }
+
+    const escavador = radar as EscavadorService
+    console.log('[sugerirProcessosSemCNJ] buscando por nome:', nome, '| cpf:', perfil?.cpf ?? 'não informado')
+    const { citacoes, totalProcessos } = await escavador.buscarProcessosEnvolvido(nome, perfil?.cpf ?? null)
+    console.log('[sugerirProcessosSemCNJ] total Escavador:', totalProcessos, '| após filtro:', citacoes.length)
+
+    const processos: ProcessoSugestao[] = citacoes
+      .filter((c) => c.numeroProcesso)
+      .map((c) => {
+        // snippet: "Perito nomeado no processo X | Orgao | Partes"
+        const parts = c.snippet.split('|').map((s) => s.trim())
+        const orgao = parts[1] ?? c.diarioNome
+        const partes = parts[2] ?? ''
+        return {
+          cnj: c.numeroProcesso!,
+          tribunal: c.diarioSigla,
+          orgao,
+          partes,
+          dataUltMov: c.diarioData,
+        }
+      })
+
+    return { ok: true, processos }
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Erro ao buscar processos' }
+  }
+}
+
+// ─── Action: Vincular CNJ a uma perícia ──────────────────────────────────────
+
+export async function vincularProcessoPericia(
+  periciaId: string,
+  cnj: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const session = await auth()
+  const userId = session?.user?.id
+  if (!userId) return { ok: false, error: 'Não autenticado' }
+
+  try {
+    const pericia = await prisma.pericia.findUnique({
+      where: { id: periciaId },
+      select: { peritoId: true },
+    })
+    if (!pericia || pericia.peritoId !== userId) return { ok: false, error: 'Perícia não encontrada' }
+
+    await prisma.pericia.update({
+      where: { id: periciaId },
+      data: { processo: cnj },
+    })
+    return { ok: true }
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Erro ao vincular processo' }
   }
 }

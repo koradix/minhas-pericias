@@ -99,6 +99,8 @@ model PeritoPerfil {
   updatedAt        DateTime  @updatedAt
   cpf              String?
   formacaoCustom   String?
+  // JSON map: { "TJRJ": { usuario: "...", senha: "..." }, ... }
+  credenciaisTribunais String @default("{}")
 }
 
 model TribunalVara {

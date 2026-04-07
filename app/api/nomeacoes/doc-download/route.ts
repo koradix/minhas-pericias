@@ -39,8 +39,11 @@ export async function GET(request: NextRequest) {
   const autorizadoViaPericia = !autorizadoViaNomeacao && await prisma.pericia.count({
     where: { peritoId: userId, processo: doc.processo.numeroProcesso },
   }).then((n) => n > 0).catch(() => false)
+  const autorizadoViaCitacao = !autorizadoViaNomeacao && !autorizadoViaPericia && await prisma.nomeacaoCitacao.count({
+    where: { peritoId: userId, numeroProcesso: doc.processo.numeroProcesso },
+  }).then((n) => n > 0).catch(() => false)
 
-  if (!autorizadoViaNomeacao && !autorizadoViaPericia) {
+  if (!autorizadoViaNomeacao && !autorizadoViaPericia && !autorizadoViaCitacao) {
     return NextResponse.json({ error: 'Documento não encontrado' }, { status: 404 })
   }
 
