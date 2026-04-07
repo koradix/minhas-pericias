@@ -4,21 +4,18 @@ import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 
 export interface SignupData {
-  // Step 1
   nome: string
   email: string
   senha: string
   cpf?: string
   telefone?: string
-  // Step 2
   formacao?: string
-  formacaoCustom?: string  // free-text when formacao = "Outra formação"
+  formacaoCustom?: string
   registro?: string
   especialidades?: string[]
   cursos?: string[]
-  // Step 3
-  estados?: string[]       // UFs de atuação (ex: ["RJ","SP"])
-  tribunais?: string[]     // siglas dos tribunais escolhidos
+  estados?: string[]
+  tribunais?: string[]
   cidade?: string
   areaAtuacao?: string
 }
@@ -44,34 +41,40 @@ export async function signup(data: SignupData): Promise<{ success: true } | { er
 
   const passwordHash = await bcrypt.hash(senha, 10)
 
-  const user = await prisma.user.create({
-    data: {
-      email: email.toLowerCase(),
-      name: nome.trim(),
-      passwordHash,
-      role: 'perito',
-    },
-  })
+  try {
+    // Transação atômica — user + perfil criados juntos ou nenhum
+    await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          email: email.toLowerCase(),
+          name: nome.trim(),
+          passwordHash,
+          role: 'perito',
+        },
+      })
 
-  const estadosPrimario = estados?.[0] ?? null
-
-  await prisma.peritoPerfil.create({
-    data: {
-      userId: user.id,
-      cpf: cpf?.replace(/\D/g, '').length === 11 ? cpf.trim() : null,
-      telefone: telefone?.trim() || null,
-      formacao: formacao || null,
-      formacaoCustom: formacaoCustom?.trim() || null,
-      registro: registro?.trim() || null,
-      especialidades: JSON.stringify(especialidades ?? []),
-      cursos: JSON.stringify(cursos ?? []),
-      estados: JSON.stringify(estados ?? []),
-      tribunais: JSON.stringify(tribunais ?? []),
-      cidade: cidade?.trim() || null,
-      estado: estadosPrimario,
-      areaAtuacao: areaAtuacao?.trim() || null,
-    },
-  })
+      await tx.peritoPerfil.create({
+        data: {
+          userId: user.id,
+          cpf: cpf?.replace(/\D/g, '').length === 11 ? cpf.trim() : null,
+          telefone: telefone?.trim() || null,
+          formacao: formacao || null,
+          formacaoCustom: formacaoCustom?.trim() || null,
+          registro: registro?.trim() || null,
+          especialidades: JSON.stringify(especialidades ?? []),
+          cursos: JSON.stringify(cursos ?? []),
+          estados: JSON.stringify(estados ?? []),
+          tribunais: JSON.stringify(tribunais ?? []),
+          cidade: cidade?.trim() || null,
+          estado: estados?.[0] ?? null,
+          areaAtuacao: areaAtuacao?.trim() || null,
+        },
+      })
+    })
+  } catch (err) {
+    console.error('[signup] erro ao criar usuário:', err)
+    return { error: 'Erro ao criar conta. Tente novamente.' }
+  }
 
   return { success: true }
 }
