@@ -85,6 +85,9 @@ export interface PropostaTabProps {
  analise: AnaliseIA | null
  peritoNome: string
  peritoFormacao: string
+ peritoRegistro?: string
+ peritoEmail?: string
+ peritoTelefone?: string
  rascunho: FeeProposalRow | null
  versoes: FeeProposalVersionRow[]
  templates: ProposalTemplateRow[]
@@ -346,12 +349,39 @@ function VersionHistory({ versoes }: { versoes: FeeProposalVersionRow[] }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
+// ─── Helpers (petition format) ────────────────────────────────────────────────
+
+function buildDestinatario(vara: string | null, tribunal: string): string {
+ if (vara && /vara/i.test(vara)) {
+ return `EXCELENTÍSSIMO SENHOR DOUTOR JUIZ DE DIREITO DA ${vara.toUpperCase()}`
+ }
+ return `EXCELENTÍSSIMO SENHOR DOUTOR JUIZ DO ${tribunal.toUpperCase()}`
+}
+
+function extractCidade(vara: string | null): string {
+ if (!vara) return 'Local'
+ const m = vara.match(/comarca de ([^–\-,]+)/i)
+ return m ? m[1].trim() : vara.split('/')[0].trim()
+}
+
+function formatDateBR(dateStr: string): string {
+ try {
+ const d = new Date(dateStr + 'T12:00:00')
+ return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
+ } catch { return dateStr }
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
+
 export function PropostaTab({
  periciaId,
  pericia,
  analise,
  peritoNome: peritoNomeDefault,
  peritoFormacao,
+ peritoRegistro: peritoRegistroDefault = '',
+ peritoEmail: peritoEmailDefault = '',
+ peritoTelefone: peritoTelDefault = '',
  rascunho,
  versoes: versoesProp,
  templates: templatesProp,
@@ -366,6 +396,9 @@ export function PropostaTab({
 
  const [peritoNome, setPeritoNome] = useState(rascunho?.peritoNome || peritoNomeDefault)
  const [peritoQual, setPeritoQual] = useState(rascunho?.peritoQualificacao || peritoFormacao)
+ const [peritoReg, setPeritoReg] = useState(peritoRegistroDefault)
+ const [peritoEmailState, setPeritoEmailState] = useState(peritoEmailDefault)
+ const [peritoTelState, setPeritoTelState] = useState(peritoTelDefault)
 
  // Editable content (starts from rascunho or AI output)
  const [content, setContent] = useState<Partial<FeeProposalData>>({
@@ -525,7 +558,10 @@ export function PropostaTab({
  }
 
  // Map output to editable content
- const td = json.texto_documento
+ const td = json.texto_documento as typeof json.texto_documento & {
+ requerimentos?: string[]
+ documentos_reu?: string[]
+ }
  const est = json.estimativa
 
  const totalHoras = est?.fases
@@ -541,10 +577,15 @@ export function PropostaTab({
  const fases = est?.fases?.map((f) => f.nome) ?? []
  const riscos = json.qa?.riscos ?? []
 
+ // Requerimentos: use new array or fall back to escopo text
+ const requerimentosText = td?.requerimentos?.join('\n') ?? td?.escopo ?? ''
+ // Documentos do réu: use new array or fall back to observacoes
+ const documentosReuText = td?.documentos_reu?.join('\n') ?? (json.condicoes?.observacoes ?? []).join('\n')
+
  setContent({
- descricaoServicos: td?.escopo ?? '',
- resumoTecnico: json.pericia?.resumo_tecnico ?? '',
- metodologia: td?.metodologia ?? json.metodologia?.texto_base ?? '',
+ resumoTecnico: td?.abertura ?? json.pericia?.resumo_tecnico ?? '',
+ descricaoServicos: requerimentosText,
+ metodologia: td?.escopo ?? td?.metodologia ?? json.metodologia?.texto_base ?? '',
  fasesEstimadas: fases,
  horasEstimadas: totalHoras || null,
  despesasPrevistas: despesasText,
@@ -554,7 +595,7 @@ export function PropostaTab({
  ? `${json.condicoes.prazo_entrega_dias} dias úteis`
  : '',
  condicoesPagamento: json.condicoes?.forma_pagamento ?? td?.condicoes ?? '',
- observacoes: ((json.condicoes?.observacoes ?? []).join('\n') || td?.fechamento) ?? '',
+ observacoes: documentosReuText,
  riscosEPendencias: riscos,
  complexidade: json.pericia?.complexidade ?? a.aceiteHonorarios?.complexidade ?? '',
  dataProposta: today(),
@@ -633,6 +674,11 @@ export function PropostaTab({
  setIsDownloading(true)
  setDlError(null)
 
+ const requerimentosLista = (content.descricaoServicos ?? '')
+ .split('\n').filter(Boolean)
+ .map((r, i) => `${i + 1}. ${r.replace(/^\d+\.\s*/, '')}`)
+ .join('\n')
+
  const tagData: Record<string, string> = {
  numeroProcesso: processSnapshot.numeroProcesso,
  tribunal: processSnapshot.tribunal,
@@ -642,20 +688,31 @@ export function PropostaTab({
  tipoPericia: processSnapshot.tipoPericia,
  endereco: processSnapshot.endereco,
  quesitosLista: processSnapshot.quesitos.map((q, i) => `${i + 1}. ${q}`).join('\n'),
- peritoNome: peritoNome,
- peritoQual: peritoQual,
+ peritoNome,
+ peritoQual,
+ peritoRegistro: peritoReg,
+ peritoEmail: peritoEmailState,
+ peritoTelefone: peritoTelState,
+ destinatario: buildDestinatario(processSnapshot.vara, processSnapshot.tribunal),
+ paragrafosAceite: content.resumoTecnico ?? '',
+ requerimentosLista,
+ documentosReu: content.observacoes ?? '',
+ escopo: content.metodologia ?? '',
  descricaoServicos: content.descricaoServicos ?? '',
  resumoTecnico: content.resumoTecnico ?? '',
  metodologia: content.metodologia ?? '',
  horasEstimadas: String(content.horasEstimadas ?? ''),
  despesasPrevistas: content.despesasPrevistas ?? '',
- valorHonorarios: String(content.valorHonorarios ?? ''),
- custoDeslocamento: String(content.custoDeslocamento ?? ''),
+ valorHonorarios: formatBRL(content.valorHonorarios),
+ valorHonorariosNum: String(content.valorHonorarios ?? ''),
+ custoDeslocamento: formatBRL(content.custoDeslocamento),
  prazoEntrega: content.prazoEntrega ?? '',
  condicoesPagamento: content.condicoesPagamento ?? '',
  observacoes: content.observacoes ?? '',
  complexidade: content.complexidade ?? '',
  hoje: new Date().toLocaleDateString('pt-BR'),
+ dataFormatada: formatDateBR(content.dataProposta ?? today()),
+ cidade: extractCidade(processSnapshot.vara),
  autor: a.autor ?? '',
  reu: a.reu ?? '',
  }
@@ -686,95 +743,96 @@ export function PropostaTab({
  try {
  const {
  Document, Packer, Paragraph, TextRun,
- HeadingLevel, AlignmentType, BorderStyle,
+ AlignmentType,
  } = await import('docx')
 
- function sec(title: string) {
- return new Paragraph({
- text: title,
- heading: HeadingLevel.HEADING_2,
- spacing: { before: 320, after: 120 },
- border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: 'DDDDDD' } },
- })
- }
-
- function body(text: string) {
- return new Paragraph({
- spacing: { after: 120 },
- children: [new TextRun({ text: text || '—', size: 20, font: 'Calibri' })],
- })
- }
-
- function row(label: string, value: string) {
- return new Paragraph({
- spacing: { after: 80 },
- children: [
- new TextRun({ text: `${label}: `, bold: true, size: 20, font: 'Calibri' }),
- new TextRun({ text: value || '—', size: 20, font: 'Calibri' }),
- ],
- })
- }
-
- const fases = (content.fasesEstimadas ?? [])
- .map((f) => new Paragraph({ spacing: { after: 60 }, children: [new TextRun({ text: `• ${f}`, size: 20, font: 'Calibri' })] }))
-
- const riscos = (content.riscosEPendencias ?? [])
- .map((r) => new Paragraph({ spacing: { after: 60 }, children: [new TextRun({ text: `• ${r}`, size: 20, font: 'Calibri', color: 'B91C1C' })] }))
+ const reqItems = (content.descricaoServicos ?? '').split('\n').filter(Boolean)
+ const docItems = (content.observacoes ?? '').split('\n').filter(Boolean)
 
  const doc = new Document({
  creator: 'Perilab',
  title: `Proposta de Honorários — ${processSnapshot.numeroProcesso}`,
  sections: [{
- properties: {},
+ properties: {
+ page: { margin: { top: 1080, bottom: 1080, left: 1080, right: 1080 } },
+ },
  children: [
+ // Timbrado
+ new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 80 }, children: [new TextRun({ text: peritoNome, bold: true, size: 28, font: 'Times New Roman' })] }),
+ new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 60 }, children: [new TextRun({ text: peritoQual, size: 20, font: 'Times New Roman' })] }),
+ ...(peritoReg ? [new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 60 }, children: [new TextRun({ text: peritoReg, size: 20, font: 'Times New Roman' })] })] : []),
+ ...([peritoTelState, peritoEmailState].filter(Boolean).length > 0
+ ? [new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 400 }, children: [new TextRun({ text: [peritoTelState, peritoEmailState].filter(Boolean).join(' | '), size: 18, color: '64748B', font: 'Times New Roman' })] })]
+ : [new Paragraph({ spacing: { after: 400 }, children: [] })]),
+
+ // Destinatário
+ new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 40 }, children: [new TextRun({ text: buildDestinatario(processSnapshot.vara, processSnapshot.tribunal), bold: true, size: 22, font: 'Times New Roman' })] }),
+ new Paragraph({ spacing: { after: 400 }, children: [] }),
+
+ // Processo
+ ...(processSnapshot.numeroProcesso ? [new Paragraph({ spacing: { after: 240 }, children: [new TextRun({ text: `Processo Nº. ${processSnapshot.numeroProcesso}`, bold: true, size: 24, font: 'Times New Roman' })] })] : []),
+
+ // Bloco identificação (itálico, recuado à direita)
+ ...((processSnapshot.tipoPericia || a.autor || a.reu) ? [
  new Paragraph({
- text: 'PROPOSTA DE HONORÁRIOS PERICIAIS',
- heading: HeadingLevel.HEADING_1,
- alignment: AlignmentType.CENTER,
+ indent: { left: 3240 },
+ spacing: { after: 240 },
+ children: [new TextRun({
+ text: [
+ processSnapshot.tipoPericia ? `Referente a ${processSnapshot.tipoPericia.toUpperCase()}` : '',
+ a.autor ? `, movido por ${a.autor}` : '',
+ a.reu ? `, contra ${a.reu}` : '',
+ processSnapshot.endereco ? `, cujo imóvel está situado na ${processSnapshot.endereco}` : '',
+ ].join(''),
+ italics: true, size: 20, font: 'Times New Roman',
+ })],
+ }),
+ ] : []),
+
+ // Parágrafo de aceite
+ ...(content.resumoTecnico ? content.resumoTecnico.split('\n\n').map((p) =>
+ new Paragraph({ alignment: AlignmentType.JUSTIFIED, spacing: { after: 200 }, children: [new TextRun({ text: p.replace(/\n/g, ' '), size: 24, font: 'Times New Roman' })] })
+ ) : []),
+
+ new Paragraph({ spacing: { after: 300 }, children: [] }),
+
+ // REQUER
+ ...(reqItems.length > 0 ? [
+ new Paragraph({ spacing: { after: 200 }, children: [new TextRun({ text: 'Desde já, REQUER que:', bold: true, size: 24, font: 'Times New Roman' })] }),
+ ...reqItems.map((item, i) =>
+ new Paragraph({
+ indent: { left: 360 },
+ spacing: { after: 160 },
+ children: [new TextRun({ text: `${i + 1}. ${item.replace(/^\d+\.\s*/, '')}`, bold: true, size: 24, font: 'Times New Roman' })],
+ })
+ ),
+ new Paragraph({ spacing: { after: 240 }, children: [] }),
+ ] : []),
+
+ // Documentos do réu
+ ...(docItems.length > 0 ? [
+ new Paragraph({ indent: { left: 360 }, spacing: { after: 100 }, children: [new TextRun({ text: 'Documentos a apresentar pelo réu:', bold: true, size: 22, font: 'Times New Roman' })] }),
+ ...docItems.map((doc) =>
+ new Paragraph({
+ indent: { left: 720 },
  spacing: { after: 80 },
- }),
- new Paragraph({
- alignment: AlignmentType.CENTER,
- spacing: { after: 400 },
- children: [new TextRun({ text: `${processSnapshot.numeroProcesso} · ${tagData.hoje}`, size: 18, color: '94A3B8', font: 'Calibri' })],
- }),
+ children: [new TextRun({ text: `- ${doc.replace(/^[-•]\s*/, '')}`, size: 22, font: 'Times New Roman' })],
+ })
+ ),
+ new Paragraph({ spacing: { after: 400 }, children: [] }),
+ ] : []),
 
- sec('I — Processo'),
- row('Número', processSnapshot.numeroProcesso),
- row('Tribunal', processSnapshot.tribunal),
- row('Vara', processSnapshot.vara),
- row('Autor', a.autor ?? ''),
- row('Réu', a.reu ?? ''),
+ // Fechamento
+ new Paragraph({ alignment: AlignmentType.RIGHT, spacing: { after: 120 }, children: [new TextRun({ text: 'Termos em que', size: 24, font: 'Times New Roman' })] }),
+ new Paragraph({ alignment: AlignmentType.RIGHT, spacing: { after: 400 }, children: [new TextRun({ text: 'Peço deferimento,', size: 24, font: 'Times New Roman' })] }),
+ new Paragraph({ alignment: AlignmentType.RIGHT, spacing: { after: 800 }, children: [new TextRun({ text: `${extractCidade(processSnapshot.vara)}, ${formatDateBR(content.dataProposta ?? today())}`, size: 24, font: 'Times New Roman' })] }),
 
- sec('II — Perito'),
- row('Nome', peritoNome),
- row('Qualificação', peritoQual),
-
- sec('III — Objeto e Resumo Técnico'),
- body(content.resumoTecnico ?? ''),
-
- sec('IV — Escopo dos Serviços'),
- body(content.descricaoServicos ?? ''),
-
- sec('V — Metodologia'),
- body(content.metodologia ?? ''),
-
- ...(fases.length > 0 ? [sec('VI — Fases Estimadas'), ...fases] : []),
-
- sec('VII — Honorários e Despesas'),
- row('Honorários', tagData.valorHonorarios ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(parseFloat(tagData.valorHonorarios)) : '—'),
- row('Deslocamento', tagData.custoDeslocamento ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(parseFloat(tagData.custoDeslocamento)) : '—'),
- row('Horas estimadas', tagData.horasEstimadas ? `${tagData.horasEstimadas}h` : '—'),
- row('Prazo de entrega', content.prazoEntrega ?? ''),
- row('Forma de pagamento', content.condicoesPagamento ?? ''),
-
- ...(content.observacoes ? [sec('VIII — Observações'), body(content.observacoes)] : []),
- ...(riscos.length > 0 ? [sec('IX — Riscos e Pendências'), ...riscos] : []),
-
- new Paragraph({ spacing: { before: 600, after: 80 }, alignment: AlignmentType.CENTER, children: [new TextRun({ text: '_______________________________________________', size: 20, font: 'Calibri' })] }),
- new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 60 }, children: [new TextRun({ text: peritoNome, bold: true, size: 20, font: 'Calibri' })] }),
- new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: tagData.hoje, size: 18, color: '94A3B8', font: 'Calibri' })] }),
- new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 120 }, children: [new TextRun({ text: 'Gerado via Perilab', size: 16, color: 'CBD5E1', font: 'Calibri', italics: true })] }),
+ // Assinatura
+ new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 80 }, children: [new TextRun({ text: '_______________________________________________', size: 22, font: 'Times New Roman' })] }),
+ new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 60 }, children: [new TextRun({ text: peritoNome, bold: true, size: 24, font: 'Times New Roman' })] }),
+ ...(peritoQual ? [new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 40 }, children: [new TextRun({ text: peritoQual, size: 20, font: 'Times New Roman' })] })] : []),
+ ...(peritoReg ? [new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 40 }, children: [new TextRun({ text: peritoReg, size: 20, font: 'Times New Roman' })] })] : []),
+ new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 200 }, children: [new TextRun({ text: 'Gerado via Perilab', size: 16, color: 'CBD5E1', italics: true, font: 'Times New Roman' })] }),
  ],
  }],
  })
@@ -834,12 +892,24 @@ export function PropostaTab({
  </div>
  <div className="px-6 py-5 grid gap-4 sm:grid-cols-2">
  <div>
- <label className={labelCls}>Nome</label>
+ <label className={labelCls}>Nome completo</label>
  <input value={peritoNome} onChange={(e) => setPeritoNome(e.target.value)} className={inputCls} />
  </div>
  <div>
- <label className={labelCls}>Qualificação</label>
- <input value={peritoQual} onChange={(e) => setPeritoQual(e.target.value)} className={inputCls} placeholder="Ex: Engenheiro Civil, CREA 12345" />
+ <label className={labelCls}>Título / Formação</label>
+ <input value={peritoQual} onChange={(e) => setPeritoQual(e.target.value)} className={inputCls} placeholder="Ex: Engenheiro Elétrico – Perito Judicial" />
+ </div>
+ <div>
+ <label className={labelCls}>Registro profissional</label>
+ <input value={peritoReg} onChange={(e) => setPeritoReg(e.target.value)} className={inputCls} placeholder="Ex: CREA 2715026455" />
+ </div>
+ <div>
+ <label className={labelCls}>E-mail</label>
+ <input type="email" value={peritoEmailState} onChange={(e) => setPeritoEmailState(e.target.value)} className={inputCls} placeholder="perito@email.com" />
+ </div>
+ <div>
+ <label className={labelCls}>Telefone</label>
+ <input value={peritoTelState} onChange={(e) => setPeritoTelState(e.target.value)} className={inputCls} placeholder="(21) 99999-9999" />
  </div>
  </div>
  </section>
@@ -906,18 +976,23 @@ export function PropostaTab({
  <div className="divide-y divide-slate-100">
 
  <div className="px-6 py-5">
- <label className={labelCls}>Resumo técnico</label>
- <textarea rows={3} className={textareaCls} value={content.resumoTecnico ?? ''} onChange={(e) => setContent((p) => ({ ...p, resumoTecnico: e.target.value }))} />
+ <label className={labelCls}>Parágrafo de aceite e proposta</label>
+ <textarea rows={5} className={textareaCls} value={content.resumoTecnico ?? ''} onChange={(e) => setContent((p) => ({ ...p, resumoTecnico: e.target.value }))} placeholder="Pelo presente instrumento, o Engenheiro..." />
  </div>
 
  <div className="px-6 py-5">
- <label className={labelCls}>Escopo dos serviços</label>
- <textarea rows={5} className={textareaCls} value={content.descricaoServicos ?? ''} onChange={(e) => setContent((p) => ({ ...p, descricaoServicos: e.target.value }))} />
+ <label className={labelCls}>REQUER que (um item por linha)</label>
+ <textarea rows={5} className={textareaCls} value={content.descricaoServicos ?? ''} onChange={(e) => setContent((p) => ({ ...p, descricaoServicos: e.target.value }))} placeholder="Sejam homologados os honorários periciais&#10;Seja o Perito aceito para o encargo&#10;Sejam apresentados pelo Réu os documentos..." />
  </div>
 
  <div className="px-6 py-5">
- <label className={labelCls}>Metodologia</label>
- <textarea rows={4} className={textareaCls} value={content.metodologia ?? ''} onChange={(e) => setContent((p) => ({ ...p, metodologia: e.target.value }))} />
+ <label className={labelCls}>Documentos solicitados ao réu (um por linha)</label>
+ <textarea rows={4} className={textareaCls} value={content.observacoes ?? ''} onChange={(e) => setContent((p) => ({ ...p, observacoes: e.target.value }))} placeholder="Histórico de consumo desde a reclamação&#10;Registros de medição e faturamento&#10;..." />
+ </div>
+
+ <div className="px-6 py-5">
+ <label className={labelCls}>Escopo técnico / objeto da perícia</label>
+ <textarea rows={3} className={textareaCls} value={content.metodologia ?? ''} onChange={(e) => setContent((p) => ({ ...p, metodologia: e.target.value }))} />
  </div>
 
  <div className="grid sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-slate-100">
@@ -952,11 +1027,6 @@ export function PropostaTab({
  <input className={inputCls} value={content.condicoesPagamento ?? ''} onChange={(e) => setContent((p) => ({ ...p, condicoesPagamento: e.target.value }))} placeholder="Ex: 50% na aceitação, 50% na entrega" />
  </div>
 
- <div className="px-6 py-5">
- <label className={labelCls}>Observações e ressalvas</label>
- <textarea rows={3} className={textareaCls} value={content.observacoes ?? ''} onChange={(e) => setContent((p) => ({ ...p, observacoes: e.target.value }))} />
- </div>
-
  </div>
  </section>
 
@@ -988,7 +1058,7 @@ export function PropostaTab({
  </>
  )}
 
- {/* ── Phase: Result — documento completo ───────────────────────────── */}
+ {/* ── Phase: Result — petição formal ───────────────────────────────── */}
  {phase === 'result' && (
  <>
  {/* Action bar */}
@@ -1026,129 +1096,137 @@ export function PropostaTab({
  </div>
  )}
 
- {/* Document */}
- <section className="rounded-xl border border-slate-200 bg-white divide-y divide-slate-100">
+ {/* Documento petição */}
+ <section className="rounded-xl border border-slate-200 bg-white divide-y divide-slate-100 font-serif">
 
- {/* Cabeçalho do documento */}
- <div className="px-6 py-5">
- <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 mb-4">Proposta de honorários periciais</p>
- <div className="grid sm:grid-cols-2 gap-x-10 gap-y-4 text-[14px]">
- {processSnapshot.tribunal && (
- <div>
- <p className={labelCls}>Tribunal</p>
- <p className="font-medium text-slate-700">{processSnapshot.tribunal}</p>
- </div>
+ {/* Timbrado / Cabeçalho */}
+ <div className="px-10 py-7 text-center space-y-1">
+ <p className="text-[18px] font-bold text-slate-900 tracking-tight font-sans">{peritoNome}</p>
+ {peritoQual && <p className="text-[13px] text-slate-500 font-sans">{peritoQual}</p>}
+ {peritoReg && <p className="text-[13px] text-slate-500 font-sans">{peritoReg}</p>}
+ {(peritoEmailState || peritoTelState) && (
+ <p className="text-[12px] text-slate-400 font-sans">
+ {[peritoTelState, peritoEmailState].filter(Boolean).join(' · ')}
+ </p>
  )}
- {processSnapshot.vara && (
- <div>
- <p className={labelCls}>Vara</p>
- <p className="font-medium text-slate-700">{processSnapshot.vara}</p>
  </div>
- )}
+
+ {/* Destinatário */}
+ <div className="px-10 py-6 text-center">
+ <p className="text-[13px] font-bold text-slate-900 uppercase leading-[1.7] tracking-wide font-sans">
+ {buildDestinatario(processSnapshot.vara, processSnapshot.tribunal)}
+ </p>
+ </div>
+
+ {/* Número do processo */}
  {processSnapshot.numeroProcesso && (
- <div>
- <p className={labelCls}>Número do processo</p>
- <p className="font-medium text-slate-700">{processSnapshot.numeroProcesso}</p>
+ <div className="px-10 py-4">
+ <p className="text-[14px] font-bold text-slate-900 font-sans">
+ Processo Nº. {processSnapshot.numeroProcesso}
+ </p>
  </div>
  )}
- {processSnapshot.partes && (
- <div>
- <p className={labelCls}>Partes</p>
- <p className="text-slate-600">{processSnapshot.partes}</p>
- </div>
- )}
- {peritoNome && (
- <div className="sm:col-span-2">
- <p className={labelCls}>Perito</p>
- <p className="font-medium text-slate-700">{peritoNome}</p>
- </div>
- )}
- </div>
- </div>
 
- {/* Resumo técnico */}
+ {/* Identificação + parágrafo de aceite */}
+ <div className="px-10 py-7">
+ {/* Bloco de identificação (lado direito, como no modelo) */}
+ {(processSnapshot.tipoPericia || a.autor || a.reu) && (
+ <div className="ml-auto max-w-[55%] text-[13px] text-slate-700 leading-relaxed text-justify mb-6">
+ <p>
+ {processSnapshot.tipoPericia && (
+ <span>Referente a <strong className="uppercase">{processSnapshot.tipoPericia}</strong>, </span>
+ )}
+ {a.autor && <span>movido por <strong>{a.autor}</strong></span>}
+ {a.reu && <span>, contra <strong>{a.reu}</strong></span>}
+ {processSnapshot.endereco && (
+ <span>, cujo imóvel está situado na {processSnapshot.endereco}</span>
+ )}
+ </p>
+ </div>
+ )}
+ {/* Parágrafo de aceite */}
  {content.resumoTecnico && (
- <div className="px-6 py-5">
- <p className={labelCls}>Resumo técnico</p>
- <p className="text-[15px] leading-[1.75] text-slate-600 whitespace-pre-line">{content.resumoTecnico}</p>
- </div>
+ <p className="text-[14px] text-slate-700 leading-[1.85] text-justify whitespace-pre-line">
+ {content.resumoTecnico}
+ </p>
  )}
-
- {/* Escopo */}
- {content.descricaoServicos && (
- <div className="px-6 py-5">
- <p className={labelCls}>Escopo dos serviços</p>
- <p className="text-[15px] leading-[1.75] text-slate-600 whitespace-pre-line">{content.descricaoServicos}</p>
  </div>
- )}
 
- {/* Metodologia */}
- {content.metodologia && (
- <div className="px-6 py-5">
- <p className={labelCls}>Metodologia</p>
- <p className="text-[15px] leading-[1.75] text-slate-600 whitespace-pre-line">{content.metodologia}</p>
- </div>
- )}
-
- {/* Honorários e condições */}
- {(content.valorHonorarios != null || content.custoDeslocamento != null || content.prazoEntrega || content.condicoesPagamento) && (
- <div className="px-6 py-5">
- <p className={labelCls}>Honorários e condições</p>
- <div className="grid sm:grid-cols-3 gap-4 mt-3">
+ {/* Honorários destaque */}
  {content.valorHonorarios != null && (
- <div>
- <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-400 mb-1">Honorários</p>
- <p className="text-[18px] font-bold text-lime-700">{formatBRL(content.valorHonorarios)}</p>
- </div>
- )}
+ <div className="px-10 py-4 bg-slate-50 flex items-center gap-3">
+ <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 font-sans">Honorários propostos</span>
+ <span className="text-[17px] font-bold text-lime-700 font-sans">{formatBRL(content.valorHonorarios)}</span>
  {content.custoDeslocamento != null && (
- <div>
- <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-400 mb-1">Deslocamento</p>
- <p className="text-[15px] font-semibold text-slate-700">{formatBRL(content.custoDeslocamento)}</p>
- </div>
- )}
- {content.prazoEntrega && (
- <div>
- <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-400 mb-1">Prazo de entrega</p>
- <p className="text-[15px] font-semibold text-slate-700">{content.prazoEntrega}</p>
- </div>
- )}
- </div>
- {content.condicoesPagamento && (
- <p className="mt-4 text-[15px] leading-[1.75] text-slate-600 whitespace-pre-line">{content.condicoesPagamento}</p>
+ <span className="text-[13px] text-slate-500 font-sans">+ {formatBRL(content.custoDeslocamento)} deslocamento</span>
  )}
  </div>
  )}
 
- {/* Observações */}
- {content.observacoes && (
- <div className="px-6 py-5">
- <p className={labelCls}>Observações</p>
- <p className="text-[15px] leading-[1.75] text-slate-600 whitespace-pre-line">{content.observacoes}</p>
+ {/* REQUER que */}
+ {content.descricaoServicos?.trim() && (
+ <div className="px-10 py-7">
+ <p className="text-[14px] font-bold text-slate-900 mb-5 font-sans">Desde já, REQUER que:</p>
+ <ol className="space-y-4">
+ {content.descricaoServicos.split('\n').filter(Boolean).map((item, i) => (
+ <li key={i} className="flex items-start gap-4 text-[14px] text-slate-700 leading-[1.75]">
+ <span className="font-bold text-slate-400 flex-shrink-0 w-5 text-right mt-0.5 font-sans">{i + 1}.</span>
+ <span className="font-semibold font-sans">{item.replace(/^\d+\.\s*/, '')}</span>
+ </li>
+ ))}
+ </ol>
  </div>
  )}
 
- {/* Pendências */}
- {(content.riscosEPendencias?.length ?? 0) > 0 && (
- <div className="px-6 py-5">
- <p className={labelCls}>Pendências e riscos</p>
- <ul className="mt-3 space-y-2">
- {content.riscosEPendencias!.map((r, i) => (
- <li key={i} className="flex items-start gap-3 text-[14px] text-slate-600 leading-relaxed pl-4 border-l-2 border-slate-200">
- {r}
+ {/* Documentos do réu */}
+ {content.observacoes?.trim() && (
+ <div className="px-10 py-6 bg-slate-50">
+ <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 mb-3 font-sans">
+ Documentos a serem apresentados pelo réu
+ </p>
+ <ul className="space-y-1.5">
+ {content.observacoes.split('\n').filter(Boolean).map((doc, i) => (
+ <li key={i} className="flex items-start gap-2 text-[14px] text-slate-600 leading-relaxed font-sans">
+ <span className="text-slate-300 flex-shrink-0 mt-1">•</span>
+ {doc.replace(/^[-•]\s*/, '')}
  </li>
  ))}
  </ul>
  </div>
  )}
 
- {/* Rodapé */}
- <div className="px-6 py-4">
- <p className="text-[12px] text-slate-400">
- Proposta gerada em {content.dataProposta ?? today()}
- {lastIaModel ? ` · via ${lastIaModel}` : ''}
- </p>
+ {/* Escopo técnico */}
+ {content.metodologia?.trim() && (
+ <div className="px-10 py-6">
+ <p className={labelCls}>Objeto e escopo da perícia</p>
+ <p className="text-[14px] text-slate-600 leading-[1.8] whitespace-pre-line font-sans">{content.metodologia}</p>
  </div>
+ )}
+
+ {/* Condições de pagamento */}
+ {content.condicoesPagamento?.trim() && (
+ <div className="px-10 py-4">
+ <p className={labelCls}>Condições</p>
+ <p className="text-[14px] text-slate-600 font-sans">{content.condicoesPagamento}</p>
+ </div>
+ )}
+
+ {/* Fechamento */}
+ <div className="px-10 py-8 text-right">
+ <p className="text-[14px] text-slate-700">Termos em que</p>
+ <p className="text-[14px] text-slate-700 mt-1">Peço deferimento,</p>
+ <p className="text-[14px] text-slate-700 mt-5">
+ {extractCidade(processSnapshot.vara)}, {formatDateBR(content.dataProposta ?? today())}
+ </p>
+ <div className="mt-10 inline-block text-center">
+ <div className="border-t border-slate-400 px-16 pt-2">
+ <p className="text-[14px] font-bold text-slate-900 font-sans">{peritoNome}</p>
+ {peritoQual && <p className="text-[13px] text-slate-500 font-sans">{peritoQual}</p>}
+ {peritoReg && <p className="text-[13px] text-slate-500 font-sans">{peritoReg}</p>}
+ </div>
+ </div>
+ </div>
+
  </section>
 
  <VersionHistory versoes={versoes} />

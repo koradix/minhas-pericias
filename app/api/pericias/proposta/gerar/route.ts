@@ -76,13 +76,15 @@ export interface GerarPropostaOutput {
     observacoes:        string[]
   }
   texto_documento: {
-    titulo:      string
-    abertura:    string
-    escopo:      string
-    metodologia: string
-    custos:      string
-    condicoes:   string
-    fechamento:  string
+    titulo:         string
+    abertura:       string
+    escopo:         string
+    metodologia:    string
+    custos:         string
+    condicoes:      string
+    requerimentos:  string[]
+    documentos_reu: string[]
+    fechamento:     string
   }
   qa: {
     campos_faltantes:    string[]
@@ -93,20 +95,18 @@ export interface GerarPropostaOutput {
 
 // ─── System prompt (user-specified) ──────────────────────────────────────────
 
-const SYSTEM_PROMPT = `Você é um assistente especializado em estruturar propostas de honorários periciais no Brasil.
+const SYSTEM_PROMPT = `Você é um assistente especializado em redigir propostas de honorários periciais no Brasil, no formato de petição judicial dirigida ao juízo.
 
-Sua função NÃO é gerar um arquivo Word e NÃO é inventar layout.
-Sua única função é retornar um JSON válido, completo, consistente e rastreável, para que o backend gere um documento .docx a partir de um template.
+Sua única função é retornar um JSON válido. Não escreva markdown, não adicione texto fora do JSON.
 
 Regras obrigatórias:
 1. Retorne apenas JSON válido.
-2. Não escreva markdown.
-3. Não invente fatos.
-4. Se um dado não estiver disponível, use null.
-5. Sempre separe claramente: dados do processo, escopo da perícia, metodologia, estimativa de esforço, despesas, condições, pendências.
-6. O texto deve ser profissional, objetivo, claro e utilizável em proposta de honorários.
-7. Não faça cálculo final fechado se não houver informação suficiente.
-8. Sempre aponte campos faltantes e riscos.`
+2. texto_documento.abertura: redigir em terceira pessoa, tom formal jurídico. Identificar o perito pelo nome e qualificação, mencionar que foi nomeado pelo juízo nos presentes autos, declarar aceite da demanda, propor os honorários com valor em BRL. Para TJRJ em perícias de engenharia de menor complexidade: citar Súmula 360 TJ/RJ e valor em salários mínimos (até 4 SM). Parágrafo único e coeso.
+3. texto_documento.requerimentos: array de 3 a 5 itens que o perito requer ao juízo: (a) homologação dos honorários mesmo sabendo da justiça gratuita se aplicável, (b) aceite do encargo sem impedimento ou suspeição, (c) apresentação de documentos pelo réu relevantes para esta perícia específica. Cada item começa com verbo no subjuntivo (Sejam, Seja, etc.).
+4. texto_documento.documentos_reu: array com documentos técnicos específicos que o réu deve fornecer, baseados no tipo de ação e objeto — seja concreto (ex: histórico de consumo, planilha de faturamento, registros de medição).
+5. Não invente fatos. Se dado ausente, use null.
+6. Estimativa de honorários: refletir complexidade. Para TJRJ eng. elétrica/civil menor complexidade: sugerir 4 SM (≈ R$6.000). Para alta complexidade ou outros estados: calcular por horas.
+7. Sempre aponte campos faltantes e riscos no campo qa.`
 
 function buildUserPrompt(input: GerarPropostaInput): string {
   const analysis = {
@@ -155,7 +155,7 @@ Schema exato de saída (retorne SOMENTE este JSON, sem texto adicional):
   "metodologia": { "texto_base": "string", "etapas": ["string"] },
   "estimativa": { "fases": [{"nome":"string","descricao":"string","horas_estimadas":"number|null"}], "despesas": [{"tipo":"string","descricao":"string","quantidade":"number|null","valor_unitario_sugerido":"number|null"}] },
   "condicoes": { "prazo_entrega_dias": "number|null", "forma_pagamento": "string|null", "observacoes": ["string"] },
-  "texto_documento": { "titulo":"string","abertura":"string","escopo":"string","metodologia":"string","custos":"string","condicoes":"string","fechamento":"string" },
+  "texto_documento": { "titulo":"string","abertura":"string","escopo":"string","metodologia":"string","custos":"string","condicoes":"string","requerimentos":["string"],"documentos_reu":["string"],"fechamento":"string" },
   "qa": { "campos_faltantes":["string"],"riscos":["string"],"checagens_realizadas":["string"] }
 }
 

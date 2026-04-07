@@ -407,7 +407,7 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
     getFeeProposal(pericia.id, userId2),
     getFeeProposalVersions(pericia.id, userId2),
     getProposalTemplates(userId2),
-    prisma.peritoPerfil.findUnique({ where: { userId: userId2 }, select: { formacao: true } }).catch(() => null),
+    prisma.peritoPerfil.findUnique({ where: { userId: userId2 }, select: { formacao: true, registro: true, telefone: true } }).catch(() => null),
   ])
 
   const st = PERICIA_STATUS[pericia.status] ?? { label: pericia.status, variant: 'secondary' as const }
@@ -505,10 +505,13 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
             partes:   pericia.partes,
             tribunal: citacaoLink?.diarioSigla ?? pericia.vara?.match(/TJ[A-Z]{2}|DJ[A-Z]{2}/)?.[0] ?? 'TJRJ',
           },
-          analise:       analiseIA2,
-          peritoNome:    session2?.user?.name ?? '',
-          peritoFormacao: peritoPerfil2?.formacao ?? '',
-          rascunho:      feeProposal,
+          analise:         analiseIA2,
+          peritoNome:      session2?.user?.name ?? '',
+          peritoFormacao:  peritoPerfil2?.formacao ?? '',
+          peritoRegistro:  peritoPerfil2?.registro ?? '',
+          peritoEmail:     session2?.user?.email ?? '',
+          peritoTelefone:  peritoPerfil2?.telefone ?? '',
+          rascunho:        feeProposal,
           versoes:       feeVersoes,
           templates:     proposalTemplates,
         }}
