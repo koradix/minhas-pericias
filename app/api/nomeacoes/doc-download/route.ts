@@ -25,12 +25,22 @@ export async function GET(request: NextRequest) {
   }
 
   // Verifica que o documento pertence a uma nomeação do usuário
+  // OU que o usuário tem uma perícia cujo número de processo bate com o documento
   const doc = await prisma.processoDocumento.findUnique({
     where: { id: docId },
     include: { processo: { include: { nomeacoes: { where: { peritoId: userId } } } } },
   }).catch(() => null)
 
-  if (!doc || doc.processo.nomeacoes.length === 0) {
+  if (!doc) {
+    return NextResponse.json({ error: 'Documento não encontrado' }, { status: 404 })
+  }
+
+  const autorizadoViaNomeacao = doc.processo.nomeacoes.length > 0
+  const autorizadoViaPericia = !autorizadoViaNomeacao && await prisma.pericia.count({
+    where: { peritoId: userId, processo: doc.processo.numeroProcesso },
+  }).then((n) => n > 0).catch(() => false)
+
+  if (!autorizadoViaNomeacao && !autorizadoViaPericia) {
     return NextResponse.json({ error: 'Documento não encontrado' }, { status: 404 })
   }
 
