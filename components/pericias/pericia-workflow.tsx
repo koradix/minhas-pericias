@@ -185,7 +185,6 @@ export function PericiaWorkflow({
   }
 
   function handleBuscarEscavador() {
-    if (!processoNumero) return
     setEscavadorFase({ fase: 'buscando' })
     startEscavador(async () => {
       const res = await buscarDocumentosPorPericia(periciaId)
@@ -320,9 +319,8 @@ export function PericiaWorkflow({
               <div className="mt-4 space-y-4">
                 <input ref={fileRef} type="file" accept=".pdf,.docx" className="hidden" onChange={handleUpload} />
 
-                {/* ── Documentos do processo (quando há número de processo) ─── */}
-                {processoNumero && (
-                  <div className="space-y-2">
+                {/* ── Documentos do processo ──────────────────────────────── */}
+                <div className="space-y-2">
                     {escavadorFase.fase === 'idle' && (
                       <button
                         onClick={handleBuscarEscavador}
@@ -390,7 +388,6 @@ export function PericiaWorkflow({
                       </div>
                     )}
                   </div>
-                )}
 
                 {/* ── Upload manual ─────────────────────────────────────────── */}
                 <div className="space-y-1">
