@@ -120,7 +120,6 @@ export function PericiaWorkflow({
   const fileRef = useRef<HTMLInputElement>(null)
   const [uploadState, setUploadState] = useState<UploadState>({ fase: 'idle' })
   const [step1Done, setStep1Done] = useState(false)
-  const [provider, setProvider] = useState<'claude' | 'gemini'>('claude')
   const router = useRouter()
 
   const tribunal = TRIBUNAL_URLS[tribunalSigla.toUpperCase()]
@@ -141,7 +140,6 @@ export function PericiaWorkflow({
         tribunal: tribunalSigla,
         numero:   processoNumero,
         periciaId,
-        provider,
       }),
     })
     const json = await res.json() as { ok: boolean; message?: string; nomeacaoId?: string; preview?: AnaliseIA }
@@ -292,28 +290,6 @@ export function PericiaWorkflow({
                     Selecionar PDF ou DOCX
                   </button>
                   {/* Toggle IA temporário */}
-                  <div className="flex items-center rounded-lg border border-[#e2e8f0] overflow-hidden text-[11px] font-semibold">
-                    <button
-                      onClick={() => setProvider('claude')}
-                      className={`px-2.5 py-2 transition-colors ${
-                        provider === 'claude'
-                          ? 'bg-violet-600 text-white'
-                          : 'bg-white text-[#9ca3af] hover:text-[#374151]'
-                      }`}
-                    >
-                      Claude
-                    </button>
-                    <button
-                      onClick={() => setProvider('gemini')}
-                      className={`px-2.5 py-2 transition-colors ${
-                        provider === 'gemini'
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-white text-[#9ca3af] hover:text-[#374151]'
-                      }`}
-                    >
-                      Gemini
-                    </button>
-                  </div>
                 </div>
                 <p className="text-[12px] text-[#9ca3af] font-inter">Máx. 50 MB · PDF ou DOCX</p>
               </div>

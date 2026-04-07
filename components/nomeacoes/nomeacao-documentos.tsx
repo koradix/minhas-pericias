@@ -28,7 +28,6 @@ function formatBytes(bytes: number): string {
 }
 
 type UploadFase = 'idle' | 'enviando' | 'analisando' | 'ok' | 'erro'
-type Provider   = 'claude' | 'gemini'
 
 export function NomeacaoDocumentosSection({
   tribunal,
@@ -45,8 +44,6 @@ export function NomeacaoDocumentosSection({
   const [fase, setFase] = useState<UploadFase>('idle')
   const [progresso, setProgresso] = useState(0)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
-  // ── Seletor de provider (temporário — remover após testes) ───────────────
-  const [provider, setProvider] = useState<Provider>('claude')
 
   const isPending = fase === 'enviando' || fase === 'analisando'
 
@@ -91,7 +88,6 @@ export function NomeacaoDocumentosSection({
           mimeType:  file.type,
           tribunal,
           numero:    numeroProcesso || null,
-          provider,
           ...(periciaId ? { periciaId } : {}),
         }),
       })
@@ -129,29 +125,6 @@ export function NomeacaoDocumentosSection({
           <h2 className="text-sm font-semibold text-slate-800">Documentos do processo</h2>
         </div>
         <div className="flex items-center gap-2">
-          {/* ── Provider toggle (temporário) ── */}
-          <div className="flex items-center rounded-lg border border-slate-200 overflow-hidden text-[11px] font-semibold">
-            <button
-              onClick={() => setProvider('claude')}
-              className={`px-2.5 py-1.5 transition-colors ${
-                provider === 'claude'
-                  ? 'bg-violet-600 text-white'
-                  : 'bg-white text-slate-400 hover:text-slate-600'
-              }`}
-            >
-              Claude
-            </button>
-            <button
-              onClick={() => setProvider('gemini')}
-              className={`px-2.5 py-1.5 transition-colors ${
-                provider === 'gemini'
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-white text-slate-400 hover:text-slate-600'
-              }`}
-            >
-              Gemini
-            </button>
-          </div>
           <button
             onClick={() => fileRef.current?.click()}
             disabled={isPending}
