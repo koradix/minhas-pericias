@@ -440,11 +440,7 @@ export function PropostaTab({
 
  // ── Derived ────────────────────────────────────────────────────────────────
 
- if (!analise) return <PropostaBloqueada />
-
- // Non-null assertion is safe: early return above guarantees analise is defined
- // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
- const a = analise!
+ const a = analise ?? {} as AnaliseIA
 
  const processSnapshot = {
  numeroProcesso: pericia.processo ?? a.numeroProcesso ?? '',
@@ -918,6 +914,15 @@ export function PropostaTab({
  <div className="flex items-center gap-2 rounded-lg bg-rose-50 border border-rose-100 px-4 py-3">
  <AlertCircle className="h-4 w-4 text-rose-500 flex-shrink-0" />
  <p className="text-[13px] text-rose-700 ">{saveError}</p>
+ </div>
+ )}
+
+ {!analise && (
+ <div className="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3">
+ <AlertCircle className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
+ <p className="text-[13px] text-amber-700">
+ Sem análise do processo — a IA vai gerar com dados limitados. Para melhor resultado, faça upload do PDF na aba Resumo.
+ </p>
  </div>
  )}
 

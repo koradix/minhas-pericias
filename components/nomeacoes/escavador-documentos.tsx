@@ -18,19 +18,28 @@ function fmtDate(s: string | null): string {
 }
 
 export function EscavadorDocumentosSection({ nomeacaoId, initialDocs }: Props) {
-  const [docs, setDocs]       = useState<ProcessoDocumentoRow[]>(initialDocs)
-  const [error, setError]     = useState<string | null>(null)
+  const [docs, setDocs]           = useState<ProcessoDocumentoRow[]>(initialDocs)
+  const [error, setError]         = useState<string | null>(null)
   const [naoSuportado, setNaoSuportado] = useState(false)
-  const [buscado, setBuscado] = useState(initialDocs.length > 0)
+  const [aguardandoRobos, setAguardandoRobos] = useState(false)
+  const [buscado, setBuscado]     = useState(initialDocs.length > 0)
   const [downloading, setDownloading] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
   function handleBuscar() {
     setError(null)
+    setAguardandoRobos(false)
+    setNaoSuportado(false)
     startTransition(async () => {
       const res = await buscarDocumentosNomeacao(nomeacaoId)
       if (!res.ok) {
         setError(res.error)
+        return
+      }
+      if (res.atualizacaoSolicitada) {
+        // Robôs Escavador acionados — lista ainda vazia, usuário deve tentar em instantes
+        setAguardandoRobos(true)
+        setBuscado(true)
         return
       }
       if (!res.suportado) {
@@ -101,6 +110,15 @@ export function EscavadorDocumentosSection({ nomeacaoId, initialDocs }: Props) {
           <div className="flex items-start gap-2.5 rounded-xl bg-rose-50 border border-rose-100 px-3 py-2.5">
             <AlertCircle className="h-4 w-4 text-rose-500 flex-shrink-0 mt-0.5" />
             <p className="text-xs text-rose-700">{error}</p>
+          </div>
+        )}
+
+        {aguardandoRobos && (
+          <div className="flex items-start gap-2.5 rounded-xl bg-blue-50 border border-blue-100 px-3 py-2.5">
+            <AlertCircle className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-blue-700">
+              Atualização solicitada ao Escavador. Os robôs estão coletando os documentos — clique em <strong>Atualizar</strong> em alguns instantes para ver os resultados.
+            </p>
           </div>
         )}
 
