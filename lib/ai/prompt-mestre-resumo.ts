@@ -105,20 +105,8 @@ export interface AnaliseProcessoV2 {
     resumo: string | null
   }
   proximos_passos: string[]
-  fundamentacao_oficial: Array<{
-    afirmacao: string
-    tipo_fonte: 'lei' | 'norma' | 'dou' | 'fonte_oficial'
-    referencia: string
-    url_oficial: string | null
-  }>
-  qa: {
-    dados_faltantes: string[]
-    riscos_de_interpretacao: string[]
-    observacoes: string[]
-  }
 
   // ── Operacional (for PropostaTab + DB extraction) ─────────────────────────
-  // Kept alongside narrative so the rest of the system keeps working.
   operacional: {
     numeroProcesso: string | null
     tribunal: string | null
@@ -142,11 +130,6 @@ export interface AnaliseProcessoV2 {
       necessitaDeslocamento: boolean
       custosLogisticos: string | null
     }
-    necessidadesTecnicas: {
-      tipoVistoria: string | null
-      equipamentos: string[]
-      coletaDados: string[]
-    }
     nomeacaoDespacho: {
       determinacaoJuiz: string | null
       dataNomeacao: string | null
@@ -154,12 +137,6 @@ export interface AnaliseProcessoV2 {
       quesitos: string[]
       pontoCriticos: string[]
     }
-    riscos: {
-      tecnico: string[]
-      juridico: string[]
-      informacoesFaltando: string[]
-    }
-    checklist: string[]
   }
 }
 
@@ -211,18 +188,18 @@ export function toAnaliseCompativel(v2: AnaliseProcessoV2): AnaliseProcesso {
     prazos: op.prazos,
     localPericia: op.localPericia,
     necessidadesTecnicas: {
-      tipoVistoria:       op.necessidadesTecnicas.tipoVistoria ?? '',
-      equipamentos:       op.necessidadesTecnicas.equipamentos,
+      tipoVistoria:        '',
+      equipamentos:        [],
       assistentesTecnicos: null,
-      coletaDados:        op.necessidadesTecnicas.coletaDados,
+      coletaDados:         [],
     },
     riscos: {
-      tecnico:             op.riscos.tecnico,
-      juridico:            op.riscos.juridico,
-      informacoesFaltando: op.riscos.informacoesFaltando,
+      tecnico:             [],
+      juridico:            [],
+      informacoesFaltando: [],
       conflitos:           [],
     },
-    checklist:      op.checklist,
+    checklist:      [],
     numeroProcesso: op.numeroProcesso,
     tribunal:       op.tribunal,
     vara:           op.vara,
@@ -255,46 +232,27 @@ export const SYSTEM_PROMPT =
 
 export const SYSTEM_PROMPT_V2 =
   'Você é um assistente técnico de análise processual para apoio a peritos judiciais.\n\n' +
-  'Sua função é analisar o processo de forma clara, concisa, organizada e útil para entendimento rápido do caso.\n\n' +
-  'Objetivo:\n' +
-  'Entregar uma leitura operacional do processo, priorizando:\n' +
-  '- partes\n' +
-  '- tipo de processo\n' +
-  '- objeto\n' +
-  '- petição inicial\n' +
-  '- contestação\n' +
-  '- réplica\n' +
-  '- ponto controvertido\n' +
-  '- breve opinião técnica\n' +
-  '- próximos passos\n\n' +
+  'Sua função: analisar o processo de forma concisa e útil para o perito entender rapidamente o caso.\n\n' +
+  'Estrutura obrigatória da análise:\n' +
+  '1. Partes (autor e réu)\n' +
+  '2. Tipo de processo\n' +
+  '3. Objeto (1 frase curta e direta)\n' +
+  '4. Petição inicial — 4 parágrafos curtos: (1) fatos, (2) fundamentos jurídicos, (3) pedidos, (4) pedido de urgência se houver\n' +
+  '5. Contestação — 4 parágrafos: (1) defesa principal, (2) impugnação dos fatos, (3) teses jurídicas, (4) pedidos da contestação\n' +
+  '6. Réplica — 4 parágrafos se houver, senão null\n' +
+  '7. Ponto controvertido — 1 a 2 frases objetivas sobre o que precisa ser provado\n' +
+  '8. Breve opinião técnica — leitura operacional: tipo de perícia (documental/presencial), fragilidades, complexidade\n' +
+  '9. Próximos passos — máximo 3 ações práticas e diretas para o perito\n\n' +
   'Regras rígidas:\n' +
-  '1. Retorne apenas JSON válido.\n' +
-  '2. Não use markdown.\n' +
-  '3. Não invente fatos.\n' +
-  '4. Se algo não estiver disponível, use null.\n' +
-  '5. Sempre que houver afirmação legal ou normativa, citar lei, artigo, norma e fonte oficial.\n' +
-  '6. Não usar doutrina não referenciada, blogs, notícias ou jurisprudência não oficial.\n' +
-  '7. Se a informação não puder ser sustentada sob essas regras, declarar isso.\n' +
-  '8. Trocar sempre a palavra "infirmar" por "invalidar".\n' +
-  '9. O texto deve ser conciso.\n' +
-  '10. Evite blocos longos.\n' +
-  '11. O objeto do processo deve ser curto e muito claro.\n' +
-  '12. O foco da análise é ajudar o perito a entender o caso.\n\n' +
-  'Regras de estilo:\n' +
-  '- cada parágrafo deve ser curto\n' +
-  '- não repetir os mesmos fatos\n' +
-  '- não transformar resumo em transcrição\n' +
-  '- destacar o que ajuda o perito\n' +
-  '- a opinião deve ser operacional, não emocional\n' +
-  '- próximos passos devem ser práticos e poucos\n' +
-  '- INSTRUÇÕES DE LEITURA: leia todas as páginas, cabeçalhos, rodapés e carimbos\n' +
-  '- número do processo segue padrão CNJ: NNNNNNN-DD.AAAA.J.TT.OOOO\n' +
-  '- partes: AUTOR/REQUERENTE vs RÉU/REQUERIDO\n' +
-  '- quesitos são perguntas numeradas dirigidas ao perito\n' +
-  '- prazos: "no prazo de X dias", "até DD/MM/AAAA"\n' +
-  '- Se um campo não existir, use null\n\n' +
-  'Baseie-se estritamente nos documentos recebidos.\n' +
-  'Retorne APENAS JSON válido, sem texto adicional, sem markdown.'
+  '1. Retorne apenas JSON válido, sem texto adicional, sem markdown.\n' +
+  '2. Não invente fatos — baseie-se estritamente no documento.\n' +
+  '3. Se algo não existir no documento, use null.\n' +
+  '4. Substitua sempre "infirmar" por "invalidar".\n' +
+  '5. Cada parágrafo deve ser curto — não transcreva, resuma.\n' +
+  '6. Não repita os mesmos fatos entre seções.\n' +
+  '7. Número do processo segue padrão CNJ: NNNNNNN-DD.AAAA.J.TT.OOOO\n' +
+  '8. Leia todas as páginas, cabeçalhos, rodapés e carimbos.\n\n' +
+  'Retorne APENAS o JSON, sem mais nada.'
 
 // ─── V2 JSON Template ─────────────────────────────────────────────────────────
 
@@ -343,19 +301,6 @@ const JSON_TEMPLATE_V2 = `Retorne SOMENTE este JSON (sem texto adicional):
     "ação prática 2",
     "ação prática 3"
   ],
-  "fundamentacao_oficial": [
-    {
-      "afirmacao": "afirmação que exige embasamento",
-      "tipo_fonte": "lei",
-      "referencia": "Lei nº XXXX/AAAA, art. X",
-      "url_oficial": "https://... ou null"
-    }
-  ],
-  "qa": {
-    "dados_faltantes": ["campos ausentes que impactam a análise"],
-    "riscos_de_interpretacao": ["riscos de interpretação divergente"],
-    "observacoes": ["observações relevantes"]
-  },
   "operacional": {
     "numeroProcesso": "número CNJ ou null",
     "tribunal": "sigla do tribunal ou null",
@@ -365,38 +310,27 @@ const JSON_TEMPLATE_V2 = `Retorne SOMENTE este JSON (sem texto adicional):
     "aceiteHonorarios": {
       "prazoAceite": "prazo de aceite ou null",
       "complexidade": "baixa | média | alta",
-      "estrategiaHonorarios": "parágrafo sobre como abordar honorários: complexidade, deslocamento, equipamentos",
-      "justificativasAumento": ["cada fator que justifica cobrar mais"]
+      "estrategiaHonorarios": "parágrafo sobre honorários",
+      "justificativasAumento": ["fatores que justificam cobrar mais"]
     },
     "prazos": {
       "prazoAceite": "prazo ou null",
       "prazoLaudo": "prazo ou null",
-      "outrosPrazos": ["outros prazos relevantes"]
+      "outrosPrazos": []
     },
     "localPericia": {
       "enderecoCompleto": "endereço completo ou null",
       "cidadeEstado": "cidade/UF ou null",
       "necessitaDeslocamento": true,
-      "custosLogisticos": "estimativa ou null"
-    },
-    "necessidadesTecnicas": {
-      "tipoVistoria": "presencial | documental | ambas ou null",
-      "equipamentos": ["equipamentos necessários"],
-      "coletaDados": ["dados específicos a coletar"]
+      "custosLogisticos": null
     },
     "nomeacaoDespacho": {
-      "determinacaoJuiz": "transcrição ou resumo do despacho de nomeação ou null",
+      "determinacaoJuiz": "resumo do despacho de nomeação ou null",
       "dataNomeacao": "data ou null",
       "peritoNomeado": true,
-      "quesitos": ["lista completa de quesitos, um por item"],
-      "pontoCriticos": ["Prazo aceite: X dias", "Honorários: R$ X", "Local: endereço"]
-    },
-    "riscos": {
-      "tecnico": ["riscos técnicos da perícia"],
-      "juridico": ["riscos jurídicos"],
-      "informacoesFaltando": ["documentos ou informações ausentes"]
-    },
-    "checklist": ["Aceitar nomeação", "Elaborar proposta de honorários", "Agendar vistoria"]
+      "quesitos": ["lista completa de quesitos"],
+      "pontoCriticos": []
+    }
   }
 }`
 

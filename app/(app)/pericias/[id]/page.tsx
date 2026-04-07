@@ -32,7 +32,10 @@ import { PericiaEditCard } from '@/components/pericias/pericia-edit-card'
 import { getFeeProposal, getFeeProposalVersions } from '@/lib/actions/fee-proposal'
 import { getProposalTemplates } from '@/lib/actions/proposal-template'
 import type { ResumoData } from '@/lib/actions/processos-intake'
-import { isAnaliseProcessoV2, toAnaliseCompativel } from '@/lib/ai/prompt-mestre-resumo'
+import { isAnaliseProcessoV2, isAnaliseProcesso, toAnaliseCompativel } from '@/lib/ai/prompt-mestre-resumo'
+import { AnaliseProcessoV2Block } from '@/components/nomeacoes/analise-processo-v2-block'
+import { AnaliseProcessoBlock } from '@/components/nomeacoes/analise-processo-block'
+import { NomeacaoDocumentosSection } from '@/components/nomeacoes/nomeacao-documentos'
 import type { Metadata } from 'next'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -564,6 +567,46 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
                 />
               )
             })()}
+
+            {/* IA analysis block — v2 or v1 */}
+            {nomeacaoLink?.processSummary && (() => {
+              try {
+                const parsed = JSON.parse(nomeacaoLink!.processSummary!)
+                if (isAnaliseProcessoV2(parsed)) return (
+                  <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <div className="flex items-center gap-2 px-6 pt-6 pb-2">
+                      <h2 className="text-base font-semibold text-slate-800">Análise do processo</h2>
+                    </div>
+                    <div className="px-6 pb-6">
+                      <AnaliseProcessoV2Block analise={parsed} />
+                    </div>
+                  </section>
+                )
+                if (isAnaliseProcesso(parsed)) return (
+                  <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-50">
+                        <Sparkles className="h-3.5 w-3.5 text-violet-600" />
+                      </div>
+                      <h2 className="text-sm font-semibold text-slate-800">Análise do processo</h2>
+                    </div>
+                    <div className="px-5 py-4">
+                      <AnaliseProcessoBlock analise={parsed} />
+                    </div>
+                  </section>
+                )
+              } catch {}
+              return null
+            })()}
+
+            {/* Re-upload / re-analyze document */}
+            <NomeacaoDocumentosSection
+              nomeacaoId={nomeacaoLink?.id ?? ''}
+              tribunal={citacaoLink?.diarioSigla ?? pericia.vara?.match(/TJ[A-Z]{2}|DJ[A-Z]{2}/)?.[0] ?? 'TJRJ'}
+              numeroProcesso={pericia.processo ?? ''}
+              nomeArquivo={nomeacaoLink?.nomeArquivo ?? null}
+              periciaId={pericia.id}
+            />
 
             {/* Timeline */}
             {(() => {

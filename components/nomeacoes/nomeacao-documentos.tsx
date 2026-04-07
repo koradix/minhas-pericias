@@ -18,6 +18,7 @@ interface Props {
   numeroProcesso: string
   nomeArquivo: string | null
   tamanhoBytes?: number | null
+  periciaId?: string
 }
 
 function formatBytes(bytes: number): string {
@@ -34,6 +35,7 @@ export function NomeacaoDocumentosSection({
   numeroProcesso,
   nomeArquivo: initial,
   tamanhoBytes: initialBytes,
+  periciaId,
 }: Props) {
   const router = useRouter()
   const fileRef = useRef<HTMLInputElement>(null)
@@ -90,6 +92,7 @@ export function NomeacaoDocumentosSection({
           tribunal,
           numero:    numeroProcesso || null,
           provider,
+          ...(periciaId ? { periciaId } : {}),
         }),
       })
     } catch {
