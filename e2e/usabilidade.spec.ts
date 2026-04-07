@@ -90,7 +90,7 @@ test('sidebar: navegação entre rotas principais', async ({ page }) => {
   await login(page)
 
   const rotas = [
-    { label: 'Péricias', url: /pericias/ },
+    { label: 'Pericias', url: /pericias/ },
     { label: 'Contatos', url: /contatos/ },
     { label: 'Financeiro', url: /financeiro/ },
   ]
@@ -174,7 +174,7 @@ test('radar: modal de registrar nomeação abre', async ({ page }) => {
   if (await closeBtn.isVisible().catch(() => false)) await closeBtn.click()
 })
 
-// ─── 6. Péricias ──────────────────────────────────────────────────────────────
+// ─── 6. Pericias ──────────────────────────────────────────────────────────────
 test('pericias: lista carrega sem erro', async ({ page }) => {
   await login(page)
   await page.goto('/pericias')

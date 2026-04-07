@@ -95,7 +95,7 @@ export default async function PreviewPropostaPage({ params }: { params: Promise<
 
       {/* ── Breadcrumb ─────────────────────────────────────────────────────── */}
       <div className="print:hidden flex items-center gap-2 text-xs text-slate-400">
-        <Link href="/pericias" className="hover:text-slate-700 transition-colors">Péricias</Link>
+        <Link href="/pericias" className="hover:text-slate-700 transition-colors">Pericias</Link>
         <ChevronRight className="h-3 w-3" />
         <Link href={`/pericias/${p.id}`} className="hover:text-slate-700 transition-colors">{p.numero}</Link>
         <ChevronRight className="h-3 w-3" />

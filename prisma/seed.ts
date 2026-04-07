@@ -70,7 +70,7 @@ async function main() {
     update: {},
     create: {
       email:        'originador@demo.perix.com.br',
-      name:         'Rio Péricias Originações',
+      name:         'Rio Pericias Originações',
       passwordHash: hash,
       role:         'parceiro',
     },
@@ -120,7 +120,7 @@ async function main() {
 
   await prisma.pericia.deleteMany({ where: { peritoId: demoPerito.id } })
 
-  // ─── 7 Péricias reais de teste (RJ) ──────────────────────────────────────
+  // ─── 7 Pericias reais de teste (RJ) ──────────────────────────────────────
 
   const p1 = await prisma.pericia.create({ data: {
     peritoId: demoPerito.id,
@@ -220,12 +220,12 @@ async function main() {
     valorHonorarios: 3500,
   }})
 
-  // ─── Rota principal — "Circuito Centro RJ — Péricias do dia" ─────────────
+  // ─── Rota principal — "Circuito Centro RJ — Pericias do dia" ─────────────
 
   const rota1 = await prisma.rotaPericia.create({
     data: {
       peritoId: demoPerito.id,
-      titulo:   'Circuito Centro RJ — Péricias do dia',
+      titulo:   'Circuito Centro RJ — Pericias do dia',
       status:   'planejada',
     },
   })

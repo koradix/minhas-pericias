@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { cn } from '@/lib/utils'
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = { title: 'Kanban — Péricias' }
+export const metadata: Metadata = { title: 'Kanban — Pericias' }
 
 function toISO(d: Date | string | null | undefined): string {
   if (!d) return new Date().toISOString()
@@ -72,7 +72,7 @@ export default async function KanbanPage() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">Kanban de Péricias</h1>
+          <h1 className="text-xl font-bold text-slate-900">Kanban de Pericias</h1>
           <p className="text-xs text-slate-400 mt-0.5">
             {total} rota{total !== 1 ? 's' : ''} · {em_andamento} em andamento · {concluidas} concluída{concluidas !== 1 ? 's' : ''}
           </p>

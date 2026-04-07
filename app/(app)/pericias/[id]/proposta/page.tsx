@@ -56,7 +56,7 @@ export default async function PropostaHonorariosPage({ params }: { params: Promi
     return (
       <div className="space-y-6 pb-10 max-w-2xl mx-auto">
         <div className="flex items-center gap-2 text-xs text-slate-400">
-          <Link href="/pericias" className="hover:text-slate-700 transition-colors">Péricias</Link>
+          <Link href="/pericias" className="hover:text-slate-700 transition-colors">Pericias</Link>
           <ChevronRight className="h-3 w-3" />
           <Link href={`/pericias/${id}`} className="hover:text-slate-700 transition-colors truncate max-w-[120px]">
             {p.assunto}
@@ -127,7 +127,7 @@ export default async function PropostaHonorariosPage({ params }: { params: Promi
   return (
     <div className="space-y-6 pb-10 max-w-2xl mx-auto">
       <div className="flex items-center gap-2 text-xs text-slate-400">
-        <Link href="/pericias" className="hover:text-slate-700 transition-colors">Péricias</Link>
+        <Link href="/pericias" className="hover:text-slate-700 transition-colors">Pericias</Link>
         <ChevronRight className="h-3 w-3" />
         <Link href={`/pericias/${id}`} className="hover:text-slate-700 transition-colors truncate max-w-[120px]">
           {rota.titulo}

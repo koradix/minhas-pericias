@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = { title: 'Péricias' }
+export const metadata: Metadata = { title: 'Pericias' }
 
 function toISO(d: Date | string | null | undefined): string {
   if (!d) return new Date().toISOString()
@@ -89,7 +89,7 @@ export default async function PericiasPage() {
   return (
     <div className="space-y-8 p-4 md:p-12 max-w-7xl mx-auto w-full pt-4 md:pt-16">
       <PageHeader
-        title="Péricias"
+        title="Pericias"
         description={`${dbPericias.length} perícia${dbPericias.length !== 1 ? 's' : ''}`}
         actions={
           <div className="flex items-center gap-3">
@@ -107,7 +107,7 @@ export default async function PericiasPage() {
         }
       />
 
-      {/* ── Péricias (primary) ── */}
+      {/* ── Pericias (primary) ── */}
       {dbPericias.length === 0 ? (
         <div className="flex flex-col items-center justify-center p-16 bg-white border border-[#e2e8f0] rounded-xl text-center min-h-[320px]">
           <div className="mb-4 text-[#e2e8f0]">

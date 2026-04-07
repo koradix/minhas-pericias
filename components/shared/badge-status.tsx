@@ -10,7 +10,7 @@ interface StatusDef {
 }
 
 const STATUS_MAP: Record<string, StatusDef> = {
-  // Péricias
+  // Pericias
   em_andamento:   { label: 'Em andamento',    variant: 'amber'   },
   aguardando:     { label: 'Aguardando',       variant: 'slate'   },
   concluida:      { label: 'Concluída',        variant: 'emerald' },

@@ -128,7 +128,7 @@ async function MockPericiaView({ id, userId }: { id: string; userId: string }) {
       <div className="flex items-center gap-2 text-xs text-slate-400">
         <Link href="/pericias" className="flex items-center gap-1 hover:text-slate-700 transition-colors">
           <ArrowLeft className="h-3.5 w-3.5" />
-          Péricias
+          Pericias
         </Link>
         <ChevronRight className="h-3 w-3" />
         <span className="text-slate-600 font-medium truncate max-w-xs">{p.assunto}</span>
@@ -421,7 +421,7 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
       <div className="flex items-center gap-2 text-xs text-slate-400">
         <Link href="/pericias" className="flex items-center gap-1 hover:text-slate-700 transition-colors">
           <ArrowLeft className="h-3.5 w-3.5" />
-          Péricias
+          Pericias
         </Link>
         <ChevronRight className="h-3 w-3" />
         <span className="text-slate-600 font-medium truncate max-w-xs">{pericia.assunto}</span>
@@ -761,7 +761,7 @@ async function RotaPericiaView({ id, userId }: { id: string; userId: string }) {
       <div className="flex items-center gap-2 text-xs text-slate-400">
         <Link href="/pericias" className="flex items-center gap-1 hover:text-slate-700 transition-colors">
           <ArrowLeft className="h-3.5 w-3.5" />
-          Péricias
+          Pericias
         </Link>
         <ChevronRight className="h-3 w-3" />
         <span className="text-slate-600 font-medium truncate max-w-xs">{rota.titulo}</span>

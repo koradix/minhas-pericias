@@ -19,7 +19,7 @@ import {
 
 const features = [
   {
-    title: 'Gestão de Péricias',
+    title: 'Gestão de Pericias',
     description: 'Centralize processos, prazos, documentos e laudos. Acompanhe cada etapa com visibilidade total do fluxo pericial.',
   },
   {
@@ -81,7 +81,7 @@ const plans = [
     highlight: true,
     badge: 'Mais popular',
     features: [
-      'Péricias ilimitadas',
+      'Pericias ilimitadas',
       'Resumo automático de processos',
       'Geração de proposta de honorários',
       'Rascunho de laudo com IA',
@@ -270,7 +270,7 @@ export default function LandingPage() {
           <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-center px-4 sm:px-6">
             {[
               { value: '200+', label: 'Peritos ativos' },
-              { value: '5.000+', label: 'Péricias gerenciadas' },
+              { value: '5.000+', label: 'Pericias gerenciadas' },
               { value: '12.000+', label: 'Documentos gerados' },
             ].map((s, i) => (
               <div

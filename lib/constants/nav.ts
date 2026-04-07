@@ -35,7 +35,7 @@ export const navigation: NavSection[] = [
     items: [
       { title: "Dashboard",       href: "/dashboard", icon: LayoutDashboard },
       { title: "Nomeações",  href: "/nomeacoes", icon: Inbox },
-      { title: "Péricias",          href: "/pericias",       icon: FileText },
+      { title: "Pericias",          href: "/pericias",       icon: FileText },
       { title: "Rotas e Vistorias", href: "/rotas/pericias", icon: Navigation },
       // { title: "Processos",    href: "/processos", icon: Upload },   // MVP: oculto
     ],
