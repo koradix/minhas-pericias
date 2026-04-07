@@ -135,7 +135,6 @@ export function PericiaWorkflow({
   const fileRef = useRef<HTMLInputElement>(null)
   const [uploadState, setUploadState] = useState<UploadState>({ fase: 'idle' })
   const [step1Done, setStep1Done] = useState(false)
-  const [escavadorMode, setEscavadorMode] = useState(false)
   const [escavadorFase, setEscavadorFase] = useState<EscavadorFase>({ fase: 'idle' })
   const [isPendingEscavador, startEscavador] = useTransition()
   const router = useRouter()
@@ -319,69 +318,32 @@ export function PericiaWorkflow({
             </p>
 
             {uploadState.fase === 'idle' && !analiseFeita && (
-              <div className="mt-4 space-y-3">
+              <div className="mt-4 space-y-4">
                 <input ref={fileRef} type="file" accept=".pdf,.docx" className="hidden" onChange={handleUpload} />
 
-                {/* Mode toggle */}
-                <div className="flex items-center gap-2 rounded-lg border border-[#e2e8f0] p-1 w-fit">
-                  <button
-                    onClick={() => setEscavadorMode(false)}
-                    className={cn(
-                      'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[13px] font-semibold transition-all',
-                      !escavadorMode ? 'bg-[#1f2937] text-white' : 'text-[#6b7280] hover:text-[#374151]',
-                    )}
-                  >
-                    <Upload className="h-3.5 w-3.5" /> Upload manual
-                  </button>
-                  {nomeacaoId && (
-                    <button
-                      onClick={() => setEscavadorMode(true)}
-                      className={cn(
-                        'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[13px] font-semibold transition-all',
-                        escavadorMode ? 'bg-[#1f2937] text-white' : 'text-[#6b7280] hover:text-[#374151]',
-                      )}
-                    >
-                      <Search className="h-3.5 w-3.5" /> Buscar Escavador
-                    </button>
-                  )}
-                </div>
-
-                {/* Manual upload */}
-                {!escavadorMode && (
-                  <div className="space-y-1">
-                    <button
-                      onClick={() => fileRef.current?.click()}
-                      className="inline-flex items-center gap-2 rounded-lg bg-[#1f2937] hover:bg-[#374151] px-4 py-2.5 text-[14px] font-semibold text-white transition-all"
-                    >
-                      <Upload className="h-4 w-4" /> Selecionar PDF ou DOCX
-                    </button>
-                    <p className="text-[12px] text-[#9ca3af] font-inter">Máx. 50 MB · PDF ou DOCX</p>
-                  </div>
-                )}
-
-                {/* Escavador mode */}
-                {escavadorMode && (
-                  <div className="space-y-3">
+                {/* ── Documentos do processo (quando vinculado a nomeação) ──── */}
+                {nomeacaoId && (
+                  <div className="space-y-2">
                     {escavadorFase.fase === 'idle' && (
                       <button
                         onClick={handleBuscarEscavador}
                         disabled={isPendingEscavador}
-                        className="inline-flex items-center gap-2 rounded-lg border border-[#e2e8f0] hover:bg-[#f8f9ff] px-4 py-2.5 text-[14px] font-semibold text-[#374151] transition-all disabled:opacity-50"
+                        className="inline-flex items-center gap-2 rounded-lg bg-[#1f2937] hover:bg-[#374151] px-4 py-2.5 text-[14px] font-semibold text-white transition-all disabled:opacity-50"
                       >
-                        <Search className="h-4 w-4" /> Buscar documentos no Escavador
+                        <Search className="h-4 w-4" /> Buscar documentos do processo
                       </button>
                     )}
 
                     {(escavadorFase.fase === 'buscando' || isPendingEscavador) && (
                       <div className="flex items-center gap-2 text-[14px] text-[#6b7280]">
                         <Loader2 className="h-4 w-4 animate-spin text-[#416900]" />
-                        Buscando documentos…
+                        Buscando documentos do processo…
                       </div>
                     )}
 
                     {escavadorFase.fase === 'aguardando' && (
                       <div className="rounded-lg bg-blue-50 border border-blue-100 px-4 py-3 space-y-2">
-                        <p className="text-[13px] text-blue-700 font-semibold">Robôs Escavador acionados</p>
+                        <p className="text-[13px] text-blue-700 font-semibold">Coletando documentos</p>
                         <p className="text-[13px] text-blue-600">Os documentos estão sendo coletados. Clique novamente em alguns instantes.</p>
                         <button onClick={handleBuscarEscavador} disabled={isPendingEscavador} className="text-[13px] text-blue-600 underline underline-offset-2 disabled:opacity-50">
                           Tentar novamente
@@ -391,7 +353,7 @@ export function PericiaWorkflow({
 
                     {escavadorFase.fase === 'nenhum' && (
                       <div className="rounded-lg bg-amber-50 border border-amber-100 px-4 py-3">
-                        <p className="text-[13px] text-amber-700">Nenhum documento encontrado via Escavador. Use o upload manual.</p>
+                        <p className="text-[13px] text-amber-700">Nenhum documento encontrado para este processo. Faça o upload manual abaixo.</p>
                       </div>
                     )}
 
@@ -404,7 +366,7 @@ export function PericiaWorkflow({
                     {escavadorFase.fase === 'found' && (
                       <div className="space-y-2">
                         <p className="text-[12px] font-semibold text-[#6b7280] uppercase tracking-wider">
-                          {escavadorFase.docs.length} documento{escavadorFase.docs.length !== 1 ? 's' : ''} encontrado{escavadorFase.docs.length !== 1 ? 's' : ''}
+                          {escavadorFase.docs.length} documento{escavadorFase.docs.length !== 1 ? 's' : ''} encontrado{escavadorFase.docs.length !== 1 ? 's' : ''} — clique em Analisar
                         </p>
                         {escavadorFase.docs.map((doc) => (
                           <div key={doc.id} className="flex items-start gap-3 rounded-lg border border-[#e2e8f0] bg-[#f8f9ff] px-4 py-3">
@@ -430,6 +392,23 @@ export function PericiaWorkflow({
                     )}
                   </div>
                 )}
+
+                {/* ── Upload manual ─────────────────────────────────────────── */}
+                <div className="space-y-1">
+                  <button
+                    onClick={() => fileRef.current?.click()}
+                    className={cn(
+                      'inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-[14px] font-semibold transition-all',
+                      nomeacaoId
+                        ? 'border border-[#e2e8f0] hover:bg-[#f8f9ff] text-[#374151]'
+                        : 'bg-[#1f2937] hover:bg-[#374151] text-white',
+                    )}
+                  >
+                    <Upload className="h-4 w-4" />
+                    {nomeacaoId ? 'Ou faça upload manual' : 'Selecionar PDF ou DOCX'}
+                  </button>
+                  <p className="text-[12px] text-[#9ca3af] font-inter">Máx. 50 MB · PDF ou DOCX</p>
+                </div>
               </div>
             )}
 

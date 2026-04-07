@@ -394,10 +394,27 @@ export function PropostaTab({
  const [templates, setTemplates] = useState<ProposalTemplateRow[]>(templatesProp)
  const [versoes, setVersoes] = useState<FeeProposalVersionRow[]>(versoesProp)
 
+ const SM_2025 = 1518  // Salário mínimo 2025
+
  const [peritoNome, setPeritoNome] = useState(rascunho?.peritoNome || peritoNomeDefault)
  const [peritoQual, setPeritoQual] = useState(rascunho?.peritoQualificacao || peritoFormacao)
  const [peritoReg, setPeritoReg] = useState(peritoRegistroDefault)
  const [peritoEmailState, setPeritoEmailState] = useState(peritoEmailDefault)
+
+ // SM count drives valorHonorarios
+ const initialSm = rascunho?.valorHonorarios
+   ? Math.round(rascunho.valorHonorarios / SM_2025 * 10) / 10
+   : null
+ const [smCount, setSmCount] = useState<number | null>(initialSm)
+
+ function handleSmChange(val: number | null) {
+   setSmCount(val)
+   setContent((p) => ({ ...p, valorHonorarios: val ? Math.round(val * SM_2025) : null }))
+ }
+ function handleValorChange(val: number | null) {
+   setContent((p) => ({ ...p, valorHonorarios: val }))
+   setSmCount(val ? Math.round(val / SM_2025 * 10) / 10 : null)
+ }
  const [peritoTelState, setPeritoTelState] = useState(peritoTelDefault)
 
  // Editable content (starts from rascunho or AI output)
@@ -917,11 +934,64 @@ export function PropostaTab({
  </div>
  )}
 
- {!analise && (
+ {/* ── Dados extraídos do processo ───────────────────────────────── */}
+ {(processSnapshot.partes || processSnapshot.vara || processSnapshot.tipoPericia || processSnapshot.numeroProcesso) ? (
+ <section className="rounded-xl border border-slate-200 bg-white">
+ <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-100">
+ <h2 className="text-[15px] font-semibold text-slate-800">Dados do processo</h2>
+ <span className="ml-auto text-[11px] text-slate-400 font-medium">extraídos da análise IA</span>
+ </div>
+ <div className="px-6 py-4 grid gap-3 sm:grid-cols-2 text-[13px]">
+ {processSnapshot.numeroProcesso && (
+ <div className="sm:col-span-2">
+ <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5">Processo</p>
+ <p className="font-mono text-slate-700">{processSnapshot.numeroProcesso}</p>
+ </div>
+ )}
+ {processSnapshot.vara && (
+ <div className="sm:col-span-2">
+ <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5">Vara / Destinatário</p>
+ <p className="text-slate-700">{processSnapshot.vara}</p>
+ </div>
+ )}
+ {processSnapshot.partes && !processSnapshot.partes.includes('×') && (
+ <div>
+ <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5">Partes</p>
+ <p className="text-slate-700">{processSnapshot.partes}</p>
+ </div>
+ )}
+ {processSnapshot.partes && processSnapshot.partes.includes('×') && (
+ <div>
+ <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5">Réu</p>
+ <p className="text-slate-700">{processSnapshot.partes.split('×')[1]?.trim()}</p>
+ </div>
+ )}
+ {processSnapshot.tipoPericia && (
+ <div className="sm:col-span-2">
+ <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5">Tipo de perícia</p>
+ <p className="text-slate-700">{processSnapshot.tipoPericia}</p>
+ </div>
+ )}
+ {processSnapshot.quesitos.length > 0 && (
+ <div className="sm:col-span-2">
+ <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5">Quesitos ({processSnapshot.quesitos.length})</p>
+ <ul className="space-y-0.5">
+ {processSnapshot.quesitos.slice(0, 4).map((q, i) => (
+ <li key={i} className="text-slate-600 truncate">· {q}</li>
+ ))}
+ {processSnapshot.quesitos.length > 4 && (
+ <li className="text-slate-400">+{processSnapshot.quesitos.length - 4} quesitos</li>
+ )}
+ </ul>
+ </div>
+ )}
+ </div>
+ </section>
+ ) : (
  <div className="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3">
  <AlertCircle className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
  <p className="text-[13px] text-amber-700">
- Sem análise do processo — a IA vai gerar com dados limitados. Para melhor resultado, faça upload do PDF na aba Resumo.
+ Sem análise do processo — faça upload do PDF na aba Resumo para melhores resultados.
  </p>
  </div>
  )}
@@ -1000,14 +1070,62 @@ export function PropostaTab({
  <textarea rows={3} className={textareaCls} value={content.metodologia ?? ''} onChange={(e) => setContent((p) => ({ ...p, metodologia: e.target.value }))} />
  </div>
 
- <div className="grid sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-slate-100">
- <div className="px-6 py-5">
- <label className={labelCls}>Valor dos honorários (R$)</label>
- <input type="number" min="0" step="100" className={inputCls}
- value={content.valorHonorarios ?? ''}
- onChange={(e) => setContent((p) => ({ ...p, valorHonorarios: e.target.value ? parseFloat(e.target.value) : null }))}
- placeholder="Ex: 8000" />
+ {/* ── Honorários em Salários Mínimos ──────────────────────────── */}
+ <div className="px-6 py-5 space-y-4">
+ <div>
+ <label className={labelCls}>Honorários periciais</label>
+ <p className="text-[12px] text-slate-400 mb-3">
+ Referência: <strong className="text-slate-600">1 SM = R$ {SM_2025.toLocaleString('pt-BR')}</strong> (salário mínimo 2025).
+ Para menor complexidade TJRJ recomenda até 4 SMs — Súmula 360.
+ </p>
+ {/* SM selector */}
+ <div className="flex flex-wrap gap-2 mb-3">
+ {[2, 3, 4, 5, 6, 8, 10].map((n) => (
+ <button
+ key={n}
+ type="button"
+ onClick={() => handleSmChange(n)}
+ className={`rounded-lg border px-3 py-1.5 text-[13px] font-semibold transition-all ${
+ smCount === n
+ ? 'bg-lime-700 border-lime-700 text-white'
+ : 'border-slate-200 text-slate-600 hover:border-lime-600 hover:text-lime-700'
+ }`}
+ >
+ {n} SM{n > 1 ? 's' : ''}
+ </button>
+ ))}
  </div>
+ {/* Calculated value display */}
+ {smCount && (
+ <div className="flex items-center gap-3 rounded-xl bg-lime-50 border border-lime-200 px-4 py-3 mb-3">
+ <div className="flex-1">
+ <p className="text-[12px] text-lime-700 font-semibold uppercase tracking-wide">Valor calculado</p>
+ <p className="text-[22px] font-bold text-lime-800">
+ {(smCount * SM_2025).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+ </p>
+ <p className="text-[12px] text-lime-600">{smCount} × R$ {SM_2025.toLocaleString('pt-BR')} = {smCount} salário{smCount > 1 ? 's mínimos' : ' mínimo'}</p>
+ </div>
+ </div>
+ )}
+ {/* Manual override */}
+ <div className="flex items-center gap-2">
+ <input
+ type="number" min="0" step="100"
+ className={`${inputCls} max-w-[180px]`}
+ value={content.valorHonorarios ?? ''}
+ onChange={(e) => handleValorChange(e.target.value ? parseFloat(e.target.value) : null)}
+ placeholder="Ou digite R$ manualmente"
+ />
+ {content.valorHonorarios && (
+ <span className="text-[12px] text-slate-400">
+ ≈ {(content.valorHonorarios / SM_2025).toFixed(1)} SMs
+ </span>
+ )}
+ </div>
+ </div>
+ </div>
+
+ <div className="grid sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-slate-100">
  <div className="px-6 py-5">
  <label className={labelCls}>Deslocamento (R$)</label>
  <input type="number" min="0" step="50" className={inputCls}
