@@ -167,10 +167,44 @@ export async function buscarDocumentosPorPericia(
 
     const escavador = radar as EscavadorService
 
-    const atualizacao = await escavador.solicitarAtualizacaoV2(cnj, { documentos_publicos: true })
+    // ── Passo 0: enriquecer Processo com metadados da API (partes, juiz, classe) ─
+    const metadados = await escavador.getProcessoV2(cnj)
+    if (metadados) {
+      const envolvidos = metadados.envolvidos ?? []
+      const ativo  = envolvidos.filter((e) => e.polo === 'ATIVO').map((e) => e.nome)
+      const passivo = envolvidos.filter((e) => e.polo === 'PASSIVO').map((e) => e.nome)
+      const partes = [...ativo.map((n) => ({ nome: n, tipo_parte: 'ATIVO' })), ...passivo.map((n) => ({ nome: n, tipo_parte: 'PASSIVO' }))]
+      await prisma.processo.update({
+        where: { id: proc.id },
+        data: {
+          classe: metadados.classe ?? metadados.titulo ?? undefined,
+          assunto: metadados.assunto ?? undefined,
+          orgaoJulgador: metadados.orgao_julgador ?? undefined,
+          dataUltimaAtu: metadados.data_ultima_movimentacao ?? undefined,
+          partes: JSON.stringify(partes),
+        },
+      }).catch(() => {})
+    }
+
+    // ── Passo 1: solicitar atualização com documentos públicos E autos ────────────
+    // autos: 1 permite que o Escavador busque também documentos restritos (quando
+    // o tribunal for suportado sem credenciais ou com credenciais já cadastradas).
+    const atualizacao = await escavador.solicitarAtualizacaoV2(cnj, { documentos_publicos: true, autos: true })
     if (!atualizacao.ok) console.warn('[buscarDocumentosPorPericia] solicitar-atualizacao falhou:', atualizacao.message)
 
-    const docsV2 = await escavador.listarDocumentosPublicosV2(cnj)
+    // ── Passo 2: listar documentos-publicos e autos (em paralelo) ─────────────────
+    const [docsPublicos, docsAutos] = await Promise.all([
+      escavador.listarDocumentosPublicosV2(cnj),
+      escavador.listarAutosV2(cnj),
+    ])
+
+    // Merge sem duplicatas (pela chave)
+    const seenKeys = new Set<string>()
+    const docsV2: typeof docsPublicos = []
+    for (const d of [...docsPublicos, ...docsAutos]) {
+      if (!seenKeys.has(d.key)) { seenKeys.add(d.key); docsV2.push(d) }
+    }
+
     let novos = 0
 
     if (docsV2.length > 0) {
@@ -188,6 +222,7 @@ export async function buscarDocumentosPorPericia(
         } catch { /* skip */ }
       }
     } else {
+      // ── Fallback v1 ──────────────────────────────────────────────────────────
       let escavadorId = proc.escavadorId
       if (!escavadorId) {
         const found = await escavador.buscarProcesso(cnj, tribunalSigla)

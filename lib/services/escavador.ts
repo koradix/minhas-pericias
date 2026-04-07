@@ -93,6 +93,24 @@ export interface EscavadorDocumentoPublicoV2 {
   paginas: number | null
 }
 
+// v2 process cover — returned by GET /api/v2/processos/numero_cnj/{cnj}
+export interface EscavadorProcessoV2 {
+  numero_cnj: string
+  titulo: string | null
+  classe: string | null
+  assunto: string | null
+  tribunal: string | null
+  orgao_julgador: string | null
+  data_inicio: string | null
+  data_ultima_movimentacao: string | null
+  envolvidos: Array<{
+    nome: string
+    tipo: string | null          // "PARTE"
+    tipo_normalizado: string | null // "Autor", "Réu", etc.
+    polo: string | null          // "ATIVO" | "PASSIVO"
+  }>
+}
+
 interface AparicaoItem {
   id: number
   data_diario_formatada: string // "DD/MM/YYYY"
@@ -738,14 +756,70 @@ export class EscavadorService implements RadarProvider {
   // Assíncrono: robôs processam em background. Chamar documentos-publicos
   // logo depois pode retornar lista vazia — aguardar e repetir se necessário.
 
+  // ── V2 ENDPOINT — Metadados do processo por CNJ ──────────────────────────────
+  // GET api/v2/processos/numero_cnj/{cnj}
+  // Retorna partes (polo ativo = autor, polo passivo = réu), juiz, classe, etc.
+  // Útil para pré-preencher campos antes de fazer upload do PDF.
+
+  async getProcessoV2(cnj: string): Promise<EscavadorProcessoV2 | null> {
+    try {
+      const cnj2 = encodeURIComponent(cnj)
+      const controller = new AbortController()
+      const timer = setTimeout(() => controller.abort(), 15_000)
+      let res: Response
+      try {
+        res = await fetch(
+          `${this.baseUrlV2}/processos/numero_cnj/${cnj2}`,
+          { headers: this.headers(), cache: 'no-store', signal: controller.signal },
+        )
+      } catch { clearTimeout(timer); return null }
+      clearTimeout(timer)
+      if (!res.ok) return null
+      const data = await res.json() as EscavadorProcessoV2 | { processo?: EscavadorProcessoV2 }
+      // Escavador pode envelopar em { processo: {...} }
+      return ('processo' in data && data.processo) ? data.processo : data as EscavadorProcessoV2
+    } catch { return null }
+  }
+
+  // ── V2 ENDPOINT — Autos do processo (público + restrito se autorizado) ────────
+  // GET api/v2/processos/numero_cnj/{cnj}/autos
+  // Retorna o mesmo shape de documentos-publicos.
+  // Para acesso restrito, é necessário solicitar-atualizacao com autos: 1 primeiro.
+
+  async listarAutosV2(cnj: string): Promise<EscavadorDocumentoPublicoV2[]> {
+    try {
+      const cnj2 = encodeURIComponent(cnj)
+      const controller = new AbortController()
+      const timer = setTimeout(() => controller.abort(), 20_000)
+      let res: Response
+      try {
+        res = await fetch(
+          `${this.baseUrlV2}/processos/numero_cnj/${cnj2}/autos`,
+          { headers: this.headers(), cache: 'no-store', signal: controller.signal },
+        )
+      } catch { clearTimeout(timer); return [] }
+      clearTimeout(timer)
+      if (!res.ok) return []
+      const data = await res.json()
+      const items: EscavadorDocumentoPublicoV2[] =
+        Array.isArray(data)                                             ? data :
+        Array.isArray((data as { items?: unknown[] }).items)            ? (data as { items: EscavadorDocumentoPublicoV2[] }).items :
+        Array.isArray((data as { documentos?: unknown[] }).documentos)  ? (data as { documentos: EscavadorDocumentoPublicoV2[] }).documentos :
+        Array.isArray((data as { autos?: unknown[] }).autos)            ? (data as { autos: EscavadorDocumentoPublicoV2[] }).autos :
+        []
+      return items
+    } catch { return [] }
+  }
+
   async solicitarAtualizacaoV2(
     cnj: string,
-    flags: { documentos_publicos?: boolean } = {},
+    flags: { documentos_publicos?: boolean; autos?: boolean } = {},
   ): Promise<{ ok: boolean; message?: string }> {
     try {
       const cnj2 = encodeURIComponent(cnj)
       const body: Record<string, number> = {}
       if (flags.documentos_publicos) body.documentos_publicos = 1
+      if (flags.autos) body.autos = 1
 
       const controller = new AbortController()
       const timer = setTimeout(() => controller.abort(), 20_000)

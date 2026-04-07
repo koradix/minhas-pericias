@@ -260,18 +260,88 @@ export function PericiaWorkflow({
 
       <div className="divide-y divide-[#f2f3f9]">
 
-        {/* ── Step 1: Acessar tribunal ─────────────────────────────────────── */}
-        <div className={cn('px-6 py-5 flex gap-4', step1Done || analiseFeita ? 'opacity-60' : '')}>
+        {/* ── Step 1: Obter documento do processo ──────────────────────────── */}
+        <div className="px-6 py-5 flex gap-4">
           <StepDot done={step1Done || analiseFeita} active={activeStep === 1} num={1} />
           <div className="flex-1 min-w-0">
             <p className="text-[15px] font-semibold text-[#1f2937] font-manrope">
-              Baixe o processo no portal do tribunal
+              Obter documento do processo
             </p>
             <p className="text-[14px] text-[#6b7280] mt-1 font-inter">
-              Acesse o portal, localize o processo pelo número e baixe o PDF da nomeação.
+              Busque automaticamente ou acesse o portal do tribunal para baixar o PDF.
             </p>
+
+            {/* ── Busca automática de documentos ─────────────────────────────── */}
+            <div className="mt-4 space-y-2">
+              {escavadorFase.fase === 'idle' && !analiseFeita && (
+                <button
+                  onClick={handleBuscarEscavador}
+                  disabled={isPendingEscavador}
+                  className="inline-flex items-center gap-2 rounded-lg bg-[#1f2937] hover:bg-[#374151] px-4 py-2.5 text-[14px] font-semibold text-white transition-all disabled:opacity-50"
+                >
+                  <Search className="h-4 w-4" /> Buscar documentos do processo
+                </button>
+              )}
+
+              {(escavadorFase.fase === 'buscando' || isPendingEscavador) && (
+                <div className="flex items-center gap-2 text-[14px] text-[#6b7280]">
+                  <Loader2 className="h-4 w-4 animate-spin text-[#416900]" />
+                  Buscando documentos…
+                </div>
+              )}
+
+              {escavadorFase.fase === 'aguardando' && (
+                <div className="rounded-lg bg-blue-50 border border-blue-100 px-4 py-3 space-y-2">
+                  <p className="text-[13px] text-blue-700 font-semibold">Coletando documentos</p>
+                  <p className="text-[13px] text-blue-600">Os documentos estão sendo coletados. Clique novamente em instantes.</p>
+                  <button onClick={handleBuscarEscavador} disabled={isPendingEscavador} className="text-[13px] text-blue-600 underline underline-offset-2 disabled:opacity-50">
+                    Tentar novamente
+                  </button>
+                </div>
+              )}
+
+              {escavadorFase.fase === 'nenhum' && (
+                <p className="text-[13px] text-[#9ca3af]">Nenhum documento encontrado para este processo. Use o upload manual abaixo.</p>
+              )}
+
+              {escavadorFase.fase === 'erro' && (
+                <div className="rounded-lg bg-rose-50 border border-rose-100 px-4 py-3">
+                  <p className="text-[13px] text-rose-700">{escavadorFase.mensagem}</p>
+                </div>
+              )}
+
+              {escavadorFase.fase === 'found' && (
+                <div className="space-y-2">
+                  <p className="text-[12px] font-semibold text-[#6b7280] uppercase tracking-wider">
+                    {escavadorFase.docs.length} documento{escavadorFase.docs.length !== 1 ? 's' : ''} encontrado{escavadorFase.docs.length !== 1 ? 's' : ''}
+                  </p>
+                  {escavadorFase.docs.map((doc) => (
+                    <div key={doc.id} className="flex items-start gap-3 rounded-lg border border-[#e2e8f0] bg-[#f8f9ff] px-4 py-3">
+                      <FileText className="h-4 w-4 text-[#9ca3af] flex-shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13px] font-semibold text-[#1f2937] leading-snug truncate">{doc.nome}</p>
+                        {doc.dataPublicacao && (
+                          <p className="flex items-center gap-1 text-[11px] text-[#9ca3af] mt-0.5">
+                            <Calendar className="h-3 w-3" />
+                            {doc.dataPublicacao.split('-').reverse().join('/')}
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleAnalisarDocEscavador(doc)}
+                        className="flex items-center gap-1 flex-shrink-0 rounded-md bg-[#416900] hover:bg-[#2d4a00] text-white text-[12px] font-semibold px-3 py-1.5 transition-all"
+                      >
+                        Analisar <ChevronRight className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* ── Portal do tribunal (fallback manual) ───────────────────────── */}
             <div className="mt-4 flex flex-wrap gap-2">
-              {tribunal ? (
+              {tribunal && (
                 <a
                   href={tribunal.url}
                   target="_blank"
@@ -282,10 +352,6 @@ export function PericiaWorkflow({
                   <ExternalLink className="h-4 w-4" strokeWidth={1.5} />
                   {tribunal.label}
                 </a>
-              ) : (
-                <p className="text-[14px] text-[#9ca3af] italic font-inter">
-                  Acesse o portal do {tribunalSigla} e procure pelo número {processoNumero ?? 'do processo'}.
-                </p>
               )}
               {processoNumero && (
                 <span className="inline-flex items-center gap-1 rounded-lg bg-[#f2f3f9] border border-[#e2e8f0] px-3 py-2 text-[13px] font-mono text-[#374151]">
@@ -316,89 +382,12 @@ export function PericiaWorkflow({
             </p>
 
             {uploadState.fase === 'idle' && !analiseFeita && (
-              <div className="mt-4 space-y-4">
+              <div className="mt-4">
                 <input ref={fileRef} type="file" accept=".pdf,.docx" className="hidden" onChange={handleUpload} />
-
-                {/* ── Documentos do processo ──────────────────────────────── */}
-                <div className="space-y-2">
-                    {escavadorFase.fase === 'idle' && (
-                      <button
-                        onClick={handleBuscarEscavador}
-                        disabled={isPendingEscavador}
-                        className="inline-flex items-center gap-2 rounded-lg bg-[#1f2937] hover:bg-[#374151] px-4 py-2.5 text-[14px] font-semibold text-white transition-all disabled:opacity-50"
-                      >
-                        <Search className="h-4 w-4" /> Buscar documentos do processo
-                      </button>
-                    )}
-
-                    {(escavadorFase.fase === 'buscando' || isPendingEscavador) && (
-                      <div className="flex items-center gap-2 text-[14px] text-[#6b7280]">
-                        <Loader2 className="h-4 w-4 animate-spin text-[#416900]" />
-                        Buscando documentos do processo…
-                      </div>
-                    )}
-
-                    {escavadorFase.fase === 'aguardando' && (
-                      <div className="rounded-lg bg-blue-50 border border-blue-100 px-4 py-3 space-y-2">
-                        <p className="text-[13px] text-blue-700 font-semibold">Coletando documentos</p>
-                        <p className="text-[13px] text-blue-600">Os documentos estão sendo coletados. Clique novamente em alguns instantes.</p>
-                        <button onClick={handleBuscarEscavador} disabled={isPendingEscavador} className="text-[13px] text-blue-600 underline underline-offset-2 disabled:opacity-50">
-                          Tentar novamente
-                        </button>
-                      </div>
-                    )}
-
-                    {escavadorFase.fase === 'nenhum' && (
-                      <div className="rounded-lg bg-amber-50 border border-amber-100 px-4 py-3">
-                        <p className="text-[13px] text-amber-700">Nenhum documento encontrado para este processo. Faça o upload manual abaixo.</p>
-                      </div>
-                    )}
-
-                    {escavadorFase.fase === 'erro' && (
-                      <div className="rounded-lg bg-rose-50 border border-rose-100 px-4 py-3">
-                        <p className="text-[13px] text-rose-700">{escavadorFase.mensagem}</p>
-                      </div>
-                    )}
-
-                    {escavadorFase.fase === 'found' && (
-                      <div className="space-y-2">
-                        <p className="text-[12px] font-semibold text-[#6b7280] uppercase tracking-wider">
-                          {escavadorFase.docs.length} documento{escavadorFase.docs.length !== 1 ? 's' : ''} encontrado{escavadorFase.docs.length !== 1 ? 's' : ''} — clique em Analisar
-                        </p>
-                        {escavadorFase.docs.map((doc) => (
-                          <div key={doc.id} className="flex items-start gap-3 rounded-lg border border-[#e2e8f0] bg-[#f8f9ff] px-4 py-3">
-                            <FileText className="h-4 w-4 text-[#9ca3af] flex-shrink-0 mt-0.5" />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-[13px] font-semibold text-[#1f2937] leading-snug truncate">{doc.nome}</p>
-                              {doc.dataPublicacao && (
-                                <p className="flex items-center gap-1 text-[11px] text-[#9ca3af] mt-0.5">
-                                  <Calendar className="h-3 w-3" />
-                                  {doc.dataPublicacao.split('-').reverse().join('/')}
-                                </p>
-                              )}
-                            </div>
-                            <button
-                              onClick={() => handleAnalisarDocEscavador(doc)}
-                              className="flex items-center gap-1 flex-shrink-0 rounded-md bg-[#416900] hover:bg-[#2d4a00] text-white text-[12px] font-semibold px-3 py-1.5 transition-all"
-                            >
-                              Analisar <ChevronRight className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                {/* ── Upload manual ─────────────────────────────────────────── */}
                 <div className="space-y-1">
                   <button
                     onClick={() => fileRef.current?.click()}
-                    className={cn(
-                      'inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-[14px] font-semibold transition-all',
-                      processoNumero
-                        ? 'border border-[#e2e8f0] hover:bg-[#f8f9ff] text-[#374151]'
-                        : 'bg-[#1f2937] hover:bg-[#374151] text-white',
-                    )}
+                    className="inline-flex items-center gap-2 rounded-lg bg-[#1f2937] hover:bg-[#374151] px-4 py-2.5 text-[14px] font-semibold text-white transition-all"
                   >
                     <Upload className="h-4 w-4" />
                     {processoNumero ? 'Ou faça upload manual' : 'Selecionar PDF ou DOCX'}
