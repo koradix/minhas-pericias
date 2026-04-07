@@ -988,32 +988,11 @@ export function PropostaTab({
  </>
  )}
 
- {/* ── Phase: Result ─────────────────────────────────────────────────── */}
+ {/* ── Phase: Result — documento completo ───────────────────────────── */}
  {phase === 'result' && (
  <>
- <div className="rounded-lg border border-slate-200 bg-white px-5 py-4 flex items-center gap-3 shadow-sm">
- <div className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-slate-50">
- <ClipboardList className="h-5 w-5 text-slate-800 flex-shrink-0" />
- </div>
- <div className="flex-1 min-w-0">
- <p className="text-[15px] font-semibold text-slate-800">Proposta gerada</p>
- {content.valorHonorarios != null && (
- <p className="text-[13px] text-slate-500 ">
- {formatBRL(content.valorHonorarios)}
- {content.custoDeslocamento ? ` + ${formatBRL(content.custoDeslocamento)} deslocamento` : ''}
- </p>
- )}
- </div>
- </div>
-
- {dlError && (
- <div className="flex items-center gap-2 rounded-lg bg-rose-50 border border-rose-100 px-4 py-3">
- <AlertCircle className="h-4 w-4 text-rose-500 flex-shrink-0" />
- <p className="text-[13px] text-rose-700 ">{dlError}</p>
- </div>
- )}
-
- <div className="flex flex-wrap gap-3">
+ {/* Action bar */}
+ <div className="flex flex-wrap items-center gap-3">
  <button
  onClick={handleDownload}
  disabled={isDownloading}
@@ -1026,70 +1005,149 @@ export function PropostaTab({
  </button>
  <button
  onClick={() => setPhase('form')}
- className="flex items-center gap-2 rounded-lg border border-slate-200 hover:bg-slate-50 px-4 py-2.5 text-[14px] font-medium text-slate-500 transition-all"
+ className="flex items-center gap-2 rounded-lg border border-slate-200 hover:bg-slate-50 px-4 py-2.5 text-[14px] font-medium text-slate-600 transition-all"
  >
  <RotateCcw className="h-4 w-4" />
- Editar proposta
+ Editar
  </button>
  <button
  onClick={() => { setPhase('template'); setContent({}); setGenError(null) }}
- className="flex items-center gap-2 rounded-lg border border-slate-200 hover:bg-slate-50 px-4 py-2.5 text-[14px] font-medium text-slate-500 transition-all"
+ className="flex items-center gap-2 rounded-lg border border-slate-200 hover:bg-slate-50 px-4 py-2.5 text-[14px] font-medium text-slate-600 transition-all"
  >
  <Sparkles className="h-4 w-4" />
- Gerar nova versão
+ Nova versão
  </button>
  </div>
 
- {/* Summary card */}
- <section className="rounded-xl border border-slate-200 bg-white">
- <div className="divide-y divide-slate-100">
+ {dlError && (
+ <div className="flex items-center gap-2 rounded-lg border border-rose-100 bg-rose-50 px-4 py-3">
+ <AlertCircle className="h-4 w-4 text-rose-500 flex-shrink-0" />
+ <p className="text-[13px] text-rose-700">{dlError}</p>
+ </div>
+ )}
+
+ {/* Document */}
+ <section className="rounded-xl border border-slate-200 bg-white divide-y divide-slate-100">
+
+ {/* Cabeçalho do documento */}
+ <div className="px-6 py-5">
+ <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 mb-4">Proposta de honorários periciais</p>
+ <div className="grid sm:grid-cols-2 gap-x-10 gap-y-4 text-[14px]">
+ {processSnapshot.tribunal && (
+ <div>
+ <p className={labelCls}>Tribunal</p>
+ <p className="font-medium text-slate-700">{processSnapshot.tribunal}</p>
+ </div>
+ )}
+ {processSnapshot.vara && (
+ <div>
+ <p className={labelCls}>Vara</p>
+ <p className="font-medium text-slate-700">{processSnapshot.vara}</p>
+ </div>
+ )}
+ {processSnapshot.numeroProcesso && (
+ <div>
+ <p className={labelCls}>Número do processo</p>
+ <p className="font-medium text-slate-700">{processSnapshot.numeroProcesso}</p>
+ </div>
+ )}
+ {processSnapshot.partes && (
+ <div>
+ <p className={labelCls}>Partes</p>
+ <p className="text-slate-600">{processSnapshot.partes}</p>
+ </div>
+ )}
+ {peritoNome && (
+ <div className="sm:col-span-2">
+ <p className={labelCls}>Perito</p>
+ <p className="font-medium text-slate-700">{peritoNome}</p>
+ </div>
+ )}
+ </div>
+ </div>
+
+ {/* Resumo técnico */}
  {content.resumoTecnico && (
  <div className="px-6 py-5">
  <p className={labelCls}>Resumo técnico</p>
- <p className="text-[14px] text-slate-700 leading-relaxed whitespace-pre-line ">{content.resumoTecnico}</p>
+ <p className="text-[15px] leading-[1.75] text-slate-600 whitespace-pre-line">{content.resumoTecnico}</p>
  </div>
  )}
+
+ {/* Escopo */}
  {content.descricaoServicos && (
  <div className="px-6 py-5">
  <p className={labelCls}>Escopo dos serviços</p>
- <p className="text-[14px] text-slate-700 leading-relaxed whitespace-pre-line ">{content.descricaoServicos}</p>
+ <p className="text-[15px] leading-[1.75] text-slate-600 whitespace-pre-line">{content.descricaoServicos}</p>
  </div>
  )}
- {(content.valorHonorarios != null || content.prazoEntrega) && (
- <div className="grid sm:grid-cols-3 px-6 py-5 gap-4">
+
+ {/* Metodologia */}
+ {content.metodologia && (
+ <div className="px-6 py-5">
+ <p className={labelCls}>Metodologia</p>
+ <p className="text-[15px] leading-[1.75] text-slate-600 whitespace-pre-line">{content.metodologia}</p>
+ </div>
+ )}
+
+ {/* Honorários e condições */}
+ {(content.valorHonorarios != null || content.custoDeslocamento != null || content.prazoEntrega || content.condicoesPagamento) && (
+ <div className="px-6 py-5">
+ <p className={labelCls}>Honorários e condições</p>
+ <div className="grid sm:grid-cols-3 gap-4 mt-3">
  {content.valorHonorarios != null && (
  <div>
- <p className={labelCls}>Honorários</p>
- <p className="text-[15px] font-bold text-lime-700">{formatBRL(content.valorHonorarios)}</p>
+ <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-400 mb-1">Honorários</p>
+ <p className="text-[18px] font-bold text-lime-700">{formatBRL(content.valorHonorarios)}</p>
  </div>
  )}
  {content.custoDeslocamento != null && (
  <div>
- <p className={labelCls}>Deslocamento</p>
+ <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-400 mb-1">Deslocamento</p>
  <p className="text-[15px] font-semibold text-slate-700">{formatBRL(content.custoDeslocamento)}</p>
  </div>
  )}
  {content.prazoEntrega && (
  <div>
- <p className={labelCls}>Prazo</p>
- <p className="text-[14px] font-semibold text-slate-700">{content.prazoEntrega}</p>
+ <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-400 mb-1">Prazo de entrega</p>
+ <p className="text-[15px] font-semibold text-slate-700">{content.prazoEntrega}</p>
  </div>
  )}
  </div>
+ {content.condicoesPagamento && (
+ <p className="mt-4 text-[15px] leading-[1.75] text-slate-600 whitespace-pre-line">{content.condicoesPagamento}</p>
  )}
+ </div>
+ )}
+
+ {/* Observações */}
+ {content.observacoes && (
+ <div className="px-6 py-5">
+ <p className={labelCls}>Observações</p>
+ <p className="text-[15px] leading-[1.75] text-slate-600 whitespace-pre-line">{content.observacoes}</p>
+ </div>
+ )}
+
+ {/* Pendências */}
  {(content.riscosEPendencias?.length ?? 0) > 0 && (
- <div className="px-6 py-5 border-t border-slate-100">
- <p className={labelCls}>Riscos e pendências</p>
- <ul className="space-y-1.5 mt-2 border-l-2 border-slate-200 pl-3">
+ <div className="px-6 py-5">
+ <p className={labelCls}>Pendências e riscos</p>
+ <ul className="mt-3 space-y-2">
  {content.riscosEPendencias!.map((r, i) => (
- <li key={i} className="flex items-start gap-2 text-[13px] text-slate-700 ">
- <AlertCircle className="h-4 w-4 text-slate-400 flex-shrink-0 mt-0.5" />
+ <li key={i} className="flex items-start gap-3 text-[14px] text-slate-600 leading-relaxed pl-4 border-l-2 border-slate-200">
  {r}
  </li>
  ))}
  </ul>
  </div>
  )}
+
+ {/* Rodapé */}
+ <div className="px-6 py-4">
+ <p className="text-[12px] text-slate-400">
+ Proposta gerada em {content.dataProposta ?? today()}
+ {lastIaModel ? ` · via ${lastIaModel}` : ''}
+ </p>
  </div>
  </section>
 
