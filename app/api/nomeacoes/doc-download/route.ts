@@ -34,18 +34,20 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Documento não encontrado' }, { status: 404 })
   }
 
-  const escavadorProcessoId = doc.processo.escavadorId
-  if (!escavadorProcessoId) {
-    return NextResponse.json({ error: 'ID Escavador não disponível para este processo' }, { status: 404 })
-  }
-
   try {
     const escavador = radar as EscavadorService
-    const buffer = await escavador.downloadDocumento(
-      escavadorProcessoId,
-      doc.escavadorDocId,
-      doc.urlPublica,
-    )
+    const cnj = doc.processo.numeroProcesso
+    let buffer: Buffer
+
+    if (doc.chaveV2) {
+      // v2 — usa CNJ + chaveV2
+      buffer = await escavador.downloadDocumentoV2(cnj, doc.chaveV2, doc.urlPublica ?? undefined)
+    } else if (doc.escavadorDocId != null && doc.processo.escavadorId != null) {
+      // v1 — usa escavadorId numérico
+      buffer = await escavador.downloadDocumento(doc.processo.escavadorId, doc.escavadorDocId, doc.urlPublica)
+    } else {
+      return NextResponse.json({ error: 'Identificador do documento não disponível' }, { status: 404 })
+    }
 
     const safeName = doc.nome.replace(/[^a-zA-Z0-9._\- ]/g, '_').replace(/\s+/g, '_') + '.pdf'
 
