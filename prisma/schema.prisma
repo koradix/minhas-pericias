@@ -286,7 +286,8 @@ model Processo {
 model ProcessoDocumento {
   id               String    @id @default(cuid())
   processoId       String
-  escavadorDocId   Int
+  escavadorDocId   Int?      // v1 numeric ID (nullable — v2 uses chaveV2)
+  chaveV2          String?   // v2 string key from Escavador API
   nome             String
   tipo             String?
   dataPublicacao   DateTime?
@@ -298,6 +299,7 @@ model ProcessoDocumento {
   processo         Processo  @relation(fields: [processoId], references: [id])
 
   @@unique([processoId, escavadorDocId])
+  @@unique([processoId, chaveV2])
 }
 
 model Nomeacao {

@@ -83,6 +83,16 @@ export interface EscavadorDocumento {
   paginas: number | null
 }
 
+// v2 document from documentos-publicos endpoint (uses string key, not numeric id)
+export interface EscavadorDocumentoPublicoV2 {
+  key: string           // string identifier used for download
+  nome: string
+  tipo: string | null
+  data: string | null   // ISO date
+  url: string | null    // URL pública (when available — use to avoid credit cost)
+  paginas: number | null
+}
+
 interface AparicaoItem {
   id: number
   data_diario_formatada: string // "DD/MM/YYYY"
@@ -717,5 +727,109 @@ export class EscavadorService implements RadarProvider {
       numeroProcesso: null,
       linkCitacao: item.link,
     }))
+  }
+
+  // ── V2 ENDPOINT A — Solicitar atualização de processo (aciona robôs) ─────────
+  //
+  // POST api/v2/processos/numero_cnj/{cnj}/solicitar-atualizacao
+  // Body: { documentos_publicos: 1 }  — para documentos públicos
+  //       { autos: 1, usuario, senha } — para autos (restritos, fase 2)
+  //
+  // Assíncrono: robôs processam em background. Chamar documentos-publicos
+  // logo depois pode retornar lista vazia — aguardar e repetir se necessário.
+
+  async solicitarAtualizacaoV2(
+    cnj: string,
+    flags: { documentos_publicos?: boolean } = {},
+  ): Promise<{ ok: boolean; message?: string }> {
+    try {
+      const cnj2 = encodeURIComponent(cnj)
+      const body: Record<string, number> = {}
+      if (flags.documentos_publicos) body.documentos_publicos = 1
+
+      const controller = new AbortController()
+      const timer = setTimeout(() => controller.abort(), 20_000)
+      let res: Response
+      try {
+        res = await fetch(
+          `${this.baseUrlV2}/processos/numero_cnj/${cnj2}/solicitar-atualizacao`,
+          {
+            method: 'POST',
+            headers: this.headers(),
+            body: JSON.stringify(body),
+            cache: 'no-store',
+            signal: controller.signal,
+          },
+        )
+      } catch (err) {
+        clearTimeout(timer)
+        return { ok: false, message: `Erro de rede: ${(err as Error).message}` }
+      }
+      clearTimeout(timer)
+
+      if (!res.ok) {
+        const txt = await res.text().catch(() => '')
+        return { ok: false, message: `HTTP ${res.status}: ${txt.slice(0, 200)}` }
+      }
+      return { ok: true, message: 'Atualização solicitada. Documentos disponíveis em instantes.' }
+    } catch (err) {
+      return { ok: false, message: (err as Error).message }
+    }
+  }
+
+  // ── V2 ENDPOINT B — Listar documentos públicos por CNJ ───────────────────────
+  //
+  // GET api/v2/processos/numero_cnj/{cnj}/documentos-publicos
+  // Retorna docs já capturados. Chame após solicitar-atualizacao.
+
+  async listarDocumentosPublicosV2(cnj: string): Promise<EscavadorDocumentoPublicoV2[]> {
+    try {
+      const cnj2 = encodeURIComponent(cnj)
+      const controller = new AbortController()
+      const timer = setTimeout(() => controller.abort(), 20_000)
+      let res: Response
+      try {
+        res = await fetch(
+          `${this.baseUrlV2}/processos/numero_cnj/${cnj2}/documentos-publicos`,
+          { headers: this.headers(), cache: 'no-store', signal: controller.signal },
+        )
+      } catch (err) {
+        clearTimeout(timer)
+        return []
+      }
+      clearTimeout(timer)
+      if (!res.ok) return []
+
+      const data = await res.json()
+      const items: EscavadorDocumentoPublicoV2[] =
+        Array.isArray(data)                          ? data :
+        Array.isArray((data as { items?: unknown[] }).items)        ? (data as { items: EscavadorDocumentoPublicoV2[] }).items :
+        Array.isArray((data as { documentos?: unknown[] }).documentos) ? (data as { documentos: EscavadorDocumentoPublicoV2[] }).documentos :
+        []
+      return items
+    } catch {
+      return []
+    }
+  }
+
+  // ── V2 ENDPOINT C — Download de documento por CNJ + key ─────────────────────
+  //
+  // GET api/v2/processos/numero_cnj/{cnj}/documentos/{key}
+  // Se urlPublica estiver disponível, usa ela diretamente (sem crédito).
+
+  async downloadDocumentoV2(
+    cnj: string,
+    key: string,
+    urlPublica?: string | null,
+  ): Promise<Buffer> {
+    const targetUrl = urlPublica
+      ?? `${this.baseUrlV2}/processos/numero_cnj/${encodeURIComponent(cnj)}/documentos/${encodeURIComponent(key)}`
+    const headers = urlPublica ? {} : this.headers()
+
+    const res = await fetch(targetUrl, { headers, cache: 'no-store' })
+    if (!res.ok) throw new EscavadorError(500, `Falha ao baixar documento v2: HTTP ${res.status}`)
+
+    const ab = await res.arrayBuffer()
+    return Buffer.from(ab)
   }
 }

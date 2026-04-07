@@ -3,7 +3,6 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { del, get as blobGet } from '@vercel/blob'
 import Anthropic from '@anthropic-ai/sdk'
-import { GoogleGenerativeAI } from '@google/generative-ai'
 import {
   SYSTEM_PROMPT_V2,
   buildUserPromptV2,
@@ -42,7 +41,6 @@ export async function POST(request: NextRequest) {
   let buffer: Buffer
   let blobUrl: string | null = null
   let periciaIdRaw: string | null = null
-  let forceProvider: 'claude' | 'gemini' | null = null
 
   const allowed = [
     'application/pdf',
@@ -76,7 +74,6 @@ export async function POST(request: NextRequest) {
       tribunal:  string
       numero?:   string | null
       periciaId?: string | null
-      provider?: 'claude' | 'gemini'
     }
 
     blobUrl      = body.blobUrl
@@ -86,7 +83,6 @@ export async function POST(request: NextRequest) {
     tribunal     = body.tribunal
     numeroRaw    = body.numero ?? null
     periciaIdRaw = body.periciaId ?? null
-    forceProvider = body.provider ?? null
 
     if (!blobUrl) {
       return NextResponse.json({ ok: false, message: 'blobUrl obrigatório' }, { status: 400 })
@@ -138,123 +134,51 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // ── Retorna true se o erro Anthropic é de rate limit / crédito ────────────
-  function isRateLimitOrCredit(err: unknown): boolean {
-    const msg = (err instanceof Error ? err.message : String(err)).toLowerCase()
-    return msg.includes('rate_limit') || msg.includes('rate limit') ||
-      msg.includes('429') || msg.includes('credit') || msg.includes('overloaded') ||
-      msg.includes('529') || msg.includes('quota')
-  }
-
   // ── Call Anthropic ────────────────────────────────────────────────────────
   const anthropicKey = process.env.ANTHROPIC_API_KEY
-  let anthropicOk = false
-
-  if (anthropicKey && forceProvider !== 'gemini') {
-    try {
-      const anthropic = new Anthropic({ apiKey: anthropicKey })
-      const model = 'claude-haiku-4-5-20251001'
-      let userContent: Anthropic.MessageParam['content']
-
-      if (mimeType === 'application/pdf') {
-        userContent = [
-          {
-            type: 'document',
-            source: { type: 'base64', media_type: 'application/pdf', data: pdfParaEnviar.toString('base64') },
-          } as Anthropic.DocumentBlockParam,
-          { type: 'text', text: buildPdfUserPromptV2(contexto) },
-        ]
-      } else {
-        const textoDocx = buffer.toString('utf8').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
-        console.log(`[upload] DOCX: ${fileName} | texto: ${textoDocx.length} chars`)
-        userContent = buildUserPromptV2(
-          textoDocx.length > 100
-            ? textoDocx
-            : `Arquivo: ${fileName}\nTribunal: ${tribunal}${numeroRaw ? `\nNúmero: ${numeroRaw}` : ''}`
-        )
-      }
-
-      const res = await anthropic.messages.create({
-        model,
-        max_tokens: 8000,
-        system: SYSTEM_PROMPT_V2,
-        messages: [{ role: 'user', content: userContent }],
-      })
-      const raw = res.content[0]?.type === 'text' ? res.content[0].text : '{}'
-      console.log(`[upload] Claude raw (primeiros 500 chars):\n${raw.substring(0, 500)}`)
-      analise = JSON.parse(extractJson(raw))
-      console.log('[upload] Claude OK — chaves:', Object.keys(analise).join(', '))
-      anthropicOk = true
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err)
-      console.warn(`[upload] Claude falhou (${isRateLimitOrCredit(err) ? 'rate_limit/credit' : 'erro'}): ${msg}`)
-      if (!isRateLimitOrCredit(err)) {
-        // Erro não-recuperável (ex: JSON parse, payload inválido) — não tenta Gemini
-        if (blobUrl) await del(blobUrl).catch(() => {})
-        return NextResponse.json({ ok: false, message: `Erro na análise IA: ${msg}` }, { status: 500 })
-      }
-      // Rate limit / crédito → cai no fallback Gemini abaixo
-    }
+  if (!anthropicKey) {
+    if (blobUrl) await del(blobUrl).catch(() => {})
+    return NextResponse.json({ ok: false, message: 'ANTHROPIC_API_KEY não configurada' }, { status: 500 })
   }
 
-  // ── Fallback: Google Gemini ───────────────────────────────────────────────
-  if (!anthropicOk) {
-    const geminiKey = process.env.GEMINI_API_KEY
-    if (!geminiKey) {
-      if (blobUrl) await del(blobUrl).catch(() => {})
-      const msg = forceProvider === 'gemini'
-        ? 'GEMINI_API_KEY não configurada'
-        : 'IA indisponível: sem créditos Claude e GEMINI_API_KEY não configurada'
-      return NextResponse.json(
-        { ok: false, message: msg },
-        { status: 500 },
+  try {
+    const anthropic = new Anthropic({ apiKey: anthropicKey })
+    const model = 'claude-haiku-4-5-20251001'
+    let userContent: Anthropic.MessageParam['content']
+
+    if (mimeType === 'application/pdf') {
+      userContent = [
+        {
+          type: 'document',
+          source: { type: 'base64', media_type: 'application/pdf', data: pdfParaEnviar.toString('base64') },
+        } as Anthropic.DocumentBlockParam,
+        { type: 'text', text: buildPdfUserPromptV2(contexto) },
+      ]
+    } else {
+      const textoDocx = buffer.toString('utf8').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+      console.log(`[upload] DOCX: ${fileName} | texto: ${textoDocx.length} chars`)
+      userContent = buildUserPromptV2(
+        textoDocx.length > 100
+          ? textoDocx
+          : `Arquivo: ${fileName}\nTribunal: ${tribunal}${numeroRaw ? `\nNúmero: ${numeroRaw}` : ''}`
       )
     }
 
-    try {
-      console.log('[upload] Usando fallback Gemini Flash…')
-      const genAI = new GoogleGenerativeAI(geminiKey)
-      const geminiModel = genAI.getGenerativeModel({
-        model: 'gemini-2.0-flash',
-        systemInstruction: SYSTEM_PROMPT_V2,
-      })
-
-      let geminiResult
-      if (mimeType === 'application/pdf') {
-        geminiResult = await geminiModel.generateContent([
-          {
-            inlineData: {
-              mimeType: 'application/pdf',
-              data: pdfParaEnviar.toString('base64'),
-            },
-          },
-          buildPdfUserPromptV2(contexto),
-        ])
-      } else {
-        const textoDocx = buffer.toString('utf8').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
-        const prompt = buildUserPromptV2(
-          textoDocx.length > 100
-            ? textoDocx
-            : `Arquivo: ${fileName}\nTribunal: ${tribunal}${numeroRaw ? `\nNúmero: ${numeroRaw}` : ''}`
-        )
-        geminiResult = await geminiModel.generateContent(
-          typeof prompt === 'string' ? prompt : JSON.stringify(prompt)
-        )
-      }
-
-      const raw = geminiResult.response.text()
-      console.log(`[upload] Gemini raw (primeiros 500 chars):\n${raw.substring(0, 500)}`)
-      analise = JSON.parse(extractJson(raw))
-      console.log('[upload] Gemini OK — chaves:', Object.keys(analise).join(', '))
-    } catch (err) {
-      if (blobUrl) await del(blobUrl).catch(() => {})
-      const msg = err instanceof Error ? err.message : String(err)
-      console.error('[upload] ❌ Gemini fallback error:', msg)
-      return NextResponse.json(
-        { ok: false, message: `Erro na análise IA (fallback): ${msg}` },
-        { status: 500 },
-      )
-    }
+    const res = await anthropic.messages.create({
+      model,
+      max_tokens: 8000,
+      system: SYSTEM_PROMPT_V2,
+      messages: [{ role: 'user', content: userContent }],
+    })
+    const raw = res.content[0]?.type === 'text' ? res.content[0].text : '{}'
+    console.log(`[upload] Claude raw (primeiros 500 chars):\n${raw.substring(0, 500)}`)
+    analise = JSON.parse(extractJson(raw))
+    console.log('[upload] Claude OK — chaves:', Object.keys(analise).join(', '))
+  } catch (err) {
+    if (blobUrl) await del(blobUrl).catch(() => {})
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error('[upload] Claude falhou:', msg)
+    return NextResponse.json({ ok: false, message: `Erro na análise IA: ${msg}` }, { status: 500 })
   }
 
   // Blob processado — deletar para economizar espaço

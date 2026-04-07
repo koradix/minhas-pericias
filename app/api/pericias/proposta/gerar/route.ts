@@ -194,13 +194,6 @@ function extractJson(text: string): string {
   return text.trim()
 }
 
-function isRateLimit(err: unknown): boolean {
-  const msg = (err instanceof Error ? err.message : String(err)).toLowerCase()
-  return msg.includes('rate_limit') || msg.includes('rate limit') ||
-    msg.includes('429') || msg.includes('credit') || msg.includes('overloaded') ||
-    msg.includes('529') || msg.includes('quota')
-}
-
 // ─── AI callers ───────────────────────────────────────────────────────────────
 
 async function callClaude(systemPrompt: string, userPrompt: string): Promise<string> {
@@ -214,17 +207,6 @@ async function callClaude(systemPrompt: string, userPrompt: string): Promise<str
   })
   const block = msg.content[0]
   return block.type === 'text' ? block.text : '{}'
-}
-
-async function callGemini(systemPrompt: string, userPrompt: string): Promise<string> {
-  const { GoogleGenerativeAI } = await import('@google/generative-ai')
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? '')
-  const model = genAI.getGenerativeModel({
-    model:             'gemini-2.0-flash',
-    systemInstruction: systemPrompt,
-  })
-  const result = await model.generateContent(userPrompt)
-  return result.response.text()
 }
 
 // ─── Handler ──────────────────────────────────────────────────────────────────
@@ -246,40 +228,19 @@ export async function POST(req: NextRequest) {
   let raw     = ''
   let iaModel = ''
 
-  // ── Claude (primary) ──────────────────────────────────────────────────────
-  if (process.env.ANTHROPIC_API_KEY) {
-    try {
-      raw     = await callClaude(SYSTEM_PROMPT, userPrompt)
-      iaModel = 'claude-haiku-4-5-20251001'
-    } catch (err) {
-      console.warn('[gerar-proposta] Claude falhou:', err instanceof Error ? err.message : err)
-      if (!isRateLimit(err)) {
-        return NextResponse.json(
-          { ok: false, error: `Erro Claude: ${err instanceof Error ? err.message : String(err)}` },
-          { status: 500 },
-        )
-      }
-    }
+  // ── Claude ────────────────────────────────────────────────────────────────
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return NextResponse.json({ ok: false, error: 'ANTHROPIC_API_KEY não configurada' }, { status: 500 })
   }
-
-  // ── Gemini (fallback) ─────────────────────────────────────────────────────
-  if (!raw) {
-    if (!process.env.GEMINI_API_KEY) {
-      return NextResponse.json(
-        { ok: false, error: 'IA indisponível: sem créditos e sem GEMINI_API_KEY' },
-        { status: 503 },
-      )
-    }
-    try {
-      raw     = await callGemini(SYSTEM_PROMPT, userPrompt)
-      iaModel = 'gemini-2.0-flash'
-    } catch (err) {
-      console.error('[gerar-proposta] Gemini falhou:', err instanceof Error ? err.message : err)
-      return NextResponse.json(
-        { ok: false, error: `Erro Gemini: ${err instanceof Error ? err.message : String(err)}` },
-        { status: 500 },
-      )
-    }
+  try {
+    raw     = await callClaude(SYSTEM_PROMPT, userPrompt)
+    iaModel = 'claude-haiku-4-5-20251001'
+  } catch (err) {
+    console.error('[gerar-proposta] Claude falhou:', err instanceof Error ? err.message : err)
+    return NextResponse.json(
+      { ok: false, error: `Erro Claude: ${err instanceof Error ? err.message : String(err)}` },
+      { status: 500 },
+    )
   }
 
   // ── Parse + Validate ──────────────────────────────────────────────────────
