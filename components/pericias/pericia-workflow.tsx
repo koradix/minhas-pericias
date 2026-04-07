@@ -4,7 +4,7 @@ import { useState, useRef, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { uploadFile } from '@/lib/client/upload'
 import { atualizarDadosPericia } from '@/lib/actions/pericias-update'
-import { buscarDocumentosNomeacao, listarDocumentosNomeacao } from '@/lib/actions/nomeacoes-documentos'
+import { buscarDocumentosPorPericia, listarDocumentosPorPericia } from '@/lib/actions/nomeacoes-documentos'
 import type { ProcessoDocumentoRow } from '@/lib/actions/nomeacoes-documentos'
 import {
   ExternalLink,
@@ -130,7 +130,6 @@ export function PericiaWorkflow({
   processoNumero,
   hasAnalise,
   analiseInicial,
-  nomeacaoId,
 }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [uploadState, setUploadState] = useState<UploadState>({ fase: 'idle' })
@@ -186,14 +185,14 @@ export function PericiaWorkflow({
   }
 
   function handleBuscarEscavador() {
-    if (!nomeacaoId) return
+    if (!processoNumero) return
     setEscavadorFase({ fase: 'buscando' })
     startEscavador(async () => {
-      const res = await buscarDocumentosNomeacao(nomeacaoId)
+      const res = await buscarDocumentosPorPericia(periciaId)
       if (!res.ok) { setEscavadorFase({ fase: 'erro', mensagem: res.error }); return }
       if (res.atualizacaoSolicitada) { setEscavadorFase({ fase: 'aguardando' }); return }
       if (!res.suportado || res.total === 0) { setEscavadorFase({ fase: 'nenhum' }); return }
-      const docs = await listarDocumentosNomeacao(nomeacaoId)
+      const docs = await listarDocumentosPorPericia(periciaId)
       setEscavadorFase(docs.length > 0 ? { fase: 'found', docs } : { fase: 'nenhum' })
     })
   }
@@ -314,15 +313,15 @@ export function PericiaWorkflow({
               Suba o documento para análise da IA
             </p>
             <p className="text-[14px] text-[#6b7280] mt-1 font-inter">
-              Envie o PDF ou busque direto via Escavador. A IA extrai partes, vara, quesitos e complexidade.
+              A IA extrai partes, vara, quesitos e complexidade do processo.
             </p>
 
             {uploadState.fase === 'idle' && !analiseFeita && (
               <div className="mt-4 space-y-4">
                 <input ref={fileRef} type="file" accept=".pdf,.docx" className="hidden" onChange={handleUpload} />
 
-                {/* ── Documentos do processo (quando vinculado a nomeação) ──── */}
-                {nomeacaoId && (
+                {/* ── Documentos do processo (quando há número de processo) ─── */}
+                {processoNumero && (
                   <div className="space-y-2">
                     {escavadorFase.fase === 'idle' && (
                       <button
@@ -399,13 +398,13 @@ export function PericiaWorkflow({
                     onClick={() => fileRef.current?.click()}
                     className={cn(
                       'inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-[14px] font-semibold transition-all',
-                      nomeacaoId
+                      processoNumero
                         ? 'border border-[#e2e8f0] hover:bg-[#f8f9ff] text-[#374151]'
                         : 'bg-[#1f2937] hover:bg-[#374151] text-white',
                     )}
                   >
                     <Upload className="h-4 w-4" />
-                    {nomeacaoId ? 'Ou faça upload manual' : 'Selecionar PDF ou DOCX'}
+                    {processoNumero ? 'Ou faça upload manual' : 'Selecionar PDF ou DOCX'}
                   </button>
                   <p className="text-[12px] text-[#9ca3af] font-inter">Máx. 50 MB · PDF ou DOCX</p>
                 </div>

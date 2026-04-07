@@ -136,6 +136,123 @@ export async function buscarDocumentosNomeacao(
   }
 }
 
+// ─── Action 2b — Buscar documentos diretamente pelo CNJ da perícia ───────────
+// Funciona mesmo sem nomeação vinculada — usa pericia.processo (CNJ)
+
+export async function buscarDocumentosPorPericia(
+  periciaId: string,
+): Promise<BuscarDocumentosResult> {
+  const session = await auth()
+  const userId = session?.user?.id
+  if (!userId) return { ok: false, error: 'Não autenticado' }
+
+  try {
+    const pericia = await prisma.pericia.findUnique({
+      where: { id: periciaId },
+      select: { peritoId: true, processo: true, vara: true },
+    })
+    if (!pericia || pericia.peritoId !== userId) return { ok: false, error: 'Perícia não encontrada' }
+    const cnj = pericia.processo
+    if (!cnj) return { ok: false, error: 'Número do processo não informado' }
+
+    // Extrair sigla do tribunal da vara (ex: "15ª Vara Cível — TJRJ" → "TJRJ")
+    const tribunalSigla = pericia.vara?.match(/\b(TJ[A-Z]{2,4}|TRF\d|TST|STJ|STF)\b/)?.[1] ?? 'DESCONHECIDO'
+
+    // Garantir registro Processo (upsert por CNJ)
+    const proc = await prisma.processo.upsert({
+      where: { numeroProcesso: cnj },
+      create: { numeroProcesso: cnj, tribunal: tribunalSigla },
+      update: {},
+    })
+
+    const escavador = radar as EscavadorService
+
+    const atualizacao = await escavador.solicitarAtualizacaoV2(cnj, { documentos_publicos: true })
+    if (!atualizacao.ok) console.warn('[buscarDocumentosPorPericia] solicitar-atualizacao falhou:', atualizacao.message)
+
+    const docsV2 = await escavador.listarDocumentosPublicosV2(cnj)
+    let novos = 0
+
+    if (docsV2.length > 0) {
+      for (const doc of docsV2) {
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const existing = await (prisma.processoDocumento as any).findFirst({ where: { processoId: proc.id, chaveV2: doc.key } })
+          if (!existing) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            await (prisma.processoDocumento as any).create({
+              data: { processoId: proc.id, chaveV2: doc.key, nome: doc.nome, tipo: doc.tipo ?? null, dataPublicacao: doc.data ? new Date(doc.data) : null, urlPublica: doc.url ?? null, paginas: doc.paginas ?? null },
+            })
+            novos++
+          }
+        } catch { /* skip */ }
+      }
+    } else {
+      let escavadorId = proc.escavadorId
+      if (!escavadorId) {
+        const found = await escavador.buscarProcesso(cnj, tribunalSigla)
+        if (found?.id) {
+          escavadorId = found.id
+          await prisma.processo.update({ where: { id: proc.id }, data: { escavadorId } })
+        }
+      }
+      if (escavadorId) {
+        const docsV1 = await escavador.listarDocumentos(escavadorId)
+        for (const doc of docsV1) {
+          try {
+            const existing = await prisma.processoDocumento.findUnique({ where: { processoId_escavadorDocId: { processoId: proc.id, escavadorDocId: doc.id } } })
+            if (!existing) {
+              await prisma.processoDocumento.create({
+                data: { processoId: proc.id, escavadorDocId: doc.id, nome: doc.nome, tipo: doc.tipo ?? null, dataPublicacao: doc.data ? new Date(doc.data) : null, urlPublica: doc.url ?? null, paginas: doc.paginas ?? null },
+              })
+              novos++
+            }
+          } catch { /* skip */ }
+        }
+      }
+    }
+
+    const total = await prisma.processoDocumento.count({ where: { processoId: proc.id } })
+    return {
+      ok: true, novos, total,
+      suportado: docsV2.length > 0 || novos > 0,
+      atualizacaoSolicitada: atualizacao.ok && docsV2.length === 0 && total === 0,
+    }
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Erro ao buscar documentos' }
+  }
+}
+
+export async function listarDocumentosPorPericia(
+  periciaId: string,
+): Promise<ProcessoDocumentoRow[]> {
+  const session = await auth()
+  const userId = session?.user?.id
+  if (!userId) return []
+
+  try {
+    const pericia = await prisma.pericia.findUnique({
+      where: { id: periciaId },
+      select: { peritoId: true, processo: true },
+    })
+    if (!pericia || pericia.peritoId !== userId || !pericia.processo) return []
+
+    const proc = await prisma.processo.findUnique({ where: { numeroProcesso: pericia.processo }, select: { id: true } })
+    if (!proc) return []
+
+    const rows = await prisma.processoDocumento.findMany({
+      where: { processoId: proc.id },
+      orderBy: { dataPublicacao: 'desc' },
+    })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return rows.map((r: any) => ({
+      id: r.id, escavadorDocId: r.escavadorDocId ?? null, chaveV2: r.chaveV2 ?? null, nome: r.nome,
+      tipo: r.tipo, dataPublicacao: r.dataPublicacao ? r.dataPublicacao.toISOString().split('T')[0] : null,
+      urlPublica: r.urlPublica, paginas: r.paginas, baixado: r.baixado, blobUrl: r.blobUrl,
+    }))
+  } catch { return [] }
+}
+
 // ─── Action 2 — Listar documentos salvos para uma nomeação ───────────────────
 
 export async function listarDocumentosNomeacao(
@@ -157,10 +274,11 @@ export async function listarDocumentosNomeacao(
       orderBy: { dataPublicacao: 'desc' },
     })
 
-    return rows.map((r) => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return rows.map((r: any) => ({
       id:             r.id,
-      escavadorDocId: r.escavadorDocId,
-      chaveV2:        r.chaveV2,
+      escavadorDocId: r.escavadorDocId ?? null,
+      chaveV2:        r.chaveV2 ?? null,
       nome:           r.nome,
       tipo:           r.tipo,
       dataPublicacao: r.dataPublicacao ? r.dataPublicacao.toISOString().split('T')[0] : null,
