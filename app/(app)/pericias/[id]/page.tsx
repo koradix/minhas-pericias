@@ -533,6 +533,7 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
                   processoNumero={pericia.processo ?? null}
                   hasAnalise={!!nomeacaoLink?.extractedData}
                   analiseInicial={analiseIA}
+                  nomeacaoId={nomeacaoLink?.id ?? null}
                 />
               )
             })()}
