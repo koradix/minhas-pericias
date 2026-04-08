@@ -584,3 +584,26 @@ model FeeProposalVersion {
 
   @@index([proposalId])
 }
+
+// ─── Agenda do Perito ─────────────────────────────────────────────────────────
+
+model AgendaItem {
+  id          String    @id @default(cuid())
+  periciaId   String
+  peritoId    String
+  titulo      String
+  descricao   String?
+  tipo        String    @default("action")   // deadline | action | reminder
+  origem      String    @default("user")     // ai | user | system
+  dataLimite  DateTime?
+  status      String    @default("pending")  // pending | completed
+  prioridade  String    @default("normal")   // alta | normal | baixa
+  confianca   Float?    // AI confidence score (0-1)
+  sourceKey   String?   // dedup key para evitar duplicatas de AI/system
+  criadoEm    DateTime  @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@unique([periciaId, sourceKey])
+  @@index([peritoId])
+  @@index([periciaId])
+}

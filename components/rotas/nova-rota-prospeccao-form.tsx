@@ -29,8 +29,6 @@ const REGIOES: { nome: string; comarcas: string[] }[] = [
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type VaraSelected = VaraPublicaRow & { lat: number; lng: number }
-
 function buildGoogleMapsUrl(pontos: { lat: number; lng: number }[]): string {
   if (pontos.length === 0) return ''
   if (pontos.length === 1)
@@ -48,63 +46,48 @@ function buildGoogleMapsUrl(pontos: { lat: number; lng: number }[]): string {
 function ComarcaItem({
   comarca,
   varas,
-  selectedIds,
-  onToggle,
+  selected,
+  onToggleComarca,
 }: {
   comarca: string
   varas: VaraPublicaRow[]
-  selectedIds: Set<string>
-  onToggle: (vara: VaraPublicaRow) => void
+  selected: boolean
+  onToggleComarca: () => void
 }) {
   const [open, setOpen] = useState(false)
-  const countSelected = varas.filter((v) => selectedIds.has(v.id)).length
 
   return (
     <div className="border border-slate-100 bg-white">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-6 py-5 text-left hover:bg-slate-50 transition-all"
-      >
-        <div className="flex items-center gap-4">
+      <div className="flex items-center gap-0">
+        {/* Checkbox area — selects entire city */}
+        <button
+          onClick={onToggleComarca}
+          className="flex items-center gap-4 px-6 py-5 hover:bg-slate-50 transition-all"
+        >
+          <div className={cn("h-4 w-4 border flex-shrink-0", selected ? "bg-[#a3e635] border-[#a3e635]" : "border-slate-200")} />
           <span className="text-[11px] font-bold uppercase tracking-wider text-slate-800">
             {comarca}
           </span>
-          {countSelected > 0 && (
-            <span className="text-[10px] font-bold text-[#a3e635] tracking-widest uppercase">
-              {countSelected} SELECIONADA(S)
-            </span>
-          )}
-        </div>
-        <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">
+        </button>
+        {/* Expand to see varas */}
+        <button
+          onClick={() => setOpen((v) => !v)}
+          className="ml-auto px-6 py-5 text-[9px] font-bold text-slate-300 uppercase tracking-widest hover:text-slate-600 transition-colors"
+        >
           {open ? 'FECHAR' : `${varas.length} VARAS`}
-        </span>
-      </button>
+        </button>
+      </div>
 
       {open && (
-        <div className="p-4 pt-0 space-y-px bg-slate-50 border-t border-slate-50">
-          {varas.map((vara) => {
-            const selected = selectedIds.has(vara.id)
-            return (
-              <button
-                key={vara.id}
-                onClick={() => onToggle(vara)}
-                className={cn(
-                  'w-full flex items-center gap-6 bg-white p-6 text-left transition-all',
-                  selected ? 'ring-1 ring-inset ring-[#a3e635] z-10' : 'hover:bg-slate-50'
-                )}
-              >
-                <div className={cn("h-4 w-4 border flex-shrink-0", selected ? "bg-[#a3e635] border-[#a3e635]" : "border-slate-200")} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-[11px] font-bold text-slate-900 uppercase tracking-wider truncate leading-tight">
-                    {vara.varaNome}
-                  </p>
-                  {vara.juizTitular && vara.juizTitular !== 'Vago' && (
-                    <p className="text-[9px] font-bold text-slate-400 truncate uppercase tracking-widest mt-1.5">{vara.juizTitular}</p>
-                  )}
-                </div>
-              </button>
-            )
-          })}
+        <div className="px-6 pb-4 space-y-1 bg-slate-50 border-t border-slate-50">
+          {varas.map((vara) => (
+            <div key={vara.id} className="flex items-center gap-4 px-4 py-2 bg-white">
+              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider truncate flex-1">{vara.varaNome}</p>
+              {vara.juizTitular && vara.juizTitular !== 'Vago' && (
+                <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest truncate">{vara.juizTitular}</p>
+              )}
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -116,22 +99,19 @@ function ComarcaItem({
 function RegiaoSection({
   regiao,
   varasPorComarca,
-  selectedIds,
-  onToggle,
+  selectedComarcas,
+  onToggleComarca,
 }: {
   regiao: typeof REGIOES[0]
   varasPorComarca: Map<string, VaraPublicaRow[]>
-  selectedIds: Set<string>
-  onToggle: (vara: VaraPublicaRow) => void
+  selectedComarcas: Set<string>
+  onToggleComarca: (comarca: string) => void
 }) {
   const [open, setOpen] = useState(false)
   const comarcasComVaras = regiao.comarcas.filter((c) => (varasPorComarca.get(c)?.length ?? 0) > 0)
   if (comarcasComVaras.length === 0) return null
 
-  const totalSelecionadas = comarcasComVaras.reduce(
-    (acc, c) => acc + (varasPorComarca.get(c) ?? []).filter((v) => selectedIds.has(v.id)).length,
-    0,
-  )
+  const totalSel = comarcasComVaras.filter((c) => selectedComarcas.has(c)).length
 
   return (
     <div className="border border-slate-100 bg-white">
@@ -141,9 +121,9 @@ function RegiaoSection({
       >
         <div className="flex items-center gap-6">
           <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-900">{regiao.nome}</span>
-          {totalSelecionadas > 0 && (
+          {totalSel > 0 && (
             <span className="bg-[#a3e635] text-slate-900 text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 shadow-sm">
-              {totalSelecionadas}
+              {totalSel} CIDADE{totalSel > 1 ? 'S' : ''}
             </span>
           )}
         </div>
@@ -159,8 +139,8 @@ function RegiaoSection({
               key={comarca}
               comarca={comarca}
               varas={varasPorComarca.get(comarca) ?? []}
-              selectedIds={selectedIds}
-              onToggle={onToggle}
+              selected={selectedComarcas.has(comarca)}
+              onToggleComarca={() => onToggleComarca(comarca)}
             />
           ))}
         </div>
@@ -173,58 +153,61 @@ function RegiaoSection({
 
 export function NovaRotaProspeccaoForm({ varas }: { varas: VaraPublicaRow[] }) {
   const [titulo, setTitulo] = useState('')
-  const [selecionadas, setSelecionadas] = useState<VaraSelected[]>([])
+  const [selectedComarcas, setSelectedComarcas] = useState<Set<string>>(new Set())
   const [search, setSearch] = useState('')
   const [copied, setCopied] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
 
-  const varasPorComarca = useMemo(() => {
+  // Full map (unfiltered) for route building
+  const allVarasPorComarca = useMemo(() => {
     const map = new Map<string, VaraPublicaRow[]>()
-    const filtered = search.trim()
-      ? varas.filter(
-          (v) =>
-            v.varaNome.toLowerCase().includes(search.toLowerCase()) ||
-            v.comarca.toLowerCase().includes(search.toLowerCase()) ||
-            (v.juizTitular ?? '').toLowerCase().includes(search.toLowerCase()),
-        )
-      : varas
-    for (const v of filtered) {
+    for (const v of varas) {
       const list = map.get(v.comarca) ?? []
       list.push(v)
       map.set(v.comarca, list)
     }
     return map
-  }, [varas, search])
+  }, [varas])
 
-  const selectedIds = useMemo(() => new Set(selecionadas.map((v) => v.id)), [selecionadas])
-
-  function handleToggle(vara: VaraPublicaRow) {
-    if (selectedIds.has(vara.id)) {
-      setSelecionadas((p) => p.filter((v) => v.id !== vara.id))
-    } else {
-      const [lat, lng] = getCoordsComarca(vara.comarca)
-      const idx = selecionadas.filter((v) => v.comarca === vara.comarca).length
-      setSelecionadas((p) => [...p, { ...vara, lat: lat + idx * 0.0002, lng: lng + idx * 0.0002 }])
+  // Filtered map (for search)
+  const varasPorComarca = useMemo(() => {
+    if (!search.trim()) return allVarasPorComarca
+    const map = new Map<string, VaraPublicaRow[]>()
+    const q = search.toLowerCase()
+    for (const v of varas) {
+      if (v.varaNome.toLowerCase().includes(q) || v.comarca.toLowerCase().includes(q) || (v.juizTitular ?? '').toLowerCase().includes(q)) {
+        const list = map.get(v.comarca) ?? []
+        list.push(v)
+        map.set(v.comarca, list)
+      }
     }
+    return map
+  }, [varas, allVarasPorComarca, search])
+
+  function handleToggleComarca(comarca: string) {
+    setSelectedComarcas((prev) => {
+      const next = new Set(prev)
+      if (next.has(comarca)) next.delete(comarca)
+      else next.add(comarca)
+      return next
+    })
   }
 
-  // Agrupa varas selecionadas por comarca para criar 1 checkpoint por comarca
+  // Build comarca data for route from selection
   const comarcasAgrupadas = useMemo(() => {
-    const map = new Map<string, VaraSelected[]>()
-    for (const v of selecionadas) {
-      const list = map.get(v.comarca) ?? []
-      list.push(v)
-      map.set(v.comarca, list)
-    }
-    return Array.from(map.entries()).map(([comarca, vs]) => ({
-      comarca,
-      varas: vs,
-      lat: vs[0].lat,
-      lng: vs[0].lng,
-      endereco: vs[0].endereco ?? comarca,
-    }))
-  }, [selecionadas])
+    return Array.from(selectedComarcas).map((comarca) => {
+      const comarcaVaras = allVarasPorComarca.get(comarca) ?? []
+      const [lat, lng] = getCoordsComarca(comarca)
+      return {
+        comarca,
+        varas: comarcaVaras,
+        lat,
+        lng,
+        endereco: comarcaVaras[0]?.endereco ?? comarca,
+      }
+    })
+  }, [selectedComarcas, allVarasPorComarca])
 
   const mapRoute = useMemo(() => ({
     id: 'nova-prospeccao',
@@ -250,7 +233,7 @@ export function NovaRotaProspeccaoForm({ varas }: { varas: VaraPublicaRow[] }) {
 
   function handleSalvar() {
     if (!titulo.trim()) { setError('INFORME UM TÍTULO PARA A ROTA'); return }
-    if (selecionadas.length < 1) { setError('SELECIONE AO MENOS 1 VARA'); return }
+    if (selectedComarcas.size < 1) { setError('SELECIONE AO MENOS 1 CIDADE'); return }
     setError(null)
     startTransition(async () => {
       const res = await salvarRotaComarcas(titulo, comarcasAgrupadas.map((c) => ({
@@ -305,8 +288,8 @@ export function NovaRotaProspeccaoForm({ varas }: { varas: VaraPublicaRow[] }) {
                 key={regiao.nome}
                 regiao={regiao}
                 varasPorComarca={varasPorComarca}
-                selectedIds={selectedIds}
-                onToggle={handleToggle}
+                selectedComarcas={selectedComarcas}
+                onToggleComarca={handleToggleComarca}
               />
             ))}
           </div>
@@ -315,15 +298,15 @@ export function NovaRotaProspeccaoForm({ varas }: { varas: VaraPublicaRow[] }) {
         {/* ROTA ATUAL */}
         <div className="bg-white p-8 space-y-8">
           <div className="flex items-center justify-between">
-            <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-slate-900">CONFIGURAÇÃO DA ROTA</h3>
-            {selecionadas.length > 0 && (
-              <button onClick={() => setSelecionadas([])} className="text-[10px] font-bold uppercase tracking-widest text-[#a3e635] hover:text-slate-900 transition-colors">LIMPAR</button>
+            <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-slate-900">CIDADES NA ROTA</h3>
+            {selectedComarcas.size > 0 && (
+              <button onClick={() => setSelectedComarcas(new Set())} className="text-[10px] font-bold uppercase tracking-widest text-[#a3e635] hover:text-slate-900 transition-colors">LIMPAR</button>
             )}
           </div>
 
           {comarcasAgrupadas.length === 0 ? (
             <div className="h-96 flex flex-col items-center justify-center text-slate-200 border border-dashed border-slate-100">
-              <p className="text-[10px] font-bold uppercase tracking-widest">NENHUMA VARA SELECIONADA</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest">NENHUMA CIDADE SELECIONADA</p>
             </div>
           ) : (
             <div className="space-y-px bg-slate-50 border border-slate-50 max-h-[500px] overflow-y-auto">
@@ -337,15 +320,15 @@ export function NovaRotaProspeccaoForm({ varas }: { varas: VaraPublicaRow[] }) {
                       <p className="text-[11px] font-bold text-slate-900 uppercase tracking-wider truncate leading-tight">{comarca.comarca}</p>
                       <p className="text-[9px] font-bold text-[#a3e635] uppercase tracking-widest mt-1.5">{comarca.varas.length} VARA{comarca.varas.length > 1 ? 'S' : ''}</p>
                     </div>
+                    <button onClick={() => handleToggleComarca(comarca.comarca)} className="text-[9px] font-bold text-red-300 hover:text-red-500 transition-all">X</button>
                   </div>
                   <div className="px-6 pb-4 space-y-1">
                     {comarca.varas.map((v) => (
-                      <div key={v.id} className="flex items-center gap-4 px-4 py-2 bg-slate-50 group">
+                      <div key={v.id} className="flex items-center gap-4 px-4 py-2 bg-slate-50">
                         <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider truncate flex-1">{v.varaNome}</p>
                         {v.juizTitular && v.juizTitular !== 'Vago' && (
                           <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest truncate">{v.juizTitular}</p>
                         )}
-                        <button onClick={() => handleToggle(v)} className="text-[9px] font-bold text-red-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">X</button>
                       </div>
                     ))}
                   </div>
@@ -357,7 +340,7 @@ export function NovaRotaProspeccaoForm({ varas }: { varas: VaraPublicaRow[] }) {
       </div>
 
       {/* Mapa preview */}
-      {selecionadas.length >= 1 && (
+      {comarcasAgrupadas.length >= 1 && (
         <div className="space-y-8">
           <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-slate-900">ESTRATÉGIA LOGÍSTICA</h3>
           <div className="h-[440px] w-full overflow-hidden border border-slate-100 shadow-sm">
@@ -367,7 +350,7 @@ export function NovaRotaProspeccaoForm({ varas }: { varas: VaraPublicaRow[] }) {
       )}
 
       {/* Google Maps link */}
-      {selecionadas.length >= 1 && (
+      {comarcasAgrupadas.length >= 1 && (
         <div className="p-10 bg-slate-900 flex items-center justify-between gap-12 shadow-xl">
           <div className="flex-1 min-w-0">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 mb-3">INTEGRAÇÃO GOOGLE MAPS</p>
@@ -387,13 +370,13 @@ export function NovaRotaProspeccaoForm({ varas }: { varas: VaraPublicaRow[] }) {
       {/* Botões finais */}
       <div className="flex items-center justify-between pt-10 border-t border-slate-100">
         <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-300">
-          {selecionadas.length} VARA(S) CONFIGURADA(S)
+          {selectedComarcas.size} CIDADE{selectedComarcas.size !== 1 ? 'S' : ''} SELECIONADA{selectedComarcas.size !== 1 ? 'S' : ''}
         </p>
         <div className="flex gap-6">
           {error && <span className="text-[10px] font-bold text-red-500 uppercase tracking-widest pt-4 pr-6 shrink-0">{error}</span>}
           <button
             onClick={handleSalvar}
-            disabled={isPending || selecionadas.length < 1 || !titulo.trim()}
+            disabled={isPending || selectedComarcas.size < 1 || !titulo.trim()}
             className="h-14 px-12 bg-[#a3e635] text-slate-900 text-[11px] font-bold uppercase tracking-[0.3em] hover:brightness-105 disabled:opacity-20 transition-all font-bold shadow-lg"
           >
             {isPending ? 'PROCESSANDO...' : 'SALVAR ROTA'}

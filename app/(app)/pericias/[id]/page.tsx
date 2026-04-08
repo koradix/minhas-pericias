@@ -16,6 +16,8 @@ import { PericiaDetailTabs } from '@/components/pericias/pericia-detail-tabs'
 import { PericiaWorkflow } from '@/components/pericias/pericia-workflow'
 import { PericiaEditCard } from '@/components/pericias/pericia-edit-card'
 import { getFeeProposal, getFeeProposalVersions } from '@/lib/actions/fee-proposal'
+import { getAgendaItems, autoPopulateAgenda } from '@/lib/actions/agenda'
+import { AgendaPanel } from '@/components/pericias/agenda-panel'
 import { getProposalTemplates } from '@/lib/actions/proposal-template'
 import type { ResumoData } from '@/lib/actions/processos-intake'
 import { isAnaliseProcessoV2, isAnaliseProcesso, toAnaliseCompativel } from '@/lib/ai/prompt-mestre-resumo'
@@ -314,12 +316,24 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
       })()
     : null
 
-  const [feeProposal, feeVersoes, proposalTemplates, peritoPerfil2] = await Promise.all([
+  const [feeProposal, feeVersoes, proposalTemplates, peritoPerfil2, agendaItems] = await Promise.all([
     getFeeProposal(pericia.id, userId2),
     getFeeProposalVersions(pericia.id, userId2),
     getProposalTemplates(userId2),
     prisma.peritoPerfil.findUnique({ where: { userId: userId2 }, select: { formacao: true, registro: true, telefone: true } }).catch(() => null),
+    getAgendaItems(pericia.id),
   ])
+
+  // Auto-populate agenda (idempotent, non-blocking)
+  const hasAnalise2 = !!nomeacaoLink?.extractedData
+  const hasMidias2 = checkpoints.some((c) => c.midiaCount > 0)
+  autoPopulateAgenda(pericia.id, {
+    hasAnalise: hasAnalise2,
+    hasProposta: !!feeProposal,
+    hasVistoria: checkpoints.length > 0,
+    hasMidias: hasMidias2,
+    periciaStatus: pericia.status,
+  }).catch(() => {})
 
   const st = PERICIA_STATUS[pericia.status] ?? { label: pericia.status, variant: 'secondary' as const }
   const concluidos = checkpoints.filter((c) => c.status === 'concluido').length
@@ -561,6 +575,11 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
             }
           />
         </Suspense>
+
+        {/* Agenda do Perito */}
+        <div className="mt-12">
+          <AgendaPanel periciaId={pericia.id} initialItems={agendaItems} />
+        </div>
       </div>
     </div>
   )

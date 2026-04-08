@@ -194,46 +194,28 @@ export function PericiaDetailTabs({
     if (urlTab && urlTab !== activeTab) setActiveTab(urlTab)
   }, [urlTab]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Step completion logic
+  const hasMidias = checkpoints.some((c) => c.midiaCount > 0)
+  const hasVistoria = checkpoints.length > 0
+  const completed: Record<Tab, boolean> = {
+    resumo:   hasAnalise,
+    proposta: hasProposta,
+    rota:     hasVistoria,
+    fotos:    hasMidias,
+    laudo:    periciaStatus === 'concluida',
+  }
+
   const tabs: {
     id:       Tab
     label:    string
-    icon:     React.ReactNode
     disabled: boolean
-    badge?:   React.ReactNode
+    done:     boolean
   }[] = [
-    {
-      id:       'resumo',
-      label:    'Resumo',
-      icon:     null,
-      disabled: false,
-    },
-    {
-      id:       'proposta',
-      label:    'Proposta de Honorários',
-      icon:     null,
-      disabled: false,
-      badge:    hasProposta && hasAnalise
-        ? <span className="ml-2 flex h-2 w-2 rounded-full bg-[#a3e635]" />
-        : undefined,
-    },
-    {
-      id:       'rota',
-      label:    'Vistoria',
-      icon:     null,
-      disabled: false,
-    },
-    {
-      id:       'fotos',
-      label:    'Mídias',
-      icon:     null,
-      disabled: false,
-    },
-    {
-      id:       'laudo',
-      label:    'Laudo Pericial',
-      icon:     null,
-      disabled: false,
-    },
+    { id: 'resumo',   label: 'Resumo',                disabled: false, done: completed.resumo   },
+    { id: 'proposta', label: 'Proposta de Honorários', disabled: false, done: completed.proposta },
+    { id: 'rota',     label: 'Vistoria',               disabled: false, done: completed.rota     },
+    { id: 'fotos',    label: 'Mídias',                 disabled: false, done: completed.fotos    },
+    { id: 'laudo',    label: 'Laudo Pericial',          disabled: false, done: completed.laudo    },
   ]
 
   return (
@@ -247,14 +229,15 @@ export function PericiaDetailTabs({
               className={cn(
                 "flex items-center gap-2 py-4 text-[10px] font-black uppercase tracking-[0.25em] transition-all border-b-2 -mb-[1px]",
                 activeTab === tab.id
-                  ? 'border-slate-900 text-slate-900'
+                  ? tab.done ? 'border-[#a3e635] text-slate-900' : 'border-slate-900 text-slate-900'
                   : tab.disabled
                     ? 'border-transparent text-slate-200 cursor-not-allowed'
-                    : 'border-transparent text-slate-400 hover:text-slate-900 hover:border-slate-300'
+                    : tab.done
+                      ? 'border-[#a3e635]/50 text-slate-500 hover:text-slate-900'
+                      : 'border-transparent text-slate-400 hover:text-slate-900 hover:border-slate-300'
               )}
             >
               {tab.label}
-              {tab.badge}
             </button>
             {idx < tabs.length - 1 && (
               <ChevronRight className="h-3 w-3 text-slate-200 flex-shrink-0" strokeWidth={3} />
