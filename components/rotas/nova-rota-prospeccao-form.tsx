@@ -148,7 +148,7 @@ function RegiaoSection({
           )}
         </div>
         <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">
-          {open ? 'ESCONDER' : `${comarcasComVaras.length} COMARCAS`}
+          {open ? 'ESCONDER' : `${comarcasComVaras.length} CIDADES`}
         </span>
       </button>
 

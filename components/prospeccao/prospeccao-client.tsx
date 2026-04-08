@@ -488,7 +488,7 @@ function RegiaoSection({
         <div className="flex flex-col gap-1">
           <span className="font-bold text-sm text-slate-900 uppercase tracking-[0.2em]">{regiao.nome}</span>
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-            {comarcasComVaras.length} COMARCAS · {totalVaras} VARAS
+            {comarcasComVaras.length} CIDADES · {totalVaras} VARAS
           </span>
         </div>
         
