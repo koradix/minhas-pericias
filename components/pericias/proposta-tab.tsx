@@ -18,7 +18,7 @@ import {
  RotateCcw,
 } from 'lucide-react'
 import { uploadFile } from '@/lib/client/upload'
-import { upsertFeeProposal } from '@/lib/actions/fee-proposal'
+import { upsertFeeProposal, aceitarProposta } from '@/lib/actions/fee-proposal'
 import { deleteProposalTemplate } from '@/lib/actions/proposal-template'
 import type { FeeProposalRow, FeeProposalVersionRow, FeeProposalData } from '@/lib/actions/fee-proposal'
 import type { ProposalTemplateRow } from '@/lib/actions/proposal-template'
@@ -439,7 +439,7 @@ export function PropostaTab({
 
  type Phase = 'template' | 'form' | 'result'
  const [phase, setPhase] = useState<Phase>(
- rascunho?.status === 'gerada' ? 'result' : 'template',
+ (rascunho?.status === 'gerada' || rascunho?.status === 'aceita') ? 'result' : 'template',
  )
 
  const [isGenerating, setIsGenerating] = useState(false)
@@ -451,6 +451,8 @@ export function PropostaTab({
  const [genError, setGenError] = useState<string | null>(null)
  const [saveError, setSaveError] = useState<string | null>(null)
  const [dlError, setDlError] = useState<string | null>(null)
+ const [isAceiting, setIsAceiting] = useState(false)
+ const [aceita, setAceita] = useState(rascunho?.status === 'aceita')
 
  const [lastIaModel, setLastIaModel] = useState(rascunho?.iaModel ?? '')
  const [lastRawOutput, setLastRawOutput] = useState(rascunho?.iaRawOutput ?? '')
@@ -1196,6 +1198,25 @@ export function PropostaTab({
  : <><FileDown className="h-4 w-4" />Baixar .docx</>
  }
  </button>
+ {aceita ? (
+ <span className="flex items-center gap-2 rounded-lg bg-[#a3e635] px-4 py-2.5 text-[14px] font-bold text-slate-900">
+ <CheckCircle2 className="h-4 w-4" /> Proposta aceita
+ </span>
+ ) : (
+ <button
+ onClick={async () => {
+ setIsAceiting(true)
+ const res = await aceitarProposta(periciaId)
+ if (res.ok) setAceita(true)
+ setIsAceiting(false)
+ }}
+ disabled={isAceiting}
+ className="flex items-center gap-2 rounded-lg border-2 border-[#a3e635] text-slate-700 hover:bg-[#a3e635] hover:text-slate-900 px-4 py-2.5 text-[14px] font-semibold transition-all disabled:opacity-50"
+ >
+ {isAceiting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+ Proposta aceita
+ </button>
+ )}
  <button
  onClick={() => setPhase('form')}
  className="flex items-center gap-2 rounded-lg border border-slate-200 hover:bg-slate-50 px-4 py-2.5 text-[14px] font-medium text-slate-600 transition-all"

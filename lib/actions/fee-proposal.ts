@@ -38,7 +38,7 @@ export interface FeeProposalData {
   templateId:         string | null
   iaModel:            string
   iaRawOutput:        string
-  status:             'rascunho' | 'gerada' | 'enviada'
+  status:             'rascunho' | 'gerada' | 'enviada' | 'aceita'
 }
 
 export interface FeeProposalRow extends FeeProposalData {
@@ -226,6 +226,45 @@ export async function upsertFeeProposal(
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Erro ao salvar proposta'
     console.error('[upsertFeeProposal]', msg)
+    return { ok: false, error: msg }
+  }
+}
+
+// ─── ACEITAR ────────────────────────────────────────────────────────────────────
+
+export async function aceitarProposta(
+  periciaId: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const session = await auth()
+  const userId  = session?.user?.id
+  if (!userId) return { ok: false, error: 'Não autenticado' }
+
+  try {
+    const proposal = await prisma.feeProposal.findUnique({
+      where:  { periciaId_userId: { periciaId, userId } },
+      select: { id: true, valorHonorarios: true },
+    })
+    if (!proposal) return { ok: false, error: 'Proposta não encontrada' }
+
+    await prisma.feeProposal.update({
+      where: { id: proposal.id },
+      data:  { status: 'aceita' },
+    })
+
+    // Sincroniza valor no campo da perícia para uso nos relatórios financeiros
+    if (proposal.valorHonorarios != null) {
+      await prisma.pericia.update({
+        where: { id: periciaId },
+        data:  { valorHonorarios: proposal.valorHonorarios },
+      })
+    }
+
+    revalidatePath(`/pericias/${periciaId}`)
+    revalidatePath('/financeiro')
+    revalidatePath('/recebimentos')
+    return { ok: true }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Erro desconhecido'
     return { ok: false, error: msg }
   }
 }

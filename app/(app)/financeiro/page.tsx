@@ -1,126 +1,105 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
+import { auth } from '@/auth'
+import { prisma } from '@/lib/prisma'
+import { formatCurrency } from '@/lib/utils'
+import { PageHeader } from '@/components/shared/page-header'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Financeiro' }
+export const dynamic = 'force-dynamic'
 
-const recentMovimentacoes = [
-  {
-    id: 1,
-    descricao: 'Honorários — PRC-2024-003',
-    tipo: 'recebimento',
-    valor: 8000,
-    data: '08/12/2024',
-    status: 'recebido',
-  },
-  {
-    id: 2,
-    descricao: 'Honorários — PRC-2024-001',
-    tipo: 'recebimento',
-    valor: 4200,
-    data: '05/12/2024',
-    status: 'pendente',
-  },
-  {
-    id: 3,
-    descricao: 'Honorários — PRC-2024-002',
-    tipo: 'recebimento',
-    valor: 3500,
-    data: '01/12/2024',
-    status: 'pendente',
-  },
-  {
-    id: 4,
-    descricao: 'Demanda Extrajudicial — DMD-001',
-    tipo: 'recebimento',
-    valor: 3500,
-    data: '28/11/2024',
-    status: 'pendente',
-  },
-]
+export default async function FinanceiroPage() {
+  const session = await auth()
+  if (!session?.user?.id) redirect('/login')
+  const userId = session.user.id
 
-function formatCurrency(v: number) {
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v)
-}
+  // Propostas aceitas = recebíveis confirmados
+  const propostas = await prisma.feeProposal.findMany({
+    where:  { userId, status: 'aceita' },
+    select: {
+      id: true,
+      valorHonorarios: true,
+      numeroProcesso: true,
+      vara: true,
+      tribunal: true,
+      criadoEm: true,
+      atualizadoEm: true,
+      periciaId: true,
+    },
+    orderBy: { atualizadoEm: 'desc' },
+  })
 
-export default function FinanceiroPage() {
+  const totalAReceber = propostas.reduce((s, p) => s + (p.valorHonorarios ?? 0), 0)
+  const recentes = propostas.slice(0, 5)
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Financeiro</h1>
-        <p className="mt-1 text-sm text-slate-500 font-medium">Visão geral das suas finanças periciais</p>
-      </div>
+      <PageHeader
+        title="Financeiro"
+        description="Visão geral das suas finanças periciais"
+      />
 
-      {/* Summary */}
+      {/* KPIs */}
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Recebido (Dezembro)</p>
-          </div>
-          <p className="text-2xl font-bold text-slate-900 tracking-tight">{formatCurrency(8000)}</p>
-          <p className="mt-1 text-xs text-[#a3e635] font-bold uppercase tracking-wider">↑ 22% vs. novembro</p>
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3">A Receber</p>
+          <p className="text-2xl font-bold text-slate-900 tracking-tight">{formatCurrency(totalAReceber)}</p>
+          <p className="mt-1 text-xs text-slate-400 font-medium uppercase tracking-wider">
+            {propostas.length} proposta{propostas.length !== 1 ? 's' : ''} aceita{propostas.length !== 1 ? 's' : ''}
+          </p>
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">A Receber</p>
+        <Link
+          href="/recebimentos"
+          className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-6 shadow-sm hover:border-[#a3e635]/40 hover:shadow-md transition-all group"
+        >
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3">Recebimentos</p>
+          <div className="flex items-end justify-between">
+            <p className="text-sm font-bold text-slate-900 uppercase tracking-widest">Ver detalhes</p>
+            <span className="text-slate-300 group-hover:text-[#a3e635] transition-colors font-bold">→</span>
           </div>
-          <p className="text-2xl font-bold text-slate-900 tracking-tight">{formatCurrency(48500)}</p>
-          <p className="mt-1 text-xs text-slate-400 font-medium uppercase tracking-wider">12 recebimentos em aberto</p>
-        </div>
+        </Link>
       </div>
 
-      {/* Quick action */}
-      <Link
-        href="/recebimentos"
-        className="flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-6 hover:shadow-md hover:border-[#a3e635]/30 transition-all group"
-      >
-        <div className="min-w-0">
-          <p className="text-[14px] font-bold text-slate-900 uppercase tracking-widest">Recebimentos</p>
-          <p className="text-xs text-slate-500 mt-1 font-medium">Honorários e valores a receber</p>
+      {/* Propostas aceitas recentes */}
+      <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
+          <p className="text-[11px] font-bold text-slate-900 uppercase tracking-widest">Propostas Aceitas</p>
+          <Link href="/recebimentos" className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hover:text-slate-900 transition-colors">
+            Ver todas →
+          </Link>
         </div>
-        <span className="ml-auto text-slate-300 group-hover:text-[#a3e635] transition-colors text-xl font-bold">
-          →
-        </span>
-      </Link>
 
-      {/* Recent transactions */}
-      <Card className="rounded-xl border-slate-200 shadow-sm border-0">
-        <CardHeader className="px-0">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg font-bold text-slate-900 tracking-tight">Movimentações Recentes</CardTitle>
-            <Button variant="ghost" size="sm" className="text-[#a3e635] font-bold uppercase tracking-widest text-[10px] hover:bg-slate-50 -mr-2">
-              Ver todas
-            </Button>
+        {recentes.length === 0 ? (
+          <div className="px-6 py-12 text-center">
+            <p className="text-sm font-medium text-slate-400">Nenhuma proposta aceita ainda.</p>
+            <p className="text-xs text-slate-300 mt-1">Quando o cliente aceitar a proposta de honorários, ela aparecerá aqui.</p>
           </div>
-        </CardHeader>
-        <CardContent className="px-0 pt-2">
-          <div className="divide-y divide-slate-100 border-t border-slate-100">
-            {recentMovimentacoes.map((m) => (
-              <div key={m.id} className="flex items-center gap-4 py-4">
+        ) : (
+          <div className="divide-y divide-slate-100">
+            {recentes.map((p) => (
+              <Link key={p.id} href={`/pericias/${p.periciaId}`}
+                className="flex items-center gap-4 px-6 py-4 hover:bg-slate-50 transition-colors">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-slate-900 tracking-tight">{m.descricao}</p>
-                  <p className="text-xs text-slate-400 font-medium">{m.data}</p>
+                  <p className="text-sm font-bold text-slate-900 truncate">
+                    {p.numeroProcesso || p.vara || 'Processo'}
+                  </p>
+                  <p className="text-xs text-slate-400 font-medium">{p.tribunal}</p>
                 </div>
-                <div className="flex items-center gap-6 flex-shrink-0">
+                <div className="flex items-center gap-4 flex-shrink-0">
                   <span className="text-sm font-bold text-slate-900">
-                    + {formatCurrency(m.valor)}
+                    {formatCurrency(p.valorHonorarios ?? 0)}
                   </span>
-                  <Badge variant={m.status === 'pendente' ? 'default' : 'secondary'} className={cn(
-                    "rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest",
-                    m.status === 'recebido' ? "bg-[#a3e635] text-slate-900 border-0" : "text-slate-400 border-slate-200"
-                  )}>
-                    {m.status === 'pendente' ? 'Pendente' : 'Recebido'}
-                  </Badge>
+                  <span className="text-[10px] font-bold bg-[#a3e635] text-slate-900 rounded-md px-2 py-0.5 uppercase tracking-widest">
+                    Aceita
+                  </span>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
-        </CardContent>
-      </Card>
+        )}
+      </div>
     </div>
   )
 }

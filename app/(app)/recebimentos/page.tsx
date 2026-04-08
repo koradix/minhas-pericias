@@ -1,104 +1,116 @@
-"use client"
+import Link from 'next/link'
+import { redirect } from 'next/navigation'
+import { auth } from '@/auth'
+import { prisma } from '@/lib/prisma'
+import { formatCurrency } from '@/lib/utils'
+import { PageHeader } from '@/components/shared/page-header'
+import type { Metadata } from 'next'
 
-import { useState, useMemo } from "react"
-import { ArrowDownCircle, Plus, Search, FileText } from "lucide-react"
-import { PageHeader } from "@/components/shared/page-header"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { StatsCard } from "@/components/shared/stats-card"
-import { EmptyState } from "@/components/shared/empty-state"
-import { formatCurrency } from "@/lib/utils"
-import { recebimentos, statusMapRecebimentos } from "@/lib/mocks/recebimentos"
+export const metadata: Metadata = { title: 'Recebimentos' }
+export const dynamic = 'force-dynamic'
 
-export default function RecebimentosPage() {
-  const [search, setSearch] = useState("")
-  const [statusFilter, setStatusFilter] = useState("")
+export default async function RecebimentosPage() {
+  const session = await auth()
+  if (!session?.user?.id) redirect('/login')
+  const userId = session.user.id
 
-  const filtered = useMemo(() => {
-    return recebimentos.filter((r) => {
-      const matchSearch =
-        !search ||
-        r.descricao.toLowerCase().includes(search.toLowerCase()) ||
-        r.pericia.toLowerCase().includes(search.toLowerCase()) ||
-        r.cliente.toLowerCase().includes(search.toLowerCase())
-      const matchStatus = !statusFilter || r.status === statusFilter
-      return matchSearch && matchStatus
-    })
-  }, [search, statusFilter])
+  const propostas = await prisma.feeProposal.findMany({
+    where:  { userId, status: 'aceita' },
+    select: {
+      id: true,
+      periciaId: true,
+      valorHonorarios: true,
+      custoDeslocamento: true,
+      numeroProcesso: true,
+      vara: true,
+      tribunal: true,
+      partes: true,
+      prazoEntrega: true,
+      condicoesPagamento: true,
+      atualizadoEm: true,
+    },
+    orderBy: { atualizadoEm: 'desc' },
+  })
 
-  const totalPendente = recebimentos
-    .filter((r) => r.status === "pendente" || r.status === "vencido")
-    .reduce((s, r) => s + r.valorTotal, 0)
+  const total = propostas.reduce((s, p) => s + (p.valorHonorarios ?? 0) + (p.custoDeslocamento ?? 0), 0)
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Recebimentos"
-        description="Controle de honorarios e valores a receber"
-        actions={<Button size="sm"><Plus className="h-4 w-4" />Novo Recebimento</Button>}
+        description="Honorários de propostas aceitas"
       />
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <StatsCard title="Recebido (Dezembro)" value="R$ 8.000" icon={ArrowDownCircle} accent="emerald" trend={{ value: 22, label: "vs. novembro", positive: true }} />
-        <StatsCard title="Pendente" value="R$ 14.200" description="3 recebimentos em aberto" icon={ArrowDownCircle} accent="amber" />
-        <StatsCard title="Vencido" value="R$ 15.000" description="1 recebimento em atraso" icon={ArrowDownCircle} accent="rose" />
+      {/* KPI */}
+      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2">Total a receber</p>
+        <p className="text-3xl font-bold text-slate-900 tracking-tight">{formatCurrency(total)}</p>
+        <p className="mt-1 text-xs text-slate-400 uppercase tracking-wider font-medium">
+          {propostas.length} proposta{propostas.length !== 1 ? 's' : ''} aceita{propostas.length !== 1 ? 's' : ''}
+        </p>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-          <input type="text" placeholder="Buscar por pericia ou cliente..." value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full h-9 rounded-lg border border-slate-300 bg-white pl-9 pr-3 text-sm placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+      {propostas.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 py-16 text-center">
+          <p className="text-sm font-semibold text-slate-500">Nenhuma proposta aceita</p>
+          <p className="text-xs text-slate-400 mt-1">
+            Marque uma proposta como aceita na página da perícia para registrar o recebível.
+          </p>
         </div>
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
-          className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500">
-          <option value="">Todos os status</option>
-          <option value="pendente">Pendentes</option>
-          <option value="recebido">Recebidos</option>
-          <option value="vencido">Vencidos</option>
-        </select>
-      </div>
-
-      {filtered.length === 0 ? (
-        <EmptyState icon={ArrowDownCircle} title="Nenhum recebimento encontrado" description="Tente ajustar os filtros ou o termo de busca." />
       ) : (
         <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-200">
+            <table className="min-w-full divide-y divide-slate-100">
               <thead>
                 <tr className="bg-slate-50">
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Pericia / Descricao</th>
-                  <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Cliente</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Valor</th>
-                  <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Vencimento</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Status</th>
+                  <th className="px-6 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-slate-400">Processo / Vara</th>
+                  <th className="px-6 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-slate-400">Partes</th>
+                  <th className="px-6 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-slate-400">Honorários</th>
+                  <th className="hidden md:table-cell px-6 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-slate-400">Deslocamento</th>
+                  <th className="hidden md:table-cell px-6 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-slate-400">Condições</th>
+                  <th className="px-6 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-slate-400">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filtered.map((r) => {
-                  const status = statusMapRecebimentos[r.status]
-                  return (
-                    <tr key={r.id} className="hover:bg-slate-50 cursor-pointer transition-colors">
-                      <td className="px-4 py-3.5">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-emerald-50"><FileText className="h-4 w-4 text-emerald-600" /></div>
-                          <div><p className="text-sm font-medium text-slate-900">{r.descricao}</p><p className="text-xs text-slate-400">{r.pericia}</p></div>
-                        </div>
-                      </td>
-                      <td className="hidden sm:table-cell px-4 py-3.5"><span className="text-sm text-slate-700">{r.cliente}</span></td>
-                      <td className="px-4 py-3.5"><span className="text-sm font-semibold text-slate-900">{formatCurrency(r.valorTotal)}</span></td>
-                      <td className="hidden md:table-cell px-4 py-3.5"><span className="text-sm text-slate-600">{r.vencimento}</span></td>
-                      <td className="px-4 py-3.5"><Badge variant={status.variant}>{status.label}</Badge></td>
-                    </tr>
-                  )
-                })}
+                {propostas.map((p) => (
+                  <tr key={p.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-4">
+                      <Link href={`/pericias/${p.periciaId}`} className="group">
+                        <p className="text-sm font-bold text-slate-900 group-hover:text-[#4d7c0f] transition-colors truncate max-w-[200px]">
+                          {p.numeroProcesso || '—'}
+                        </p>
+                        <p className="text-xs text-slate-400 font-medium">{p.vara || p.tribunal}</p>
+                      </Link>
+                    </td>
+                    <td className="px-6 py-4">
+                      <p className="text-xs text-slate-600 truncate max-w-[180px]">{p.partes || '—'}</p>
+                    </td>
+                    <td className="px-6 py-4">
+                      <p className="text-sm font-bold text-slate-900">{formatCurrency(p.valorHonorarios ?? 0)}</p>
+                    </td>
+                    <td className="hidden md:table-cell px-6 py-4">
+                      <p className="text-sm text-slate-600">
+                        {p.custoDeslocamento ? formatCurrency(p.custoDeslocamento) : '—'}
+                      </p>
+                    </td>
+                    <td className="hidden md:table-cell px-6 py-4">
+                      <p className="text-xs text-slate-500 max-w-[160px] truncate">{p.condicoesPagamento || '—'}</p>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-[10px] font-bold bg-[#a3e635] text-slate-900 rounded-md px-2 py-0.5 uppercase tracking-widest">
+                        A receber
+                      </span>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
-          <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-4 py-3">
-            <p className="text-xs text-slate-500">{filtered.length} recebimento{filtered.length !== 1 ? "s" : ""}</p>
-            <p className="text-xs font-medium text-slate-700">Total pendente: <span className="text-amber-600">{formatCurrency(totalPendente)}</span></p>
+          <div className="border-t border-slate-100 bg-slate-50 px-6 py-3 flex items-center justify-between">
+            <p className="text-xs text-slate-400">{propostas.length} recebimento{propostas.length !== 1 ? 's' : ''}</p>
+            <p className="text-xs font-bold text-slate-700">
+              Total: <span className="text-slate-900">{formatCurrency(total)}</span>
+            </p>
           </div>
         </div>
       )}
