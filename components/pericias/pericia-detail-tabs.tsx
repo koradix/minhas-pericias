@@ -209,7 +209,7 @@ export function PericiaDetailTabs({
     },
     {
       id:       'proposta',
-      label:    'Proposta',
+      label:    'Proposta de Honorários',
       icon:     null,
       disabled: false,
       badge:    hasProposta && hasAnalise
@@ -230,7 +230,7 @@ export function PericiaDetailTabs({
     },
     {
       id:       'laudo',
-      label:    'Laudo',
+      label:    'Laudo Pericial',
       icon:     null,
       disabled: false,
     },

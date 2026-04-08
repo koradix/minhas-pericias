@@ -51,8 +51,8 @@ export default function Sidebar({
         )}
       >
         {collapsed ? (
-          <Link href="/dashboard" className="font-bold text-xl tracking-tighter">
-            <span className="text-slate-900">P</span><span className="text-[#a3e635]">L</span>
+          <Link href="/dashboard" className="flex items-center justify-center w-10 h-10 bg-white border-2 border-slate-900 group-hover:border-[#a3e635] transition-colors">
+            <span className="text-xl font-black text-slate-900">P</span><span className="text-xl font-black text-[#a3e635]">L</span>
           </Link>
         ) : (
           <>

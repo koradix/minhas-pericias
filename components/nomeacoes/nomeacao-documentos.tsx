@@ -3,14 +3,7 @@
 import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { uploadFile } from '@/lib/client/upload'
-import {
-  Paperclip,
-  Upload,
-  FileText,
-  Loader2,
-  Sparkles,
-  CheckCircle2,
-} from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 interface Props {
   nomeacaoId: string
@@ -19,6 +12,7 @@ interface Props {
   nomeArquivo: string | null
   tamanhoBytes?: number | null
   periciaId?: string
+  variant?: 'default' | 'minimal'
 }
 
 function formatBytes(bytes: number): string {
@@ -35,6 +29,7 @@ export function NomeacaoDocumentosSection({
   nomeArquivo: initial,
   tamanhoBytes: initialBytes,
   periciaId,
+  variant = 'default',
 }: Props) {
   const router = useRouter()
   const fileRef = useRef<HTMLInputElement>(null)
@@ -114,29 +109,48 @@ export function NomeacaoDocumentosSection({
     fase === 'analisando' ? 'Analisando com IA…'       :
     nomeArquivo ? 'Substituir' : 'Adicionar documento'
 
-  return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-      {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-        <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100">
-            <Paperclip className="h-3.5 w-3.5 text-slate-500" />
-          </div>
-          <h2 className="text-sm font-semibold text-slate-800">Documentos do processo</h2>
-        </div>
-        <div className="flex items-center gap-2">
+  if (variant === 'minimal') {
+    return (
+      <div className="flex flex-col gap-4">
+        <input
+          ref={fileRef}
+          type="file"
+          accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          className="hidden"
+          onChange={handleUpload}
+        />
+        <div className="flex items-center justify-between border-b border-slate-900 pb-4">
+          <p className="text-[10px] font-black text-slate-900 uppercase tracking-[0.3em]">Documentação do Processo</p>
           <button
             onClick={() => fileRef.current?.click()}
             disabled={isPending}
-            className="flex items-center gap-1.5 rounded-xl bg-slate-900 hover:bg-slate-700 text-white font-semibold text-xs px-3 py-1.5 transition-colors disabled:opacity-50"
+            className="text-[10px] font-black text-slate-900 bg-[#a3e635] px-4 py-2 uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all disabled:opacity-30"
           >
-            {isPending
-              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              : <Upload className="h-3.5 w-3.5" />
-            }
-            {faseLabel}
+            {isPending ? faseLabel : '[ + ] Carregar Arquivo'}
           </button>
         </div>
+        {errorMsg && (
+          <p className="text-[9px] font-black text-rose-500 uppercase tracking-widest">Erro: {errorMsg}</p>
+        )}
+        {fase === 'analisando' && (
+          <p className="text-[9px] font-black text-[#a3e635] uppercase tracking-widest animate-pulse">Inteligência IA em execução...</p>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <section className="rounded-none border-t border-slate-100 bg-white pt-12">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <h2 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.3em]">Registro de Documentos do Processo</h2>
+        <button
+          onClick={() => fileRef.current?.click()}
+          disabled={isPending}
+          className="text-[10px] font-black text-slate-900 bg-[#a3e635] px-4 py-2 uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all disabled:opacity-30"
+        >
+          {faseLabel}
+        </button>
       </div>
 
       <input
@@ -148,23 +162,23 @@ export function NomeacaoDocumentosSection({
       />
 
       {/* Body */}
-      <div className="px-5 py-4">
+      <div className="space-y-4">
         {errorMsg && (
-          <p className="mb-3 text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-xl px-3 py-2">
-            {errorMsg}
+          <p className="text-[10px] font-black text-rose-500 uppercase tracking-widest bg-rose-50 p-4 border border-rose-100">
+            ERRO: {errorMsg}
           </p>
         )}
 
-        {/* Enviando: barra de progresso */}
+        {/* Enviando */}
         {fase === 'enviando' && (
-          <div className="mb-3 rounded-xl bg-slate-50 border border-slate-100 px-3 py-2.5">
-            <div className="flex justify-between text-xs text-slate-500 mb-1.5">
-              <span>Enviando arquivo…</span>
+          <div className="bg-slate-50 p-6 border border-slate-100 space-y-4">
+            <div className="flex justify-between text-[10px] font-black text-slate-900 uppercase tracking-widest">
+              <span>Carregando arquivo</span>
               <span>{progresso}%</span>
             </div>
-            <div className="h-1.5 w-full rounded-full bg-slate-200 overflow-hidden">
+            <div className="h-1 w-full bg-slate-200">
               <div
-                className="h-full rounded-full bg-lime-500 transition-all duration-200"
+                className="h-full bg-slate-900 transition-all duration-200"
                 style={{ width: `${progresso}%` }}
               />
             </div>
@@ -173,46 +187,41 @@ export function NomeacaoDocumentosSection({
 
         {/* Analisando */}
         {fase === 'analisando' && (
-          <div className="mb-3 flex items-center gap-2 rounded-xl bg-violet-50 border border-violet-100 px-3 py-2.5">
-            <Sparkles className="h-3.5 w-3.5 text-violet-500 animate-pulse flex-shrink-0" />
-            <p className="text-xs text-violet-700 font-medium">IA lendo o documento e extraindo dados…</p>
+          <div className="bg-slate-900 p-6 space-y-2">
+             <p className="text-[10px] font-black text-[#a3e635] uppercase tracking-widest animate-pulse">Lendo Documento via Inteligência Artificial...</p>
           </div>
         )}
 
         {nomeArquivo ? (
-          <div className={`flex items-center gap-3 rounded-xl border px-4 py-3 ${fase === 'ok' ? 'border-emerald-200 bg-emerald-50' : 'border-slate-100 bg-slate-50'}`}>
-            <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${fase === 'ok' ? 'bg-emerald-100' : 'bg-white border border-slate-200'}`}>
-              {fase === 'ok'
-                ? <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                : <FileText className="h-4 w-4 text-slate-400" />
-              }
-            </div>
+          <div className={cn(
+            "flex items-center justify-between px-6 py-5 border-2",
+            fase === 'ok' ? 'border-[#a3e635] bg-white' : 'border-slate-100 bg-slate-50'
+          )}>
             <div className="flex-1 min-w-0">
-              <p className={`text-sm font-semibold truncate ${fase === 'ok' ? 'text-emerald-800' : 'text-slate-700'}`}>
+              <p className="text-[13px] font-black text-slate-900 uppercase tracking-tight truncate">
                 {nomeArquivo}
               </p>
-              <p className={`text-xs ${fase === 'ok' ? 'text-emerald-600' : 'text-slate-400'}`}>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
                 {tamanho != null ? formatBytes(tamanho) : ''}
-                {fase === 'ok' ? ' · Análise IA concluída' : ''}
+                {fase === 'ok' ? ' · ANÁLISE CONCLUÍDA' : ''}
               </p>
             </div>
+            {fase === 'ok' && (
+               <span className="text-[10px] font-black text-[#a3e635] uppercase tracking-widest">VÁLIDO</span>
+            )}
           </div>
         ) : (
           <button
             onClick={() => fileRef.current?.click()}
             disabled={isPending}
-            className="w-full flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 hover:border-slate-300 bg-slate-50 hover:bg-slate-100 px-4 py-8 transition-colors disabled:opacity-50 cursor-pointer"
+            className="w-full flex flex-col items-center justify-center gap-4 border-2 border-dashed border-slate-200 bg-slate-50 hover:bg-white hover:border-slate-900 p-12 transition-all disabled:opacity-30 group"
           >
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white border border-slate-200">
-              {isPending
-                ? <Loader2 className="h-5 w-5 text-slate-400 animate-spin" />
-                : <Upload className="h-5 w-5 text-slate-400" />
-              }
-            </div>
-            <div className="text-center">
-              <p className="text-sm font-semibold text-slate-600">Clique para enviar</p>
-              <p className="text-xs text-slate-400 mt-0.5">PDF ou DOCX · sem limite de tamanho · análise IA automática</p>
-            </div>
+            <p className="text-[11px] font-black text-slate-900 uppercase tracking-[0.3em] group-hover:text-slate-900 transition-colors">
+               Arraste ou clique para carregar a Nomeação
+            </p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              PDF / DOCX · Protocolo de Análise Automática
+            </p>
           </button>
         )}
       </div>

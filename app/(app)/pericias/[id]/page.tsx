@@ -424,22 +424,33 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
               templates:     proposalTemplates,
             }}
             resumoContent={
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 pt-4">
-                <div className="lg:col-span-2 space-y-16">
-                  {/* 1. Análise IA — PRIORIDADE MÁXIMA */}
+              <div className="space-y-16 pt-4 max-w-5xl mx-auto">
+                  {/* 1. Gatilho de Upload Único (Linear) */}
+                  <div className="pt-4">
+                    <NomeacaoDocumentosSection
+                      variant="minimal"
+                      nomeacaoId={nomeacaoLink?.id ?? ''}
+                      tribunal={citacaoLink?.diarioSigla ?? pericia.vara?.match(/TJ[A-Z]{2}|DJ[A-Z]{2}/)?.[0] ?? 'TJRJ'}
+                      numeroProcesso={pericia.processo ?? ''}
+                      nomeArquivo={nomeacaoLink?.nomeArquivo ?? null}
+                      periciaId={pericia.id}
+                    />
+                  </div>
+
+                  {/* 2. Análise IA — RESULTADO SEQUENCIAL */}
                   {nomeacaoLink?.processSummary && (() => {
                     try {
                       const parsed = JSON.parse(nomeacaoLink!.processSummary!)
                       return (
-                        <section className="space-y-8">
+                        <section className="space-y-6">
                           <div className="flex items-center gap-4">
                              <h2 className="text-[12px] font-black text-slate-900 uppercase tracking-[0.4em]">Análise Profunda Editorial</h2>
                              <div className="h-px flex-1 bg-slate-900/10" />
                           </div>
-                          <div className="border-4 border-slate-900 p-8 sm:p-12 bg-white shadow-2xl">
-                             <div className="mb-8 flex items-center justify-between">
-                                <span className="bg-[#a3e635] text-slate-900 px-3 py-1 text-[10px] font-black uppercase tracking-widest">Resultado IA Premium</span>
-                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Protocolo: {pericia.id.slice(0,8)}</span>
+                          <div className="border border-slate-900 p-8 bg-white">
+                             <div className="mb-6 flex items-center justify-between">
+                                <span className="bg-slate-900 text-white px-3 py-1 text-[9px] font-black uppercase tracking-widest">Protocolo IA Editorial</span>
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">#{pericia.id.slice(0,8)}</span>
                              </div>
                             {isAnaliseProcessoV2(parsed)
                               ? <AnaliseProcessoV2Block analise={parsed} />
@@ -451,7 +462,40 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
                     } catch { return null }
                   })()}
 
-                  {/* 2. Resumo Processo */}
+                  {/* 3. Linha do Tempo (Linear) */}
+                  {(() => {
+                    type TLEvent = { label: string; sub?: string; date?: string; done: boolean; future?: boolean }
+                    const events: TLEvent[] = []
+                    if (nomeacaoLink) {
+                      events.push({ label: 'Nomeação recebida', date: formatDate(toISO(nomeacaoLink.criadoEm)), done: true })
+                      events.push({ label: 'Análise IA', sub: nomeacaoLink.extractedData ? 'DADOS EXTRAÍDOS' : undefined, done: !!nomeacaoLink.extractedData })
+                    }
+                    events.push({ label: 'Processo aberto', date: formatDate(toISO(pericia.criadoEm)), done: true })
+                    events.push({ label: 'Vistoria em campo', done: concluidos > 0, future: concluidos === 0 })
+                    events.push({ label: 'Laudo entregue', done: pericia.status === 'concluida', future: pericia.status !== 'concluida' })
+
+                    return (
+                      <section className="space-y-6 border-t border-slate-100 pt-12">
+                        <h2 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.3em]">Cronologia do Processo</h2>
+                        <div className="border border-slate-200 p-8">
+                          <ol className="relative border-l-2 border-slate-100 space-y-10">
+                            {events.map((ev, i) => (
+                              <li key={i} className="ml-6 flex flex-col gap-1">
+                                <span className={cn(
+                                  'absolute -left-[9px] h-4 w-4 rounded-none border-2',
+                                  ev.done ? 'bg-[#a3e635] border-[#a3e635]' : 'bg-white border-slate-200'
+                                )} />
+                                <p className={cn('text-[11px] font-black uppercase tracking-widest', ev.done ? 'text-slate-900' : 'text-slate-400')}>{ev.label}</p>
+                                {ev.date && <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{ev.date}</p>}
+                                {ev.sub && <p className="text-[9px] font-bold text-[#a3e635] uppercase tracking-[0.2em]">{ev.sub}</p>}
+                              </li>
+                            ))}
+                          </ol>
+                        </div>
+                      </section>
+                    )
+                  })()}
+
                   {resumo && intake && (
                     <section className="space-y-6">
                       <div className="flex items-center gap-3">
@@ -464,7 +508,7 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
                     </section>
                   )}
 
-                  {/* 3. Detalhes Editáveis */}
+                  {/* 4. Edit Card */}
                   {(() => {
                     const analiseIA = nomeacaoLink?.processSummary
                       ? (() => { try { return JSON.parse(nomeacaoLink!.processSummary!) } catch { return null } })()
@@ -488,7 +532,7 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
                     )
                   })()}
 
-                  {/* 4. Upload */}
+                  {/* 5. Histórico de Documentos (Fundo da página) */}
                    <NomeacaoDocumentosSection
                     nomeacaoId={nomeacaoLink?.id ?? ''}
                     tribunal={citacaoLink?.diarioSigla ?? pericia.vara?.match(/TJ[A-Z]{2}|DJ[A-Z]{2}/)?.[0] ?? 'TJRJ'}
@@ -496,78 +540,16 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
                     nomeArquivo={nomeacaoLink?.nomeArquivo ?? null}
                     periciaId={pericia.id}
                   />
-                </div>
 
-                {/* Sidebar Column */}
-                <div className="space-y-16">
-                  {/* 1. Workflow — OPERACIONAL NA LATERAL */}
-                  {(() => {
-                    const tribunalSigla =
-                      citacaoLink?.diarioSigla ??
-                      pericia.vara?.match(/TJ[A-Z]{2}|DJ[A-Z]{2}/)?.[0] ??
-                      'TJRJ'
-                    const analiseIA = nomeacaoLink?.processSummary
-                      ? (() => { try { return JSON.parse(nomeacaoLink!.processSummary!) } catch { return null } })()
-                      : null
-                    return (
-                      <section className="space-y-6">
-                        <h2 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.3em]">Guia Operacional / Fluxo</h2>
-                        <PericiaWorkflow
-                          periciaId={pericia.id}
-                          tribunalSigla={tribunalSigla}
-                          processoNumero={pericia.processo ?? null}
-                          hasAnalise={!!nomeacaoLink?.extractedData}
-                          analiseInicial={analiseIA}
-                          nomeacaoId={nomeacaoLink?.id ?? null}
-                        />
-                      </section>
-                    )
-                  })()}
-
-                  {/* 2. Timeline */}
-                  {(() => {
-                    type TLEvent = { label: string; sub?: string; date?: string; done: boolean; future?: boolean }
-                    const events: TLEvent[] = []
-                    if (nomeacaoLink) {
-                      events.push({ label: 'Nomeação recebida', date: formatDate(toISO(nomeacaoLink.criadoEm)), done: true })
-                      events.push({ label: 'Análise IA', sub: nomeacaoLink.extractedData ? 'DADOS EXTRAÍDOS' : undefined, done: !!nomeacaoLink.extractedData })
-                    }
-                    events.push({ label: 'Processo aberto', date: formatDate(toISO(pericia.criadoEm)), done: true })
-                    events.push({ label: 'Vistoria em campo', done: concluidos > 0, future: concluidos === 0 })
-                    events.push({ label: 'Laudo entregue', done: pericia.status === 'concluida', future: pericia.status !== 'concluida' })
-
-                    return (
-                      <section className="space-y-6">
-                        <h2 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.3em]">Linha do Tempo</h2>
-                        <div className="border border-slate-200 p-8">
-                          <ol className="relative border-l-2 border-slate-100 space-y-10">
-                            {events.map((ev, i) => (
-                              <li key={i} className="ml-6 flex flex-col gap-1">
-                                <span className={cn(
-                                  'absolute -left-[9px] h-4 w-4 rounded-none border-2',
-                                  ev.done ? 'bg-[#a3e635] border-[#a3e635]' : 'bg-white border-slate-200'
-                                )} />
-                                <p className={cn('text-[11px] font-black uppercase tracking-widest', ev.done ? 'text-slate-900' : 'text-slate-400')}>{ev.label}</p>
-                                {ev.date && <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{ev.date}</p>}
-                                {ev.sub && <p className="text-[9px] font-bold text-[#a3e635] uppercase tracking-[0.2em]">{ev.sub}</p>}
-                              </li>
-                            ))}
-                          </ol>
-                        </div>
-                      </section>
-                    )
-                  })()}
-
-                  {/* Registros Sidebar Preview */}
+                  {/* 6. Últimos Registros (Mídias) */}
                   {midias.length > 0 && (
-                    <section className="space-y-6">
-                       <h2 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.3em]">Últimos Registros</h2>
+                    <section className="space-y-6 pt-12 border-t border-slate-100">
+                       <h2 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.3em]">Últimos Registros Fotográficos</h2>
                        <div className="border border-slate-200">
                          <PericiaMediaSection pericoId={pericia.id} midias={midias.slice(0, 4)} />
                        </div>
                     </section>
                   )}
-                </div>
               </div>
             }
             fotosContent={

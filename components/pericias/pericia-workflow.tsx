@@ -58,21 +58,15 @@ type UploadState =
 
 // ─── Step indicator ────────────────────────────────────────────────────────────
 
-function StepDot({ done, active, num }: { done: boolean; active: boolean; num: number }) {
+function StepDot({ done, active }: { done: boolean; active: boolean; num: number }) {
   if (done) return (
-    <span className="flex h-6 w-12 items-center justify-center rounded-none bg-[#a3e635] text-[10px] font-bold text-slate-900 flex-shrink-0 tracking-widest leading-none">
-      OK
-    </span>
+    <div className="h-2 w-2 bg-[#a3e635] flex-shrink-0 mt-1.5" />
   )
   if (active) return (
-    <span className="flex h-6 w-12 items-center justify-center rounded-none bg-slate-900 text-[10px] font-bold text-white flex-shrink-0 tracking-widest leading-none">
-      0{num}
-    </span>
+    <div className="h-2 w-2 bg-slate-900 animate-pulse flex-shrink-0 mt-1.5" />
   )
   return (
-    <span className="flex h-6 w-12 items-center justify-center rounded-none border border-slate-200 bg-white text-[10px] font-bold text-slate-300 flex-shrink-0 tracking-widest leading-none">
-      0{num}
-    </span>
+    <div className="h-2 w-2 border border-slate-200 bg-white flex-shrink-0 mt-1.5" />
   )
 }
 
@@ -183,96 +177,68 @@ export function PericiaWorkflow({
   }
 
   return (
-    <section className="rounded-none border border-slate-200 bg-white overflow-hidden">
-      <div className="flex items-center justify-between px-8 py-6 border-b border-slate-100 bg-slate-50/50">
-        <h2 className="text-[11px] font-bold text-slate-900 uppercase tracking-[0.2em]">Fluxo de Trabalho</h2>
-        {analiseFeita && (
-          <span className="text-[9px] font-bold uppercase tracking-widest text-slate-900 bg-[#a3e635] rounded-none px-3 py-1.5 leading-none">
-            CONCLUÍDO
-          </span>
-        )}
-      </div>
-
-      <div className="divide-y divide-slate-100">
-        {/* Passo 1 — Obter nomeação (informativo, sem bloqueio) */}
-        <div className="px-8 py-12 flex gap-10">
+    <div className="space-y-8">
+      <div className="flex flex-col gap-6">
+        {/* Passo 1 — Obter nomeação */}
+        <div className="flex gap-4">
           <StepDot done={analiseFeita} active={false} num={1} />
-          <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-bold text-slate-900 uppercase tracking-[0.2em]">Obter Nomeação</p>
-            <p className="text-[13px] text-slate-400 mt-4 leading-relaxed font-medium">
-              Acesse o portal do tribunal para obter o documento da nomeação oficial.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-6">
-              {tribunal && (
-                <a href={tribunal.url} target="_blank" rel="noreferrer"
-                  className="text-[10px] font-bold text-slate-900 uppercase tracking-widest border-b-2 border-slate-900 pb-1 hover:text-[#a3e635] hover:border-[#a3e635] transition-all">
-                  Acessar {tribunal.label}
-                </a>
-              )}
-              {processoNumero && (
-                <span className="text-[10px] font-bold text-slate-300 tracking-[0.2em] leading-none pt-1">
-                  {processoNumero}
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Passo 2 — Upload do documento */}
-        <div className="px-8 py-12 flex gap-10">
-          <StepDot done={analiseFeita} active={activeStep === 2} num={2} />
-          <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-bold text-slate-900 uppercase tracking-[0.2em]">Processamento IA</p>
-            <p className="text-[13px] text-slate-400 mt-4 leading-relaxed font-medium">
-              Extraímos dados estruturados, quesitos e partes automaticamente do seu PDF ou DOCX.
-            </p>
-
-            <div className="mt-10">
-              {!analiseFeita && uploadState.fase === 'idle' && (
-                <>
-                  <input ref={fileRef} type="file" accept=".pdf,.docx" className="hidden" onChange={handleUpload} />
-                  <button onClick={() => fileRef.current?.click()}
-                    className="bg-[#a3e635] text-slate-900 px-8 py-4 text-[10px] font-bold uppercase tracking-widest hover:bg-[#bef264] transition-all rounded-none leading-none">
-                    Upload Nomeação
-                  </button>
-                </>
-              )}
-              {uploadState.fase === 'uploading' && (
-                <p className="text-[10px] font-bold text-slate-900 uppercase tracking-[0.2em] animate-pulse">
-                  {uploadState.progresso}
-                </p>
-              )}
-              {uploadState.fase === 'erro' && (
-                <div className="space-y-4">
-                  <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest">
-                    {uploadState.mensagem}
-                  </p>
-                  <input ref={fileRef} type="file" accept=".pdf,.docx" className="hidden" onChange={handleUpload} />
-                  <button onClick={() => fileRef.current?.click()}
-                    className="bg-slate-900 text-white px-8 py-4 text-[10px] font-bold uppercase tracking-widest hover:bg-slate-800 transition-all rounded-none leading-none">
-                    Tentar novamente
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Passo 3 — Resultado */}
-        <div className="px-8 py-12 flex gap-10">
-          <StepDot done={analiseFeita} active={activeStep === 3} num={3} />
-          <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-bold text-slate-900 uppercase tracking-[0.2em]">Laudo e Resultado</p>
-            {analise ? (
-              <div className="mt-10">
-                <AnaliseCard analise={analise} />
-              </div>
-            ) : (
-              <p className="text-[11px] text-slate-300 mt-6 italic font-bold uppercase tracking-widest">Aguardando dados...</p>
+          <div className="flex-1">
+            <p className="text-[9px] font-black text-slate-900 uppercase tracking-[0.2em] mb-3">01. Nomeação</p>
+            {tribunal && !analiseFeita && (
+              <a href={tribunal.url} target="_blank" rel="noreferrer"
+                className="text-[10px] font-bold text-slate-400 hover:text-slate-900 transition-colors uppercase tracking-widest">
+                Acessar {tribunal.label} →
+              </a>
+            )}
+            {analiseFeita && (
+              <p className="text-[10px] font-bold text-[#a3e635] uppercase tracking-widest">Documento Extraído</p>
             )}
           </div>
         </div>
+
+        {/* Passo 2 — Upload / Processamento */}
+        <div className="flex gap-4">
+          <StepDot done={analiseFeita} active={activeStep === 2} num={2} />
+          <div className="flex-1">
+            <p className="text-[9px] font-black text-slate-900 uppercase tracking-[0.2em] mb-3">02. Inteligência IA</p>
+            
+            {!analiseFeita && uploadState.fase === 'idle' && (
+              <div className="flex flex-col gap-2">
+                <input ref={fileRef} type="file" accept=".pdf,.docx" className="hidden" onChange={handleUpload} />
+                <button onClick={() => fileRef.current?.click()}
+                  className="text-left text-[10px] font-bold text-slate-900 uppercase tracking-widest hover:text-[#a3e635] transition-all">
+                  [ + ] Carregar Nomeação
+                </button>
+              </div>
+            )}
+            {uploadState.fase === 'uploading' && (
+               <p className="text-[9px] font-black text-[#a3e635] uppercase tracking-widest animate-pulse">
+                Processando: {uploadState.progresso}
+              </p>
+            )}
+            {uploadState.fase === 'erro' && (
+              <div className="space-y-2">
+                <p className="text-[9px] font-black text-rose-500 uppercase tracking-widest">Falha: {uploadState.mensagem}</p>
+                <button onClick={() => fileRef.current?.click()}
+                  className="text-[9px] font-black text-slate-900 uppercase tracking-widest underline decoration-2 underline-offset-4">
+                  Tentar Novamente
+                </button>
+              </div>
+            )}
+            {analiseFeita && (
+              <p className="text-[10px] font-bold text-[#a3e635] uppercase tracking-widest">Análise Concluída</p>
+            )}
+          </div>
+        </div>
+
+        {/* Passo 3 — Finalização */}
+        <div className="flex gap-4">
+          <StepDot done={analiseFeita} active={activeStep === 3} num={3} />
+          <div className="flex-1">
+            <p className="text-[9px] font-black text-slate-900 uppercase tracking-[0.2em]">03. Laudo Editorial</p>
+          </div>
+        </div>
       </div>
-    </section>
+    </div>
   )
 }
