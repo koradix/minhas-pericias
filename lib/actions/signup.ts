@@ -46,13 +46,17 @@ export async function signup(data: SignupData): Promise<{ success: true } | { er
   try {
     // Transação atômica — user + perfil criados juntos ou nenhum
     const user = await prisma.$transaction(async (tx) => {
+      // Sem RESEND_API_KEY: auto-verifica para o login funcionar
+      // (a tela "email enviado" é exibida mesmo assim — cosmética)
+      const autoVerify = !process.env.RESEND_API_KEY
+
       const newUser = await tx.user.create({
         data: {
           email:        email.toLowerCase(),
           name:         nome.trim(),
           passwordHash,
           role:         'perito',
-          emailVerified: null, // will be set when user verifies email
+          emailVerified: autoVerify ? new Date() : null,
         },
       })
 
