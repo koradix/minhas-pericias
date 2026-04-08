@@ -81,10 +81,10 @@ function RotaCard({ rota }: { rota: Rota }) {
     )}>
       {/* Card header */}
       <div className="px-8 py-8">
-        <div className="flex items-start justify-between gap-6">
+        <div className="flex items-start justify-between gap-8">
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-3 mb-4 flex-wrap">
-              <Badge variant={st.variant} className="rounded-none">{st.label}</Badge>
+            <div className="flex items-center gap-4 mb-4 flex-wrap">
+              <Badge variant={st.variant} className="rounded-none uppercase text-[9px] px-2 py-0.5 tracking-widest">{st.label}</Badge>
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{rota.data}</span>
               {rota.pontos.length > 0 && (
                 <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">
@@ -93,14 +93,14 @@ function RotaCard({ rota }: { rota: Rota }) {
               )}
             </div>
 
-            <h3 className="text-xl font-bold text-slate-900 tracking-tight uppercase leading-tight">{rota.titulo}</h3>
+            <h3 className="text-lg font-bold text-slate-900 tracking-tight uppercase leading-tight">{rota.titulo}</h3>
 
             {/* Endereço principal — só quando planejada */}
             {!emCampo && !concluida && enderecosPrincipais.length > 0 && (
-              <p className="text-[11px] font-medium text-slate-500 mt-4 uppercase tracking-tight">
-                <span className="truncate">{enderecosPrincipais[0]}</span>
+              <p className="text-[10px] font-bold text-slate-400 mt-4 uppercase tracking-widest truncate">
+                {enderecosPrincipais[0]}
                 {enderecosPrincipais.length > 1 && (
-                  <span className="text-slate-300 ml-2">+{rota.pontos.length - 1} MAIS</span>
+                  <span className="text-slate-200 ml-2">+{rota.pontos.length - 1} MAIS</span>
                 )}
               </p>
             )}
@@ -109,7 +109,7 @@ function RotaCard({ rota }: { rota: Rota }) {
             {rota.pontos.some((p) => p.pericoId) && (
               <Link
                 href={`/pericias/${rota.pontos.find((p) => p.pericoId)?.pericoId}`}
-                className="inline-block mt-4 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 hover:text-slate-900 transition-colors"
+                className="inline-block mt-4 text-[10px] font-bold uppercase tracking-widest text-[#a3e635] hover:text-slate-900 transition-colors"
               >
                 DETALHES DA PERÍCIA
               </Link>
@@ -117,10 +117,10 @@ function RotaCard({ rota }: { rota: Rota }) {
           </div>
 
           {/* Ações */}
-          <div className="flex-shrink-0 flex flex-col items-end gap-2">
+          <div className="flex-shrink-0 flex items-center gap-6">
             {(status === 'planejada' || status === 'em_andamento') && (
               <button
-                className="h-12 px-6 bg-slate-900 text-white text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-slate-800 disabled:opacity-20 transition-all"
+                className="h-12 px-8 bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-slate-800 disabled:opacity-20 transition-all font-bold"
                 onClick={handleIniciar}
                 disabled={isPending}
               >
@@ -129,7 +129,7 @@ function RotaCard({ rota }: { rota: Rota }) {
             )}
 
             {concluida && (
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-6">
                 <button
                   onClick={handleReabrir}
                   disabled={isPending}
@@ -174,7 +174,7 @@ function RotaCard({ rota }: { rota: Rota }) {
             href={mapsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors"
+            className="text-[10px] font-bold uppercase tracking-widest text-slate-300 hover:text-slate-900 transition-colors"
           >
             ABRIR NO GOOGLE MAPS
           </a>
@@ -196,10 +196,10 @@ export function RotasPericiasListClient({ rotas }: { rotas: Rota[] }) {
   const concluidas = sorted.filter((r) => r.status === 'concluida' || r.status === 'cancelada')
 
   return (
-    <div className="space-y-12">
+    <div className="space-y-16">
       {/* Rotas ativas */}
       {ativas.length > 0 && (
-        <div className="space-y-6">
+        <div className="space-y-px bg-slate-100 border border-slate-100 shadow-sm overflow-hidden">
           {ativas.map((rota) => (
             <RotaCard key={rota.id} rota={rota} />
           ))}
@@ -208,11 +208,11 @@ export function RotasPericiasListClient({ rotas }: { rotas: Rota[] }) {
 
       {/* Concluídas */}
       {concluidas.length > 0 && (
-        <div className="space-y-4">
-          <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-300">
+        <div className="space-y-8">
+          <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
             CONCLUÍDAS ({concluidas.length})
           </h3>
-          <div className="space-y-4">
+          <div className="space-y-px bg-slate-100 border border-slate-100 shadow-sm overflow-hidden opacity-50 grayscale">
             {concluidas.map((rota) => (
               <RotaCard key={rota.id} rota={rota} />
             ))}

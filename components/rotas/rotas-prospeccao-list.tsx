@@ -53,7 +53,7 @@ export function RotasProspeccaoListClient({ rotas }: { rotas: Rota[] }) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-12">
       {rotas.map((rota) => {
         const status = getStatus(rota)
         const st = statusMap[status] ?? { label: status, variant: 'secondary' as const }
@@ -66,18 +66,18 @@ export function RotasProspeccaoListClient({ rotas }: { rotas: Rota[] }) {
             status === 'concluida' ? 'opacity-30 border-slate-100 grayscale' : 'border-slate-200',
           )}>
             <CardHeader className="p-8 pb-3">
-              <div className="flex items-start justify-between gap-6">
+              <div className="flex items-start justify-between gap-8">
                 <div className="min-w-0">
-                  <div className="flex items-center gap-3 mb-4">
-                    <Badge variant={st.variant} className="rounded-none">{st.label}</Badge>
+                  <div className="flex items-center gap-4 mb-4">
+                    <Badge variant={st.variant} className="rounded-none uppercase text-[9px] px-2 py-0.5 tracking-widest">{st.label}</Badge>
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{rota.data}</span>
                   </div>
-                  <CardTitle className="text-xl font-bold tracking-tight uppercase">{rota.titulo}</CardTitle>
+                  <CardTitle className="text-lg font-bold tracking-tight uppercase leading-tight">{rota.titulo}</CardTitle>
                 </div>
 
                 {status === 'planejada' && (
                   <button
-                    className="h-10 px-6 bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-slate-800 disabled:opacity-20 transition-all"
+                    className="h-10 px-6 bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-slate-800 disabled:opacity-20 transition-all font-bold"
                     onClick={() => handleIniciar(rota.id)}
                     disabled={isPending}
                   >
@@ -86,7 +86,7 @@ export function RotasProspeccaoListClient({ rotas }: { rotas: Rota[] }) {
                 )}
 
                 {emCampo && (
-                  <Badge variant="warning" className="rounded-none uppercase tracking-widest">
+                  <Badge variant="warning" className="rounded-none uppercase tracking-widest text-[10px] px-3 py-1">
                     EM CAMPO
                   </Badge>
                 )}
@@ -94,7 +94,7 @@ export function RotasProspeccaoListClient({ rotas }: { rotas: Rota[] }) {
             </CardHeader>
 
             <CardContent className="p-8 pt-0">
-              <div className="mb-8 space-y-4">
+              <div className="mb-10 space-y-4">
                 {emCampo ? (
                   <RotaPericiasExecucao
                     rotaId={rota.id}
@@ -111,21 +111,21 @@ export function RotasProspeccaoListClient({ rotas }: { rotas: Rota[] }) {
                     }))}
                   />
                 ) : (
-                  <div className="space-y-3">
+                  <div className="space-y-px bg-slate-50 border border-slate-50">
                     {rota.pontos.map((p) => {
                       const conf = pontoConfig[p.tipo]
                       return (
-                        <div key={p.id} className="flex items-center gap-4">
+                        <div key={p.id} className="flex items-center gap-6 bg-white p-6 leading-none">
                           <span className="text-[10px] font-bold text-slate-300 w-4 text-right">
                             {p.ordem}
                           </span>
                           <div className="min-w-0 flex-1">
-                            <p className="text-xs font-bold text-slate-900 uppercase tracking-tight">{p.nome}</p>
+                            <p className="text-[11px] font-bold text-slate-900 uppercase tracking-wider truncate leading-tight">{p.nome}</p>
                             {p.endereco && (
-                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{p.endereco}</p>
+                              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1.5 truncate">{p.endereco}</p>
                             )}
                           </div>
-                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em] bg-slate-50 px-2 py-1">
+                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-1 shrink-0">
                             {p.periciaInfo?.tipo ?? conf.label}
                           </span>
                         </div>
@@ -135,10 +135,10 @@ export function RotasProspeccaoListClient({ rotas }: { rotas: Rota[] }) {
                 )}
               </div>
 
-              <div className="flex items-center gap-8 pt-6 border-t border-slate-50 text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400">
-                <span>{rota.distanciaKm} KM</span>
-                <span>{formatTempo(rota.tempoEstimadoMin)}</span>
-                <span>{formatCurrency(rota.custoEstimado)}</span>
+              <div className="flex items-center gap-10 pt-8 border-t border-slate-50 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-300">
+                <span className="tabular-nums">{rota.distanciaKm} KM</span>
+                <span className="tabular-nums">{formatTempo(rota.tempoEstimadoMin)}</span>
+                <span className="tabular-nums">{formatCurrency(rota.custoEstimado)}</span>
                 <span>{rota.pontos.length} PARADAS</span>
               </div>
             </CardContent>

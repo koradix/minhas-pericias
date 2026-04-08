@@ -52,7 +52,7 @@ export default function Sidebar({
       >
         {collapsed ? (
           <Link href="/dashboard" className="font-bold text-xl tracking-tighter">
-            <span className="text-slate-900">P</span><span className="text-[#a3e635]">B</span>
+            <span className="text-slate-900">P</span><span className="text-[#a3e635]">L</span>
           </Link>
         ) : (
           <>

@@ -8,15 +8,6 @@ import {
   Loader2,
   ChevronDown,
   ChevronUp,
-  FileText,
-  Scale,
-  AlertCircle,
-  Sparkles,
-  Clock,
-  MapPin,
-  Wrench,
-  ShieldAlert,
-  CheckSquare,
 } from 'lucide-react'
 import { atualizarDadosPericia, type DadosPericia } from '@/lib/actions/pericias-update'
 import { cn } from '@/lib/utils'
@@ -135,10 +126,10 @@ function Field({
   children?: React.ReactNode
 }) {
   return (
-    <div className="px-6 py-4">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af] mb-1.5 font-inter">{label}</p>
+    <div className="px-8 py-6">
+      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">{label}</p>
       {editing ? children : (
-        <p className={cn('text-[14px] font-medium', value ? 'text-[#1f2937]' : 'text-[#d1d5db] italic')}>
+        <p className={cn('text-[14px] font-bold uppercase tracking-tight', value ? 'text-slate-900' : 'text-slate-300 italic')}>
           {value || 'Não informado'}
         </p>
       )}
@@ -227,7 +218,7 @@ export function PericiaEditCard(props: Props) {
     })
   }
 
-  const inputCls = 'w-full rounded-lg border border-[#e2e8f0] bg-white px-3 py-2.5 text-[14px] text-[#1f2937] focus:outline-none focus:ring-2 focus:ring-[#416900]/20 focus:border-[#416900] placeholder-[#d1d5db] transition-all'
+  const inputCls = 'w-full rounded-none border-2 border-slate-200 bg-white px-5 py-4 text-[13px] font-bold text-slate-900 focus:outline-none focus:border-slate-900 placeholder-slate-200 uppercase tracking-wide transition-all'
 
   // AI extras — full AnaliseProcesso fields
   const quesitos             = analise?.nomeacaoDespacho?.quesitos ?? []
@@ -266,56 +257,54 @@ export function PericiaEditCard(props: Props) {
   )
 
   return (
-    <section className="rounded-xl bg-white border border-[#e2e8f0]">
+    <section className="rounded-none bg-white border border-slate-200">
       {/* Header */}
-      <div className="flex items-center gap-3 px-6 py-5">
+      <div className="flex items-center gap-4 px-8 py-6">
         <div className="flex-1 min-w-0">
-          <h2 className="text-[16px] font-semibold text-[#1f2937] font-manrope tracking-tight">Dados da perícia</h2>
+          <h2 className="text-[12px] font-black text-slate-900 uppercase tracking-[0.3em]">Dados cadastrais e técnicos</h2>
           {autoFilled && !editing && (
-            <p className="text-[12px] text-[#416900] mt-1 font-medium">Campos pré-preenchidos pela IA — revise e salve</p>
+            <p className="text-[10px] text-[#a3e635] mt-1 font-black uppercase tracking-widest bg-slate-900 inline-block px-2 py-0.5">Sugestão editorial IA disponível</p>
           )}
         </div>
 
-        <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
+        <div className="flex items-center gap-3 flex-shrink-0 flex-wrap justify-end">
           {saved && (
-            <span className="flex items-center gap-1 text-[12px] font-semibold text-[#416900]">
-              <Check className="h-3.5 w-3.5" /> Salvo
+            <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-[#a3e635]">
+              <Check className="h-4 w-4" /> SALVO
             </span>
           )}
           {analise && !editing && (
             <button
               onClick={preencherComIA}
-              className="flex items-center gap-1.5 rounded-lg bg-[#f4fce3] hover:bg-[#ecfccb] border border-[#d8f5a2] px-3 py-1.5 text-[12px] font-semibold text-[#416900] transition-all"
+              className="flex items-center gap-2 rounded-none bg-slate-50 hover:bg-[#a3e635] hover:text-slate-900 border-2 border-slate-200 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-900 transition-all"
             >
-              <Sparkles className="h-3.5 w-3.5" />
-              Usar dados da IA
+              PREENCHER VIA IA
             </button>
           )}
           {!editing ? (
             <button
               onClick={() => setEditing(true)}
-              className="flex items-center gap-1.5 rounded-lg border border-[#e2e8f0] hover:bg-[#f8f9ff] px-3 py-1.5 text-[12px] font-medium text-[#6b7280] transition-all"
+              className="flex items-center gap-2 rounded-none border-2 border-slate-900 bg-slate-900 text-white hover:bg-slate-800 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest transition-all"
             >
-              <Pencil className="h-3.5 w-3.5" />
-              Editar
+              EDITAR DADOS
             </button>
           ) : (
             <>
               <button
                 onClick={handleCancel}
                 disabled={isPending}
-                className="flex items-center gap-1.5 rounded-lg border border-[#e2e8f0] hover:bg-[#f8f9ff] px-3 py-1.5 text-[12px] font-medium text-[#6b7280] transition-all disabled:opacity-40"
+                className="flex items-center gap-2 rounded-none border-2 border-slate-200 bg-white hover:bg-slate-50 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-400 transition-all disabled:opacity-40"
               >
-                <X className="h-3.5 w-3.5" /> Cancelar
+                CANCELAR
               </button>
               <button
                 onClick={handleSave}
                 disabled={isPending}
-                className="flex items-center gap-1.5 rounded-lg bg-[#416900] hover:bg-[#84cc16] hover:text-[#102000] px-3.5 py-1.5 text-[12px] font-semibold text-white transition-all disabled:opacity-50"
+                className="flex items-center gap-2 rounded-none bg-[#a3e635] hover:bg-[#bef264] px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-900 transition-all disabled:opacity-50"
               >
                 {isPending
-                  ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Salvando…</>
-                  : <><Check className="h-3.5 w-3.5" /> Salvar</>
+                  ? <><Loader2 className="h-4 w-4 animate-spin" /> SALVANDO…</>
+                  : 'SALVAR ALTERAÇÕES'
                 }
               </button>
             </>
@@ -324,9 +313,8 @@ export function PericiaEditCard(props: Props) {
       </div>
 
       {saveError && (
-        <div className="mx-5 mt-3 flex items-center gap-2 rounded-xl bg-rose-50 border border-rose-100 px-3 py-2">
-          <AlertCircle className="h-3.5 w-3.5 text-rose-500 flex-shrink-0" />
-          <p className="text-xs text-rose-700">{saveError}</p>
+        <div className="mx-8 mt-2 mb-6 flex items-center gap-3 rounded-none bg-rose-50 border-2 border-rose-100 px-5 py-4">
+          <p className="text-[11px] font-black text-rose-700 uppercase tracking-widest">ERRO: {saveError}</p>
         </div>
       )}
 
@@ -396,27 +384,25 @@ export function PericiaEditCard(props: Props) {
         <div className="border-t border-[#e2e8f0]">
 
           {/* Cabeçalho da seção de análise */}
-          <div className="flex items-center gap-3 px-6 py-5 bg-[#f8f9ff]">
-            <Sparkles className="h-5 w-5 text-[#416900] flex-shrink-0" />
-            <p className="text-[16px] font-semibold text-[#1f2937] font-manrope tracking-tight">Análise do processo — IA</p>
+          <div className="flex items-center gap-3 px-8 py-6 bg-slate-900">
+            <p className="text-[11px] font-black text-[#a3e635] uppercase tracking-[0.3em]">Análise Editorial Profunda — IA</p>
           </div>
 
           <div className="divide-y divide-[#f2f3f9]">
 
           {/* Despacho saneador / determinação do juiz */}
           {despacho && (
-            <div className="px-6 py-5">
+            <div className="px-8 py-6">
               <button
                 onClick={() => setShowDespacho((v) => !v)}
-                className="flex w-full items-center gap-2.5 text-[15px] font-semibold text-[#1f2937] hover:text-[#374151] transition-colors font-manrope"
+                className="flex w-full items-center justify-between text-[11px] font-black text-slate-900 uppercase tracking-widest"
               >
-                <FileText className="h-5 w-5 text-[#6b7280] flex-shrink-0" strokeWidth={1.5} />
-                <span className="flex-1 text-left">Despacho do juiz / Decisão</span>
-                {showDespacho ? <ChevronUp className="h-4 w-4 text-[#9ca3af]" /> : <ChevronDown className="h-4 w-4 text-[#9ca3af]" />}
+                <span>Despacho do juiz / Determinação Judicial</span>
+                {showDespacho ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
               </button>
               {showDespacho && (
-                <div className="mt-4 rounded-lg border border-[#e2e8f0] bg-[#f8f9ff] px-5 py-4">
-                  <p className="text-[14px] text-[#374151] leading-relaxed whitespace-pre-line font-inter">{despacho}</p>
+                <div className="mt-4 border-2 border-slate-100 bg-slate-50 px-6 py-5">
+                  <p className="text-[13px] font-bold text-slate-700 leading-relaxed whitespace-pre-line uppercase tracking-tight">{despacho}</p>
                 </div>
               )}
             </div>
@@ -424,19 +410,18 @@ export function PericiaEditCard(props: Props) {
 
           {/* Quesitos */}
           {quesitos.length > 0 && (
-            <div className="px-6 py-5">
+            <div className="px-8 py-6">
               <button
                 onClick={() => setShowQuesitos((v) => !v)}
-                className="flex w-full items-center gap-2.5 text-[15px] font-semibold text-[#1f2937] hover:text-[#374151] transition-colors font-manrope"
+                className="flex w-full items-center justify-between text-[11px] font-black text-slate-900 uppercase tracking-widest"
               >
-                <Scale className="h-5 w-5 text-[#416900] flex-shrink-0" strokeWidth={1.5} />
-                <span className="flex-1 text-left">{quesitos.length} quesito{quesitos.length !== 1 ? 's' : ''}</span>
-                {showQuesitos ? <ChevronUp className="h-4 w-4 text-[#9ca3af]" /> : <ChevronDown className="h-4 w-4 text-[#9ca3af]" />}
+                <span>{quesitos.length} QUESITOS EXTRAÍDOS</span>
+                {showQuesitos ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
               </button>
               {showQuesitos && (
-                <ol className="mt-4 space-y-3 pl-5 list-decimal">
+                <ol className="mt-6 space-y-4">
                   {quesitos.map((q, i) => (
-                    <li key={i} className="text-[14px] text-[#374151] leading-relaxed font-inter">{q}</li>
+                    <li key={i} className="text-[12px] font-bold text-slate-600 leading-relaxed uppercase tracking-tight border-l-2 border-slate-200 pl-4">{q}</li>
                   ))}
                 </ol>
               )}
@@ -445,53 +430,50 @@ export function PericiaEditCard(props: Props) {
 
           {/* Honorários */}
           {(complexidade || estrategia || justificativas.length > 0 || pontoCriticos.length > 0) && (
-            <div className="px-6 py-5">
+            <div className="px-8 py-6">
               <button
                 onClick={() => setShowHonorarios((v) => !v)}
-                className="flex w-full items-center gap-2.5 text-[15px] font-semibold text-[#1f2937] hover:text-[#374151] transition-colors font-manrope"
+                className="flex w-full items-center justify-between text-[11px] font-black text-slate-900 uppercase tracking-widest"
               >
-                <Scale className="h-5 w-5 text-[#416900] flex-shrink-0" strokeWidth={1.5} />
-                <span className="flex-1 text-left">Proposta de honorários</span>
-                {complexidade && (
-                  <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-md mr-1 ${
-                    complexidade === 'alta' ? 'bg-rose-100 text-rose-700' :
-                    complexidade === 'média' ? 'bg-amber-100 text-amber-700' :
-                    'bg-[#f2f3f9] text-[#6b7280]'
-                  }`}>{complexidade}</span>
-                )}
-                {showHonorarios ? <ChevronUp className="h-4 w-4 text-[#9ca3af]" /> : <ChevronDown className="h-4 w-4 text-[#9ca3af]" />}
+                <span className="flex items-center gap-4">
+                  ESTRATÉGIA EDITORIAL DE HONORÁRIOS
+                  {complexidade && (
+                    <span className="bg-slate-900 text-[#a3e635] px-2 py-0.5 text-[9px]">{complexidade.toUpperCase()}</span>
+                  )}
+                </span>
+                {showHonorarios ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
               </button>
               {showHonorarios && (
-                <div className="mt-4 space-y-5">
+                <div className="mt-6 space-y-8">
                   {(objetoPericia || areaTecnica) && (
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-8">
                       {objetoPericia && (
                         <div>
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af] mb-1.5 font-inter">Objeto</p>
-                          <p className="text-[14px] text-[#374151] font-inter">{objetoPericia}</p>
+                          <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Objeto da Perícia</p>
+                          <p className="text-[12px] font-bold text-slate-900 uppercase tracking-tight">{objetoPericia}</p>
                         </div>
                       )}
                       {areaTecnica && (
                         <div>
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af] mb-1.5 font-inter">Área técnica</p>
-                          <p className="text-[14px] text-[#374151] font-inter">{areaTecnica}</p>
+                          <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Área técnica</p>
+                          <p className="text-[12px] font-bold text-slate-900 uppercase tracking-tight">{areaTecnica}</p>
                         </div>
                       )}
                     </div>
                   )}
                   {estrategia && (
                     <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af] mb-2 font-inter">Estratégia sugerida</p>
-                      <p className="text-[14px] text-[#374151] leading-relaxed bg-[#f8f9ff] border border-[#e2e8f0] rounded-lg px-5 py-4 font-inter">{estrategia}</p>
+                      <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3">Estratégia sugerida</p>
+                      <p className="text-[13px] font-bold text-slate-700 leading-relaxed bg-slate-50 border-2 border-slate-100 px-6 py-5 uppercase tracking-tight">{estrategia}</p>
                     </div>
                   )}
                   {justificativas.length > 0 && (
                     <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af] mb-2 font-inter">Justificativas para aumento</p>
-                      <ul className="space-y-2">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3">Linha de Argumentação (Justificativas)</p>
+                      <ul className="space-y-3">
                         {justificativas.map((j, i) => (
-                          <li key={i} className="flex items-start gap-2 text-[14px] text-[#374151] font-inter">
-                            <span className="text-[#416900] flex-shrink-0 mt-0.5">•</span>
+                          <li key={i} className="text-[12px] font-bold text-slate-600 uppercase tracking-tight flex items-start gap-3">
+                            <span className="text-[#a3e635] flex-shrink-0 mt-1">■</span>
                             {j}
                           </li>
                         ))}
@@ -500,11 +482,11 @@ export function PericiaEditCard(props: Props) {
                   )}
                   {pontoCriticos.length > 0 && (
                     <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af] mb-2 font-inter">Pontos críticos</p>
-                      <ul className="space-y-2">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-rose-500 mb-3">Pontos críticos detectados</p>
+                      <ul className="space-y-3">
                         {pontoCriticos.map((p, i) => (
-                          <li key={i} className="flex items-start gap-2 text-[14px] text-amber-800 font-inter">
-                            <AlertCircle className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                          <li key={i} className="text-[12px] font-bold text-rose-700 uppercase tracking-tight flex items-start gap-3">
+                            <span className="text-rose-500 flex-shrink-0 mt-1">!</span>
                             {p}
                           </li>
                         ))}
@@ -518,29 +500,28 @@ export function PericiaEditCard(props: Props) {
 
           {/* Prazos */}
           {(prazoAceite || prazoLaudo || outrosPrazos.length > 0) && (
-            <div className="px-6 py-5">
-              <div className="flex items-center gap-2.5 mb-4">
-                <Clock className="h-5 w-5 text-amber-500 flex-shrink-0" strokeWidth={1.5} />
-                <p className="text-[15px] font-semibold text-[#1f2937] font-manrope">Prazos</p>
+            <div className="px-8 py-6">
+              <div className="flex items-center gap-3 mb-6">
+                <p className="text-[11px] font-black text-slate-900 uppercase tracking-widest">Prazos e Cronograma</p>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-8">
                 {prazoAceite && (
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af] mb-1.5 font-inter">Aceite da nomeação</p>
-                    <p className="text-[14px] font-semibold text-amber-700 font-inter">{prazoAceite}</p>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Aceite da nomeação</p>
+                    <p className="text-[13px] font-black text-rose-600 uppercase tracking-tight">{prazoAceite}</p>
                   </div>
                 )}
                 {prazoLaudo && (
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af] mb-1.5 font-inter">Entrega do laudo</p>
-                    <p className="text-[14px] font-semibold text-[#374151] font-inter">{prazoLaudo}</p>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Entrega do laudo</p>
+                    <p className="text-[13px] font-black text-slate-900 uppercase tracking-tight">{prazoLaudo}</p>
                   </div>
                 )}
               </div>
               {outrosPrazos.length > 0 && (
-                <ul className="mt-3 space-y-1.5">
+                <ul className="mt-4 space-y-2">
                   {outrosPrazos.map((p, i) => (
-                    <li key={i} className="text-[14px] text-[#6b7280] font-inter">• {p}</li>
+                    <li key={i} className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">/ {p}</li>
                   ))}
                 </ul>
               )}
@@ -549,52 +530,51 @@ export function PericiaEditCard(props: Props) {
 
           {/* Necessidades técnicas */}
           {(tipoVistoria || equipamentos.length > 0 || assistentes || coletaDados.length > 0) && (
-            <div className="px-6 py-5">
+            <div className="px-8 py-6">
               <button
                 onClick={() => setShowTecnico((v) => !v)}
-                className="flex w-full items-center gap-2.5 text-[15px] font-semibold text-[#1f2937] hover:text-[#374151] transition-colors font-manrope"
+                className="flex w-full items-center justify-between text-[11px] font-black text-slate-900 uppercase tracking-widest"
               >
-                <Wrench className="h-5 w-5 text-[#6b7280] flex-shrink-0" strokeWidth={1.5} />
-                <span className="flex-1 text-left">Necessidades técnicas</span>
-                {showTecnico ? <ChevronUp className="h-4 w-4 text-[#9ca3af]" /> : <ChevronDown className="h-4 w-4 text-[#9ca3af]" />}
+                <span>Requisitos de Inteligência Técnica</span>
+                {showTecnico ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
               </button>
               {showTecnico && (
-                <div className="mt-4 space-y-4">
+                <div className="mt-6 space-y-6">
                   {tipoVistoria && (
                     <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af] mb-1.5 font-inter">Tipo de vistoria</p>
-                      <p className="text-[14px] text-[#374151] font-inter">{tipoVistoria}</p>
+                      <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Metodologia de Vistoria</p>
+                      <p className="text-[12px] font-bold text-slate-900 uppercase tracking-tight">{tipoVistoria}</p>
                     </div>
                   )}
                   {equipamentos.length > 0 && (
                     <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af] mb-2 font-inter">Equipamentos</p>
+                      <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3">Instrumentação Requerida</p>
                       <div className="flex flex-wrap gap-2">
                         {equipamentos.map((e, i) => (
-                          <span key={i} className="text-[13px] bg-[#f4fce3] border border-[#d8f5a2] text-[#416900] rounded-md px-2.5 py-1 font-inter">{e}</span>
+                          <span key={i} className="text-[11px] font-black uppercase tracking-widest bg-slate-900 text-white rounded-none px-3 py-1.5">{e}</span>
                         ))}
                       </div>
                     </div>
                   )}
                   {assistentes && (
                     <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af] mb-1.5 font-inter">Assistentes técnicos</p>
-                      <p className="text-[14px] text-[#374151] font-inter">{assistentes}</p>
+                      <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Consultoria Especializada</p>
+                      <p className="text-[12px] font-bold text-slate-900 uppercase tracking-tight">{assistentes}</p>
                     </div>
                   )}
                   {coletaDados.length > 0 && (
                     <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af] mb-2 font-inter">Dados a coletar</p>
-                      <ul className="space-y-1.5">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3">Pontos de Coleta Estruturada</p>
+                      <ul className="space-y-2">
                         {coletaDados.map((d, i) => (
-                          <li key={i} className="text-[14px] text-[#6b7280] font-inter">• {d}</li>
+                          <li key={i} className="text-[11px] font-bold text-slate-600 uppercase tracking-widest border-l-2 border-slate-200 pl-4">{d}</li>
                         ))}
                       </ul>
                     </div>
                   )}
                   {necessitaDeslocamento && (
-                    <p className="text-[14px] text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 font-inter">
-                      Necessita deslocamento{custosLogisticos ? ` — ${custosLogisticos}` : ''}
+                    <p className="text-[11px] font-black uppercase tracking-widest text-slate-900 bg-[#a3e635] inline-block px-3 py-2">
+                      DESLOCAMENTO REQUERIDO {custosLogisticos ? `— ${custosLogisticos.toUpperCase()}` : ''}
                     </p>
                   )}
                 </div>
@@ -604,38 +584,46 @@ export function PericiaEditCard(props: Props) {
 
           {/* Riscos */}
           {(riscosTecnicos.length > 0 || riscosJuridicos.length > 0 || infoFaltando.length > 0) && (
-            <div className="px-6 py-5">
+            <div className="px-8 py-6">
               <button
                 onClick={() => setShowRiscos((v) => !v)}
-                className="flex w-full items-center gap-2.5 text-[15px] font-semibold text-[#1f2937] hover:text-[#374151] transition-colors font-manrope"
+                className="flex w-full items-center justify-between text-[11px] font-black text-slate-900 uppercase tracking-widest"
               >
-                <ShieldAlert className="h-5 w-5 text-rose-500 flex-shrink-0" strokeWidth={1.5} />
-                <span className="flex-1 text-left">Riscos e informações faltando</span>
-                {showRiscos ? <ChevronUp className="h-4 w-4 text-[#9ca3af]" /> : <ChevronDown className="h-4 w-4 text-[#9ca3af]" />}
+                <span>Vulnerabilidades e Riscos</span>
+                {showRiscos ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
               </button>
               {showRiscos && (
-                <div className="mt-4 space-y-4">
+                <div className="mt-6 space-y-6">
                   {riscosTecnicos.length > 0 && (
                     <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af] mb-2 font-inter">Técnicos</p>
-                      <ul className="space-y-1.5">
-                        {riscosTecnicos.map((r, i) => <li key={i} className="text-[14px] text-[#6b7280] font-inter">• {r}</li>)}
+                      <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Impedimentos Técnicos</p>
+                      <ul className="space-y-2">
+                        {riscosTecnicos.map((r, i) => (
+                          <li key={i} className="text-[11px] font-bold text-slate-600 uppercase tracking-widest">/ {r}</li>
+                        ))}
                       </ul>
                     </div>
                   )}
                   {riscosJuridicos.length > 0 && (
                     <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af] mb-2 font-inter">Jurídicos</p>
-                      <ul className="space-y-1.5">
-                        {riscosJuridicos.map((r, i) => <li key={i} className="text-[14px] text-[#6b7280] font-inter">• {r}</li>)}
+                      <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Exposição Jurídica</p>
+                      <ul className="space-y-2">
+                        {riscosJuridicos.map((r, i) => (
+                          <li key={i} className="text-[11px] font-bold text-slate-600 uppercase tracking-widest">/ {r}</li>
+                        ))}
                       </ul>
                     </div>
                   )}
                   {infoFaltando.length > 0 && (
                     <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af] mb-2 font-inter">Informações faltando</p>
-                      <ul className="space-y-1.5">
-                        {infoFaltando.map((r, i) => <li key={i} className="text-[14px] text-rose-700 font-inter">• {r}</li>)}
+                      <p className="text-[9px] font-black uppercase tracking-widest text-rose-500 mb-3">Informações Críticas Ausentes</p>
+                      <ul className="space-y-3">
+                        {infoFaltando.map((r, i) => (
+                          <li key={i} className="text-[12px] font-bold text-rose-700 uppercase tracking-tight flex items-start gap-3">
+                            <span className="text-rose-500 mt-1">!</span>
+                            {r}
+                          </li>
+                        ))}
                       </ul>
                     </div>
                   )}
@@ -646,15 +634,14 @@ export function PericiaEditCard(props: Props) {
 
           {/* Checklist */}
           {checklist.length > 0 && (
-            <div className="px-6 py-5">
-              <div className="flex items-center gap-2.5 mb-4">
-                <CheckSquare className="h-5 w-5 text-[#416900] flex-shrink-0" strokeWidth={1.5} />
-                <p className="text-[15px] font-semibold text-[#1f2937] font-manrope">Próximos passos (IA)</p>
+            <div className="px-8 py-6">
+              <div className="flex items-center gap-3 mb-6">
+                <p className="text-[11px] font-black text-slate-900 uppercase tracking-widest">Protocolo de Próximos Passos</p>
               </div>
-              <ul className="space-y-2">
+              <ul className="space-y-4">
                 {checklist.map((item, i) => (
-                  <li key={i} className="flex items-start gap-2 text-[14px] text-[#374151] font-inter">
-                    <span className="text-[#416900] flex-shrink-0 mt-0.5">☐</span>
+                  <li key={i} className="flex items-center gap-4 text-[12px] font-bold text-slate-800 uppercase tracking-tight">
+                    <span className="h-4 w-4 border-2 border-slate-200 flex-shrink-0" />
                     {item}
                   </li>
                 ))}

@@ -63,14 +63,14 @@ function ComarcaItem({
     <div className="border border-slate-100 bg-white">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-4 py-4 text-left hover:bg-slate-50 transition-all"
+        className="w-full flex items-center justify-between px-6 py-5 text-left hover:bg-slate-50 transition-all"
       >
-        <div className="flex items-center gap-3">
-          <span className="text-[11px] font-bold uppercase tracking-tight text-slate-800">
+        <div className="flex items-center gap-4">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-800">
             {comarca}
           </span>
           {countSelected > 0 && (
-            <span className="text-[9px] font-bold text-[#a3e635] tracking-widest">
+            <span className="text-[10px] font-bold text-[#a3e635] tracking-widest uppercase">
               {countSelected} SELECIONADA(S)
             </span>
           )}
@@ -89,17 +89,17 @@ function ComarcaItem({
                 key={vara.id}
                 onClick={() => onToggle(vara)}
                 className={cn(
-                  'w-full flex items-center gap-4 bg-white p-4 text-left transition-all',
+                  'w-full flex items-center gap-6 bg-white p-6 text-left transition-all',
                   selected ? 'ring-1 ring-inset ring-[#a3e635] z-10' : 'hover:bg-slate-50'
                 )}
               >
-                <div className={cn("h-4 w-4 border", selected ? "bg-[#a3e635] border-[#a3e635]" : "border-slate-200")} />
+                <div className={cn("h-4 w-4 border flex-shrink-0", selected ? "bg-[#a3e635] border-[#a3e635]" : "border-slate-200")} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-[11px] font-bold text-slate-900 uppercase tracking-tight truncate">
+                  <p className="text-[11px] font-bold text-slate-900 uppercase tracking-wider truncate leading-tight">
                     {vara.varaNome}
                   </p>
                   {vara.juizTitular && vara.juizTitular !== 'Vago' && (
-                    <p className="text-[9px] font-bold text-slate-400 truncate uppercase tracking-widest mt-0.5">{vara.juizTitular}</p>
+                    <p className="text-[9px] font-bold text-slate-400 truncate uppercase tracking-widest mt-1.5">{vara.juizTitular}</p>
                   )}
                 </div>
               </button>
@@ -137,12 +137,12 @@ function RegiaoSection({
     <div className="border border-slate-100 bg-white">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-6 py-6 text-left hover:bg-slate-50 transition-all"
+        className="w-full flex items-center justify-between px-8 py-8 text-left hover:bg-slate-50 transition-all"
       >
-        <div className="flex items-center gap-4">
-          <span className="text-[11px] font-bold uppercase tracking-[0.3em] text-slate-900">{regiao.nome}</span>
+        <div className="flex items-center gap-6">
+          <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-900">{regiao.nome}</span>
           {totalSelecionadas > 0 && (
-            <span className="bg-[#a3e635] text-slate-900 text-[9px] font-bold uppercase tracking-widest px-2 py-0.5">
+            <span className="bg-[#a3e635] text-slate-900 text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 shadow-sm">
               {totalSelecionadas}
             </span>
           )}
@@ -153,7 +153,7 @@ function RegiaoSection({
       </button>
 
       {open && (
-        <div className="p-6 pt-0 space-y-px bg-slate-50 border-t border-slate-50">
+        <div className="p-8 pt-0 space-y-px bg-slate-50 border-t border-slate-50">
           {comarcasComVaras.map((comarca) => (
             <ComarcaItem
               key={comarca}
@@ -280,11 +280,11 @@ export function NovaRotaProspeccaoForm({ varas }: { varas: VaraPublicaRow[] }) {
         />
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-px bg-slate-100 border border-slate-100">
+      <div className="grid lg:grid-cols-2 gap-px bg-slate-100 border border-slate-100 shadow-sm overflow-hidden">
         {/* VARAS DISPONÍVEIS */}
-        <div className="bg-white p-8 space-y-6">
+        <div className="bg-white p-8 space-y-8">
           <div className="flex items-center justify-between">
-            <h3 className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-900">CATÁLOGO DE VARAS</h3>
+            <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-slate-900">CATÁLOGO DE VARAS</h3>
             <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">{varas.length} VARAS · TJRJ</span>
           </div>
 
@@ -293,7 +293,7 @@ export function NovaRotaProspeccaoForm({ varas }: { varas: VaraPublicaRow[] }) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="FILTRAR POR VARA, COMARCA OU JUIZ..."
-            className="w-full h-10 bg-slate-50 border-0 text-[11px] font-bold tracking-widest px-4 focus:ring-0 placeholder:text-slate-200"
+            className="w-full h-10 bg-slate-50 border-0 text-[10px] font-bold tracking-widest px-6 focus:ring-0 placeholder:text-slate-200 uppercase"
           />
 
           <div className="max-h-[500px] overflow-y-auto space-y-px">
@@ -310,9 +310,9 @@ export function NovaRotaProspeccaoForm({ varas }: { varas: VaraPublicaRow[] }) {
         </div>
 
         {/* ROTA ATUAL */}
-        <div className="bg-white p-8 space-y-6">
+        <div className="bg-white p-8 space-y-8">
           <div className="flex items-center justify-between">
-            <h3 className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-900">CONFIGURAÇÃO DA ROTA</h3>
+            <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-slate-900">CONFIGURAÇÃO DA ROTA</h3>
             {selecionadas.length > 0 && (
               <button onClick={() => setSelecionadas([])} className="text-[10px] font-bold uppercase tracking-widest text-[#a3e635] hover:text-slate-900 transition-colors">LIMPAR</button>
             )}
@@ -320,20 +320,20 @@ export function NovaRotaProspeccaoForm({ varas }: { varas: VaraPublicaRow[] }) {
 
           {selecionadas.length === 0 ? (
             <div className="h-96 flex flex-col items-center justify-center text-slate-200 border border-dashed border-slate-100">
-              <p className="text-[11px] font-bold uppercase tracking-widest">NENHUMA VARA SELECIONADA</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest">NENHUMA VARA SELECIONADA</p>
             </div>
           ) : (
             <div className="space-y-px bg-slate-50 border border-slate-50 max-h-[500px] overflow-y-auto">
               {selecionadas.map((vara, idx) => (
-                <div key={vara.id} className="flex items-center gap-4 bg-white p-4 group">
-                  <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center bg-slate-900 text-[10px] font-bold text-white">
+                <div key={vara.id} className="flex items-center gap-6 bg-white p-6 group leading-none">
+                  <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center bg-slate-900 text-[10px] font-bold text-white leading-none">
                     {idx + 1}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-slate-900 uppercase tracking-tight truncate">{vara.varaNome}</p>
-                    <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest mt-0.5 truncate">{vara.comarca}</p>
+                    <p className="text-[11px] font-bold text-slate-900 uppercase tracking-wider truncate leading-tight">{vara.varaNome}</p>
+                    <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest mt-1.5 truncate">{vara.comarca}</p>
                   </div>
-                  <div className="flex items-center gap-4 opacity-0 group-hover:opacity-100 transition-all">
+                  <div className="flex items-center gap-6 opacity-0 group-hover:opacity-100 transition-all">
                     <button onClick={() => moveUp(idx)} disabled={idx === 0} className="text-[10px] font-bold text-slate-300 hover:text-slate-900 disabled:opacity-10">↑</button>
                     <button onClick={() => moveDown(idx)} disabled={idx === selecionadas.length - 1} className="text-[10px] font-bold text-slate-300 hover:text-slate-900 disabled:opacity-10">↓</button>
                     <button onClick={() => handleToggle(vara)} className="text-[10px] font-bold text-red-300 hover:text-red-500">X</button>
@@ -347,9 +347,9 @@ export function NovaRotaProspeccaoForm({ varas }: { varas: VaraPublicaRow[] }) {
 
       {/* Mapa preview */}
       {selecionadas.length >= 1 && (
-        <div className="space-y-6">
-          <h3 className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-900">ESTRATÉGIA LOGÍSTICA</h3>
-          <div className="h-[440px] w-full overflow-hidden border border-slate-100">
+        <div className="space-y-8">
+          <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-slate-900">ESTRATÉGIA LOGÍSTICA</h3>
+          <div className="h-[440px] w-full overflow-hidden border border-slate-100 shadow-sm">
             <RouteMapDynamic routes={[mapRoute]} />
           </div>
         </div>
@@ -357,16 +357,16 @@ export function NovaRotaProspeccaoForm({ varas }: { varas: VaraPublicaRow[] }) {
 
       {/* Google Maps link */}
       {selecionadas.length >= 1 && (
-        <div className="p-8 bg-slate-900 flex items-center justify-between gap-12">
+        <div className="p-10 bg-slate-900 flex items-center justify-between gap-12 shadow-xl">
           <div className="flex-1 min-w-0">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 mb-2">INTEGRAÇÃO GOOGLE MAPS</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 mb-3">INTEGRAÇÃO GOOGLE MAPS</p>
             <p className="text-[11px] font-bold text-white uppercase tracking-widest truncate">{gmapsUrl}</p>
           </div>
-          <div className="flex items-center gap-8">
+          <div className="flex items-center gap-10">
             <button onClick={copyLink} className="text-[10px] font-bold uppercase tracking-widest text-[#a3e635] hover:text-white transition-colors">
               {copied ? 'COPIADO' : 'COPIAR LINK'}
             </button>
-            <a href={gmapsUrl} target="_blank" rel="noopener noreferrer" className="h-10 px-6 bg-white text-slate-900 text-[10px] font-bold uppercase tracking-widest hover:bg-[#a3e635] transition-all flex items-center">
+            <a href={gmapsUrl} target="_blank" rel="noopener noreferrer" className="h-12 px-8 bg-white text-slate-900 text-[10px] font-bold uppercase tracking-widest hover:bg-[#a3e635] transition-all flex items-center shadow-lg">
               ABRIR NO MAPS
             </a>
           </div>
@@ -374,16 +374,16 @@ export function NovaRotaProspeccaoForm({ varas }: { varas: VaraPublicaRow[] }) {
       )}
 
       {/* Botões finais */}
-      <div className="flex items-center justify-between pt-8 border-t border-slate-100">
-        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-300">
+      <div className="flex items-center justify-between pt-10 border-t border-slate-100">
+        <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-300">
           {selecionadas.length} VARA(S) CONFIGURADA(S)
         </p>
-        <div className="flex gap-4">
-          {error && <span className="text-[10px] font-bold text-red-500 uppercase tracking-widest pt-3 pr-4">{error}</span>}
+        <div className="flex gap-6">
+          {error && <span className="text-[10px] font-bold text-red-500 uppercase tracking-widest pt-4 pr-6 shrink-0">{error}</span>}
           <button
             onClick={handleSalvar}
             disabled={isPending || selecionadas.length < 1 || !titulo.trim()}
-            className="h-14 px-12 bg-[#a3e635] text-slate-900 text-[11px] font-bold uppercase tracking-[0.3em] hover:brightness-105 disabled:opacity-20 transition-all"
+            className="h-14 px-12 bg-[#a3e635] text-slate-900 text-[11px] font-bold uppercase tracking-[0.3em] hover:brightness-105 disabled:opacity-20 transition-all font-bold shadow-lg"
           >
             {isPending ? 'PROCESSANDO...' : 'SALVAR ROTA'}
           </button>

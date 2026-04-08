@@ -4,17 +4,11 @@ import { useState, useTransition, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import {
-  FileText,
   Navigation,
-  Camera,
-  ScrollText,
-  CheckCircle2,
-  Circle,
-  AlertCircle,
   Loader2,
-  ClipboardList,
-  Lock,
+  ChevronRight,
 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { criarRotaDaPericia } from '@/lib/actions/pericias-rota'
 import { PropostaTab } from '@/components/pericias/proposta-tab'
 import type { PropostaTabProps } from '@/components/pericias/proposta-tab'
@@ -46,10 +40,10 @@ interface Props {
 
 type Tab = 'resumo' | 'proposta' | 'rota' | 'fotos' | 'laudo'
 
-const CP_STATUS_ICON: Record<string, React.ReactNode> = {
-  concluido: <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0" />,
-  chegou:    <AlertCircle  className="h-4 w-4 text-amber-500  flex-shrink-0" />,
-  pendente:  <Circle       className="h-4 w-4 text-slate-300  flex-shrink-0" />,
+const CP_STATUS_TEXT: Record<string, string> = {
+  concluido: 'CONCLUÍDO',
+  chegou:    'EM CAMPO',
+  pendente:  'PENDENTE',
 }
 
 // ─── Rota tab ─────────────────────────────────────────────────────────────────
@@ -81,72 +75,91 @@ function RotaContent({
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-12">
       {hasCheckpoints ? (
-        <section className="rounded-xl border border-[#e2e8f0] bg-white">
-          <div className="flex items-center gap-3 px-6 py-5">
-            <h2 className="text-[15px] font-semibold text-[#1f2937] font-manrope">Checkpoints</h2>
-            <span className="ml-auto text-[11px] font-semibold text-[#6b7280] bg-[#f2f3f9] rounded-md px-2 py-0.5">
-              {checkpoints.filter(c => c.status === 'concluido').length}/{checkpoints.length}
+        <section className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.3em]">Checkpoints da vistorias</h2>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              {checkpoints.filter(c => c.status === 'concluido').length}/{checkpoints.length} CONCLUÍDOS
             </span>
           </div>
-          <div className="divide-y divide-[#f2f3f9]">
-            {checkpoints.map((cp) => (
-              <div key={cp.id} className="flex items-start gap-3 px-6 py-4">
-                {CP_STATUS_ICON[cp.status] ?? CP_STATUS_ICON.pendente}
-                <div className="flex-1 min-w-0">
-                  <p className={`text-[14px] font-medium leading-snug ${cp.status === 'concluido' ? 'text-[#9ca3af] line-through' : 'text-[#1f2937]'}`}>
-                    {cp.titulo}
-                  </p>
-                  {cp.endereco && (
-                    <p className="text-[12px] text-[#9ca3af] mt-1 truncate">{cp.endereco}</p>
+          <div className="border border-slate-200">
+            <div className="divide-y divide-slate-100">
+              {checkpoints.map((cp) => (
+                <div key={cp.id} className="flex items-start gap-6 px-8 py-6 bg-white hover:bg-slate-50 transition-colors">
+                  <span className={cn(
+                    "text-[10px] font-black uppercase tracking-widest px-3 py-1 border-2",
+                    cp.status === 'concluido' ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-300 border-slate-100"
+                  )}>
+                    {CP_STATUS_TEXT[cp.status] ?? 'PENDENTE'}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className={cn(
+                      'text-[13px] font-black uppercase tracking-tight',
+                      cp.status === 'concluido' ? 'text-slate-400' : 'text-slate-900',
+                    )}>
+                      {cp.titulo}
+                    </p>
+                    {cp.endereco && (
+                      <p className="text-[11px] font-bold text-slate-400 mt-1 uppercase tracking-wider">{cp.endereco}</p>
+                    )}
+                  </div>
+                  {cp.midiaCount > 0 && (
+                    <span className="text-[9px] font-black text-[#a3e635] border border-[#a3e635] px-2 py-0.5 uppercase tracking-widest">
+                      {cp.midiaCount} EVIDENCE
+                    </span>
                   )}
                 </div>
-                {cp.midiaCount > 0 && (
-                  <span className="flex items-center gap-1 text-[11px] font-medium text-[#416900] bg-[#f4fce3] rounded-md px-2 py-0.5 flex-shrink-0">
-                    <Camera className="h-3 w-3" />
-                    {cp.midiaCount}
-                  </span>
-                )}
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </section>
       ) : (
-        <section className="rounded-xl border border-[#e2e8f0] bg-white">
-          <div className="flex items-center gap-3 px-6 py-5">
-            <h2 className="text-[15px] font-semibold text-[#1f2937] font-manrope">Agendar vistoria</h2>
-          </div>
-          <div className="px-6 pb-6 space-y-4">
-            <p className="text-[13px] text-[#6b7280]">
-              Informe o endereço da vistoria para criar a rota e registrar chegadas e fotos em campo.
+        <section className="space-y-8 max-w-2xl">
+          <div className="space-y-3">
+            <h2 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.3em]">Agendar vistoria em campo</h2>
+            <p className="text-[13px] font-bold text-slate-400 uppercase tracking-tight leading-relaxed">
+              Informe o endereço principal para habilitar o módulo de vistorias, registro de evidências e tracking de deslocamento.
             </p>
-            <div className="space-y-2">
-              <label className="text-[10px] font-semibold text-[#9ca3af] uppercase tracking-[0.1em] font-inter">
+          </div>
+          
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
                 Endereço da vistoria
               </label>
               <input
                 type="text"
                 value={endereco}
                 onChange={(e) => setEndereco(e.target.value)}
-                placeholder="Rua, número, bairro, cidade"
-                className="w-full rounded-lg border border-[#e2e8f0] bg-white px-3 py-2.5 text-[14px] focus:outline-none focus:ring-2 focus:ring-[#416900]/20 focus:border-[#416900] placeholder-[#d1d5db] transition-all"
+                placeholder="RUA, NÚMERO, BAIRRO, CIDADE"
+                className="w-full rounded-none border-2 border-slate-200 bg-white px-5 py-4 text-[13px] font-bold text-slate-900 focus:outline-none focus:border-slate-900 placeholder-slate-200 uppercase tracking-wide transition-all"
               />
             </div>
+            
             {result && (
-              <p className={`text-[13px] rounded-lg px-4 py-2.5 border ${result.ok ? 'text-[#416900] bg-[#f4fce3] border-[#d8f5a2]' : 'text-rose-700 bg-rose-50 border-rose-100'}`}>
+              <p className={cn(
+                "text-[11px] font-black uppercase tracking-widest px-6 py-4 border-2",
+                result.ok ? "text-[#a3e635] bg-slate-900 border-slate-900" : "text-rose-500 bg-rose-50 border-rose-100"
+              )}>
                 {result.mensagem}
               </p>
             )}
+
             <button
               onClick={handleCriarRota}
               disabled={isPending || !endereco.trim()}
-              className="w-full flex items-center justify-center gap-2 rounded-lg bg-[#416900] hover:bg-[#84cc16] hover:text-[#102000] text-white font-semibold text-[14px] px-4 py-3 transition-all disabled:opacity-50"
+              className="w-full bg-[#a3e635] text-slate-900 rounded-none px-8 py-5 text-[11px] font-black uppercase tracking-[0.3em] hover:bg-slate-900 hover:text-white transition-all disabled:opacity-30 shadow-none flex items-center justify-center gap-3"
             >
-              {isPending
-                ? <><Loader2 className="h-4 w-4 animate-spin" /> Criando rota…</>
-                : <><Navigation className="h-4 w-4" /> Criar rota de vistoria</>
-              }
+              {isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin text-slate-900" />
+                  AGUARDE...
+                </>
+              ) : (
+                'INICIAR MÓDULO DE VISTORIA'
+              )}
             </button>
           </div>
         </section>
@@ -191,36 +204,34 @@ export function PericiaDetailTabs({
     {
       id:       'resumo',
       label:    'Resumo',
-      icon:     <FileText   className="h-3.5 w-3.5" />,
+      icon:     null,
       disabled: false,
     },
     {
       id:       'proposta',
       label:    'Proposta',
-      icon:     !hasAnalise
-        ? <Lock          className="h-3.5 w-3.5" />
-        : <ClipboardList className="h-3.5 w-3.5" />,
-      disabled: false, // always clickable — shows locked state inside
+      icon:     null,
+      disabled: false,
       badge:    hasProposta && hasAnalise
-        ? <span className="ml-1 flex h-2 w-2 rounded-full bg-[#a3e635]" />
+        ? <span className="ml-2 flex h-2 w-2 rounded-full bg-[#a3e635]" />
         : undefined,
     },
     {
       id:       'rota',
-      label:    'Rota',
-      icon:     <Navigation className="h-3.5 w-3.5" />,
+      label:    'Vistoria',
+      icon:     null,
       disabled: false,
     },
     {
       id:       'fotos',
-      label:    'Fotos',
-      icon:     <Camera     className="h-3.5 w-3.5" />,
+      label:    'Mídias',
+      icon:     null,
       disabled: false,
     },
     {
       id:       'laudo',
       label:    'Laudo',
-      icon:     <ScrollText className="h-3.5 w-3.5" />,
+      icon:     null,
       disabled: false,
     },
   ]
@@ -228,23 +239,27 @@ export function PericiaDetailTabs({
   return (
     <div className="space-y-8">
       {/* Tab bar */}
-      <div className="flex gap-8 border-b border-slate-100 px-2 overflow-x-auto no-scrollbar">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => !tab.disabled && setActiveTab(tab.id)}
-            className={`flex items-center gap-2 py-4 text-[11px] font-bold uppercase tracking-wider transition-all border-b-2 -mb-[1px] ${
-              activeTab === tab.id
-                ? 'border-slate-900 text-slate-900'
-                : tab.disabled
-                  ? 'border-transparent text-slate-200 cursor-not-allowed'
-                  : 'border-transparent text-slate-400 hover:text-slate-900 hover:border-slate-300'
-            }`}
-          >
-            {tab.icon}
-            {tab.label}
-            {tab.badge}
-          </button>
+      <div className="flex items-center gap-6 border-b border-slate-100 px-2 overflow-x-auto no-scrollbar">
+        {tabs.map((tab, idx) => (
+          <div key={tab.id} className="flex items-center gap-6">
+            <button
+              onClick={() => !tab.disabled && setActiveTab(tab.id)}
+              className={cn(
+                "flex items-center gap-2 py-4 text-[10px] font-black uppercase tracking-[0.25em] transition-all border-b-2 -mb-[1px]",
+                activeTab === tab.id
+                  ? 'border-slate-900 text-slate-900'
+                  : tab.disabled
+                    ? 'border-transparent text-slate-200 cursor-not-allowed'
+                    : 'border-transparent text-slate-400 hover:text-slate-900 hover:border-slate-300'
+              )}
+            >
+              {tab.label}
+              {tab.badge}
+            </button>
+            {idx < tabs.length - 1 && (
+              <ChevronRight className="h-3 w-3 text-slate-200 flex-shrink-0" strokeWidth={3} />
+            )}
+          </div>
         ))}
       </div>
 
@@ -278,42 +293,59 @@ export function PericiaDetailTabs({
         )}
 
         {activeTab === 'laudo' && (
-          <section className="rounded-xl border border-slate-200 bg-white animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <div className="flex items-center gap-3 px-8 py-8 border-b border-slate-100">
-              <h2 className="text-lg font-bold text-slate-900 font-manrope uppercase tracking-tight">Laudo pericial</h2>
-            </div>
-            <div className="px-8 py-8 space-y-6">
-              {periciaStatus === 'concluida' ? (
-                <Link href="/documentos/modelos" className="block">
-                  <button className="w-full flex items-center justify-center gap-3 rounded-xl bg-slate-900 hover:bg-[#a3e635] hover:text-slate-900 text-white font-bold text-[11px] uppercase tracking-wider px-8 py-5 transition-all cursor-pointer">
-                    <ScrollText className="h-5 w-5" />
-                    Gerar laudo pericial
-                  </button>
-                </Link>
-              ) : (
-                <>
-                  <button disabled className="w-full flex items-center justify-between gap-4 rounded-none border border-slate-100 bg-slate-50 px-6 py-5 text-left cursor-not-allowed opacity-60">
-                    <div className="flex items-center gap-3">
-                      <ScrollText className="h-5 w-5 text-slate-300 flex-shrink-0" />
-                      <span className="text-[12px] font-black uppercase tracking-widest text-slate-300">Estrutura do laudo</span>
+          <section className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="space-y-12">
+               <div className="space-y-4">
+                  <h2 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.3em]">Geração de documentos</h2>
+                  <p className="text-[13px] font-bold text-slate-400 uppercase tracking-tight max-w-2xl">
+                    Utilize os ativos coletados em campo e as informações do processo para gerar automaticamente o laudo pericial final baseado em seus modelos editoriais.
+                  </p>
+               </div>
+
+               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  {periciaStatus === 'concluida' ? (
+                    <Link href="/documentos/modelos" className="block transform hover:-translate-y-1 transition-transform">
+                      <div className="border border-slate-200 bg-white p-8 space-y-6">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">SISTEMA DE LAUDO</span>
+                        </div>
+                        <div className="space-y-2">
+                           <p className="text-[14px] font-black uppercase tracking-tight text-slate-900">Gerar Laudo Final</p>
+                           <p className="text-[11px] font-bold text-[#a3e635] uppercase tracking-widest">Acesso liberado</p>
+                        </div>
+                      </div>
+                    </Link>
+                  ) : (
+                    <div className="border border-slate-100 bg-slate-50 p-8 space-y-6 opacity-60">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em]">SISTEMA DE LAUDO</span>
+                      </div>
+                      <div className="space-y-2">
+                         <p className="text-[14px] font-black uppercase tracking-tight text-slate-300">Laudo Pericial</p>
+                         <p className="text-[11px] font-black text-slate-300 uppercase tracking-widest border border-slate-200 px-2 py-0.5 inline-block">PERÍCIA EM ANDAMENTO</p>
+                      </div>
                     </div>
-                    <span className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] border border-slate-200 px-2 py-1">Em breve</span>
-                  </button>
-                  <button disabled className="w-full flex items-center justify-between gap-4 rounded-none border border-slate-100 bg-slate-50 px-6 py-5 text-left cursor-not-allowed opacity-60">
-                    <div className="flex items-center gap-3">
-                      <FileText className="h-5 w-5 text-slate-300 flex-shrink-0" />
-                      <span className="text-[12px] font-black uppercase tracking-widest text-slate-300">Rascunho do laudo</span>
+                  )}
+
+                  <div className="border border-slate-100 bg-slate-50 p-8 space-y-6 opacity-40">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em]">ATIVO EDITORIAIS</span>
                     </div>
-                    <span className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] border border-slate-200 px-2 py-1">Em breve</span>
-                  </button>
-                  <div className="flex items-center gap-2 pt-6 border-t border-slate-100">
-                    <AlertCircle className="h-4 w-4 text-slate-400" />
-                    <p className="text-[12px] font-medium text-slate-400 italic">
-                      Conclua a perícia para liberar a geração do documento final.
+                    <div className="space-y-2">
+                       <p className="text-[14px] font-black uppercase tracking-tight text-slate-300">Rascunho do laudo</p>
+                       <p className="text-[11px] font-black text-slate-200 uppercase tracking-widest">Brevemente</p>
+                    </div>
+                  </div>
+               </div>
+
+               {periciaStatus !== 'concluida' && (
+                  <div className="flex items-center gap-3 pt-6">
+                    <span className="h-1.5 w-1.5 rounded-full bg-slate-900 animate-pulse" />
+                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest italic">
+                      Conclua o fluxo de trabalho para liberar o gerador.
                     </p>
                   </div>
-                </>
-              )}
+               )}
             </div>
           </section>
         )}

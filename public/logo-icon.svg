@@ -1,12 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-  <rect width="48" height="48" rx="10" fill="#84cc16"/>
+  <rect width="48" height="48" rx="10" fill="#ffffff"/>
+  <rect width="48" height="48" rx="10" fill="rgba(0,0,0,0.02)"/>
   <text
     x="50%" y="58%"
     text-anchor="middle"
     dominant-baseline="middle"
     font-family="'Segoe UI', system-ui, sans-serif"
-    font-weight="700"
-    font-size="20"
-    fill="white"
-  >PL</text>
+    font-weight="900"
+    font-size="22"
+    letter-spacing="-1"
+  >
+    <tspan fill="#1f2937">P</tspan><tspan fill="#a3e635">L</tspan>
+  </text>
 </svg>
