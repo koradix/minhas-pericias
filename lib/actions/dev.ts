@@ -8,59 +8,93 @@ export async function limparDadosTeste(): Promise<{ ok: boolean; error?: string 
   const userId = session?.user?.id
   if (!userId) return { ok: false, error: 'Não autenticado' }
 
-  try {
-    await prisma.$transaction(async (tx) => {
-      // Delete related data in the right order
-      // 1. Citações e documentos
-      await tx.nomeacaoCitacao.deleteMany({ where: { peritoId: userId } })
-      // 2. Documentos gerados (sem userId no schema — skip)
-      // await tx.documentoGerado.deleteMany({ where: { userId } }).catch(() => {})
-      // 3. Propostas / demandas (se existirem)
-      await tx.proposta.deleteMany({ where: { userId } }).catch(() => {})
-      await tx.demandaParceiro.deleteMany({ where: { userId } }).catch(() => {})
-      // 4. Visitas de prospecção
-      await tx.prospeccaoVisita.deleteMany({ where: { peritoId: userId } }).catch(() => {})
-      // 5. Checkpoints e midias de rotas
-      const rotas = await tx.rotaPericia.findMany({ where: { peritoId: userId }, select: { id: true } })
-      const rotaIds = rotas.map((r) => r.id)
-      if (rotaIds.length > 0) {
-        const cps = await tx.checkpoint.findMany({ where: { rotaId: { in: rotaIds } }, select: { id: true } })
-        const cpIds = cps.map((c) => c.id)
-        if (cpIds.length > 0) await tx.checkpointMidia.deleteMany({ where: { checkpointId: { in: cpIds } } })
-        await tx.checkpoint.deleteMany({ where: { rotaId: { in: rotaIds } } })
-      }
-      await tx.rotaPericia.deleteMany({ where: { peritoId: userId } })
-      // 6. Péricias / intakes
-      await tx.pericia.deleteMany({ where: { peritoId: userId } }).catch(() => {})
-      // pericoIntake não existe no schema atual
-      // 7. Varas vinculadas ao perito
-      await tx.tribunalVara.deleteMany({ where: { peritoId: userId } }).catch(() => {})
-      // 8. Radar config
-      await tx.radarConfig.deleteMany({ where: { peritoId: userId } }).catch(() => {})
-      // 9. Reset PeritoPerfil para estado inicial
-      await tx.peritoPerfil.upsert({
-        where: { userId },
-        create: { userId },
-        update: {
-          telefone: null,
-          formacao: null,
-          formacaoCustom: null,
-          registro: null,
-          especialidades: '[]',
-          cursos: '[]',
-          tribunais: '[]',
-          estados: '[]',
-          cidade: null,
-          estado: null,
-          areaAtuacao: null,
-          perfilCompleto: false,
-        },
-      })
-    })
+  const erros: string[] = []
 
-    return { ok: true }
-  } catch (err) {
-    console.error('[limparDadosTeste]', err)
-    return { ok: false, error: 'Erro ao limpar dados' }
+  async function safe(label: string, fn: () => Promise<unknown>) {
+    try { await fn() } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e)
+      erros.push(`${label}: ${msg}`)
+      console.error(`[limparDados] ${label}:`, msg)
+    }
   }
+
+  // 1. Citações de nomeação
+  await safe('nomeacaoCitacao', () =>
+    prisma.nomeacaoCitacao.deleteMany({ where: { peritoId: userId } })
+  )
+
+  // 2. Visitas de prospecção
+  await safe('prospeccaoVisita', () =>
+    prisma.prospeccaoVisita.deleteMany({ where: { peritoId: userId } })
+  )
+
+  // 3. Checkpoints midias → checkpoints → rotas
+  const rotas = await prisma.rotaPericia.findMany({ where: { peritoId: userId }, select: { id: true } }).catch(() => [])
+  const rotaIds = rotas.map((r) => r.id)
+  if (rotaIds.length > 0) {
+    const cps = await prisma.checkpoint.findMany({ where: { rotaId: { in: rotaIds } }, select: { id: true } }).catch(() => [])
+    const cpIds = cps.map((c) => c.id)
+    if (cpIds.length > 0) {
+      await safe('checkpointMidia', () =>
+        prisma.checkpointMidia.deleteMany({ where: { checkpointId: { in: cpIds } } })
+      )
+    }
+    await safe('checkpoint', () =>
+      prisma.checkpoint.deleteMany({ where: { rotaId: { in: rotaIds } } })
+    )
+  }
+  await safe('rotaPericia', () =>
+    prisma.rotaPericia.deleteMany({ where: { peritoId: userId } })
+  )
+
+  // 4. Péricias
+  await safe('pericia', () =>
+    prisma.pericia.deleteMany({ where: { peritoId: userId } })
+  )
+
+  // 5. Propostas e demandas
+  await safe('proposta', () =>
+    prisma.proposta.deleteMany({ where: { userId } })
+  )
+  await safe('demandaParceiro', () =>
+    prisma.demandaParceiro.deleteMany({ where: { userId } })
+  )
+
+  // 6. Varas vinculadas ao perito
+  await safe('tribunalVara', () =>
+    prisma.tribunalVara.deleteMany({ where: { peritoId: userId } })
+  )
+
+  // 7. Radar config
+  await safe('radarConfig', () =>
+    prisma.radarConfig.deleteMany({ where: { peritoId: userId } })
+  )
+
+  // 8. Reset PeritoPerfil para estado inicial
+  await safe('peritoPerfil.upsert', () =>
+    prisma.peritoPerfil.upsert({
+      where: { userId },
+      create: { userId },
+      update: {
+        telefone: null,
+        formacao: null,
+        formacaoCustom: null,
+        registro: null,
+        especialidades: '[]',
+        cursos: '[]',
+        tribunais: '[]',
+        estados: '[]',
+        cidade: null,
+        estado: null,
+        areaAtuacao: null,
+        perfilCompleto: false,
+        credenciaisTribunais: '{}',
+      },
+    })
+  )
+
+  if (erros.length > 0) {
+    return { ok: false, error: `Parcial — ${erros.length} erro(s): ${erros[0]}` }
+  }
+  return { ok: true }
 }
