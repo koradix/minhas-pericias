@@ -8,93 +8,71 @@ export async function limparDadosTeste(): Promise<{ ok: boolean; error?: string 
   const userId = session?.user?.id
   if (!userId) return { ok: false, error: 'Não autenticado' }
 
-  const erros: string[] = []
+  try {
+    // Usa SQL direto para evitar problemas de connection pool (pgBouncer)
+    // Ordem: do mais dependente para o menos dependente
 
-  async function safe(label: string, fn: () => Promise<unknown>) {
-    try { await fn() } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e)
-      erros.push(`${label}: ${msg}`)
-      console.error(`[limparDados] ${label}:`, msg)
-    }
-  }
-
-  // 1. Citações de nomeação
-  await safe('nomeacaoCitacao', () =>
-    prisma.nomeacaoCitacao.deleteMany({ where: { peritoId: userId } })
-  )
-
-  // 2. Visitas de prospecção
-  await safe('prospeccaoVisita', () =>
-    prisma.prospeccaoVisita.deleteMany({ where: { peritoId: userId } })
-  )
-
-  // 3. Checkpoints midias → checkpoints → rotas
-  const rotas = await prisma.rotaPericia.findMany({ where: { peritoId: userId }, select: { id: true } }).catch(() => [])
-  const rotaIds = rotas.map((r) => r.id)
-  if (rotaIds.length > 0) {
-    const cps = await prisma.checkpoint.findMany({ where: { rotaId: { in: rotaIds } }, select: { id: true } }).catch(() => [])
-    const cpIds = cps.map((c) => c.id)
-    if (cpIds.length > 0) {
-      await safe('checkpointMidia', () =>
-        prisma.checkpointMidia.deleteMany({ where: { checkpointId: { in: cpIds } } })
+    // 1. CheckpointMidia (depende de Checkpoint → RotaPericia)
+    await prisma.$executeRaw`
+      DELETE FROM "CheckpointMidia"
+      WHERE "checkpointId" IN (
+        SELECT c.id FROM "Checkpoint" c
+        JOIN "RotaPericia" r ON r.id = c."rotaId"
+        WHERE r."peritoId" = ${userId}
       )
-    }
-    await safe('checkpoint', () =>
-      prisma.checkpoint.deleteMany({ where: { rotaId: { in: rotaIds } } })
-    )
+    `
+
+    // 2. Checkpoints
+    await prisma.$executeRaw`
+      DELETE FROM "Checkpoint"
+      WHERE "rotaId" IN (
+        SELECT id FROM "RotaPericia" WHERE "peritoId" = ${userId}
+      )
+    `
+
+    // 3. Rotas
+    await prisma.$executeRaw`DELETE FROM "RotaPericia" WHERE "peritoId" = ${userId}`
+
+    // 4. Nomeações / citações
+    await prisma.$executeRaw`DELETE FROM "NomeacaoCitacao" WHERE "peritoId" = ${userId}`
+
+    // 5. Visitas de prospecção
+    await prisma.$executeRaw`DELETE FROM "ProspeccaoVisita" WHERE "peritoId" = ${userId}`
+
+    // 6. Péricias
+    await prisma.$executeRaw`DELETE FROM "Pericia" WHERE "peritoId" = ${userId}`
+
+    // 7. Propostas e demandas
+    await prisma.$executeRaw`DELETE FROM "Proposta" WHERE "userId" = ${userId}`
+    await prisma.$executeRaw`DELETE FROM "DemandaParceiro" WHERE "userId" = ${userId}`
+
+    // 8. Varas e radar
+    await prisma.$executeRaw`DELETE FROM "TribunalVara" WHERE "peritoId" = ${userId}`
+    await prisma.$executeRaw`DELETE FROM "RadarConfig" WHERE "peritoId" = ${userId}`
+
+    // 9. Reset PeritoPerfil
+    await prisma.$executeRaw`
+      UPDATE "PeritoPerfil" SET
+        telefone = NULL,
+        formacao = NULL,
+        "formacaoCustom" = NULL,
+        registro = NULL,
+        especialidades = '[]',
+        cursos = '[]',
+        tribunais = '[]',
+        estados = '[]',
+        cidade = NULL,
+        estado = NULL,
+        "areaAtuacao" = NULL,
+        "perfilCompleto" = false,
+        "credenciaisTribunais" = '{}'
+      WHERE "userId" = ${userId}
+    `
+
+    return { ok: true }
+  } catch (err) {
+    console.error('[limparDadosTeste]', err)
+    const msg = err instanceof Error ? err.message.slice(0, 120) : 'Erro desconhecido'
+    return { ok: false, error: msg }
   }
-  await safe('rotaPericia', () =>
-    prisma.rotaPericia.deleteMany({ where: { peritoId: userId } })
-  )
-
-  // 4. Péricias
-  await safe('pericia', () =>
-    prisma.pericia.deleteMany({ where: { peritoId: userId } })
-  )
-
-  // 5. Propostas e demandas
-  await safe('proposta', () =>
-    prisma.proposta.deleteMany({ where: { userId } })
-  )
-  await safe('demandaParceiro', () =>
-    prisma.demandaParceiro.deleteMany({ where: { userId } })
-  )
-
-  // 6. Varas vinculadas ao perito
-  await safe('tribunalVara', () =>
-    prisma.tribunalVara.deleteMany({ where: { peritoId: userId } })
-  )
-
-  // 7. Radar config
-  await safe('radarConfig', () =>
-    prisma.radarConfig.deleteMany({ where: { peritoId: userId } })
-  )
-
-  // 8. Reset PeritoPerfil para estado inicial
-  await safe('peritoPerfil.upsert', () =>
-    prisma.peritoPerfil.upsert({
-      where: { userId },
-      create: { userId },
-      update: {
-        telefone: null,
-        formacao: null,
-        formacaoCustom: null,
-        registro: null,
-        especialidades: '[]',
-        cursos: '[]',
-        tribunais: '[]',
-        estados: '[]',
-        cidade: null,
-        estado: null,
-        areaAtuacao: null,
-        perfilCompleto: false,
-        credenciaisTribunais: '{}',
-      },
-    })
-  )
-
-  if (erros.length > 0) {
-    return { ok: false, error: `Parcial — ${erros.length} erro(s): ${erros[0]}` }
-  }
-  return { ok: true }
 }
