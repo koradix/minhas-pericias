@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -489,6 +490,7 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
       </div>
 
       {/* ── Tabs ── */}
+      <Suspense>
       <PericiaDetailTabs
         periciaId={pericia.id}
         periciaStatus={pericia.status}
@@ -703,6 +705,7 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
           </section>
         }
       />
+      </Suspense>
     </div>
   )
 }

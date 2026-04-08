@@ -1,9 +1,6 @@
-'use client'
-
-import React from 'react'
+import { Suspense } from 'react'
 import Link from 'next/link'
 import LoginForm from './login-form'
-import { cn } from '@/lib/utils'
 
 function PeriLabLogo() {
   return (
@@ -99,7 +96,9 @@ export default function LoginPage() {
           </div>
 
           <div className="p-1">
-            <LoginForm />
+            <Suspense>
+              <LoginForm />
+            </Suspense>
           </div>
 
           <p className="mt-10 text-center text-sm text-slate-400 font-medium tracking-tight">
