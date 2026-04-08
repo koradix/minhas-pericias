@@ -2,9 +2,8 @@
 
 import { useState, useMemo } from 'react'
 import Image from 'next/image'
-import { useRouter } from 'next/navigation'
-import { signIn } from 'next-auth/react'
 import { ChevronRight, ChevronLeft, Check, Loader2 } from 'lucide-react'
+import { signIn } from 'next-auth/react'
 import { signup } from '@/lib/actions/signup'
 import {
   ESTADOS_DISPONIVEIS,
@@ -45,11 +44,35 @@ const TIPO_COR: Record<TipoTribunal, string> = {
 const inputCls = 'w-full h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-lime-500 focus:outline-none focus:ring-1 focus:ring-lime-500'
 const labelCls = 'block text-xs font-medium text-slate-700 mb-1.5'
 
+function GoogleSignupButton() {
+  const [loading, setLoading] = useState(false)
+  return (
+    <button
+      type="button"
+      onClick={() => { setLoading(true); signIn('google', { callbackUrl: '/dashboard' }) }}
+      disabled={loading}
+      className="w-full h-10 flex items-center justify-center gap-2.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm transition-all disabled:opacity-50"
+    >
+      {loading ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : (
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+          <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615Z" fill="#4285F4"/>
+          <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18Z" fill="#34A853"/>
+          <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332Z" fill="#FBBC05"/>
+          <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58Z" fill="#EA4335"/>
+        </svg>
+      )}
+      Continuar com Google
+    </button>
+  )
+}
+
 export default function SignupPage() {
-  const router = useRouter()
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [emailSent, setEmailSent] = useState(false)
 
   // Step 1
   const [nome, setNome] = useState('')
@@ -142,11 +165,36 @@ export default function SignupPage() {
       setLoading(false)
       return
     }
-    const res = await signIn('credentials', { email, password: senha, redirect: false })
-    router.push(res?.ok ? '/dashboard' : '/login')
+    // Don't auto-sign in — user must verify email first
+    setEmailSent(true)
   }
 
   const stepLabels = ['Conta', 'Formação', 'Tribunais']
+
+  if (emailSent) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
+        <div className="mb-8 flex flex-col items-center">
+          <Image src="/logo.svg" alt="Perilab" width={180} height={68} priority />
+        </div>
+        <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white shadow-sm p-8 text-center space-y-4">
+          <div className="flex items-center justify-center">
+            <div className="h-14 w-14 rounded-full bg-lime-50 flex items-center justify-center">
+              <Check className="h-7 w-7 text-lime-500" />
+            </div>
+          </div>
+          <h1 className="text-xl font-black text-slate-900">Conta criada!</h1>
+          <p className="text-sm text-slate-500 leading-relaxed">
+            Enviamos um link de confirmação para <strong>{email}</strong>.
+            Verifique sua caixa de entrada para ativar sua conta.
+          </p>
+          <a href="/login" className="inline-block text-sm font-bold text-[#84cc16] hover:underline">
+            Ir para o login
+          </a>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
@@ -186,6 +234,13 @@ export default function SignupPage() {
           {/* STEP 1 — Conta */}
           {step === 1 && (
             <>
+              {/* ── Google signup ── */}
+              <GoogleSignupButton />
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px bg-slate-200" />
+                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">ou com e-mail</span>
+                <div className="flex-1 h-px bg-slate-200" />
+              </div>
               <div>
                 <h1 className="text-lg font-semibold text-slate-900">Crie sua conta</h1>
                 <p className="text-xs text-slate-500 mt-0.5">Dados de acesso à plataforma</p>

@@ -76,15 +76,15 @@ export default async function NomeacoesPage() {
       )}
 
       {/* Lista de processos ativos */}
-      <div className="space-y-4">
+      <div className="space-y-5 mt-2">
         {ativos.length > 0 && (
-          <p className="text-[12px] font-inter font-semibold uppercase tracking-[0.08em] text-[#6b7280]">
+          <p className="text-[12px] font-bold uppercase tracking-widest text-slate-400">
             {ativos.length} processo{ativos.length > 1 ? 's' : ''} registrado{ativos.length > 1 ? 's' : ''}
           </p>
         )}
 
         {ativos.length > 0 ? (
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 gap-4">
             {ativos.map((n) => (
               <NomeacaoCard key={n.id} nomeacao={n} />
             ))}

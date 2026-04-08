@@ -23,6 +23,14 @@ export const authConfig: NextAuthConfig = {
 
       if (isAppRoute && !isLoggedIn) return false
 
+      // Block credential users with unverified email from app routes
+      if (isAppRoute && isLoggedIn) {
+        const emailVerified = (auth?.user as { emailVerified?: Date | null })?.emailVerified
+        if (!emailVerified) {
+          return Response.redirect(new URL('/verify-email/pending', nextUrl))
+        }
+      }
+
       // Parceiro tentando acessar rota exclusiva do perito
       if (isPeritoOnly && role === 'parceiro') {
         return Response.redirect(new URL('/parceiro/dashboard', nextUrl))
@@ -42,6 +50,7 @@ export const authConfig: NextAuthConfig = {
       if (user) {
         token.id = user.id
         token.role = (user as { role?: string }).role ?? 'perito'
+        token.emailVerified = (user as { emailVerified?: Date | null }).emailVerified ?? null
       }
       return token
     },
@@ -49,6 +58,7 @@ export const authConfig: NextAuthConfig = {
       if (token) {
         session.user.id = token.id as string
         session.user.role = token.role as string
+        session.user.emailVerified = (token.emailVerified as Date | null) ?? null
       }
       return session
     },

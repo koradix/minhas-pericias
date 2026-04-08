@@ -51,113 +51,110 @@ export default function Header({ onMenuClick, user }: HeaderProps) {
   const { title, section } = getPageInfo(pathname, user.role)
 
   return (
-    <header className="sticky top-0 z-10 flex h-16 flex-shrink-0 items-center justify-between bg-[#f8f9ff] px-4 lg:px-6 gap-4">
-
+    <header className="sticky top-0 z-10 flex h-20 flex-shrink-0 items-center justify-between bg-white px-6 lg:px-10 gap-8 border-b border-slate-100">
+      
       {/* ── Left — breadcrumb ── */}
-      <div className="flex items-center gap-3 min-w-0">
+      <div className="flex items-center gap-4 min-w-0">
         <button
           onClick={onMenuClick}
-          className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg text-[#9ca3af] hover:bg-white hover:text-[#374151] transition-all lg:hidden"
+          className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-none text-slate-400 hover:text-[#1f2937] hover:bg-slate-50 transition-all lg:hidden"
           aria-label="Abrir menu"
         >
-          <Menu className="h-[18px] w-[18px]" strokeWidth={1.5} />
+          <Menu className="h-5 w-5" strokeWidth={2} />
         </button>
 
-        <div className="flex items-center gap-1.5 min-w-0">
+        <div className="flex items-center gap-2 min-w-0">
           {section && (
             <>
-              <span className="hidden sm:block text-[12px] text-[#9ca3af] font-medium tracking-wide">{section}</span>
-              <ChevronRight className="hidden sm:block h-3 w-3 text-[#d1d5db] flex-shrink-0" />
+              <span className="hidden sm:block text-[10px] text-slate-400 font-black uppercase tracking-[0.2em]">{section}</span>
+              <ChevronRight className="hidden sm:block h-3 w-3 text-slate-200 flex-shrink-0" />
             </>
           )}
-          <span className="text-[14px] font-semibold text-[#1f2937] truncate font-manrope">{title}</span>
+          <h2 className="text-lg font-black text-[#1f2937] tracking-tighter truncate font-manrope">{title}</h2>
         </div>
       </div>
 
       {/* ── Center — search ── */}
-      <div className="hidden md:flex flex-1 max-w-[280px]">
+      <div className="hidden md:flex flex-1 max-w-sm">
         <div className="relative w-full">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#9ca3af] pointer-events-none" strokeWidth={1.5} />
+          <Search className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 pointer-events-none" strokeWidth={2.5} />
           <input
             type="text"
-            placeholder="Buscar..."
-            className="w-full h-9 pl-9 pr-3 rounded-lg bg-white text-[13px] text-[#374151] placeholder:text-[#9ca3af] border-0 focus:outline-none focus:ring-2 focus:ring-[#416900]/20 transition-all shadow-none"
+            placeholder="Buscar por processo, nome ou tribunal..."
+            className="w-full h-10 pl-8 pr-3 bg-transparent text-sm font-bold text-[#1f2937] placeholder:text-slate-300 border-0 border-b border-slate-100 focus:border-[#1f2937] focus:outline-none transition-all"
           />
         </div>
       </div>
 
       {/* ── Right ── */}
-      <div className="flex items-center gap-1 flex-shrink-0">
+      <div className="flex items-center gap-2 flex-shrink-0">
 
         {/* Search icon — mobile */}
         <button
-          className="flex md:hidden h-9 w-9 items-center justify-center rounded-lg text-[#9ca3af] hover:bg-white hover:text-[#374151] transition-all"
+          className="flex md:hidden h-10 w-10 items-center justify-center rounded-none text-slate-400 hover:bg-slate-50 transition-all"
           title="Buscar"
         >
-          <Search className="h-[18px] w-[18px]" strokeWidth={1.5} />
+          <Search className="h-5 w-5" strokeWidth={2} />
         </button>
 
         {/* Notifications */}
         <button
-          className="relative flex h-9 w-9 items-center justify-center rounded-lg text-[#9ca3af] hover:bg-white hover:text-[#374151] transition-all"
+          className="relative flex h-10 w-10 items-center justify-center rounded-none text-slate-400 hover:text-[#1f2937] hover:bg-slate-50 transition-all"
           title="Notificações"
         >
-          <Bell className="h-[18px] w-[18px]" strokeWidth={1.5} />
-          <span className="absolute right-2 top-2 flex h-1.5 w-1.5 rounded-full bg-[#84cc16]" />
+          <Bell className="h-5 w-5" strokeWidth={2} />
+          <span className="absolute right-2.5 top-2.5 flex h-2 w-2 rounded-full border-2 border-white bg-[#84cc16]" />
         </button>
 
         {/* User menu */}
-        <div className="relative ml-1.5 group">
+        <div className="relative ml-2 group">
           <button
-            className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-white transition-all"
+            className="flex items-center gap-3 rounded-none px-2 py-1.5 transition-all"
             title={user.name}
           >
-            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[#416900] text-white text-[11px] font-bold select-none tracking-wide">
+            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-none bg-[#1f2937] text-white text-[11px] font-black select-none tracking-widest font-manrope">
               {getInitials(user.name)}
             </div>
-            <span className="hidden sm:block text-[13px] font-medium text-[#374151] max-w-[88px] truncate">
+            <span className="hidden sm:block text-[11px] font-black text-[#1f2937] uppercase tracking-widest max-w-[100px] truncate">
               {user.name.split(' ')[0]}
             </span>
           </button>
 
           {/* Dropdown */}
-          <div className="absolute right-0 top-full mt-2 w-56 rounded-xl bg-white opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 shadow-[0_24px_48px_-12px_rgba(31,41,55,0.06)]">
+          <div className="absolute right-0 top-full mt-0 w-60 rounded-none bg-white border border-slate-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 shadow-2xl shadow-black/5">
             {/* User info */}
-            <div className="px-4 py-3.5 border-b border-[#f2f3f9]">
-              <p className="text-[13px] font-semibold text-[#1f2937] truncate">{user.name}</p>
-              <p className="text-[12px] text-[#9ca3af] truncate mt-0.5">{user.email}</p>
-              <span className="inline-block mt-2 text-[10px] font-semibold bg-[#f2f3f9] text-[#6b7280] px-2 py-0.5 rounded-md capitalize tracking-wide uppercase">
-                {user.role}
-              </span>
+            <div className="px-5 py-5 border-b border-slate-100 bg-slate-50 overflow-hidden">
+              <p className="text-[13px] font-black text-[#1f2937] truncate uppercase tracking-tight">{user.name}</p>
+              <p className="text-[12px] text-slate-400 font-medium truncate mt-1">{user.email}</p>
             </div>
 
             {/* Actions */}
-            <div className="p-1.5">
+            <div className="p-0">
               <Link
                 href="/contatos"
-                className="flex w-full items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] text-[#6b7280] hover:bg-[#f8f9ff] hover:text-[#374151] transition-all"
+                className="flex w-full items-center gap-3 px-5 py-4 text-[11px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 hover:text-[#1f2937] transition-all"
               >
-                <Users className="h-4 w-4 text-[#9ca3af]" strokeWidth={1.5} />
+                <Users className="h-4 w-4" strokeWidth={2} />
                 Contatos
               </Link>
               <Link
                 href="/parceiros"
-                className="flex w-full items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] text-[#6b7280] hover:bg-[#f8f9ff] hover:text-[#374151] transition-all"
+                className="flex w-full items-center gap-3 px-5 py-4 text-[11px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 hover:text-[#1f2937] transition-all"
               >
-                <Handshake className="h-4 w-4 text-[#9ca3af]" strokeWidth={1.5} />
+                <Handshake className="h-4 w-4" strokeWidth={2} />
                 Parceiros
               </Link>
-              <div className="my-1 border-t border-[#f2f3f9]" />
-              <button className="flex w-full items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] text-[#6b7280] hover:bg-[#f8f9ff] hover:text-[#374151] transition-all">
-                <Settings className="h-4 w-4 text-[#9ca3af]" strokeWidth={1.5} />
+              <div className="h-[1px] bg-slate-100" />
+              <button className="flex w-full items-center gap-3 px-5 py-4 text-[11px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 hover:text-[#1f2937] transition-all">
+                <Settings className="h-4 w-4" strokeWidth={2} />
                 Configurações
               </button>
               <button
                 onClick={() => signOut({ callbackUrl: '/login' })}
-                className="flex w-full items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] text-[#6b7280] hover:bg-red-50 hover:text-red-600 transition-all"
+                className="flex w-full items-center gap-3 px-5 py-4 text-[11px] font-black uppercase tracking-widest text-red-600 hover:bg-red-50 transition-all border-t border-red-50"
               >
-                <LogOut className="h-4 w-4" strokeWidth={1.5} />
-                Sair
+                <LogOut className="h-4 w-4" strokeWidth={2} />
+                Encerrar Sessão
               </button>
             </div>
           </div>

@@ -35,7 +35,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: {
     template: "%s | Perilab",
-    default: "Perilab — de perito para perito",
+    default: "Perilab",
   },
   description: "Plataforma de gestão pericial para peritos judiciais brasileiros",
   manifest: "/manifest.json",

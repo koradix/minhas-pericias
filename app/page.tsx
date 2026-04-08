@@ -11,8 +11,6 @@ import {
   FileOutput,
   DollarSign,
   Users,
-  Star,
-  Sparkles,
 } from 'lucide-react'
 
 // ─── Data ────────────────────────────────────────────────────────────────────
@@ -44,7 +42,7 @@ function getFeatureIcon(title: string) {
   if (t.includes('documento') || t.includes('laudo') || t.includes('relatório')) return FileOutput
   if (t.includes('financeiro') || t.includes('honorário')) return DollarSign
   if (t.includes('parceiro') || t.includes('demanda')) return Users
-  return Star
+  return FileText
 }
 
 const prospectionFeatures = [
@@ -119,9 +117,6 @@ function PeriLabLogo({ dark = true }: { dark?: boolean }) {
       <div style={{ fontSize: '1.75rem', fontWeight: 900, letterSpacing: '-0.03em' }}>
         <span style={{ color: dark ? '#1f2937' : 'white' }}>Peri</span>
         <span style={{ color: '#84cc16' }}>LaB</span>
-      </div>
-      <div style={{ fontSize: '0.6rem', color: dark ? '#9ca3af' : 'rgba(255,255,255,0.5)', fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', marginTop: '3px' }}>
-        de perito para perito
       </div>
     </div>
   )
@@ -198,277 +193,216 @@ export default function LandingPage() {
       </header>
 
       {/* ── Hero ── */}
-      <section className="relative flex min-h-screen flex-col overflow-hidden">
-        {/* Blurred background image */}
-        <div
-          aria-hidden
-          className="absolute inset-0 scale-110"
-          style={{
-            backgroundImage: `url('https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=1920&q=80')`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            filter: 'blur(10px)',
-          }}
-        />
-        {/* White overlay */}
-        <div aria-hidden className="absolute inset-0" style={{ background: 'rgba(255,255,255,0.88)' }} />
-
-        {/* Main content — centered single column */}
-        <div className="relative mx-auto flex w-full max-w-4xl flex-1 flex-col items-center justify-center px-4 pb-32 pt-32 text-center sm:px-6">
-
-          {/* Headline */}
-          <h1
-            className="mb-6"
-            style={{
-              color: '#1f2937',
-              fontWeight: 800,
-              fontSize: 'clamp(3rem, 6vw, 5.5rem)',
-              letterSpacing: '-0.03em',
-              lineHeight: 1.05,
-              textAlign: 'center',
-              fontFamily: 'var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif',
-            }}
-          >
-            Gestão pericial completa,<br />
-            <em style={{ color: '#84cc16', fontStyle: 'italic' }}>do processo ao laudo.</em>
-          </h1>
-
-          <p
-            className="mb-10"
-            style={{ color: '#6b7280', fontSize: 'clamp(1.1rem, 2vw, 1.35rem)', maxWidth: '600px', lineHeight: 1.7, textAlign: 'center', margin: '0 auto 2.5rem' }}
-          >
-            O Perilab organiza suas péricias, identifica oportunidades de nomeação e gera documentos profissionais com precisão.
-          </p>
-
-          <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-            <Link
-              href="/login"
-              className="inline-flex items-center justify-center gap-2 transition-all hover:bg-lime-400"
-              style={{ background: '#84cc16', color: '#1f2937', fontWeight: 600, padding: '16px 36px', fontSize: '1.05rem', borderRadius: '0.75rem' }}
-            >
-              Acessar plataforma
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-            <a
-              href="#planos"
-              className="inline-flex items-center justify-center gap-2 transition-all hover:border-slate-400"
-              style={{ border: '1px solid #d1d5db', color: '#374151', background: 'transparent', padding: '16px 36px', fontSize: '1.05rem', fontWeight: 600, borderRadius: '0.75rem' }}
-            >
-              Ver planos
-            </a>
-          </div>
-        </div>
-
-        {/* ── Stats bar (bottom of hero) ── */}
-        <div
-          className="relative w-full"
-          style={{
-            background: 'rgba(255,255,255,0.96)',
-            borderTop: '1px solid #e2e8f0',
-          }}
-        >
-          <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-center px-4 sm:px-6">
-            {[
-              { value: '200+', label: 'Peritos ativos' },
-              { value: '5.000+', label: 'Pericias gerenciadas' },
-              { value: '12.000+', label: 'Documentos gerados' },
-            ].map((s, i) => (
-              <div
-                key={s.label}
-                className="flex flex-col items-center py-6 px-10 sm:px-16"
-                style={i > 0 ? { borderLeft: '1px solid rgba(0,0,0,0.1)' } : {}}
-              >
-                <p style={{ color: '#1f2937', fontSize: '2rem', fontWeight: 800, lineHeight: 1, fontFamily: 'var(--font-montserrat), ui-sans-serif, system-ui, sans-serif' }}>{s.value}</p>
-                <p style={{ color: '#9ca3af', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: '4px' }}>{s.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Features ── */}
-      <section id="funcionalidades" className="py-24">
-        <div className="mx-auto max-w-[1100px] px-6">
-          {/* Header */}
-          <div className="mb-12 max-w-xl">
-            <p style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.15em', color: '#84cc16', textTransform: 'uppercase', marginBottom: '12px' }}>
-              Funcionalidades
+      <section className="relative pt-28 pb-10 lg:pt-36 lg:pb-16 overflow-hidden bg-white">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 flex flex-col lg:flex-row items-center gap-12 lg:gap-8">
+          
+          {/* Left Column - Typography & CTA */}
+          <div className="w-full lg:w-1/2 flex flex-col items-start text-left z-10">
+            <h1 className="text-[#111827] font-black leading-[1.05] tracking-tight mb-8"
+                style={{ fontSize: 'clamp(3.5rem, 6vw, 5.5rem)', fontFamily: 'var(--font-manrope), var(--font-montserrat), ui-sans-serif, system-ui, sans-serif' }}>
+              Gestão pericial completa,<br/>
+              <span className="text-[#84cc16]">do processo ao laudo.</span>
+            </h1>
+            
+            <p className="text-[#6b7280] text-lg sm:text-xl font-medium mb-10 max-w-md leading-relaxed">
+              O Perilab organiza suas péricias, identifica oportunidades de nomeação e gera documentos profissionais com precisão.
             </p>
-            <h2 style={{ fontSize: 'clamp(2rem, 3vw, 2.8rem)', fontWeight: 800, color: '#1f2937', letterSpacing: '-0.02em', lineHeight: 1.2, fontFamily: 'var(--font-montserrat), ui-sans-serif, system-ui, sans-serif' }}>
-              Tudo que o perito precisa
-            </h2>
-            <p style={{ color: '#6b7280', fontSize: '1rem', maxWidth: '560px', marginTop: '12px', lineHeight: 1.7 }}>
-              Do controle de processos à geração de laudos — uma plataforma integrada para profissionalizar sua atuação pericial.
-            </p>
-          </div>
-
-          {/* Divider */}
-          <div style={{ borderTop: '1px solid #e2e8f0' }} />
-
-          {/* Editorial list */}
-          {features.map((f, i) => (
-            <div
-              key={f.title}
-              className="transition-colors duration-150"
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '3rem 1fr 2fr',
-                gap: '2rem',
-                padding: '2rem 0',
-                borderBottom: '1px solid #e2e8f0',
-                alignItems: 'start',
-                cursor: 'default',
-              }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = '#fafafa' }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = 'transparent' }}
-            >
-              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#84cc16', letterSpacing: '0.05em', paddingTop: '3px' }}>
-                {String(i + 1).padStart(2, '0')}
-              </span>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1f2937', letterSpacing: '-0.01em', margin: 0 }}>
-                {f.title}
-              </h3>
-              <p style={{ fontSize: '0.95rem', color: '#6b7280', lineHeight: 1.7, margin: 0 }}>
-                {f.description}
-              </p>
+            
+            <div className="flex flex-wrap items-center gap-4">
+              <Link href="/login" 
+                    className="flex bg-[#a3e635] hover:bg-[#84cc16] text-[#111827] font-bold px-8 py-4 rounded-full transition-transform hover:scale-105 active:scale-95 text-lg items-center gap-2">
+                Acessar plataforma
+                <ArrowRight className="h-5 w-5" />
+              </Link>
+              <a href="#planos" 
+                 className="bg-[#1f2937] hover:bg-[#111827] text-white font-bold px-8 py-4 rounded-full transition-transform hover:scale-105 active:scale-95 text-lg">
+                Ver planos
+              </a>
             </div>
-          ))}
-        </div>
-      </section>
 
-      {/* ── Prospection ── */}
-      <section
-        id="prospeccao"
-        className="py-20 sm:py-28"
-        style={{ background: '#0f172a' }}
-      >
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="grid items-center gap-12 lg:grid-cols-2">
-            {/* Left column */}
-            <div>
-              {/* Label pill */}
-              <div
-                className="mb-4 inline-block"
+            {/* Floating Services */}
+            <div className="mt-14 flex flex-wrap items-center gap-4 text-sm font-semibold text-[#4b5563]">
+               <span className="flex items-start">Gestão <sup className="ml-0.5 text-[9px] font-bold text-[#9ca3af]">01</sup></span> <span className="text-slate-300">/</span>
+               <span className="flex items-start">Radar <sup className="ml-0.5 text-[9px] font-bold text-[#9ca3af]">02</sup></span> <span className="text-slate-300">/</span>
+               <span className="flex items-start">Rotas <sup className="ml-0.5 text-[9px] font-bold text-[#9ca3af]">03</sup></span> <span className="text-slate-300">/</span>
+               <span className="flex items-start">Documentos <sup className="ml-0.5 text-[9px] font-bold text-[#9ca3af]">04</sup></span>
+            </div>
+          </div>
+
+          {/* Right Column - Leaf Image & Stat Card */}
+          <div className="w-full lg:w-1/2 relative lg:h-[650px] mt-10 lg:mt-0 flex justify-end">
+            <div className="relative w-full max-w-lg aspect-[4/5] lg:aspect-auto lg:h-[90%] lg:absolute right-0 top-0">
+              <img 
+                src="https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=1470" 
+                alt="Equipe trabalhando" 
+                className="w-full h-full object-cover shadow-2xl"
                 style={{
-                  background: 'rgba(132,204,22,0.15)',
-                  border: '1px solid rgba(132,204,22,0.3)',
-                  color: '#a3e635',
-                  borderRadius: '999px',
-                  padding: '4px 14px',
-                  fontSize: '12px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.1em',
-                  fontWeight: 600,
+                  borderRadius: '160px 40px 20px 160px', // Leaf shape
                 }}
-              >
-                Módulo de Prospecção
+              />
+              
+              {/* Stats Overlay Card */}
+              <div className="absolute -bottom-6 -left-4 sm:-left-12 bg-white border border-slate-100 p-8 pb-10 w-[260px] shadow-2xl z-20"
+                   style={{ borderRadius: '24px' }}>
+                <h3 className="text-slate-900 text-4xl font-black font-manrope tracking-tight mb-2">5.000+</h3>
+                <p className="text-slate-700 font-bold text-lg mb-3">Péricias Gerenciadas</p>
+                <p className="text-slate-500 text-[13px] font-medium leading-relaxed">
+                  Pronto para escalar sua atuação no mercado jurídico? Nossas ferramentas entregam precisão cirúrgica.
+                </p>
               </div>
-              <h2
-                className="font-heading mb-5 text-3xl tracking-tight sm:text-[2.1rem]"
-                style={{ color: 'white', fontWeight: 800 }}
-              >
-                Conquiste novos trabalhos{' '}
-                <span style={{ color: '#84cc16' }}>no piloto automático</span>
-              </h2>
-              <p
-                className="mb-8 text-base leading-relaxed"
-                style={{ color: '#d1d5db' }}
-              >
-                O Perilab automatiza a prospecção de advogados, escritórios e seguradoras. Envie
-                e-mails personalizados, propostas e currículo de forma organizada e escalável —
-                enquanto você foca nas péricias.
-              </p>
-              <ul className="space-y-3.5">
-                {prospectionFeatures.map((item) => (
-                  <li key={item.text} className="flex items-start gap-3">
-                    <CheckCircle2
-                      className="mt-0.5 flex-shrink-0"
-                      style={{ color: '#84cc16', width: '20px', height: '20px' }}
-                    />
-                    <span className="text-sm leading-relaxed" style={{ color: '#d1d5db' }}>{item.text}</span>
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-10">
-                <a
-                  href="#planos"
-                  className="inline-flex items-center gap-2 text-sm font-semibold transition-colors"
-                  style={{ color: '#a3e635' }}
-                >
-                  Disponível nos planos Pro e Avançado
-                  <ArrowRight className="h-4 w-4" />
-                </a>
-              </div>
-            </div>
 
-            {/* Right column — clean dark card */}
-            <div
-              style={{
-                background: '#1e293b',
-                border: '1px solid rgba(255,255,255,0.07)',
-                borderRadius: '1.5rem',
-                padding: '1.5rem',
-              }}
-            >
-              <div className="mb-4 flex items-center justify-between">
-                <p className="text-sm font-semibold" style={{ color: 'white' }}>Campanha ativa</p>
-                <span
-                  className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium"
-                  style={{ background: 'rgba(52,211,153,0.15)', color: '#34d399' }}
-                >
-                  <span className="h-1.5 w-1.5 rounded-full" style={{ background: '#34d399' }} />
-                  Enviando
-                </span>
+              {/* Small floating card */}
+              <div className="absolute top-[40%] -left-12 bg-white rounded-3xl p-6 shadow-xl w-[220px] hidden sm:block">
+                <p className="text-[#1f2937] font-bold text-sm mb-4 leading-snug">Criando fluxos dinâmicos para sua atuação.</p>
+                <div className="flex items-end justify-between">
+                   <p className="text-3xl font-black text-[#1f2937]">9.8</p>
+                   <p className="text-[10px] text-slate-400 font-medium">Nota dos peritos</p>
+                </div>
               </div>
-              <div className="space-y-2.5">
-                {[
-                  { nome: 'Dr. Ricardo Alves', status: 'Respondeu', bg: 'rgba(52,211,153,0.15)', color: '#34d399' },
-                  { nome: 'Escritório Martins & Assoc.', status: 'Abriu e-mail', bg: 'rgba(251,191,36,0.15)', color: '#fbbf24' },
-                  { nome: 'Dra. Camila Santos', status: 'Enviado', bg: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)' },
-                  { nome: 'Braz Advogados', status: 'Enviado', bg: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)' },
-                  { nome: 'Dr. Fernando Costa', status: 'Agendou reunião', bg: 'rgba(167,139,250,0.15)', color: '#a78bfa' },
-                ].map((lead) => (
-                  <div
-                    key={lead.nome}
-                    className="flex items-center justify-between rounded-lg px-3 py-2.5"
-                    style={{ border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)' }}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold"
-                        style={{ background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.7)' }}
-                      >
-                        {lead.nome[0]}
-                      </div>
-                      <span className="text-xs font-medium" style={{ color: 'rgba(255,255,255,0.85)' }}>{lead.nome}</span>
-                    </div>
-                    <span
-                      className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
-                      style={{ background: lead.bg, color: lead.color }}
-                    >
-                      {lead.status}
-                    </span>
-                  </div>
-                ))}
-              </div>
-              <div
-                className="mt-4 grid grid-cols-3 gap-2 pt-4"
-                style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}
-              >
-                {[
-                  { label: 'Enviados', value: '124' },
-                  { label: 'Abertos', value: '68' },
-                  { label: 'Respondidos', value: '19' },
-                ].map((s) => (
-                  <div key={s.label} className="text-center">
-                    <p className="text-base font-bold tabular-nums" style={{ color: 'white' }}>{s.value}</p>
-                    <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.4)' }}>{s.label}</p>
-                  </div>
-                ))}
-              </div>
+
             </div>
           </div>
+
         </div>
+      </section>
+
+      {/* ── Secondary Section (Stats and Proof mapped from Example 2) ── */}
+      <section className="mx-auto max-w-7xl px-4 sm:px-6 my-20">
+         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
+            {/* Stat Block 1 */}
+            <div className="bg-slate-50 border border-slate-200 rounded-[32px] p-8 flex flex-col justify-center items-center text-center hover:scale-[1.02] transition-transform">
+               <h3 className="text-slate-900 text-5xl sm:text-6xl font-black mb-4">200+</h3>
+               <p className="text-slate-600 font-bold text-lg uppercase tracking-wide">Peritos Ativos</p>
+            </div>
+
+            {/* Stat Block 2 */}
+            <div className="bg-lime-500 rounded-[32px] p-8 flex flex-col justify-center items-center text-center hover:scale-[1.02] transition-transform shadow-sm">
+               <h3 className="text-slate-900 text-5xl sm:text-6xl font-black mb-4">5.000+</h3>
+               <p className="text-slate-800 font-bold text-lg uppercase tracking-wide">Péricias Gerenciadas</p>
+            </div>
+
+            {/* Stat Block 3 */}
+            <div className="bg-slate-50 border border-slate-200 rounded-[32px] p-8 flex flex-col justify-center items-center text-center hover:scale-[1.02] transition-transform">
+               <h3 className="text-slate-900 text-5xl sm:text-6xl font-black mb-4">12.000+</h3>
+               <p className="text-slate-600 font-bold text-lg uppercase tracking-wide">Documentos Gerados</p>
+            </div>
+         </div>
+      </section>
+
+      {/* ── Features List Section (Mapped from Example 3) ── */}
+      <section id="funcionalidades" className="mx-auto max-w-7xl px-4 sm:px-6 my-28">
+         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
+            
+            {/* Left Photo */}
+            <div className="w-full relative lg:sticky lg:top-36">
+               <div className="inline-block px-4 py-2 mb-4 text-[11px] font-bold text-[#84cc16] uppercase tracking-[0.15em]">
+                  Funcionalidades
+               </div>
+               <h2 className="text-[#1f2937] text-3xl sm:text-4xl lg:text-5xl font-black font-manrope leading-[1.1] mb-6 tracking-tight">
+                 Tudo que o perito precisa
+               </h2>
+               <p className="mb-8 text-[#6b7280] text-lg">Do controle de processos à geração de laudos — uma plataforma integrada para profissionalizar sua atuação pericial.</p>
+               
+               <div className="aspect-[4/3] w-full rounded-[40px] overflow-hidden mt-10">
+                 <img src="https://images.unsplash.com/photo-1542744173-8e7e53415bb0?q=80&w=1470" className="w-full h-full object-cover" alt="Team meeting"/>
+               </div>
+            </div>
+
+            {/* Right Feature List */}
+            <div className="flex flex-col gap-10 lg:pt-16 bg-slate-50 rounded-[40px] p-6 sm:p-10 lg:p-14 border border-slate-100">
+               {features.map((f, i) => (
+                  <div key={f.title} className="flex gap-6 items-start group">
+                     {/* Green Number box */}
+                     <div className="w-16 h-16 rounded-2xl bg-[#a3e635] flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105 shadow-md">
+                     <span className="text-[#111827] font-black text-xl">{String(i+1).padStart(2, '0')}</span>
+                     </div>
+                     <div className="pt-2">
+                        <h3 className="text-[#111827] text-2xl font-bold mb-3 tracking-tight">{f.title}</h3>
+                        <p className="text-slate-500 text-base leading-relaxed">{f.description}</p>
+                     </div>
+                  </div>
+               ))}
+            </div>
+         </div>
+      </section>
+
+      {/* ── Prospection Section ── */}
+      <section id="prospeccao" className="mx-auto max-w-7xl px-4 sm:px-6 my-28">
+         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            
+            {/* Left Content */}
+            <div>
+               <div className="inline-block px-4 py-2 mb-4 text-[11px] font-bold text-[#84cc16] uppercase tracking-[0.15em]">
+                  Módulo de Prospecção
+               </div>
+               <h2 className="text-[#1f2937] text-3xl sm:text-4xl lg:text-5xl font-black font-manrope leading-[1.1] mb-6 tracking-tight">
+                 Conquiste novos trabalhos <br /><span className="text-[#84cc16]">no piloto automático</span>
+               </h2>
+               <p className="mb-8 text-[#6b7280] text-lg leading-relaxed">
+                 O Perilab automatiza a prospecção de advogados, escritórios e seguradoras. Envie e-mails personalizados, propostas e currículo de forma organizada e escalável — enquanto você foca nas péricias.
+               </p>
+               
+               <ul className="space-y-4 mb-10 text-left">
+                 {prospectionFeatures.map((item) => (
+                   <li key={item.text} className="flex items-center gap-3">
+                     <CheckCircle2 className="flex-shrink-0 text-[#84cc16] w-6 h-6" />
+                     <span className="text-[#1f2937] font-bold text-[15px]">{item.text}</span>
+                   </li>
+                 ))}
+               </ul>
+               
+               <Link href="#planos" className="inline-flex items-center gap-2 text-[#84cc16] font-bold text-base hover:text-[#65a30d] transition-colors border-b-2 border-transparent hover:border-[#84cc16] pb-1">
+                  Disponível nos planos Pro e Avançado
+                  <ArrowRight className="w-4 h-4" />
+               </Link>
+            </div>
+
+            {/* Right Dashboard Mockup */}
+            <div className="bg-white border-2 border-slate-100 rounded-[40px] p-8 sm:p-10 shadow-2xl">
+               <div className="mb-8 flex items-center justify-between">
+                 <p className="text-[#1f2937] font-black text-xl tracking-tight">Campanha ativa</p>
+                 <span className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                   Enviando
+                 </span>
+               </div>
+               
+               <div className="space-y-3">
+                 {[
+                   { nome: 'Dr. Ricardo Alves', status: 'Respondeu', bg: 'bg-[#bbf7d0]', color: 'text-[#064e3b]' },
+                   { nome: 'Escritório Martins & Assoc.', status: 'Abriu e-mail', bg: 'bg-yellow-100', color: 'text-yellow-700' },
+                   { nome: 'Dra. Camila Santos', status: 'Enviado', bg: 'bg-slate-100', color: 'text-slate-500' },
+                   { nome: 'Braz Advogados', status: 'Enviado', bg: 'bg-slate-100', color: 'text-slate-500' },
+                   { nome: 'Dr. Fernando Costa', status: 'Agendou reunião', bg: 'bg-slate-100', color: 'text-slate-600' },
+                 ].map((lead) => (
+                   <div key={lead.nome} className="flex items-center justify-between rounded-2xl px-4 py-3 bg-slate-50 border border-slate-100 hover:border-slate-300 transition-colors cursor-pointer">
+                     <div className="flex items-center gap-3">
+                       <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white border border-slate-200 text-[#1f2937] font-bold shadow-sm">
+                         {lead.nome[0]}
+                       </div>
+                       <span className="text-[#1f2937] font-bold text-[13px]">{lead.nome}</span>
+                     </div>
+                     <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest ${lead.bg} ${lead.color}`}>
+                       {lead.status}
+                     </span>
+                   </div>
+                 ))}
+               </div>
+
+               <div className="mt-10 grid grid-cols-3 gap-2 pt-6 border-t-2 border-slate-100">
+                 {[
+                   { label: 'Enviados', value: '124' },
+                   { label: 'Abertos', value: '68' },
+                   { label: 'Respondidos', value: '19' },
+                 ].map((s) => (
+                   <div key={s.label} className="text-center">
+                     <p className="text-[#1f2937] text-3xl font-black font-manrope">{s.value}</p>
+                     <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">{s.label}</p>
+                   </div>
+                 ))}
+               </div>
+            </div>
+         </div>
       </section>
 
       {/* ── Pricing ── */}
@@ -535,7 +469,6 @@ export default function LandingPage() {
                       style={{
                         display: 'inline-flex',
                         alignItems: 'center',
-                        gap: '6px',
                         background: '#84cc16',
                         color: '#1f2937',
                         fontSize: '11px',
@@ -546,7 +479,6 @@ export default function LandingPage() {
                         whiteSpace: 'nowrap',
                       }}
                     >
-                      <Sparkles style={{ width: '12px', height: '12px' }} />
                       {plan.badge}
                     </span>
                   </div>
@@ -643,29 +575,37 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── CTA Banner ── */}
-      <section className="bg-slate-950 py-16">
-        <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
-          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-slate-800 bg-slate-900 px-4 py-1.5 text-xs text-slate-400">
-            <span style={{ fontFamily: 'var(--font-montserrat), ui-sans-serif', fontWeight: 900, fontSize: '11px', letterSpacing: '-0.03em', lineHeight: 1 }}>
-              <span style={{ color: 'white' }}>P</span><span style={{ color: '#84cc16' }}>B</span>
-            </span>
-            Dados seguros · LGPD compliant
+      {/* ── CTA Banner (Editorial Design) ── */}
+      <section className="bg-[#a3e635] pt-28 pb-32 border-b-[16px] border-[#1f2937]">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-16">
+            
+            <div className="max-w-3xl">
+              <div className="mb-8 inline-flex items-center gap-4">
+                <div className="w-16 h-[3px] bg-[#1f2937]" />
+                <span className="text-[#1f2937] font-black uppercase tracking-[0.2em] text-[11px]">
+                  Próximo Passo
+                </span>
+              </div>
+              <h2 className="font-manrope text-5xl sm:text-6xl lg:text-[5rem] font-black tracking-tighter text-[#1f2937] leading-[0.95]">
+                Profissionalize <br className="hidden lg:block"/>sua atuação pericial.
+              </h2>
+            </div>
+            
+            <div className="flex flex-col items-start lg:items-end gap-8 flex-shrink-0">
+              <p className="text-[#1f2937] font-medium text-xl max-w-md lg:text-right leading-relaxed">
+                Junte-se a centenas de grandes peritos que já usam o Perilab para organizar processos e multiplicar escalas.
+              </p>
+              <Link
+                href="/login"
+                className="inline-flex h-16 items-center gap-4 bg-[#1f2937] px-10 text-[15px] font-black text-white hover:bg-black transition-colors rounded-full shadow-2xl shadow-[#1f2937]/30"
+              >
+                Acessar a Plataforma
+                <ArrowRight className="h-5 w-5" />
+              </Link>
+            </div>
+
           </div>
-          <h2 className="font-heading mb-4 text-2xl font-bold tracking-tight text-white sm:text-3xl">
-            Pronto para profissionalizar<br className="hidden sm:block" /> sua atuação pericial?
-          </h2>
-          <p className="mb-8 text-base leading-relaxed text-slate-400">
-            Junte-se a centenas de peritos que já usam o Perilab para organizar processos e
-            conquistar novos trabalhos com mais eficiência.
-          </p>
-          <Link
-            href="/login"
-            className="inline-flex h-12 items-center gap-2 rounded-xl bg-lime-500 px-8 text-sm font-bold text-slate-900 transition-all hover:bg-lime-400 hover:scale-105"
-          >
-            Acessar a plataforma
-            <ArrowRight className="h-4 w-4" />
-          </Link>
         </div>
       </section>
 
@@ -681,9 +621,6 @@ export default function LandingPage() {
                   Peri<span style={{ color: '#84cc16' }}>LaB</span>
                 </span>
               </div>
-              <p className="text-xs leading-relaxed text-slate-500">
-                Plataforma de gestão pericial para profissionais do direito.
-              </p>
             </div>
 
             {/* Links */}
@@ -711,7 +648,7 @@ export default function LandingPage() {
 
           <div className="mt-10 border-t border-slate-800 pt-6">
             <p className="text-center text-[11px] text-slate-600">
-              © {new Date().getFullYear()} Perilab — de perito para perito. Todos os direitos reservados.
+              © {new Date().getFullYear()} Perilab. Todos os direitos reservados.
             </p>
           </div>
         </div>

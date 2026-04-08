@@ -100,10 +100,10 @@ export default async function DashboardPage() {
     <div className="p-4 md:p-12 max-w-7xl mx-auto w-full pt-4 md:pt-16">
 
       <section className="mb-14 border-none">
-        <h1 className="text-[32px] font-extrabold text-[#1f2937] tracking-tight leading-none mb-2 font-manrope">
+        <h1 className="font-manrope text-4xl md:text-5xl lg:text-[3.5rem] font-black text-[#1f2937] tracking-tighter leading-none mb-4">
           {saudacao}, {firstName}.
         </h1>
-        <p className="text-[#6b7280] text-lg font-medium">{subtitle}</p>
+        <p className="text-slate-500 text-lg font-medium tracking-tight uppercase tracking-wider">{subtitle}</p>
       </section>
 
       {peritoPerfil && !(peritoPerfil as { perfilCompleto?: boolean }).perfilCompleto && (
@@ -111,26 +111,26 @@ export default async function DashboardPage() {
       )}
 
       <section className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-        <Link href="/nomeacoes" className="group relative flex items-center justify-between p-8 bg-white border border-[#e2e8f0] rounded-xl hover:bg-slate-50 transition-all duration-300 overflow-hidden active:scale-95">
+        <Link href="/nomeacoes" className="group flex items-center justify-between p-8 xl:p-10 bg-white border-2 border-slate-100 hover:border-[#1f2937] rounded-none transition-all duration-300 overflow-hidden active:scale-95">
           <div className="flex items-center gap-6">
-            <Search className="h-8 w-8 text-[#1f2937] group-hover:text-[#416900] transition-colors" strokeWidth={1.5} />
+            <Search className="h-8 w-8 text-slate-400 group-hover:text-[#1f2937] transition-colors" strokeWidth={2} />
             <div className="text-left">
-              <span className="block text-xl font-bold text-[#1f2937] font-manrope">Buscar Nomeações</span>
-              <span className="text-sm text-[#6b7280]">Explorar novas oportunidades nos tribunais</span>
+              <span className="block text-2xl font-black text-[#1f2937] font-manrope tracking-tight">Buscar Nomeações</span>
+              <span className="text-sm font-semibold text-slate-400 mt-1 block">Explorar novas oportunidades nos tribunais</span>
             </div>
           </div>
-          <ChevronRight className="h-6 w-6 text-[#e2e8f0] group-hover:text-[#416900] transition-colors" />
+          <ChevronRight className="h-8 w-8 text-slate-200 group-hover:text-[#1f2937] transition-colors" strokeWidth={1.5} />
         </Link>
 
-        <Link href="/rotas/nova" className="group relative flex items-center justify-between p-8 bg-white border border-[#e2e8f0] rounded-xl hover:bg-slate-50 transition-all duration-300 overflow-hidden active:scale-95">
+        <Link href="/rotas/nova" className="group flex items-center justify-between p-8 xl:p-10 bg-white border-2 border-slate-100 hover:border-[#1f2937] rounded-none transition-all duration-300 overflow-hidden active:scale-95">
           <div className="flex items-center gap-6">
-            <Map className="h-8 w-8 text-[#416900]" strokeWidth={1.5} />
+            <Map className="h-8 w-8 text-slate-400 group-hover:text-[#1f2937] transition-colors" strokeWidth={2} />
             <div className="text-left">
-              <span className="block text-xl font-bold text-[#1f2937] font-manrope">Planejar Rota</span>
-              <span className="text-sm text-[#6b7280]">Otimizar visitas técnicas de hoje</span>
+              <span className="block text-2xl font-black text-[#1f2937] font-manrope tracking-tight">Planejar Rota</span>
+              <span className="text-sm font-semibold text-slate-400 mt-1 block">Otimizar viagens técnicas de hoje</span>
             </div>
           </div>
-          <ChevronRight className="h-6 w-6 text-[#e2e8f0] group-hover:text-[#416900] transition-colors" />
+          <ChevronRight className="h-8 w-8 text-slate-200 group-hover:text-[#1f2937] transition-colors" strokeWidth={1.5} />
         </Link>
       </section>
 
@@ -180,50 +180,47 @@ export default async function DashboardPage() {
         {/* Col 1: Minhas Perícias */}
         <div>
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-[#1f2937] font-manrope">Minhas Perícias</h2>
-            <Link href="/pericias" className="text-sm text-[#416900] font-medium hover:underline">Ver todas</Link>
+            <h2 className="text-2xl font-black text-[#1f2937] font-manrope tracking-tight">Minhas Perícias</h2>
+            <Link href="/pericias" className="text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-[#1f2937] transition-colors">Ver todas</Link>
           </div>
-          <div className={cn("flex flex-col bg-white border border-[#e2e8f0] rounded-xl overflow-hidden text-center", periciasAtivas.length === 0 ? "p-16 items-center justify-center min-h-[320px]" : "p-6 min-h-[320px]")}>
+          <div className={cn("flex flex-col bg-transparent", periciasAtivas.length === 0 ? "p-16 items-center justify-center min-h-[320px] bg-slate-50 border-2 border-slate-100" : "min-h-[320px] border-t-2 border-slate-200")}>
             {periciasAtivas.length === 0 ? (
               <>
-                <div className="mb-4 text-[#e2e8f0]">
-                   <Briefcase className="h-[72px] w-[72px]" strokeWidth={1} />
+                <div className="mb-4 text-slate-300">
+                   <Briefcase className="h-16 w-16" strokeWidth={1.5} />
                 </div>
-                <p className="text-[#6b7280] font-medium mb-6">Nenhuma ativa no momento</p>
+                <p className="text-slate-500 font-bold tracking-tight mb-8">Nenhuma ativa no momento</p>
                 <Link href="/rotas/nova">
-                  <button className="flex items-center gap-2 px-6 py-2 border border-[#416900] text-[#416900] rounded-lg text-sm font-semibold hover:bg-[#416900]/5 transition-colors">
+                  <button className="flex items-center gap-2 px-8 py-3 bg-[#1f2937] text-white rounded-none text-[11px] font-black uppercase tracking-widest hover:bg-[#84cc16] hover:text-[#1f2937] transition-colors">
                     <Plus className="h-4 w-4" />
                     Iniciar nova perícia
                   </button>
                 </Link>
               </>
             ) : (
-                <div className="w-full space-y-3">
+                <div className="w-full flex flex-col">
                   {periciasAtivas.map((p) => {
                     const pct = p.total > 0 ? Math.round((p.concluidos / p.total) * 100) : 0
                     return (
                       <Link
                         key={p.id}
                         href={`/pericias/${p.id}`}
-                        className="group flex items-center gap-4 rounded-xl border border-[#e2e8f0] bg-white shadow-sm p-5 hover:border-[#416900]/50 transition-all cursor-pointer text-left"
+                        className="group flex flex-col sm:flex-row sm:items-center gap-4 border-b border-slate-200 bg-transparent py-6 hover:bg-slate-50 px-4 transition-all cursor-pointer text-left"
                       >
-                        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-slate-50 border border-slate-100 group-hover:bg-white text-slate-400 group-hover:text-[#416900] transition-colors">
-                          <FileText className="h-5 w-5" strokeWidth={1.5} />
-                        </div>
-                        <div className="flex-1 min-w-0 px-2">
-                          <p className="text-base font-bold text-[#1f2937] truncate">{p.titulo}</p>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-lg font-bold text-[#1f2937] truncate">{p.titulo}</p>
                           {p.total > 0 && (
-                            <div className="mt-2 h-1 rounded-full bg-slate-100 overflow-hidden">
-                              <div className="h-full rounded-full bg-[#416900]" style={{ width: `${pct}%` }} />
+                            <div className="mt-3 flex items-center gap-3">
+                              <div className="h-1 w-32 bg-slate-200 overflow-hidden">
+                                <div className="h-full bg-[#1f2937]" style={{ width: `${pct}%` }} />
+                              </div>
+                              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                                {p.concluidos}/{p.total} concl.
+                              </span>
                             </div>
                           )}
                         </div>
-                        <div className="flex flex-col items-end gap-1 flex-shrink-0 pl-2">
-                          {p.total > 0 && (
-                            <span className="text-xs font-bold tabular-nums text-slate-500 text-right">
-                              {p.concluidos}/{p.total} concl.
-                            </span>
-                          )}
+                        <div className="flex flex-col sm:items-end gap-1 flex-shrink-0 mt-2 sm:mt-0">
                           <BadgeStatus status={p.status} />
                         </div>
                       </Link>
@@ -237,37 +234,35 @@ export default async function DashboardPage() {
         {/* Col 2: Próximas Rotas */}
         <div>
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-[#1f2937] font-manrope">Próximas Rotas</h2>
-            <Link href="/rotas" className="text-sm text-[#416900] font-medium hover:underline">Mapa completo</Link>
+            <h2 className="text-2xl font-black text-[#1f2937] font-manrope tracking-tight">Próximas Rotas</h2>
+            <Link href="/rotas" className="text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-[#1f2937] transition-colors">Mapa completo</Link>
           </div>
-          <div className={cn("flex flex-col border border-transparent rounded-xl overflow-hidden text-center", rotasAtivas.length === 0 ? "p-16 items-center justify-center min-h-[320px] bg-slate-50" : "p-0 min-h-[320px] bg-transparent")}>
+          <div className={cn("flex flex-col bg-transparent", rotasAtivas.length === 0 ? "p-16 items-center justify-center min-h-[320px] bg-slate-50 border-2 border-slate-100" : "min-h-[320px] border-t-2 border-slate-200")}>
             {rotasAtivas.length === 0 ? (
               <>
-                <div className="mb-4 text-[#e2e8f0]">
-                   <MapPin className="h-[72px] w-[72px]" strokeWidth={1} />
+                <div className="mb-4 text-slate-300">
+                   <MapPin className="h-16 w-16" strokeWidth={1.5} />
                 </div>
-                <p className="text-[#6b7280] font-medium mb-6">Nenhuma rota ativa</p>
+                <p className="text-slate-500 font-bold tracking-tight mb-8">Nenhuma rota ativa</p>
                 <Link href="/rotas/nova">
-                  <button className="flex items-center gap-2 px-6 py-2 bg-transparent text-[#1f2937] border border-transparent hover:bg-white hover:border-[#e2e8f0] shadow-sm rounded-lg text-sm font-semibold transition-all">
+                  <button className="flex items-center gap-2 px-8 py-3 bg-[#1f2937] text-white rounded-none text-[11px] font-black uppercase tracking-widest hover:bg-[#84cc16] hover:text-[#1f2937] transition-colors">
                     <Navigation className="h-4 w-4" />
-                    + Planejar agora
+                    Planejar agora
                   </button>
                 </Link>
               </>
             ) : (
-                <div className="w-full space-y-3">
+                <div className="w-full flex flex-col">
                   {rotasAtivas.map((rota) => (
                     <Link key={rota.id} href="/rotas/pericias" className="text-left w-full block">
-                      <div className="group flex items-start gap-4 rounded-xl border border-[#e2e8f0] bg-white shadow-sm p-5 hover:border-[#416900]/50 transition-all cursor-pointer">
-                        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-slate-50 border border-slate-100">
-                          <MapPin className="h-5 w-5 text-slate-500 group-hover:text-[#416900]" strokeWidth={1.5} />
+                      <div className="group flex items-center gap-5 border-b border-slate-200 bg-transparent py-5 hover:bg-slate-50 px-4 transition-all cursor-pointer">
+                        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center bg-slate-100 border border-slate-200 text-slate-400 group-hover:text-[#1f2937] group-hover:border-[#1f2937] transition-colors">
+                          <MapPin className="h-5 w-5" strokeWidth={2} />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center justify-between gap-2 mb-1.5">
-                            <p className="text-base font-bold text-[#1f2937] truncate">{rota.titulo}</p>
-                          </div>
-                          <p className="text-sm text-[#416900] font-semibold">
-                             {rota._count?.checkpoints || 0} locais registrados
+                          <p className="text-lg font-bold text-[#1f2937] truncate">{rota.titulo}</p>
+                          <p className="mt-1 text-[10px] uppercase tracking-widest font-black text-slate-400">
+                             {rota._count?.checkpoints || 0} locais marcados
                           </p>
                         </div>
                       </div>

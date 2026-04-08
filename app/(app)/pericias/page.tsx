@@ -124,70 +124,55 @@ export default async function PericiasPage() {
           </Link>
         </div>
       ) : (
-        <div className="bg-white border border-[#e2e8f0] rounded-xl overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="min-w-full">
-              <thead>
-                <tr className="border-b border-[#e2e8f0]">
-                  <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-[#6b7280]">
-                    Processo / Descrição
-                  </th>
-                  <th className="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-[#6b7280]">
-                    Vara
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-[#6b7280]">
-                    Status
-                  </th>
-                  <th className="hidden md:table-cell px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-[#6b7280]">
-                    Prazo
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#e2e8f0]">
-                {dbPericias.map((p) => {
-                  const st = statusPericiaMap[p.status] ?? { label: p.status, variant: 'secondary' as const }
-                  return (
-                    <tr key={p.id} className="hover:bg-slate-50 cursor-pointer transition-colors group">
-                      <td className="px-6 py-4">
-                        <Link href={`/pericias/${p.id}`} className="flex items-center gap-4">
-                          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-slate-50 border border-slate-100 group-hover:bg-white text-slate-400 group-hover:text-[#416900] transition-colors">
-                            <FileText className="h-5 w-5" strokeWidth={1.5} />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-sm font-bold text-[#1f2937] truncate">{p.assunto}</p>
-                            <p className="text-xs text-[#6b7280] font-mono mt-0.5">{p.numero}</p>
-                          </div>
-                        </Link>
-                      </td>
-                      <td className="hidden sm:table-cell px-6 py-4">
-                        <p className="text-xs text-[#6b7280] font-medium truncate max-w-xs">
-                          {p.rotaTitulo
-                            ? <span className="text-[#416900] font-semibold">{p.rotaTitulo}</span>
-                            : p.vara ?? '—'
-                          }
-                        </p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <Badge variant={st.variant} className="font-semibold shadow-none border-transparent">{st.label}</Badge>
-                      </td>
-                      <td className="hidden md:table-cell px-6 py-4">
-                        {p.prazo && (
-                          <span className="flex items-center gap-1.5 text-sm font-medium text-[#6b7280]">
-                            <Clock className="h-4 w-4 text-slate-400" /> {p.prazo}
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-          <div className="border-t border-[#e2e8f0] bg-slate-50/50 px-6 py-4">
-            <p className="text-xs font-semibold text-[#6b7280]">
-              Mostrando {dbPericias.length} perícia{dbPericias.length !== 1 ? 's' : ''}
-            </p>
-          </div>
+        <div className="grid grid-cols-1 gap-4">
+          {dbPericias.map((p) => {
+            const st = statusPericiaMap[p.status] ?? { label: p.status, variant: 'secondary' as const }
+            return (
+              <Link href={`/pericias/${p.id}`} key={p.id} className="group flex flex-col sm:flex-row sm:items-center justify-between gap-6 bg-white border border-slate-200 rounded-xl p-6 hover:border-[#416900]/30 hover:shadow-md transition-all">
+                  
+                <div className="flex items-start gap-5">
+                  <div className="flex mt-0.5 h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-slate-50 border border-slate-100 group-hover:bg-[#416900]/5 text-slate-400 group-hover:text-[#416900] transition-colors">
+                    <FileText className="h-6 w-6" strokeWidth={1} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[17px] sm:text-[19px] font-bold text-slate-900 font-manrope leading-tight mb-2 group-hover:text-[#416900] transition-colors">{p.assunto}</p>
+                    <div className="flex flex-wrap items-center gap-3 text-[14px] text-slate-500 font-medium">
+                      <span className="font-mono text-slate-400 font-semibold">{p.numero}</span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
+                      <span className="truncate max-w-[280px]">
+                        {p.rotaTitulo ? <span className="text-[#416900] font-bold flex items-center gap-1.5"><Navigation className="w-3.5 h-3.5" /> Rota: {p.rotaTitulo}</span> : p.vara ?? 'Vara não informada'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-6 sm:gap-10 border-t sm:border-t-0 border-slate-100 pt-5 sm:pt-0">
+                  {p.prazo && (
+                    <div className="flex flex-col items-start sm:items-end">
+                      <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-1">Prazo</span>
+                      <span className="flex items-center gap-1.5 text-[15px] font-bold text-slate-700">
+                        <Clock className="h-4 w-4 text-slate-400" /> {p.prazo}
+                      </span>
+                    </div>
+                  )}
+                  
+                  <div className="flex flex-col items-start sm:items-end ml-auto sm:ml-0">
+                    <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-1">Status</span>
+                    <div className="flex items-center gap-2">
+                      <div className={cn(
+                        "w-2.5 h-2.5 rounded-full shadow-sm",
+                        st.variant === 'success' ? 'bg-emerald-500' :
+                        st.variant === 'warning' ? 'bg-amber-500' :
+                        st.variant === 'info' ? 'bg-blue-500' : 'bg-slate-400'
+                      )} />
+                      <span className="text-[15px] font-bold text-slate-900 tracking-tight">{st.label}</span>
+                    </div>
+                  </div>
+                </div>
+                  
+              </Link>
+            )
+          })}
         </div>
       )}
 
@@ -203,76 +188,64 @@ export default async function PericiasPage() {
             </Link>
           </div>
 
-          <div className="bg-white border border-[#e2e8f0] rounded-xl overflow-hidden shadow-sm">
-            <div className="overflow-x-auto">
-              <table className="min-w-full">
-                <thead>
-                  <tr className="border-b border-[#e2e8f0]">
-                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-[#6b7280]">
-                      Rota
-                    </th>
-                    <th className="hidden sm:table-cell px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-[#6b7280]">
-                      Progresso
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-[#6b7280]">
-                      Status
-                    </th>
-                    <th className="hidden md:table-cell px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-[#6b7280]">
-                      Data
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#e2e8f0]">
-                  {rotas.map((rota) => (
-                    <tr key={rota.id} className="hover:bg-slate-50 cursor-pointer transition-colors group">
-                      <td className="px-6 py-4">
-                        <Link href={`/pericias/${rota.id}`} className="flex items-center gap-4">
-                          <div className={cn(
-                            'flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg border',
-                            rota.status === 'concluida' 
-                              ? 'bg-emerald-50 border-emerald-100 text-emerald-600' 
-                              : 'bg-slate-50 border-slate-100 text-slate-400 group-hover:bg-white group-hover:text-[#416900]'
-                          )}>
-                            {rota.status === 'concluida'
-                              ? <CheckCircle2 className="h-5 w-5" strokeWidth={1.5} />
-                              : <Navigation className="h-5 w-5" strokeWidth={1.5} />}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-sm font-bold text-[#1f2937] truncate">{rota.titulo}</p>
-                            <p className="text-xs text-[#6b7280] font-mono mt-0.5">{rota.id.slice(-8).toUpperCase()}</p>
-                          </div>
-                        </Link>
-                      </td>
-                      <td className="hidden sm:table-cell px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-24 h-1.5 rounded-full bg-slate-100 overflow-hidden">
-                            <div
-                              className="h-full rounded-full bg-[#416900]"
-                              style={{ width: rota.total > 0 ? `${Math.round((rota.concluidos / rota.total) * 100)}%` : '0%' }}
-                            />
-                          </div>
-                          <span className="text-xs font-bold text-[#6b7280] tabular-nums">
-                            {rota.concluidos}/{rota.total}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        {rota.status === 'concluida'
-                          ? <Badge variant="success" className="font-semibold shadow-none border-transparent">Concluída</Badge>
-                          : rota.status === 'cancelada'
-                            ? <Badge variant="secondary" className="font-semibold shadow-none border-transparent">Cancelada</Badge>
-                            : <Badge variant="info" className="font-semibold shadow-none border-transparent">Em andamento</Badge>}
-                      </td>
-                      <td className="hidden md:table-cell px-6 py-4">
-                        <span className="text-sm font-medium text-[#6b7280]">
-                          {new Date(rota.criadoEm).toLocaleDateString('pt-BR')}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          <div className="grid grid-cols-1 gap-4">
+            {rotas.map((rota) => (
+              <Link href={`/pericias/${rota.id}`} key={rota.id} className="group flex flex-col sm:flex-row sm:items-center justify-between gap-6 bg-white border border-slate-200 rounded-xl p-6 hover:border-[#416900]/30 hover:shadow-md transition-all">
+                
+                <div className="flex items-start gap-5">
+                  <div className={cn(
+                    "flex mt-0.5 h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl border transition-colors",
+                    rota.status === 'concluida' 
+                      ? 'bg-emerald-50 border-emerald-100 text-emerald-600' 
+                      : 'bg-slate-50 border-slate-100 text-slate-400 group-hover:bg-[#416900]/5 group-hover:text-[#416900]'
+                  )}>
+                    {rota.status === 'concluida'
+                      ? <CheckCircle2 className="h-6 w-6" strokeWidth={1} />
+                      : <Navigation className="h-6 w-6" strokeWidth={1} />}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[17px] sm:text-[19px] font-bold text-slate-900 font-manrope leading-tight mb-2 group-hover:text-[#416900] transition-colors">{rota.titulo}</p>
+                    <div className="flex flex-wrap items-center gap-3 text-[14px] text-slate-500 font-medium">
+                      <span className="font-mono text-slate-400 font-semibold">{rota.id.slice(-8).toUpperCase()}</span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
+                      <span>Criada em {new Date(rota.criadoEm).toLocaleDateString('pt-BR')}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-6 sm:gap-10 border-t sm:border-t-0 border-slate-100 pt-5 sm:pt-0">
+                  <div className="flex flex-col items-start sm:items-end">
+                    <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">Progresso</span>
+                    <div className="flex items-center gap-3">
+                      <div className="w-20 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                        <div
+                          className={cn("h-full rounded-full", rota.status === 'concluida' ? "bg-emerald-500" : "bg-[#416900]")}
+                          style={{ width: rota.total > 0 ? `${Math.round((rota.concluidos / rota.total) * 100)}%` : '0%' }}
+                        />
+                      </div>
+                      <span className="text-[14px] font-bold text-slate-500 tabular-nums">
+                        {rota.concluidos}/{rota.total}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-col items-start sm:items-end ml-auto sm:ml-0">
+                    <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-1">Status</span>
+                    <div className="flex items-center gap-2">
+                      <div className={cn(
+                        "w-2.5 h-2.5 rounded-full shadow-sm",
+                        rota.status === 'concluida' ? 'bg-emerald-500' :
+                        rota.status === 'cancelada' ? 'bg-slate-400' : 'bg-blue-500'
+                      )} />
+                      <span className="text-[15px] font-bold text-slate-900 tracking-tight">
+                        {rota.status === 'concluida' ? 'Concluída' : rota.status === 'cancelada' ? 'Cancelada' : 'Em andamento'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+              </Link>
+            ))}
           </div>
         </div>
       )}

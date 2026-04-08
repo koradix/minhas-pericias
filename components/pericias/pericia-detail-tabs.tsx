@@ -202,7 +202,7 @@ export function PericiaDetailTabs({
         : <ClipboardList className="h-3.5 w-3.5" />,
       disabled: false, // always clickable — shows locked state inside
       badge:    hasProposta && hasAnalise
-        ? <span className="ml-1 flex h-2 w-2 rounded-full bg-[#416900]" />
+        ? <span className="ml-1 flex h-2 w-2 rounded-full bg-[#84cc16]" />
         : undefined,
     },
     {
@@ -226,19 +226,19 @@ export function PericiaDetailTabs({
   ]
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-8">
       {/* Tab bar */}
-      <div className="flex gap-1 rounded-xl bg-[#f2f3f9] p-1">
+      <div className="flex gap-8 border-b border-slate-100 px-2 overflow-x-auto no-scrollbar">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => !tab.disabled && setActiveTab(tab.id)}
-            className={`flex-1 flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-all ${
+            className={`flex items-center gap-2 py-4 text-[11px] font-black uppercase tracking-[0.2em] transition-all border-b-2 -mb-[1px] ${
               activeTab === tab.id
-                ? 'bg-white text-[#1f2937] shadow-sm font-semibold'
+                ? 'border-[#1f2937] text-[#1f2937]'
                 : tab.disabled
-                  ? 'text-[#d1d5db] cursor-not-allowed'
-                  : 'text-[#9ca3af] hover:text-[#374151]'
+                  ? 'border-transparent text-slate-200 cursor-not-allowed'
+                  : 'border-transparent text-slate-400 hover:text-[#1f2937] hover:border-slate-300'
             }`}
           >
             {tab.icon}
@@ -249,66 +249,75 @@ export function PericiaDetailTabs({
       </div>
 
       {/* Tab content */}
-      {activeTab === 'resumo' && (
-        <div>{resumoContent}</div>
-      )}
+      <div className="pt-2">
+        {activeTab === 'resumo' && (
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">{resumoContent}</div>
+        )}
 
-      {activeTab === 'proposta' && (
-        <PropostaTab
-          periciaId={periciaId}
-          {...propostaProps}
-        />
-      )}
-
-      {activeTab === 'rota' && (
-        <RotaContent
-          periciaId={periciaId}
-          enderecoPericia={enderecoPericia}
-          checkpoints={checkpoints}
-        />
-      )}
-
-      {activeTab === 'fotos' && (
-        <div>{fotosContent}</div>
-      )}
-
-      {activeTab === 'laudo' && (
-        <section className="rounded-xl border border-[#e2e8f0] bg-white">
-          <div className="flex items-center gap-3 px-6 py-5">
-            <h2 className="text-[15px] font-semibold text-[#1f2937] font-manrope">Laudo pericial</h2>
+        {activeTab === 'proposta' && (
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <PropostaTab
+              periciaId={periciaId}
+              {...propostaProps}
+            />
           </div>
-          <div className="px-6 pb-6 space-y-3">
-            {periciaStatus === 'concluida' ? (
-              <Link href="/documentos/modelos" className="w-full">
-                <button className="w-full flex items-center justify-center gap-2 rounded-lg bg-[#416900] hover:bg-[#84cc16] hover:text-[#102000] text-white font-semibold text-[14px] px-4 py-3 transition-all">
-                  <ScrollText className="h-4 w-4" />
-                  Gerar laudo
-                </button>
-              </Link>
-            ) : (
-              <>
-                <button disabled className="w-full flex items-center justify-between gap-2 rounded-lg border border-[#e2e8f0] bg-[#f8f9ff] px-4 py-3 text-left cursor-not-allowed">
-                  <div className="flex items-center gap-2">
-                    <ScrollText className="h-4 w-4 text-[#d1d5db] flex-shrink-0" />
-                    <span className="text-[14px] font-medium text-[#d1d5db]">Estrutura do laudo</span>
-                  </div>
-                  <span className="text-[10px] font-semibold text-[#d1d5db] uppercase tracking-[0.1em]">Em breve</span>
-                </button>
-                <button disabled className="w-full flex items-center justify-between gap-2 rounded-lg border border-[#e2e8f0] bg-[#f8f9ff] px-4 py-3 text-left cursor-not-allowed">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-[#d1d5db] flex-shrink-0" />
-                    <span className="text-[14px] font-medium text-[#d1d5db]">Rascunho do laudo</span>
-                  </div>
-                  <span className="text-[10px] font-semibold text-[#d1d5db] uppercase tracking-[0.1em]">Em breve</span>
-                </button>
-                <p className="text-[13px] text-[#9ca3af] pt-1">
-                  Conclua a perícia para gerar o laudo.
-                </p>
-              </>
-            )}
+        )}
+
+        {activeTab === 'rota' && (
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <RotaContent
+              periciaId={periciaId}
+              enderecoPericia={enderecoPericia}
+              checkpoints={checkpoints}
+            />
           </div>
-        </section>
-      )}
+        )}
+
+        {activeTab === 'fotos' && (
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">{fotosContent}</div>
+        )}
+
+        {activeTab === 'laudo' && (
+          <section className="rounded-none border-l-4 border-[#1f2937] bg-white animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="flex items-center gap-3 px-8 py-8 border-b border-slate-50">
+              <h2 className="text-lg font-black text-[#1f2937] font-manrope uppercase tracking-tight">Laudo pericial</h2>
+            </div>
+            <div className="px-8 py-8 space-y-6">
+              {periciaStatus === 'concluida' ? (
+                <Link href="/documentos/modelos" className="block">
+                  <button className="w-full flex items-center justify-center gap-3 rounded-none bg-[#1f2937] hover:bg-[#84cc16] hover:text-[#1f2937] text-white font-black text-[11px] uppercase tracking-widest px-8 py-5 transition-all cursor-pointer">
+                    <ScrollText className="h-5 w-5" />
+                    Gerar laudo pericial
+                  </button>
+                </Link>
+              ) : (
+                <>
+                  <button disabled className="w-full flex items-center justify-between gap-4 rounded-none border border-slate-100 bg-slate-50 px-6 py-5 text-left cursor-not-allowed opacity-60">
+                    <div className="flex items-center gap-3">
+                      <ScrollText className="h-5 w-5 text-slate-300 flex-shrink-0" />
+                      <span className="text-[12px] font-black uppercase tracking-widest text-slate-300">Estrutura do laudo</span>
+                    </div>
+                    <span className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] border border-slate-200 px-2 py-1">Em breve</span>
+                  </button>
+                  <button disabled className="w-full flex items-center justify-between gap-4 rounded-none border border-slate-100 bg-slate-50 px-6 py-5 text-left cursor-not-allowed opacity-60">
+                    <div className="flex items-center gap-3">
+                      <FileText className="h-5 w-5 text-slate-300 flex-shrink-0" />
+                      <span className="text-[12px] font-black uppercase tracking-widest text-slate-300">Rascunho do laudo</span>
+                    </div>
+                    <span className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] border border-slate-200 px-2 py-1">Em breve</span>
+                  </button>
+                  <div className="flex items-center gap-2 pt-6 border-t border-slate-100">
+                    <AlertCircle className="h-4 w-4 text-slate-400" />
+                    <p className="text-[12px] font-medium text-slate-400 italic">
+                      Conclua a perícia para liberar a geração do documento final.
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+          </section>
+        )}
+      </div>
     </div>
   )
 }

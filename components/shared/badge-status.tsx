@@ -46,21 +46,21 @@ const STATUS_MAP: Record<string, StatusDef> = {
 }
 
 const variantClass: Record<Variant, string> = {
-  lime:    'bg-lime-50    text-lime-700    ring-lime-600/15',
-  emerald: 'bg-emerald-50 text-emerald-700 ring-emerald-600/15',
-  amber:   'bg-amber-50   text-amber-700   ring-amber-600/15',
-  rose:    'bg-rose-50    text-rose-700    ring-rose-600/15',
-  slate:   'bg-slate-100  text-slate-600   ring-slate-500/15',
-  violet:  'bg-violet-50  text-violet-700  ring-violet-600/15',
+  lime:    'bg-[#a3e635] text-[#1f2937]',
+  emerald: 'bg-emerald-100 text-emerald-900',
+  amber:   'bg-amber-100   text-amber-900',
+  rose:    'bg-red-100     text-red-900',
+  slate:   'bg-slate-100   text-slate-900',
+  violet:  'bg-violet-100  text-violet-900',
 }
 
 // ─── Dot indicator ─────────────────────────────────────────────────────────────
 
 const dotClass: Record<Variant, string> = {
-  lime:    'bg-lime-500',
+  lime:    'bg-[#a3e635]',
   emerald: 'bg-emerald-500',
   amber:   'bg-amber-500',
-  rose:    'bg-rose-500',
+  rose:    'bg-red-500',
   slate:   'bg-slate-400',
   violet:  'bg-violet-500',
 }
@@ -81,8 +81,8 @@ export function BadgeStatus({ status, label, dot = false, className }: BadgeStat
 
   if (dot) {
     return (
-      <span className={cn('inline-flex items-center gap-1.5 text-xs text-slate-600', className)}>
-        <span className={cn('h-1.5 w-1.5 rounded-full flex-shrink-0', dotClass[variant])} />
+      <span className={cn('inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-slate-500', className)}>
+        <span className={cn('h-2 w-2 rounded-none flex-shrink-0', dotClass[variant])} />
         {displayLabel}
       </span>
     )
@@ -91,7 +91,7 @@ export function BadgeStatus({ status, label, dot = false, className }: BadgeStat
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-medium ring-1 ring-inset',
+        'inline-flex items-center rounded-none px-2 py-1 text-[10px] font-black uppercase tracking-widest',
         variantClass[variant],
         className,
       )}

@@ -23,64 +23,67 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen bg-white font-display">
 
-      {/* ── Lado esquerdo — branding dark (Restaurado conforme Print) ── */}
+      {/* ── Lado esquerdo — branding dark ── */}
       <div
-        className="hidden lg:flex lg:w-[480px] xl:w-[540px] flex-col justify-between p-12 flex-shrink-0"
+        className="hidden lg:flex lg:w-[480px] xl:w-[540px] flex-col justify-between p-12 lg:p-16 flex-shrink-0"
         style={{ background: '#0f172a' }}
       >
         {/* Logo */}
-        <Link href="/">
-          <PeriLabLogo />
+        <Link href="/" className="inline-block">
+          <div className="flex items-center gap-2 mb-3">
+            <span style={{ fontFamily: 'var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif', fontWeight: 900, color: '#ffffff', fontSize: '2rem', letterSpacing: '-0.03em' }}>
+              Peri<span style={{ color: '#84cc16' }}>LaB</span>
+            </span>
+          </div>
         </Link>
 
         {/* Benefícios */}
-        <div className="space-y-8">
+        <div className="space-y-10">
           <div>
-            <h2 className="text-white text-[1.75rem] font-extrabold tracking-tight leading-[1.25]">
+            <h2 className="font-manrope text-5xl xl:text-[3.5rem] font-black tracking-tighter text-white leading-[0.95]">
               Gestão pericial<br />
-              <span className="text-[#84cc16]">do processo ao laudo.</span>
+              <span className="text-[#84cc16]">do processo<br/>ao laudo.</span>
             </h2>
-            <p className="text-[#64748b] text-[0.9rem] mt-4 leading-[1.7]">
+            <p className="text-slate-400 text-[15px] font-medium mt-6 leading-relaxed max-w-sm">
               Radar de nomeações, rotas, documentos e IA — tudo num só lugar.
             </p>
           </div>
 
-          <ul className="space-y-4">
+          <ul className="space-y-5">
             {[
               'Monitore varas e nomeações automaticamente',
               'Gere propostas e laudos com IA',
               'Organize rotas e vistorias de campo',
             ].map((item) => (
-              <li key={item} className="flex items-center gap-3">
+              <li key={item} className="flex items-center gap-4">
                 <span
                   className="flex-shrink-0 flex items-center justify-center rounded-full"
-                  style={{ width: 22, height: 22, background: 'rgba(132,204,22,0.15)', border: '1px solid rgba(132,204,22,0.3)' }}
+                  style={{ width: 24, height: 24, background: 'rgba(132,204,22,0.15)', border: '1px solid rgba(132,204,22,0.3)' }}
                 >
-                  <svg width="11" height="9" viewBox="0 0 10 8" fill="none">
+                  <svg width="12" height="10" viewBox="0 0 10 8" fill="none">
                     <path d="M1 4l2.5 2.5L9 1" stroke="#84cc16" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </span>
-                <span className="text-[#94a3b8] text-[0.875rem] font-medium">{item}</span>
+                <span className="text-slate-300 text-[15px] font-medium tracking-tight">{item}</span>
               </li>
             ))}
           </ul>
         </div>
 
         {/* Rodapé do painel */}
-        <p className="text-[#334155] text-[0.75rem] font-medium tracking-wide">
+        <p className="text-slate-500 text-xs font-bold tracking-wider mb-2 uppercase">
           © {new Date().getFullYear()} Perilab · Todos os direitos reservados
         </p>
       </div>
 
-      {/* ── Lado direito — formulário (Opção Stitch) ── */}
+      {/* ── Lado direito — formulário ── */}
       <main className="flex flex-1 flex-col items-center justify-center px-8 lg:px-12 py-16">
         
         {/* Logo mobile */}
-        <div className="mb-12 lg:hidden">
+        <div className="mb-12 lg:hidden w-full max-w-[400px]">
           <Link href="/">
             <div className="text-3xl font-black tracking-tighter">
-              <span className="text-slate-900">Peri</span>
-              <span className="text-[#84cc16]">LaB</span>
+              <span className="text-[#1f2937]">Peri</span><span className="text-[#84cc16]">LaB</span>
             </div>
           </Link>
         </div>
@@ -95,7 +98,6 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Form Container (Aesthetic Stitch Option) */}
           <div className="p-1">
             <LoginForm />
           </div>

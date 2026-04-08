@@ -10,15 +10,46 @@ datasource db {
 }
 
 model User {
-  id           String         @id @default(cuid())
-  email        String         @unique
-  name         String
-  passwordHash String
-  role         String         @default("perito")
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  varas        TribunalVara[]
-  modelos      ModeloBase[]   @relation("ModelosBase")
+  id            String         @id @default(cuid())
+  email         String         @unique
+  name          String
+  passwordHash  String?        // nullable — social login users don't have a password
+  role          String         @default("perito")
+  emailVerified DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  varas         TribunalVara[]
+  modelos       ModeloBase[]   @relation("ModelosBase")
+  accounts      Account[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 model Parceiro {
@@ -386,6 +417,58 @@ model VaraContato {
   criadoEm           DateTime @default(now())
 
   @@unique([peritoId, tribunalSigla, varaNome])
+}
+
+// ─── Varas públicas (registro oficial TJRJ) ──────────────────────────────────
+
+model VaraPublica {
+  id             String             @id @default(cuid())
+  uf             String             @default("RJ")
+  tribunal       String             @default("TJRJ")
+  comarca        String
+  varaNome       String
+  emailPrincipal String?
+  emailGabinete  String?
+  telefone       String?
+  fax            String?
+  endereco       String?
+  cep            String?
+  juizTitular    String?
+  ativa          Boolean            @default(true)
+  criadoEm       DateTime           @default(now())
+  atualizadoEm   DateTime           @updatedAt
+  visitas        ProspeccaoVisita[]
+
+  @@unique([uf, comarca, varaNome])
+  @@index([uf, comarca])
+}
+
+// ─── Visitas de prospecção por perito ────────────────────────────────────────
+
+model ProspeccaoVisita {
+  id           String       @id @default(cuid())
+  peritoId     String
+  varaId       String?
+  comarca      String
+  varaNome     String
+  tribunal     String       @default("TJRJ")
+  uf           String       @default("RJ")
+  dataVisita   DateTime
+  resultado      String       @default("realizada") // realizada | nao_atendido | remarcado | cancelado
+  anotacoes      String?
+  juizEncontrado String?
+  contatoNome    String?
+  contatoRole    String?
+  contatoEmail   String?      // e-mail fornecido pelo contato
+  contatoFotoUrl String?      // URL da foto do secretário/contato
+  emailEnviadoEm DateTime?    // última vez que enviou e-mail para esta vara
+  followUpEm     DateTime?
+  criadoEm       DateTime     @default(now())
+  atualizadoEm   DateTime     @updatedAt
+  vara           VaraPublica? @relation(fields: [varaId], references: [id])
+
+  @@index([peritoId])
+  @@index([varaId])
 }
 
 model CheckpointMidia {
