@@ -1,20 +1,6 @@
 'use client'
 
-import { useState, useTransition, useMemo } from 'react'
-import {
-  MapPin,
-  Plus,
-  Trash2,
-  ExternalLink,
-  Loader2,
-  Building2,
-  Landmark,
-  Briefcase,
-  ArrowUp,
-  ArrowDown,
-  Copy,
-  CheckCircle2,
-} from 'lucide-react'
+import React, { useState, useTransition, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { salvarRotaProspeccao } from '@/lib/actions/rotas-nova'
@@ -25,29 +11,11 @@ import dynamic from 'next/dynamic'
 const RouteMapDynamic = dynamic(() => import('@/components/maps/route-map-dynamic'), {
   ssr: false,
   loading: () => (
-    <div className="h-full w-full flex items-center justify-center bg-slate-50">
-      <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+    <div className="h-full w-full flex items-center justify-center bg-white border border-slate-100">
+      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300">CARREGANDO MAPA...</span>
     </div>
   ),
 })
-
-// ─── Config ───────────────────────────────────────────────────────────────────
-
-const tipoIcon: Record<TipoPontoRota, typeof MapPin> = {
-  FORUM:      Building2,
-  VARA_CIVEL: Landmark,
-  ESCRITORIO: Briefcase,
-  PERICIA:    MapPin,
-}
-
-const tipoColor: Record<TipoPontoRota, string> = {
-  FORUM:      'text-blue-700 bg-blue-50 border-blue-200',
-  VARA_CIVEL: 'text-violet-700 bg-violet-50 border-violet-200',
-  ESCRITORIO: 'text-amber-700 bg-amber-50 border-amber-200',
-  PERICIA:    'text-emerald-700 bg-emerald-50 border-emerald-200',
-}
-
-// ─── Google Maps link ─────────────────────────────────────────────────────────
 
 function buildGoogleMapsUrl(
   pontos: { latitude: number; longitude: number }[],
@@ -79,7 +47,6 @@ export function NovaRotaForm({ varas, grupos }: Props) {
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
 
-  // ── Seleção ──────────────────────────────────────────────────────────────
   function addVara(vara: VaraCatalog) {
     if (selecionadas.find((v) => v.id === vara.id)) return
     setSelecionadas((p) => [...p, vara])
@@ -107,7 +74,6 @@ export function NovaRotaForm({ varas, grupos }: Props) {
     })
   }
 
-  // ── Map data ─────────────────────────────────────────────────────────────
   const mapRoute = useMemo(
     () => ({
       id: 'nova',
@@ -125,7 +91,6 @@ export function NovaRotaForm({ varas, grupos }: Props) {
     [selecionadas],
   )
 
-  // ── Google Maps link ─────────────────────────────────────────────────────
   const gmapsUrl = buildGoogleMapsUrl(selecionadas)
 
   function copyLink() {
@@ -134,10 +99,9 @@ export function NovaRotaForm({ varas, grupos }: Props) {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  // ── Save ─────────────────────────────────────────────────────────────────
   function handleSalvar() {
-    if (!titulo.trim()) { setError('Informe um título para a rota'); return }
-    if (selecionadas.length < 1) { setError('Selecione ao menos 1 parada'); return }
+    if (!titulo.trim()) { setError('INFORME UM TÍTULO PARA A ROTA'); return }
+    if (selecionadas.length < 1) { setError('SELECIONE AO MENOS 1 PARADA'); return }
     setError(null)
     startTransition(async () => {
       const res = await salvarRotaProspeccao({
@@ -150,11 +114,10 @@ export function NovaRotaForm({ varas, grupos }: Props) {
           ordem: i + 1,
         })),
       })
-      if (res && !res.ok) setError(res.error ?? 'Erro ao salvar')
+      if (res && !res.ok) setError(res.error ?? 'ERRO AO SALVAR')
     })
   }
 
-  // ── Filtered varas ───────────────────────────────────────────────────────
   const filtradas = filtro.trim()
     ? varas.filter(
         (v) =>
@@ -162,76 +125,55 @@ export function NovaRotaForm({ varas, grupos }: Props) {
           v.tribunal.toLowerCase().includes(filtro.toLowerCase()) ||
           v.cidade.toLowerCase().includes(filtro.toLowerCase()),
       )
-    : null // null = show grouped view
+    : null
 
   const selectedIds = new Set(selecionadas.map((v) => v.id))
 
-  // ─── Render ───────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-6">
+    <div className="space-y-12">
 
       {/* Título */}
-      <div>
-        <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-          Nome da rota <span className="text-rose-500">*</span>
+      <div className="max-w-2xl">
+        <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-4">
+          NOME DA ROTA
         </label>
         <input
           type="text"
           value={titulo}
           onChange={(e) => setTitulo(e.target.value)}
-          placeholder="Ex: Circuito Centro — Varas Cíveis RJ"
-          className="w-full h-10 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-lime-400 focus:outline-none focus:ring-1 focus:ring-lime-400"
+          placeholder="EX: CIRCUITO CENTRO — VARAS CÍVEIS"
+          className="w-full text-2xl font-bold tracking-tight text-slate-900 border-0 border-b border-slate-100 bg-transparent py-4 focus:ring-0 focus:border-slate-900 placeholder:text-slate-100 transition-all uppercase"
         />
       </div>
 
-      {/* Main area: selector + pontos selecionados */}
-      <div className="grid lg:grid-cols-2 gap-5">
-
-        {/* ── Varas disponíveis ── */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm space-y-3">
-          <p className="text-sm font-semibold text-slate-900">
-            Perícias disponíveis
-            <span className="ml-2 text-xs font-normal text-slate-400">{varas.length} locais</span>
-          </p>
+      <div className="grid lg:grid-cols-2 gap-px bg-slate-100 border border-slate-100">
+        {/* PARADAS DISPONÍVEIS */}
+        <div className="bg-white p-8 space-y-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-slate-900">PERÍCIAS DISPONÍVEIS</h3>
+            <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">{varas.length} LOCAIS</span>
+          </div>
 
           <input
             type="text"
             value={filtro}
             onChange={(e) => setFiltro(e.target.value)}
-            placeholder="Filtrar por processo, assunto ou cidade…"
-            className="w-full h-9 rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs text-slate-700 placeholder:text-slate-400 focus:border-lime-400 focus:outline-none focus:ring-1 focus:ring-lime-400"
+            placeholder="PESQUISAR..."
+            className="w-full h-10 bg-slate-50 border-0 text-[10px] font-bold tracking-widest px-4 focus:ring-0 placeholder:text-slate-200 uppercase"
           />
 
-          <div className="max-h-72 overflow-y-auto space-y-2 pr-1">
+          <div className="max-h-[400px] overflow-y-auto space-y-px">
             {filtradas ? (
-              /* ── Search results ── */
-              filtradas.length === 0 ? (
-                <p className="text-xs text-slate-400 py-4 text-center">Nenhum resultado</p>
-              ) : (
-                filtradas.map((vara) => (
-                  <VaraItem
-                    key={vara.id}
-                    vara={vara}
-                    selected={selectedIds.has(vara.id)}
-                    onAdd={addVara}
-                  />
-                ))
-              )
+              filtradas.map((vara) => (
+                <VaraItem key={vara.id} vara={vara} selected={selectedIds.has(vara.id)} onAdd={addVara} />
+              ))
             ) : (
-              /* ── Grouped view ── */
               Object.entries(grupos).map(([grupo, items]) => (
-                <div key={grupo}>
-                  <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400 mb-1">
-                    {grupo}
-                  </p>
-                  <div className="space-y-1">
+                <div key={grupo} className="py-2 first:pt-0">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-300 mb-2 mt-4 ml-4">{grupo}</p>
+                  <div className="space-y-px">
                     {items.map((vara) => (
-                      <VaraItem
-                        key={vara.id}
-                        vara={vara}
-                        selected={selectedIds.has(vara.id)}
-                        onAdd={addVara}
-                      />
+                      <VaraItem key={vara.id} vara={vara} selected={selectedIds.has(vara.id)} onAdd={addVara} />
                     ))}
                   </div>
                 </div>
@@ -240,74 +182,37 @@ export function NovaRotaForm({ varas, grupos }: Props) {
           </div>
         </div>
 
-        {/* ── Pontos selecionados ── */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm space-y-3">
+        {/* ROTA ATUAL */}
+        <div className="bg-white p-8 space-y-6">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-slate-900">
-              Rota
-              {selecionadas.length > 0 && (
-                <span className="ml-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-lime-100 px-1.5 text-[10px] font-bold text-lime-700">
-                  {selecionadas.length}
-                </span>
-              )}
-            </p>
+            <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-slate-900">CONFIGURAÇÃO DA ROTA</h3>
             {selecionadas.length > 0 && (
-              <button
-                onClick={() => setSelecionadas([])}
-                className="text-[11px] text-slate-400 hover:text-rose-600 transition-colors"
-              >
-                Limpar
-              </button>
+              <button onClick={() => setSelecionadas([])} className="text-[10px] font-bold uppercase tracking-widest text-[#a3e635] hover:text-slate-900 transition-colors">LIMPAR</button>
             )}
           </div>
 
           {selecionadas.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 py-8 text-slate-400">
-              <MapPin className="h-8 w-8 text-slate-200" />
-              <p className="text-xs">Clique em perícias para adicionar à rota</p>
+            <div className="h-64 flex flex-col items-center justify-center text-slate-200 border border-dashed border-slate-100">
+              <p className="text-[11px] font-bold uppercase tracking-widest">ADICIONE PONTOS À ESQUERDA</p>
             </div>
           ) : (
-            <div className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
-              {selecionadas.map((vara, idx) => {
-                const Icon = tipoIcon[vara.tipo]
-                return (
-                  <div
-                    key={vara.id}
-                    className="flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2"
-                  >
-                    <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-lime-500 text-[10px] font-bold text-white">
-                      {idx + 1}
-                    </span>
-                    <Icon className="h-3.5 w-3.5 flex-shrink-0 text-slate-500" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-slate-800 truncate">{vara.nome}</p>
-                      <p className="text-[10px] text-slate-400 truncate">{vara.cidade} · {vara.tribunal}</p>
-                    </div>
-                    <div className="flex items-center gap-0.5 flex-shrink-0">
-                      <button
-                        onClick={() => moveUp(idx)}
-                        disabled={idx === 0}
-                        className="p-1 rounded text-slate-300 hover:text-slate-600 disabled:opacity-0 transition-colors"
-                      >
-                        <ArrowUp className="h-3 w-3" />
-                      </button>
-                      <button
-                        onClick={() => moveDown(idx)}
-                        disabled={idx === selecionadas.length - 1}
-                        className="p-1 rounded text-slate-300 hover:text-slate-600 disabled:opacity-0 transition-colors"
-                      >
-                        <ArrowDown className="h-3 w-3" />
-                      </button>
-                      <button
-                        onClick={() => removeVara(vara.id)}
-                        className="p-1 rounded text-slate-300 hover:text-rose-500 transition-colors"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
-                    </div>
+            <div className="space-y-px bg-slate-50 border border-slate-50 max-h-[400px] overflow-y-auto">
+              {selecionadas.map((vara, idx) => (
+                <div key={vara.id} className="flex items-center gap-4 bg-white p-4 group leading-none">
+                  <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center bg-slate-900 text-[10px] font-bold text-white leading-none">
+                    {idx + 1}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] font-bold text-slate-900 uppercase tracking-wider truncate leading-tight">{vara.nome}</p>
+                    <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest mt-1 truncate">{vara.cidade}</p>
                   </div>
-                )
-              })}
+                  <div className="flex items-center gap-4 opacity-0 group-hover:opacity-100 transition-all">
+                    <button onClick={() => moveUp(idx)} disabled={idx === 0} className="text-[10px] font-bold text-slate-300 hover:text-slate-900 disabled:opacity-10">↑</button>
+                    <button onClick={() => moveDown(idx)} disabled={idx === selecionadas.length - 1} className="text-[10px] font-bold text-slate-300 hover:text-slate-900 disabled:opacity-10">↓</button>
+                    <button onClick={() => removeVara(vara.id)} className="text-[10px] font-bold text-red-300 hover:text-red-500">X</button>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -315,9 +220,9 @@ export function NovaRotaForm({ varas, grupos }: Props) {
 
       {/* Mapa preview */}
       {selecionadas.length >= 1 && (
-        <div>
-          <p className="text-sm font-semibold text-slate-900 mb-2">Preview no mapa</p>
-          <div className="h-[340px] w-full overflow-hidden rounded-xl border border-slate-200 shadow-sm">
+        <div className="space-y-6">
+          <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-slate-900">PREVIEW DA ROTA</h3>
+          <div className="h-[400px] w-full overflow-hidden border border-slate-100">
             <RouteMapDynamic routes={[mapRoute]} />
           </div>
         </div>
@@ -325,104 +230,59 @@ export function NovaRotaForm({ varas, grupos }: Props) {
 
       {/* Google Maps link */}
       {selecionadas.length >= 1 && (
-        <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 flex items-center gap-3">
-          <ExternalLink className="h-4 w-4 text-slate-400 flex-shrink-0" />
+        <div className="p-8 bg-slate-900 flex items-center justify-between gap-12">
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-slate-700 mb-0.5">Link Google Maps</p>
-            <p className="text-[11px] text-slate-400 truncate">{gmapsUrl}</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 mb-2">INTEGRAÇÃO GOOGLE MAPS</p>
+            <p className="text-[11px] font-bold text-white uppercase tracking-widest truncate">{gmapsUrl}</p>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <button
-              onClick={copyLink}
-              className="flex items-center gap-1 text-[11px] text-slate-500 hover:text-slate-800 transition-colors"
-            >
-              {copied ? (
-                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-              ) : (
-                <Copy className="h-3.5 w-3.5" />
-              )}
-              {copied ? 'Copiado!' : 'Copiar'}
+          <div className="flex items-center gap-8">
+            <button onClick={copyLink} className="text-[10px] font-bold uppercase tracking-widest text-[#a3e635] hover:text-white transition-colors">
+              {copied ? 'COPIADO' : 'COPIAR LINK'}
             </button>
-            <a
-              href={gmapsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 rounded-lg bg-white border border-slate-200 px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
-            >
-              <ExternalLink className="h-3 w-3" />
-              Abrir
+            <a href={gmapsUrl} target="_blank" rel="noopener noreferrer" className="h-10 px-6 bg-white text-slate-900 text-[10px] font-bold uppercase tracking-widest hover:bg-[#a3e635] transition-all flex items-center">
+              ABRIR NO MAPS
             </a>
           </div>
         </div>
       )}
 
-      {/* Error */}
-      {error && (
-        <p className="text-xs text-rose-600 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">
-          {error}
+      {/* Botões finais */}
+      <div className="flex items-center justify-between pt-8 border-t border-slate-100">
+        <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-300">
+          {selecionadas.length} PARADA(S) CONFIGURADA(S)
         </p>
-      )}
-
-      {/* Actions */}
-      <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
-        <p className="mr-auto text-xs text-slate-400">
-          {selecionadas.length === 0
-            ? 'Nenhuma parada selecionada'
-            : `${selecionadas.length} parada${selecionadas.length > 1 ? 's' : ''} na rota`}
-        </p>
-        <Button
-          type="button"
-          onClick={handleSalvar}
-          disabled={isPending || selecionadas.length < 1 || !titulo.trim()}
-          className="bg-lime-500 hover:bg-lime-600 text-slate-900 font-semibold gap-1.5"
-        >
-          {isPending ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <CheckCircle2 className="h-3.5 w-3.5" />
-          )}
-          Salvar rota
-        </Button>
+        <div className="flex gap-4">
+          {error && <span className="text-[10px] font-bold text-red-500 uppercase tracking-widest pt-3 pr-4">{error}</span>}
+          <button
+            onClick={handleSalvar}
+            disabled={isPending || selecionadas.length < 1 || !titulo.trim()}
+            className="h-14 px-12 bg-[#a3e635] text-slate-900 text-[11px] font-bold uppercase tracking-[0.2em] hover:brightness-105 disabled:opacity-20 transition-all"
+          >
+            {isPending ? 'SALVANDO...' : 'SALVAR ROTA'}
+          </button>
+        </div>
       </div>
     </div>
   )
 }
 
-// ─── VaraItem ─────────────────────────────────────────────────────────────────
-
-function VaraItem({
-  vara,
-  selected,
-  onAdd,
-}: {
-  vara: VaraCatalog
-  selected: boolean
-  onAdd: (vara: VaraCatalog) => void
-}) {
-  const Icon = tipoIcon[vara.tipo]
+function VaraItem({ vara, selected, onAdd }: { vara: VaraCatalog, selected: boolean, onAdd: (v: VaraCatalog) => void }) {
   return (
     <button
       onClick={() => !selected && onAdd(vara)}
       disabled={selected}
       className={cn(
-        'w-full flex items-center gap-2.5 rounded-xl border px-3 py-2 text-left transition-all',
-        selected
-          ? 'border-lime-200 bg-lime-50 opacity-60 cursor-default'
-          : 'border-slate-100 bg-white hover:border-lime-300 hover:shadow-sm cursor-pointer',
+        "w-full flex items-center gap-6 px-6 py-4 text-left transition-all",
+        selected ? "bg-slate-50 opacity-40 cursor-default" : "bg-white hover:bg-slate-50"
       )}
     >
-      <div className={cn('flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg border', tipoColor[vara.tipo])}>
-        <Icon className="h-3.5 w-3.5" />
+      <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center bg-slate-900 text-[10px] font-bold text-white">
+        {selected ? 'OK' : '+'}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-xs font-medium text-slate-800 truncate">{vara.nome}</p>
-        <p className="text-[10px] text-slate-400 truncate">{vara.endereco}</p>
+        <p className="text-[11px] font-bold text-slate-900 uppercase tracking-wider truncate">{vara.nome}</p>
+        <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest mt-1.5 truncate">{vara.cidade}</p>
       </div>
-      {selected ? (
-        <CheckCircle2 className="h-3.5 w-3.5 text-lime-600 flex-shrink-0" />
-      ) : (
-        <Plus className="h-3.5 w-3.5 text-slate-300 flex-shrink-0" />
-      )}
     </button>
   )
 }

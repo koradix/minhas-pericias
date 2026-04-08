@@ -1,12 +1,9 @@
 'use client'
 
-import { useState, useTransition } from 'react'
-import { MapPin, Landmark, Loader2, Plus, CheckSquare, Square, AlertCircle, Building2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import React, { useState, useTransition } from 'react'
 import { cn } from '@/lib/utils'
 import { fetchVarasByEstado, createRotaFromVaras } from '@/lib/actions/rotas-nova'
 import { ESTADOS_DISPONIVEIS } from '@/lib/constants/tribunais'
-import type { VaraComEndereco } from '@/lib/services/escavador'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -20,7 +17,6 @@ interface SavedVara {
 }
 
 interface Props {
-  /** Pre-fetched varas already in DB for this user (all UFs) */
   varasDoPerito: SavedVara[]
 }
 
@@ -28,14 +24,13 @@ interface Props {
 
 export function VarasByState({ varasDoPerito }: Props) {
   const [uf, setUf] = useState('')
-  const [varas, setVaras] = useState<VaraComEndereco[]>([])
+  const [varas, setVaras] = useState<any[]>([])
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [isPending, startTransition] = useTransition()
   const [isCreating, startCreatingTransition] = useTransition()
   const [loaded, setLoaded] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Build a set of vara names already in DB for quick lookup
   const varasNaSigla = new Set(varasDoPerito.map((v) => `${v.tribunalSigla}|${v.varaNome}`))
 
   function handleUfChange(newUf: string) {
@@ -71,101 +66,82 @@ export function VarasByState({ varasDoPerito }: Props) {
   }
 
   function handleCriarRota() {
-    // Map selected varaIds (Escavador external IDs) to DB TribunalVara.id
     const dbIds = varasDoPerito
       .filter((v) => selected.has(v.id))
       .map((v) => v.id)
 
-    // Also include varas matched by tribunalSigla+varaNome if not already DB-mapped
     if (dbIds.length === 0) {
-      setError('Sincronize as varas primeiro para criar uma rota com elas.')
+      setError('SINCRONIZE AS VARAS NO RADAR PRIMEIRO PARA CRIAR UMA ROTA.')
       return
     }
     setError(null)
     startCreatingTransition(async () => {
       const result = await createRotaFromVaras(dbIds)
-      if (result && !result.ok) setError(result.error ?? 'Erro ao criar rota')
+      if (result && !result.ok) setError(result.error ?? 'ERRO AO CRIAR ROTA')
     })
   }
 
-  // Varas com endereço
-  const comEndereco = varas.filter((v) => v.enderecoTexto)
-  const semEndereco = varas.filter((v) => !v.enderecoTexto)
-
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
+    <div className="border border-slate-100 bg-white p-8 space-y-8">
       {/* Header */}
       <div>
-        <p className="text-sm font-semibold text-slate-900">Varas por Estado</p>
-        <p className="text-xs text-slate-400 mt-0.5">
-          Explore varas disponíveis por estado e crie rotas de prospecção
+        <h3 className="text-[11px] font-bold uppercase tracking-[0.1em] text-slate-900">RADAR DE VARAS POR ESTADO</h3>
+        <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest mt-2">
+          EXPLORE VARAS DISPONÍVEIS E GERE ESTRATÉGIAS DE CAMPO
         </p>
       </div>
 
-      {/* UF selector */}
-      <div className="flex gap-2">
+      {/* Selectors */}
+      <div className="flex gap-4">
         <select
           value={uf}
           onChange={(e) => handleUfChange(e.target.value)}
-          className="flex h-9 w-full max-w-[160px] items-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-lime-400"
+          className="h-10 bg-slate-50 border-0 text-[10px] font-bold uppercase tracking-widest px-4 focus:ring-0 min-w-[200px]"
         >
-          <option value="">Selecione o estado</option>
+          <option value="">FILTRAR ESTADO</option>
           {ESTADOS_DISPONIVEIS.map((estado) => (
             <option key={estado} value={estado}>{estado}</option>
           ))}
         </select>
 
         {uf && loaded && varas.length > 0 && (
-          <Button
-            variant="outline"
-            size="sm"
+          <button
             onClick={toggleAll}
-            className="gap-1.5 text-xs border-slate-200 text-slate-600 h-9"
+            className="h-10 px-6 border border-slate-100 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-all"
           >
-            {selected.size === varas.length ? (
-              <><CheckSquare className="h-3.5 w-3.5" />Desmarcar todas</>
-            ) : (
-              <><Square className="h-3.5 w-3.5" />Marcar todas</>
-            )}
-          </Button>
+            {selected.size === varas.length ? 'DESMARCAR TUDO' : 'MARCAR TUDO'}
+          </button>
         )}
       </div>
 
-      {/* Loading */}
+      {/* Status states */}
       {isPending && (
-        <div className="flex items-center gap-2 text-sm text-slate-500 py-2">
-          <Loader2 className="h-4 w-4 animate-spin text-lime-500" />
-          Carregando varas do estado…
+        <div className="py-12 flex flex-col items-center border border-dashed border-slate-100">
+          <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-300 animate-pulse">MAPEANDO VARAS...</span>
         </div>
       )}
 
-      {/* Results */}
       {!isPending && loaded && varas.length === 0 && (
-        <div className="flex items-center gap-3 rounded-xl border border-dashed border-slate-200 px-4 py-4">
-          <AlertCircle className="h-4 w-4 text-slate-400 flex-shrink-0" />
-          <p className="text-xs text-slate-500">
-            Nenhuma vara cadastrada para {uf}.
+        <div className="py-12 flex flex-col items-center border border-dashed border-slate-100">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-300">
+            NENHUMA VARA ENCONTRADA PARA {uf}
           </p>
         </div>
       )}
 
+      {/* Results */}
       {!isPending && varas.length > 0 && (
         <>
-          {/* Summary */}
-          <div className="flex items-center gap-3 text-xs text-slate-500">
-            <span className="font-medium text-slate-700">{varas.length} varas</span>
-            <span>·</span>
-            <span className="text-emerald-600">{comEndereco.length} com endereço</span>
-            {semEndereco.length > 0 && (
-              <><span>·</span><span className="text-amber-600">{semEndereco.length} sem endereço</span></>
-            )}
+          <div className="flex items-center gap-6 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">
+            <span>{varas.length} VARAS MAPEADAS</span>
+            <span className="h-4 w-px bg-slate-100" />
+            <span className="text-[#a3e635]">{varas.filter(v => v.enderecoTexto).length} COM ENDEREÇO</span>
           </div>
 
-          {/* Vara list */}
-          <div className="space-y-1.5 max-h-80 overflow-y-auto pr-1">
+          <div className="space-y-px bg-slate-100 border border-slate-100 max-h-96 overflow-y-auto shadow-sm">
             {varas.map((v) => {
               const key = `${v.tribunalSigla}|${v.varaNome}`
-              const noDb = varasNaSigla.has(key)
+              const inRadar = varasNaSigla.has(key)
               const dbVara = varasDoPerito.find((d) => d.tribunalSigla === v.tribunalSigla && d.varaNome === v.varaNome)
               const isSelected = dbVara ? selected.has(dbVara.id) : false
 
@@ -174,57 +150,37 @@ export function VarasByState({ varasDoPerito }: Props) {
                   key={v.varaId}
                   onClick={() => dbVara && toggleVara(dbVara.id)}
                   className={cn(
-                    'flex items-start gap-3 rounded-xl border px-3 py-2.5 transition-colors',
-                    dbVara
-                      ? isSelected
-                        ? 'border-lime-300 bg-lime-50 cursor-pointer'
-                        : 'border-slate-100 hover:border-slate-200 hover:bg-slate-50/50 cursor-pointer'
-                      : 'border-slate-100 bg-slate-50/30 cursor-default opacity-60',
+                    'flex items-center gap-8 bg-white p-6 transition-all',
+                    dbVara ? 'cursor-pointer hover:bg-slate-50' : 'opacity-40 cursor-default',
+                    isSelected ? 'ring-2 ring-inset ring-[#a3e635] z-10' : ''
                   )}
                 >
-                  {/* Checkbox */}
-                  <div className="flex-shrink-0 mt-0.5">
-                    {dbVara ? (
-                      isSelected
-                        ? <CheckSquare className="h-4 w-4 text-lime-600" />
-                        : <Square className="h-4 w-4 text-slate-300" />
-                    ) : (
-                      <Square className="h-4 w-4 text-slate-200" />
-                    )}
-                  </div>
-
-                  {/* Icon */}
-                  <div className={cn('flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg',
-                    v.enderecoTexto ? 'bg-violet-50' : 'bg-slate-100')}>
-                    <Landmark className={cn('h-4 w-4', v.enderecoTexto ? 'text-violet-600' : 'text-slate-400')} />
-                  </div>
+                  {/* Select Box */}
+                  <div className={cn("h-4 w-4 border flex-shrink-0", isSelected ? "bg-[#a3e635] border-[#a3e635]" : "border-slate-200")} />
 
                   {/* Info */}
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-semibold text-slate-800 truncate">{v.varaNome}</p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">{v.tribunalSigla}</p>
-                    {v.enderecoTexto && (
-                      <p className="text-[10px] text-slate-500 mt-0.5 flex items-start gap-1">
-                        <MapPin className="h-3 w-3 flex-shrink-0 mt-0.5 text-slate-400" />
-                        <span className="truncate">{v.enderecoTexto}</span>
-                      </p>
-                    )}
-                    {!v.enderecoTexto && (
-                      <p className="text-[10px] text-amber-600 mt-0.5">Sem endereço cadastrado</p>
-                    )}
+                    <p className="text-[11px] font-bold text-slate-900 uppercase tracking-wider truncate">{v.varaNome}</p>
+                    <div className="flex items-center gap-4 mt-2">
+                      <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">{v.tribunalSigla}</span>
+                      {v.enderecoTexto && (
+                        <>
+                          <span className="text-[9px] text-slate-100">|</span>
+                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest truncate">{v.enderecoTexto}</span>
+                        </>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Badges */}
-                  <div className="flex flex-col gap-1 items-end flex-shrink-0">
-                    {noDb && (
-                      <span className="text-[9px] bg-lime-100 text-lime-700 rounded px-1.5 py-0.5 font-semibold">
-                        No radar
+                  {/* Highlights */}
+                  <div className="flex flex-col items-end gap-2 shrink-0">
+                    {inRadar && (
+                      <span className="bg-[#a3e635] text-slate-900 text-[9px] font-bold uppercase tracking-widest px-2 py-0.5">
+                        NO RADAR
                       </span>
                     )}
-                    {v.dadosFicticios && v.enderecoTexto && (
-                      <span className="text-[9px] bg-slate-100 text-slate-500 rounded px-1.5 py-0.5">
-                        Endereço aprox.
-                      </span>
+                    {!v.enderecoTexto && (
+                      <span className="text-[9px] font-bold text-red-300 uppercase tracking-widest">SEM ENDEREÇO</span>
                     )}
                   </div>
                 </div>
@@ -233,29 +189,27 @@ export function VarasByState({ varasDoPerito }: Props) {
           </div>
 
           {error && (
-            <div className="flex items-center gap-2 rounded-xl bg-amber-50 border border-amber-100 px-3 py-2.5">
-              <AlertCircle className="h-4 w-4 text-amber-500 flex-shrink-0" />
-              <p className="text-xs text-amber-700">{error}</p>
+            <div className="p-4 bg-red-50 border border-red-100">
+              <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest">{error}</p>
+            </div>
+          )}
+
+          {/* Action Footer */}
+          {selected.size > 0 && (
+            <div className="pt-8 border-t border-slate-100 flex items-center justify-between">
+              <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">
+                {selected.size} VARA(S) SELECIONADA(S)
+              </span>
+              <button
+                className="h-14 px-12 bg-[#a3e635] text-slate-900 text-[11px] font-bold uppercase tracking-[0.2em] hover:brightness-105 disabled:opacity-20 transition-all font-bold"
+                onClick={handleCriarRota}
+                disabled={isCreating}
+              >
+                {isCreating ? 'PROCESSANDO...' : 'CRIAR ROTA ESTRATÉGICA'}
+              </button>
             </div>
           )}
         </>
-      )}
-
-      {/* Sticky CTA */}
-      {selected.size > 0 && (
-        <div className="sticky bottom-0 pt-2 border-t border-slate-100 bg-white">
-          <Button
-            className="w-full bg-lime-500 hover:bg-lime-600 text-slate-900 font-semibold gap-2"
-            onClick={handleCriarRota}
-            disabled={isCreating}
-          >
-            {isCreating ? (
-              <><Loader2 className="h-4 w-4 animate-spin" />Criando rota…</>
-            ) : (
-              <><Building2 className="h-4 w-4" />Criar rota com {selected.size} vara{selected.size !== 1 ? 's' : ''}</>
-            )}
-          </Button>
-        </div>
       )}
     </div>
   )

@@ -1,10 +1,8 @@
 'use client'
 
-import { useState, useTransition } from 'react'
-import { MapPin, Clock, Banknote, Navigation, Building2, Landmark, Briefcase, Loader2 } from 'lucide-react'
+import React, { useState, useTransition } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { cn, formatCurrency } from '@/lib/utils'
 import { RotaPericiasExecucao } from '@/components/rotas/rota-pericias-execucao'
 import { iniciarRota } from '@/lib/actions/rotas-nova'
@@ -12,14 +10,14 @@ import type { Rota, StatusRota, TipoPontoRota } from '@/lib/types/rotas'
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
-const pontoConfig: Record<TipoPontoRota, { icon: typeof MapPin; color: string; bg: string; label: string }> = {
-  FORUM:      { icon: Building2, color: 'text-blue-700',   bg: 'bg-blue-50',   label: 'Fórum'      },
-  VARA_CIVEL: { icon: Landmark,  color: 'text-violet-700', bg: 'bg-violet-50', label: 'Vara'       },
-  ESCRITORIO: { icon: Briefcase, color: 'text-amber-700',  bg: 'bg-amber-50',  label: 'Escritório' },
-  PERICIA:    { icon: MapPin,    color: 'text-emerald-700',bg: 'bg-emerald-50',label: 'Perícia'    },
+const pontoConfig: Record<TipoPontoRota, { label: string }> = {
+  FORUM:      { label: 'Fórum'      },
+  VARA_CIVEL: { label: 'Vara'       },
+  ESCRITORIO: { label: 'Escritório' },
+  PERICIA:    { label: 'Perícia'    },
 }
 
-const statusMap: Record<string, { label: string; variant: 'info' | 'warning' | 'success' | 'danger' | 'secondary' }> = {
+const statusMap: Record<string, { label: string; variant: 'info' | 'warning' | 'success' | 'secondary' }> = {
   planejada:    { label: 'Planejada',    variant: 'info'      },
   em_execucao:  { label: 'Em execução', variant: 'warning'   },
   em_andamento: { label: 'Em andamento', variant: 'warning'  },
@@ -55,51 +53,49 @@ export function RotasProspeccaoListClient({ rotas }: { rotas: Rota[] }) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {rotas.map((rota) => {
         const status = getStatus(rota)
         const st = statusMap[status] ?? { label: status, variant: 'secondary' as const }
         const isLoading = loadingId === rota.id
+        const emCampo = status === 'em_execucao'
 
         return (
-          <Card key={rota.id} className={status === 'concluida' ? 'opacity-70' : ''}>
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between gap-3">
+          <Card key={rota.id} className={cn(
+            "rounded-none border transition-all",
+            status === 'concluida' ? 'opacity-30 border-slate-100 grayscale' : 'border-slate-200',
+          )}>
+            <CardHeader className="p-8 pb-3">
+              <div className="flex items-start justify-between gap-6">
                 <div className="min-w-0">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <Badge variant={st.variant}>{st.label}</Badge>
-                    <span className="text-xs text-slate-400">{rota.data}</span>
+                  <div className="flex items-center gap-3 mb-4">
+                    <Badge variant={st.variant} className="rounded-none">{st.label}</Badge>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{rota.data}</span>
                   </div>
-                  <CardTitle className="text-base">{rota.titulo}</CardTitle>
+                  <CardTitle className="text-xl font-bold tracking-tight uppercase">{rota.titulo}</CardTitle>
                 </div>
 
                 {status === 'planejada' && (
-                  <Button
-                    size="sm"
-                    className="flex-shrink-0 bg-violet-600 hover:bg-violet-700"
+                  <button
+                    className="h-10 px-6 bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-slate-800 disabled:opacity-20 transition-all"
                     onClick={() => handleIniciar(rota.id)}
                     disabled={isPending}
                   >
-                    {isLoading ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Navigation className="h-3.5 w-3.5" />
-                    )}
-                    Iniciar
-                  </Button>
+                    {isLoading ? '...' : 'INICIAR'}
+                  </button>
                 )}
 
-                {status === 'em_execucao' && (
-                  <Badge variant="warning" className="flex-shrink-0">
-                    Em campo
+                {emCampo && (
+                  <Badge variant="warning" className="rounded-none uppercase tracking-widest">
+                    EM CAMPO
                   </Badge>
                 )}
               </div>
             </CardHeader>
 
-            <CardContent className="pt-0">
-              <div className="mb-4 space-y-1.5">
-                {status === 'em_execucao' ? (
+            <CardContent className="p-8 pt-0">
+              <div className="mb-8 space-y-4">
+                {emCampo ? (
                   <RotaPericiasExecucao
                     rotaId={rota.id}
                     checkpoints={rota.pontos.map((p) => ({
@@ -115,59 +111,35 @@ export function RotasProspeccaoListClient({ rotas }: { rotas: Rota[] }) {
                     }))}
                   />
                 ) : (
-                  rota.pontos.map((p) => {
-                    const conf = pontoConfig[p.tipo]
-                    const Icon = conf.icon
-                    return (
-                      <div key={p.id} className="flex items-center gap-3">
-                        <span className="text-[10px] font-bold text-slate-400 w-4 text-right">
-                          {p.ordem}
-                        </span>
-                        <div
-                          className={cn(
-                            'flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md',
-                            conf.bg,
-                          )}
-                        >
-                          <Icon className={cn('h-3 w-3', conf.color)} />
+                  <div className="space-y-3">
+                    {rota.pontos.map((p) => {
+                      const conf = pontoConfig[p.tipo]
+                      return (
+                        <div key={p.id} className="flex items-center gap-4">
+                          <span className="text-[10px] font-bold text-slate-300 w-4 text-right">
+                            {p.ordem}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-bold text-slate-900 uppercase tracking-tight">{p.nome}</p>
+                            {p.endereco && (
+                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{p.endereco}</p>
+                            )}
+                          </div>
+                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em] bg-slate-50 px-2 py-1">
+                            {p.periciaInfo?.tipo ?? conf.label}
+                          </span>
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-xs font-medium text-slate-800">{p.nome}</p>
-                          {p.endereco && (
-                            <p className="text-[10px] text-slate-400">{p.endereco}</p>
-                          )}
-                        </div>
-                        <span
-                          className={cn(
-                            'text-[10px] font-semibold px-1.5 py-0.5 rounded',
-                            conf.bg,
-                            conf.color,
-                          )}
-                        >
-                          {p.periciaInfo?.tipo ?? conf.label}
-                        </span>
-                      </div>
-                    )
-                  })
+                      )
+                    })}
+                  </div>
                 )}
               </div>
 
-              <div className="flex items-center gap-5 pt-3 border-t border-slate-100 text-xs text-slate-500">
-                <span className="flex items-center gap-1.5">
-                  <MapPin className="h-3.5 w-3.5 text-slate-400" />
-                  {rota.distanciaKm} km
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Clock className="h-3.5 w-3.5 text-slate-400" />
-                  {formatTempo(rota.tempoEstimadoMin)}
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Banknote className="h-3.5 w-3.5 text-slate-400" />
-                  {formatCurrency(rota.custoEstimado)}
-                </span>
-                <span className="flex items-center gap-1.5 text-slate-400">
-                  {rota.pontos.length} paradas
-                </span>
+              <div className="flex items-center gap-8 pt-6 border-t border-slate-50 text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400">
+                <span>{rota.distanciaKm} KM</span>
+                <span>{formatTempo(rota.tempoEstimadoMin)}</span>
+                <span>{formatCurrency(rota.custoEstimado)}</span>
+                <span>{rota.pontos.length} PARADAS</span>
               </div>
             </CardContent>
           </Card>

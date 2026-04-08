@@ -92,7 +92,7 @@ export default function LoginForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="exemplo@perilab.com.br"
-            className="w-full h-14 rounded-2xl border-none bg-slate-100/60 px-5 text-sm font-medium transition-all placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-[#84cc16] focus:outline-none"
+            className="w-full h-14 rounded-2xl border-none bg-slate-100/60 px-5 text-sm font-medium transition-all placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-[#a3e635] focus:outline-none"
             disabled={loading || googleLoading}
           />
         </div>
@@ -112,7 +112,7 @@ export default function LoginForm() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••••••"
-              className="w-full h-14 rounded-2xl border-none bg-slate-100/60 px-5 pr-14 text-sm font-medium transition-all placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-[#84cc16] focus:outline-none"
+              className="w-full h-14 rounded-2xl border-none bg-slate-100/60 px-5 pr-14 text-sm font-medium transition-all placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-[#a3e635] focus:outline-none"
               disabled={loading || googleLoading}
             />
             <button
@@ -127,7 +127,7 @@ export default function LoginForm() {
           <div className="flex justify-end pr-1">
             <Link
               href="/forgot-password"
-              className="text-[11px] font-bold text-slate-400 hover:text-[#84cc16] uppercase tracking-wider transition-colors font-display"
+              className="text-[11px] font-bold text-slate-400 hover:text-[#a3e635] uppercase tracking-wider transition-colors font-display"
             >
               Recuperar senha
             </Link>

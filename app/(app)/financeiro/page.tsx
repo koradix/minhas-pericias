@@ -1,7 +1,7 @@
-import { TrendingUp, ArrowDownCircle, Clock } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 
@@ -51,77 +51,68 @@ export default function FinanceiroPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Financeiro</h1>
-        <p className="mt-1 text-sm text-slate-500">Visão geral das suas finanças periciais</p>
+        <p className="mt-1 text-sm text-slate-500 font-medium">Visão geral das suas finanças periciais</p>
       </div>
 
       {/* Summary */}
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between mb-3">
-            <p className="text-sm font-medium text-slate-500">Recebido (Dezembro)</p>
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50">
-              <TrendingUp className="h-5 w-5 text-emerald-600" />
-            </div>
+            <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Recebido (Dezembro)</p>
           </div>
-          <p className="text-2xl font-bold text-slate-900">{formatCurrency(8000)}</p>
-          <p className="mt-1 text-xs text-emerald-600 font-medium">↑ 22% vs. novembro</p>
+          <p className="text-2xl font-bold text-slate-900 tracking-tight">{formatCurrency(8000)}</p>
+          <p className="mt-1 text-xs text-[#a3e635] font-bold uppercase tracking-wider">↑ 22% vs. novembro</p>
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between mb-3">
-            <p className="text-sm font-medium text-slate-500">A Receber</p>
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50">
-              <Clock className="h-5 w-5 text-amber-600" />
-            </div>
+            <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">A Receber</p>
           </div>
-          <p className="text-2xl font-bold text-slate-900">{formatCurrency(48500)}</p>
-          <p className="mt-1 text-xs text-slate-400">12 recebimentos em aberto</p>
+          <p className="text-2xl font-bold text-slate-900 tracking-tight">{formatCurrency(48500)}</p>
+          <p className="mt-1 text-xs text-slate-400 font-medium uppercase tracking-wider">12 recebimentos em aberto</p>
         </div>
       </div>
 
       {/* Quick action */}
       <Link
         href="/recebimentos"
-        className="flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-5 hover:shadow-md hover:border-blue-200 transition-all group"
+        className="flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-6 hover:shadow-md hover:border-[#a3e635]/30 transition-all group"
       >
-        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-emerald-50 group-hover:bg-emerald-100 transition-colors">
-          <ArrowDownCircle className="h-6 w-6 text-emerald-600" />
-        </div>
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-slate-900">Recebimentos</p>
-          <p className="text-xs text-slate-500 mt-0.5">Honorários e valores a receber</p>
+          <p className="text-[14px] font-bold text-slate-900 uppercase tracking-widest">Recebimentos</p>
+          <p className="text-xs text-slate-500 mt-1 font-medium">Honorários e valores a receber</p>
         </div>
-        <span className="ml-auto text-slate-300 group-hover:text-blue-500 transition-colors text-lg">
+        <span className="ml-auto text-slate-300 group-hover:text-[#a3e635] transition-colors text-xl font-bold">
           →
         </span>
       </Link>
 
       {/* Recent transactions */}
-      <Card>
-        <CardHeader>
+      <Card className="rounded-xl border-slate-200 shadow-sm border-0">
+        <CardHeader className="px-0">
           <div className="flex items-center justify-between">
-            <CardTitle>Movimentações Recentes</CardTitle>
-            <Button variant="ghost" size="sm" className="text-blue-600 -mr-2">
-              Ver todas →
+            <CardTitle className="text-lg font-bold text-slate-900 tracking-tight">Movimentações Recentes</CardTitle>
+            <Button variant="ghost" size="sm" className="text-[#a3e635] font-bold uppercase tracking-widest text-[10px] hover:bg-slate-50 -mr-2">
+              Ver todas
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="pt-2">
-          <div className="divide-y divide-slate-100">
+        <CardContent className="px-0 pt-2">
+          <div className="divide-y divide-slate-100 border-t border-slate-100">
             {recentMovimentacoes.map((m) => (
-              <div key={m.id} className="flex items-center gap-4 py-3">
-                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-emerald-50">
-                  <ArrowDownCircle className="h-4 w-4 text-emerald-600" />
-                </div>
+              <div key={m.id} className="flex items-center gap-4 py-4">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-900 truncate">{m.descricao}</p>
-                  <p className="text-xs text-slate-400">{m.data}</p>
+                  <p className="text-sm font-bold text-slate-900 tracking-tight">{m.descricao}</p>
+                  <p className="text-xs text-slate-400 font-medium">{m.data}</p>
                 </div>
-                <div className="flex items-center gap-3 flex-shrink-0">
-                  <span className="text-sm font-semibold text-emerald-600">
+                <div className="flex items-center gap-6 flex-shrink-0">
+                  <span className="text-sm font-bold text-slate-900">
                     + {formatCurrency(m.valor)}
                   </span>
-                  <Badge variant={m.status === 'pendente' ? 'warning' : 'success'}>
+                  <Badge variant={m.status === 'pendente' ? 'default' : 'secondary'} className={cn(
+                    "rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest",
+                    m.status === 'recebido' ? "bg-[#a3e635] text-slate-900 border-0" : "text-slate-400 border-slate-200"
+                  )}>
                     {m.status === 'pendente' ? 'Pendente' : 'Recebido'}
                   </Badge>
                 </div>

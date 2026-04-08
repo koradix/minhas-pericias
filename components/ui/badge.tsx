@@ -7,18 +7,21 @@ interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
 
 function Badge({ className, variant = "default", ...props }: BadgeProps) {
   const variants = {
-    default: "bg-slate-100 text-slate-700",
-    success: "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/20",
-    warning: "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-600/20",
-    danger: "bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/20",
-    info: "bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20",
-    secondary: "bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-500/20",
+    // Digital Atelier Neutrals
+    default: "bg-slate-100 text-slate-900 border-slate-200",
+    secondary: "bg-slate-50 text-slate-400 border-slate-100",
+    
+    // Status Colors (Modified to match Lime/Slate aesthetic)
+    success: "bg-[#a3e635]/10 text-[#4d7c0f] border-[#a3e635]/20",
+    warning: "bg-amber-50 text-amber-900 border-amber-100",
+    danger: "bg-red-50 text-red-900 border-red-100",
+    info: "bg-slate-900 text-white border-slate-900", // No more blue, using black for info
   }
 
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
+        "inline-flex items-center rounded-none border px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest leading-none",
         variants[variant],
         className
       )}

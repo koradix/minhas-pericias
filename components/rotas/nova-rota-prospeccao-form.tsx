@@ -1,11 +1,6 @@
 'use client'
 
-import { useState, useTransition, useMemo } from 'react'
-import {
-  MapPin, Search, Plus, Trash2, ExternalLink, Loader2,
-  Landmark, ArrowUp, ArrowDown, Copy, CheckCircle2, ChevronDown, Building2,
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import React, { useState, useTransition, useMemo } from 'react'
 import { cn } from '@/lib/utils'
 import { salvarRotaProspeccao } from '@/lib/actions/rotas-nova'
 import type { VaraPublicaRow } from '@/lib/data/prospeccao'
@@ -15,8 +10,8 @@ import dynamic from 'next/dynamic'
 const RouteMapDynamic = dynamic(() => import('@/components/maps/route-map-dynamic'), {
   ssr: false,
   loading: () => (
-    <div className="h-full w-full flex items-center justify-center bg-slate-50">
-      <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+    <div className="h-full w-full flex items-center justify-center bg-white border border-slate-100">
+      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300">CARREGANDO MAPA...</span>
     </div>
   ),
 })
@@ -65,26 +60,28 @@ function ComarcaItem({
   const countSelected = varas.filter((v) => selectedIds.has(v.id)).length
 
   return (
-    <div className="rounded-xl border border-slate-200 overflow-hidden">
+    <div className="border border-slate-100 bg-white">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left hover:bg-slate-50 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-4 text-left hover:bg-slate-50 transition-all"
       >
-        <Building2 className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-        <span className="flex-1 text-sm font-semibold text-slate-700 capitalize">
-          {comarca.charAt(0) + comarca.slice(1).toLowerCase()}
-        </span>
-        <span className="text-[11px] text-slate-400 shrink-0">{varas.length} vara{varas.length !== 1 ? 's' : ''}</span>
-        {countSelected > 0 && (
-          <span className="inline-flex items-center rounded-md bg-lime-100 px-1.5 py-0.5 text-[10px] font-bold text-lime-700 shrink-0">
-            {countSelected}
+        <div className="flex items-center gap-3">
+          <span className="text-[11px] font-bold uppercase tracking-tight text-slate-800">
+            {comarca}
           </span>
-        )}
-        <ChevronDown className={cn('h-3.5 w-3.5 text-slate-400 shrink-0 transition-transform', open && 'rotate-180')} />
+          {countSelected > 0 && (
+            <span className="text-[9px] font-bold text-[#a3e635] tracking-widest">
+              {countSelected} SELECIONADA(S)
+            </span>
+          )}
+        </div>
+        <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">
+          {open ? 'FECHAR' : `${varas.length} VARAS`}
+        </span>
       </button>
 
       {open && (
-        <div className="border-t border-slate-100 px-2 py-2 space-y-1">
+        <div className="p-4 pt-0 space-y-px bg-slate-50 border-t border-slate-50">
           {varas.map((vara) => {
             const selected = selectedIds.has(vara.id)
             return (
@@ -92,24 +89,19 @@ function ComarcaItem({
                 key={vara.id}
                 onClick={() => onToggle(vara)}
                 className={cn(
-                  'w-full flex items-center gap-2.5 rounded-lg border px-2.5 py-2 text-left text-xs transition-all',
-                  selected
-                    ? 'border-lime-200 bg-lime-50'
-                    : 'border-slate-100 bg-white hover:border-lime-300 hover:bg-lime-50/30',
+                  'w-full flex items-center gap-4 bg-white p-4 text-left transition-all',
+                  selected ? 'ring-1 ring-inset ring-[#a3e635] z-10' : 'hover:bg-slate-50'
                 )}
               >
-                <Landmark className={cn('h-3.5 w-3.5 shrink-0', selected ? 'text-lime-600' : 'text-slate-400')} />
+                <div className={cn("h-4 w-4 border", selected ? "bg-[#a3e635] border-[#a3e635]" : "border-slate-200")} />
                 <div className="flex-1 min-w-0">
-                  <p className={cn('font-semibold truncate', selected ? 'text-lime-800' : 'text-slate-700')}>
+                  <p className="text-[11px] font-bold text-slate-900 uppercase tracking-tight truncate">
                     {vara.varaNome}
                   </p>
                   {vara.juizTitular && vara.juizTitular !== 'Vago' && (
-                    <p className="text-[10px] text-slate-400 truncate">{vara.juizTitular}</p>
+                    <p className="text-[9px] font-bold text-slate-400 truncate uppercase tracking-widest mt-0.5">{vara.juizTitular}</p>
                   )}
                 </div>
-                {selected
-                  ? <CheckCircle2 className="h-3.5 w-3.5 text-lime-600 shrink-0" />
-                  : <Plus className="h-3.5 w-3.5 text-slate-300 shrink-0" />}
               </button>
             )
           })}
@@ -142,23 +134,26 @@ function RegiaoSection({
   )
 
   return (
-    <div className="rounded-xl border border-slate-200 overflow-hidden bg-white">
+    <div className="border border-slate-100 bg-white">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center gap-3 px-3 py-3 text-left hover:bg-slate-50 transition-colors"
+        className="w-full flex items-center justify-between px-6 py-6 text-left hover:bg-slate-50 transition-all"
       >
-        <span className="font-semibold text-sm text-slate-700">{regiao.nome}</span>
-        <span className="text-[11px] text-slate-400">{comarcasComVaras.length} comarcas</span>
-        {totalSelecionadas > 0 && (
-          <span className="inline-flex items-center rounded-md bg-lime-100 px-1.5 py-0.5 text-[10px] font-bold text-lime-700">
-            {totalSelecionadas} selecionada{totalSelecionadas !== 1 ? 's' : ''}
-          </span>
-        )}
-        <ChevronDown className={cn('h-4 w-4 text-slate-400 ml-auto shrink-0 transition-transform', open && 'rotate-180')} />
+        <div className="flex items-center gap-4">
+          <span className="text-[11px] font-bold uppercase tracking-[0.3em] text-slate-900">{regiao.nome}</span>
+          {totalSelecionadas > 0 && (
+            <span className="bg-[#a3e635] text-slate-900 text-[9px] font-bold uppercase tracking-widest px-2 py-0.5">
+              {totalSelecionadas}
+            </span>
+          )}
+        </div>
+        <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">
+          {open ? 'ESCONDER' : `${comarcasComVaras.length} COMARCAS`}
+        </span>
       </button>
 
       {open && (
-        <div className="border-t border-slate-100 px-3 py-3 space-y-2">
+        <div className="p-6 pt-0 space-y-px bg-slate-50 border-t border-slate-50">
           {comarcasComVaras.map((comarca) => (
             <ComarcaItem
               key={comarca}
@@ -184,7 +179,6 @@ export function NovaRotaProspeccaoForm({ varas }: { varas: VaraPublicaRow[] }) {
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
 
-  // ── Agrupamento ──────────────────────────────────────────────────────────
   const varasPorComarca = useMemo(() => {
     const map = new Map<string, VaraPublicaRow[]>()
     const filtered = search.trim()
@@ -210,7 +204,6 @@ export function NovaRotaProspeccaoForm({ varas }: { varas: VaraPublicaRow[] }) {
       setSelecionadas((p) => p.filter((v) => v.id !== vara.id))
     } else {
       const [lat, lng] = getCoordsComarca(vara.comarca)
-      // Offset slightly so stacked varas in same building don't overlap on map
       const idx = selecionadas.filter((v) => v.comarca === vara.comarca).length
       setSelecionadas((p) => [...p, { ...vara, lat: lat + idx * 0.0002, lng: lng + idx * 0.0002 }])
     }
@@ -253,8 +246,8 @@ export function NovaRotaProspeccaoForm({ varas }: { varas: VaraPublicaRow[] }) {
   }
 
   function handleSalvar() {
-    if (!titulo.trim()) { setError('Informe um título para a rota'); return }
-    if (selecionadas.length < 1) { setError('Selecione ao menos 1 vara'); return }
+    if (!titulo.trim()) { setError('INFORME UM TÍTULO PARA A ROTA'); return }
+    if (selecionadas.length < 1) { setError('SELECIONE AO MENOS 1 VARA'); return }
     setError(null)
     startTransition(async () => {
       const res = await salvarRotaProspeccao({
@@ -267,46 +260,43 @@ export function NovaRotaProspeccaoForm({ varas }: { varas: VaraPublicaRow[] }) {
           ordem: i + 1,
         })),
       })
-      if (res && !res.ok) setError(res.error ?? 'Erro ao salvar')
+      if (res && !res.ok) setError(res.error ?? 'ERRO AO SALVAR')
     })
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-12">
       {/* Título */}
-      <div>
-        <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-          Nome da rota <span className="text-rose-500">*</span>
+      <div className="max-w-2xl">
+        <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-4">
+          NOME DA ROTA DE PROSPECÇÃO
         </label>
         <input
           type="text"
           value={titulo}
           onChange={(e) => setTitulo(e.target.value)}
-          placeholder="Ex: Circuito Fóruns Centro RJ — Janeiro"
-          className="w-full h-10 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-lime-400 focus:outline-none focus:ring-1 focus:ring-lime-400"
+          placeholder="EX: CIRCUITO FÓRUNS CENTRO RJ — MARÇO"
+          className="w-full text-2xl font-bold tracking-tight text-slate-900 border-0 border-b border-slate-100 bg-transparent py-4 focus:ring-0 focus:border-slate-900 placeholder:text-slate-100 transition-all uppercase"
         />
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-5">
-        {/* ── Varas disponíveis ── */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm space-y-3">
-          <p className="text-sm font-semibold text-slate-900">
-            Varas disponíveis
-            <span className="ml-2 text-xs font-normal text-slate-400">{varas.length} varas · TJRJ</span>
-          </p>
-
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Filtrar por vara, comarca ou juiz…"
-              className="w-full h-9 rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-3 text-xs text-slate-700 placeholder:text-slate-400 focus:border-lime-400 focus:outline-none focus:ring-1 focus:ring-lime-400"
-            />
+      <div className="grid lg:grid-cols-2 gap-px bg-slate-100 border border-slate-100">
+        {/* VARAS DISPONÍVEIS */}
+        <div className="bg-white p-8 space-y-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-900">CATÁLOGO DE VARAS</h3>
+            <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">{varas.length} VARAS · TJRJ</span>
           </div>
 
-          <div className="max-h-96 overflow-y-auto space-y-1.5 pr-1">
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="FILTRAR POR VARA, COMARCA OU JUIZ..."
+            className="w-full h-10 bg-slate-50 border-0 text-[11px] font-bold tracking-widest px-4 focus:ring-0 placeholder:text-slate-200"
+          />
+
+          <div className="max-h-[500px] overflow-y-auto space-y-px">
             {REGIOES.map((regiao) => (
               <RegiaoSection
                 key={regiao.nome}
@@ -319,54 +309,34 @@ export function NovaRotaProspeccaoForm({ varas }: { varas: VaraPublicaRow[] }) {
           </div>
         </div>
 
-        {/* ── Rota selecionada ── */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm space-y-3">
+        {/* ROTA ATUAL */}
+        <div className="bg-white p-8 space-y-6">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-slate-900">
-              Rota
-              {selecionadas.length > 0 && (
-                <span className="ml-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-lime-100 px-1.5 text-[10px] font-bold text-lime-700">
-                  {selecionadas.length}
-                </span>
-              )}
-            </p>
+            <h3 className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-900">CONFIGURAÇÃO DA ROTA</h3>
             {selecionadas.length > 0 && (
-              <button onClick={() => setSelecionadas([])} className="text-[11px] text-slate-400 hover:text-rose-600 transition-colors">
-                Limpar
-              </button>
+              <button onClick={() => setSelecionadas([])} className="text-[10px] font-bold uppercase tracking-widest text-[#a3e635] hover:text-slate-900 transition-colors">LIMPAR</button>
             )}
           </div>
 
           {selecionadas.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 py-8 text-slate-400">
-              <Landmark className="h-8 w-8 text-slate-200" />
-              <p className="text-xs">Clique nas varas para adicionar</p>
+            <div className="h-96 flex flex-col items-center justify-center text-slate-200 border border-dashed border-slate-100">
+              <p className="text-[11px] font-bold uppercase tracking-widest">NENHUMA VARA SELECIONADA</p>
             </div>
           ) : (
-            <div className="space-y-1.5 max-h-96 overflow-y-auto pr-1">
+            <div className="space-y-px bg-slate-50 border border-slate-50 max-h-[500px] overflow-y-auto">
               {selecionadas.map((vara, idx) => (
-                <div
-                  key={vara.id}
-                  className="flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2"
-                >
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-lime-500 text-[10px] font-bold text-white">
+                <div key={vara.id} className="flex items-center gap-4 bg-white p-4 group">
+                  <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center bg-slate-900 text-[10px] font-bold text-white">
                     {idx + 1}
                   </span>
-                  <Landmark className="h-3.5 w-3.5 shrink-0 text-violet-500" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-slate-800 truncate">{vara.varaNome}</p>
-                    <p className="text-[10px] text-slate-400 truncate capitalize">{vara.comarca.toLowerCase()}</p>
+                    <p className="text-xs font-bold text-slate-900 uppercase tracking-tight truncate">{vara.varaNome}</p>
+                    <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest mt-0.5 truncate">{vara.comarca}</p>
                   </div>
-                  <div className="flex items-center gap-0.5 shrink-0">
-                    <button onClick={() => moveUp(idx)} disabled={idx === 0} className="p-1 rounded text-slate-300 hover:text-slate-600 disabled:opacity-0 transition-colors">
-                      <ArrowUp className="h-3 w-3" />
-                    </button>
-                    <button onClick={() => moveDown(idx)} disabled={idx === selecionadas.length - 1} className="p-1 rounded text-slate-300 hover:text-slate-600 disabled:opacity-0 transition-colors">
-                      <ArrowDown className="h-3 w-3" />
-                    </button>
-                    <button onClick={() => handleToggle(vara)} className="p-1 rounded text-slate-300 hover:text-rose-500 transition-colors">
-                      <Trash2 className="h-3 w-3" />
-                    </button>
+                  <div className="flex items-center gap-4 opacity-0 group-hover:opacity-100 transition-all">
+                    <button onClick={() => moveUp(idx)} disabled={idx === 0} className="text-[10px] font-bold text-slate-300 hover:text-slate-900 disabled:opacity-10">↑</button>
+                    <button onClick={() => moveDown(idx)} disabled={idx === selecionadas.length - 1} className="text-[10px] font-bold text-slate-300 hover:text-slate-900 disabled:opacity-10">↓</button>
+                    <button onClick={() => handleToggle(vara)} className="text-[10px] font-bold text-red-300 hover:text-red-500">X</button>
                   </div>
                 </div>
               ))}
@@ -377,9 +347,9 @@ export function NovaRotaProspeccaoForm({ varas }: { varas: VaraPublicaRow[] }) {
 
       {/* Mapa preview */}
       {selecionadas.length >= 1 && (
-        <div>
-          <p className="text-sm font-semibold text-slate-900 mb-2">Preview no mapa</p>
-          <div className="isolate h-[340px] w-full overflow-hidden rounded-xl border border-slate-200 shadow-sm">
+        <div className="space-y-6">
+          <h3 className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-900">ESTRATÉGIA LOGÍSTICA</h3>
+          <div className="h-[440px] w-full overflow-hidden border border-slate-100">
             <RouteMapDynamic routes={[mapRoute]} />
           </div>
         </div>
@@ -387,43 +357,37 @@ export function NovaRotaProspeccaoForm({ varas }: { varas: VaraPublicaRow[] }) {
 
       {/* Google Maps link */}
       {selecionadas.length >= 1 && (
-        <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 flex items-center gap-3">
-          <ExternalLink className="h-4 w-4 text-slate-400 shrink-0" />
+        <div className="p-8 bg-slate-900 flex items-center justify-between gap-12">
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-slate-700 mb-0.5">Link Google Maps</p>
-            <p className="text-[11px] text-slate-400 truncate">{gmapsUrl}</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 mb-2">INTEGRAÇÃO GOOGLE MAPS</p>
+            <p className="text-[11px] font-bold text-white uppercase tracking-widest truncate">{gmapsUrl}</p>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <button onClick={copyLink} className="flex items-center gap-1 text-[11px] text-slate-500 hover:text-slate-800 transition-colors">
-              {copied ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
-              {copied ? 'Copiado!' : 'Copiar'}
+          <div className="flex items-center gap-8">
+            <button onClick={copyLink} className="text-[10px] font-bold uppercase tracking-widest text-[#a3e635] hover:text-white transition-colors">
+              {copied ? 'COPIADO' : 'COPIAR LINK'}
             </button>
-            <a href={gmapsUrl} target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-1 rounded-lg bg-white border border-slate-200 px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 transition-colors">
-              <ExternalLink className="h-3 w-3" />
-              Abrir
+            <a href={gmapsUrl} target="_blank" rel="noopener noreferrer" className="h-10 px-6 bg-white text-slate-900 text-[10px] font-bold uppercase tracking-widest hover:bg-[#a3e635] transition-all flex items-center">
+              ABRIR NO MAPS
             </a>
           </div>
         </div>
       )}
 
-      {error && (
-        <p className="text-xs text-rose-600 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">{error}</p>
-      )}
-
-      <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
-        <p className="mr-auto text-xs text-slate-400">
-          {selecionadas.length === 0 ? 'Nenhuma vara selecionada' : `${selecionadas.length} parada${selecionadas.length > 1 ? 's' : ''} na rota`}
+      {/* Botões finais */}
+      <div className="flex items-center justify-between pt-8 border-t border-slate-100">
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-300">
+          {selecionadas.length} VARA(S) CONFIGURADA(S)
         </p>
-        <Button
-          type="button"
-          onClick={handleSalvar}
-          disabled={isPending || selecionadas.length < 1 || !titulo.trim()}
-          className="bg-lime-500 hover:bg-lime-600 text-slate-900 font-semibold gap-1.5"
-        >
-          {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-          Salvar rota
-        </Button>
+        <div className="flex gap-4">
+          {error && <span className="text-[10px] font-bold text-red-500 uppercase tracking-widest pt-3 pr-4">{error}</span>}
+          <button
+            onClick={handleSalvar}
+            disabled={isPending || selecionadas.length < 1 || !titulo.trim()}
+            className="h-14 px-12 bg-[#a3e635] text-slate-900 text-[11px] font-bold uppercase tracking-[0.3em] hover:brightness-105 disabled:opacity-20 transition-all"
+          >
+            {isPending ? 'PROCESSANDO...' : 'SALVAR ROTA'}
+          </button>
+        </div>
       </div>
     </div>
   )

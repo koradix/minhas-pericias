@@ -1,19 +1,4 @@
 import Link from 'next/link'
-import {
-  FileText,
-  Navigation,
-  ChevronRight,
-  Plus,
-  ScrollText,
-  Search,
-  Map,
-  Gavel,
-  Eye,
-  Wallet,
-  Briefcase,
-  MapPin,
-} from 'lucide-react'
-
 import { KPICard } from '@/components/shared/kpi-card'
 import { BadgeStatus } from '@/components/shared/badge-status'
 import { OnboardingNudge } from '@/components/perfil/OnboardingNudge'
@@ -27,9 +12,9 @@ export const dynamic = 'force-dynamic'
 
 function getSaudacao() {
   const hora = new Date().getHours()
-  if (hora >= 5 && hora < 12) return 'Bom dia'
-  if (hora >= 12 && hora < 18) return 'Boa tarde'
-  return 'Boa noite'
+  if (hora >= 5 && hora < 12) return 'BOM DIA'
+  if (hora >= 12 && hora < 18) return 'BOA TARDE'
+  return 'BOA NOITE'
 }
 
 type PericiaResumo = {
@@ -40,17 +25,15 @@ type PericiaResumo = {
   total: number
 }
 
-// ──────────────────────────────────────────────────────────────────────────────
-
 export default async function DashboardPage() {
   const session = await auth()
   const userId = session?.user?.id
 
-  const firstName = session?.user?.name?.split(' ')[0] ?? 'Perito'
+  const firstName = session?.user?.name?.split(' ')[0]?.toUpperCase() ?? 'PERITO'
   const saudacao = getSaudacao()
 
   let peritoPerfil: { tribunais?: string; estados?: string; perfilCompleto?: boolean } | null = null
-  let subtitle = 'Bem-vindo ao PeriLaB'
+  let subtitle = 'BEM-VINDO AO PERILAB'
   let citacoesNaoLidas = 0
   let periciasAtivas: PericiaResumo[] = []
   let rotasAtivas: { id: string; titulo: string; status: string; _count: { checkpoints: number } }[] = []
@@ -64,10 +47,10 @@ export default async function DashboardPage() {
         const tribunais: string[] = JSON.parse(peritoPerfil.tribunais ?? '[]')
         const estados: string[]   = JSON.parse(peritoPerfil.estados ?? '[]')
         if (tribunais.length > 0) {
-          const labels = tribunais.slice(0, 3).join(', ')
-          subtitle = `Monitorando ${labels}${tribunais.length > 3 ? ` e mais ${tribunais.length - 3}` : ''}`
+          const labels = tribunais.slice(0, 3).join(', ').toUpperCase()
+          subtitle = `MONITORANDO ${labels}${tribunais.length > 3 ? ` E MAIS ${tribunais.length - 3}` : ''}`
         } else if (estados.length > 0) {
-          subtitle = `Atuando em ${estados.slice(0, 3).join(', ')}`
+          subtitle = `ATUANDO EM ${estados.slice(0, 3).join(', ').toUpperCase()}`
         }
       }
 
@@ -97,175 +80,141 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div className="p-4 md:p-12 max-w-7xl mx-auto w-full pt-4 md:pt-16">
+    <div className="p-8 md:p-16 max-w-7xl mx-auto w-full pt-10 md:pt-20 space-y-16 pb-32">
 
-      <section className="mb-14 border-none">
-        <h1 className="font-manrope text-4xl md:text-5xl lg:text-[3.5rem] font-black text-[#1f2937] tracking-tighter leading-none mb-4">
-          {saudacao}, {firstName}.
+      <section className="border-none">
+        <h1 className="text-4xl md:text-5xl lg:text-7xl font-bold text-slate-900 tracking-tighter leading-none mb-6">
+          {saudacao}, <span className="text-slate-200">{firstName}.</span>
         </h1>
-        <p className="text-slate-500 text-lg font-medium tracking-tight uppercase tracking-wider">{subtitle}</p>
+        <div className="h-[2px] w-24 bg-[#a3e635] mb-6" />
+        <p className="text-slate-400 text-xs font-bold uppercase tracking-[0.3em]">{subtitle}</p>
       </section>
 
       {peritoPerfil && !(peritoPerfil as { perfilCompleto?: boolean }).perfilCompleto && (
         <OnboardingNudge />
       )}
 
-      <section className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-        <Link href="/nomeacoes" className="group flex items-center justify-between p-8 xl:p-10 bg-white border-2 border-slate-100 hover:border-[#1f2937] rounded-none transition-all duration-300 overflow-hidden active:scale-95">
-          <div className="flex items-center gap-6">
-            <Search className="h-8 w-8 text-slate-400 group-hover:text-[#1f2937] transition-colors" strokeWidth={2} />
-            <div className="text-left">
-              <span className="block text-2xl font-black text-[#1f2937] font-manrope tracking-tight">Buscar Nomeações</span>
-              <span className="text-sm font-semibold text-slate-400 mt-1 block">Explorar novas oportunidades nos tribunais</span>
-            </div>
+      {/* Quick Actions — Atelier Style */}
+      <section className="grid grid-cols-1 md:grid-cols-2 gap-0 border border-slate-100 shadow-sm overflow-hidden transform-gpu">
+        <Link href="/nomeacoes" className="group flex flex-col justify-between p-10 bg-white border-b md:border-b-0 md:border-r border-slate-100 hover:bg-slate-50 transition-all duration-300">
+          <div className="mb-12">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none block mb-4 group-hover:text-slate-900 transition-colors">Ação Direta</span>
+            <span className="block text-3xl font-bold text-slate-900 uppercase tracking-tight group-hover:translate-x-2 transition-transform duration-500">Buscar Nomeações</span>
           </div>
-          <ChevronRight className="h-8 w-8 text-slate-200 group-hover:text-[#1f2937] transition-colors" strokeWidth={1.5} />
+          <p className="text-[10px] font-bold text-[#a3e635] uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">Explorar Oportunidades →</p>
         </Link>
 
-        <Link href="/rotas/nova" className="group flex items-center justify-between p-8 xl:p-10 bg-white border-2 border-slate-100 hover:border-[#1f2937] rounded-none transition-all duration-300 overflow-hidden active:scale-95">
-          <div className="flex items-center gap-6">
-            <Map className="h-8 w-8 text-slate-400 group-hover:text-[#1f2937] transition-colors" strokeWidth={2} />
-            <div className="text-left">
-              <span className="block text-2xl font-black text-[#1f2937] font-manrope tracking-tight">Planejar Rota</span>
-              <span className="text-sm font-semibold text-slate-400 mt-1 block">Otimizar viagens técnicas de hoje</span>
-            </div>
+        <Link href="/rotas/nova" className="group flex flex-col justify-between p-10 bg-white hover:bg-slate-50 transition-all duration-300">
+          <div className="mb-12">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none block mb-4 group-hover:text-slate-900 transition-colors">Logística Técnica</span>
+            <span className="block text-3xl font-bold text-slate-900 uppercase tracking-tight group-hover:translate-x-2 transition-transform duration-500">Planejar Rota</span>
           </div>
-          <ChevronRight className="h-8 w-8 text-slate-200 group-hover:text-[#1f2937] transition-colors" strokeWidth={1.5} />
+          <p className="text-[10px] font-bold text-[#a3e635] uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">Otimizar Atendimento →</p>
         </Link>
       </section>
 
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-14">
-        <Link href="/nomeacoes" className="group h-full">
+      {/* KPI Section */}
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Link href="/nomeacoes" className="h-full">
           <KPICard
-            title="Nomeações Novas"
+            title="NOMEAÇÕES NOVAS"
             value={citacoesNaoLidas || 12}
-            trendText="+2 desde ontem"
-            icon={Gavel}
-            className="hover:shadow-md transition-shadow group-hover:shadow-md"
+            trendText="+2 DESDE ONTEM"
           />
         </Link>
-        <Link href="/pericias" className="group h-full">
+        <Link href="/pericias" className="h-full">
           <KPICard
-            title="Perícias Ativas"
+            title="PERÍCIAS ATIVAS"
             value={periciasAtivas.length || 45}
-            trendText="5 agendadas hoje"
-            trendClass="text-[#6b7280]"
-            icon={Eye}
-            className="hover:shadow-md transition-shadow group-hover:shadow-md"
+            trendText="5 AGENDADAS HOJE"
           />
         </Link>
-        <Link href="/documentos/modelos" className="group h-full">
+        <Link href="/documentos/modelos" className="h-full">
           <KPICard
-            title="Laudos Pendentes"
+            title="LAUDOS PENDENTES"
             value={laudosPendentes || '08'}
-            trendText="3 vencem em breve"
-            trendClass="text-amber-600"
-            icon={ScrollText}
-            className="hover:shadow-md transition-shadow group-hover:shadow-md"
+            trendText="3 VENCEM EM BREVE"
+            trendClass="text-red-500"
           />
         </Link>
-        <Link href="/financeiro" className="group h-full">
+        <Link href="/financeiro" className="h-full">
           <KPICard
-            title="A Receber"
+            title="FUTURO A RECEBER"
             value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(48500)}
-            trendText="Atualizado agora"
-            icon={Wallet}
+            subtitle="ATUALIZADO AGORA"
             highlight={true}
           />
         </Link>
       </section>
 
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+      {/* Lists — Minimalist Atelier */}
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-16">
         
         {/* Col 1: Minhas Perícias */}
-        <div>
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-black text-[#1f2937] font-manrope tracking-tight">Minhas Perícias</h2>
-            <Link href="/pericias" className="text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-[#1f2937] transition-colors">Ver todas</Link>
+        <div className="space-y-10">
+          <div className="flex justify-between items-end border-b-2 border-slate-900 pb-4">
+            <h2 className="text-xl font-bold text-slate-900 uppercase tracking-widest">Atividade Recente</h2>
+            <Link href="/pericias" className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors">Histórico →</Link>
           </div>
-          <div className={cn("flex flex-col bg-transparent", periciasAtivas.length === 0 ? "p-16 items-center justify-center min-h-[320px] bg-slate-50 border-2 border-slate-100" : "min-h-[320px] border-t-2 border-slate-200")}>
+          
+          <div className="flex flex-col min-h-[320px]">
             {periciasAtivas.length === 0 ? (
-              <>
-                <div className="mb-4 text-slate-300">
-                   <Briefcase className="h-16 w-16" strokeWidth={1.5} />
-                </div>
-                <p className="text-slate-500 font-bold tracking-tight mb-8">Nenhuma ativa no momento</p>
-                <Link href="/rotas/nova">
-                  <button className="flex items-center gap-2 px-8 py-3 bg-[#1f2937] text-white rounded-none text-[11px] font-black uppercase tracking-widest hover:bg-[#84cc16] hover:text-[#1f2937] transition-colors">
-                    <Plus className="h-4 w-4" />
+              <div className="bg-slate-50 p-12 flex flex-col items-center justify-center text-center flex-1">
+                <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest mb-8">Nenhuma ativa no momento</p>
+                <Link href="/pericias/gestao">
+                  <button className="bg-slate-900 text-white px-8 py-4 text-[10px] font-bold uppercase tracking-widest hover:bg-[#a3e635] hover:text-slate-900 transition-all">
                     Iniciar nova perícia
                   </button>
                 </Link>
-              </>
+              </div>
             ) : (
                 <div className="w-full flex flex-col">
-                  {periciasAtivas.map((p) => {
-                    const pct = p.total > 0 ? Math.round((p.concluidos / p.total) * 100) : 0
-                    return (
-                      <Link
-                        key={p.id}
-                        href={`/pericias/${p.id}`}
-                        className="group flex flex-col sm:flex-row sm:items-center gap-4 border-b border-slate-200 bg-transparent py-6 hover:bg-slate-50 px-4 transition-all cursor-pointer text-left"
-                      >
-                        <div className="flex-1 min-w-0">
-                          <p className="text-lg font-bold text-[#1f2937] truncate">{p.titulo}</p>
-                          {p.total > 0 && (
-                            <div className="mt-3 flex items-center gap-3">
-                              <div className="h-1 w-32 bg-slate-200 overflow-hidden">
-                                <div className="h-full bg-[#1f2937]" style={{ width: `${pct}%` }} />
-                              </div>
-                              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-                                {p.concluidos}/{p.total} concl.
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex flex-col sm:items-end gap-1 flex-shrink-0 mt-2 sm:mt-0">
-                          <BadgeStatus status={p.status} />
-                        </div>
-                      </Link>
-                    )
-                  })}
+                  {periciasAtivas.map((p) => (
+                    <Link
+                      key={p.id}
+                      href={`/pericias/${p.id}`}
+                      className="group flex items-center justify-between gap-6 py-6 border-b border-slate-100 hover:bg-slate-50/50 px-2 transition-all first:pt-0"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-slate-900 uppercase tracking-tight truncate group-hover:translate-x-1 transition-transform">{p.titulo}</p>
+                        <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest mt-2">PROCESSAMENTO IA EM DIA</p>
+                      </div>
+                      <BadgeStatus status={p.status} className="shrink-0" />
+                    </Link>
+                  ))}
                 </div>
             )}
           </div>
         </div>
 
         {/* Col 2: Próximas Rotas */}
-        <div>
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-black text-[#1f2937] font-manrope tracking-tight">Próximas Rotas</h2>
-            <Link href="/rotas" className="text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-[#1f2937] transition-colors">Mapa completo</Link>
+        <div className="space-y-10">
+          <div className="flex justify-between items-end border-b-2 border-slate-900 pb-4">
+            <h2 className="text-xl font-bold text-slate-900 uppercase tracking-widest">Próximas Rotas</h2>
+            <Link href="/rotas" className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors">Mapa →</Link>
           </div>
-          <div className={cn("flex flex-col bg-transparent", rotasAtivas.length === 0 ? "p-16 items-center justify-center min-h-[320px] bg-slate-50 border-2 border-slate-100" : "min-h-[320px] border-t-2 border-slate-200")}>
+
+          <div className="flex flex-col min-h-[320px]">
             {rotasAtivas.length === 0 ? (
-              <>
-                <div className="mb-4 text-slate-300">
-                   <MapPin className="h-16 w-16" strokeWidth={1.5} />
-                </div>
-                <p className="text-slate-500 font-bold tracking-tight mb-8">Nenhuma rota ativa</p>
+              <div className="bg-slate-50 p-12 flex flex-col items-center justify-center text-center flex-1">
+                <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest mb-8">Nenhuma rota ativa</p>
                 <Link href="/rotas/nova">
-                  <button className="flex items-center gap-2 px-8 py-3 bg-[#1f2937] text-white rounded-none text-[11px] font-black uppercase tracking-widest hover:bg-[#84cc16] hover:text-[#1f2937] transition-colors">
-                    <Navigation className="h-4 w-4" />
+                  <button className="bg-[#a3e635] text-slate-900 px-8 py-4 text-[10px] font-bold uppercase tracking-widest hover:bg-[#bef264] transition-all">
                     Planejar agora
                   </button>
                 </Link>
-              </>
+              </div>
             ) : (
                 <div className="w-full flex flex-col">
                   {rotasAtivas.map((rota) => (
-                    <Link key={rota.id} href="/rotas/pericias" className="text-left w-full block">
-                      <div className="group flex items-center gap-5 border-b border-slate-200 bg-transparent py-5 hover:bg-slate-50 px-4 transition-all cursor-pointer">
-                        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center bg-slate-100 border border-slate-200 text-slate-400 group-hover:text-[#1f2937] group-hover:border-[#1f2937] transition-colors">
-                          <MapPin className="h-5 w-5" strokeWidth={2} />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-lg font-bold text-[#1f2937] truncate">{rota.titulo}</p>
-                          <p className="mt-1 text-[10px] uppercase tracking-widest font-black text-slate-400">
-                             {rota._count?.checkpoints || 0} locais marcados
-                          </p>
-                        </div>
+                    <Link key={rota.id} href="/rotas/pericias" className="group flex items-center justify-between gap-6 py-6 border-b border-slate-100 hover:bg-slate-50/50 px-2 transition-all first:pt-0">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-bold text-slate-900 uppercase tracking-tight truncate group-hover:translate-x-1 transition-transform">{rota.titulo}</p>
+                        <p className="mt-2 text-[9px] uppercase tracking-widest font-bold text-slate-300">
+                           {rota._count?.checkpoints || 0} LOCAIS NO TRAJETO
+                        </p>
                       </div>
+                      <span className="text-[10px] font-bold text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">ABRIR →</span>
                     </Link>
                   ))}
                 </div>

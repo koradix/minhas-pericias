@@ -1,32 +1,9 @@
 'use client'
 
 import { useState, useRef, useEffect, useTransition } from 'react'
-import {
-  X,
-  Camera,
-  Mic,
-  MicOff,
-  Type,
-  Trash2,
-  CheckCircle2,
-  Square,
-  ImageIcon,
-  Volume2,
-  FileText,
-  MapPin,
-  Loader2,
-  SwitchCamera,
-  ZapOff,
-  Users,
-  Save,
-  FolderOpen,
-  ListChecks,
-  Plus,
-  RotateCcw,
-} from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { EmptyState } from '@/components/shared/empty-state'
 import {
   addCheckpointMidia,
   deleteCheckpointMidia,
@@ -77,27 +54,6 @@ function blobToBase64(blob: Blob): Promise<string> {
   })
 }
 
-const tipoBadgeClass: Record<string, string> = {
-  foto: 'bg-blue-50 text-blue-700',
-  audio: 'bg-violet-50 text-violet-700',
-  texto: 'bg-slate-100 text-slate-700',
-  documento: 'bg-amber-50 text-amber-700',
-}
-
-const tipoLabel: Record<string, string> = {
-  foto: 'Foto',
-  audio: 'Áudio',
-  texto: 'Nota',
-  documento: 'Documento',
-}
-
-const tipoIcon: Record<string, typeof ImageIcon> = {
-  foto: ImageIcon,
-  audio: Volume2,
-  texto: FileText,
-  documento: FileText,
-}
-
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function CheckpointMediaPanel({
@@ -140,7 +96,6 @@ export function CheckpointMediaPanel({
   const [isPending, startTransition] = useTransition()
   const [finalizando, setFinalizando] = useState(false)
 
-  // ── Pending photo (captured or selected — awaiting caption before save) ───
   const [pendingFoto, setPendingFoto] = useState<{ base64: string; tipo: 'foto'; nomeArquivo?: string } | null>(null)
   const [pendingCaption, setPendingCaption] = useState('')
 
@@ -174,28 +129,24 @@ export function CheckpointMediaPanel({
     salvarChecklist(checklist.filter((i) => i.id !== id))
   }
 
-  // ── Load existing midias on mount ──────────────────────────────────────────
   useEffect(() => {
     getCheckpointMidias(checkpointId)
       .then((rows) => setMidias(rows))
       .finally(() => setLoadingMidias(false))
   }, [checkpointId])
 
-  // ── Camera — attach stream to video element after modo='camera' renders ───
   useEffect(() => {
     if (modo === 'camera' && videoRef.current && streamRef.current) {
       videoRef.current.srcObject = streamRef.current
     }
   }, [modo])
 
-  // ── Cleanup stream on unmount ──────────────────────────────────────────────
   useEffect(() => {
     return () => {
       streamRef.current?.getTracks().forEach((t) => t.stop())
     }
   }, [])
 
-  // ── Load existing vara contact on mount (FORUM/VARA only) ──────────────────
   useEffect(() => {
     if (!isVara || !tribunalSigla || !varaNome) return
     getVaraContato(tribunalSigla, varaNome)
@@ -209,13 +160,11 @@ export function CheckpointMediaPanel({
           observacoes: row.observacoes,
         })
       })
-      .catch(() => {/* VaraContato table may not exist yet — ignore */})
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+      .catch(() => {})
   }, [isVara])
 
   async function handleAbrirCamera(facing: 'environment' | 'user' = facingMode) {
     setCameraError(null)
-    // Stop any existing stream before opening new one
     streamRef.current?.getTracks().forEach((t) => t.stop())
     streamRef.current = null
 
@@ -227,7 +176,6 @@ export function CheckpointMediaPanel({
       setFacingMode(facing)
       setModo('camera')
     } catch {
-      // Fallback to file input when camera not available / permission denied
       fotoInputRef.current?.click()
     }
   }
@@ -253,7 +201,6 @@ export function CheckpointMediaPanel({
     canvas.getContext('2d')?.drawImage(video, 0, 0)
     const base64 = canvas.toDataURL('image/jpeg', 0.85)
 
-    // Pause stream and show caption prompt before saving
     streamRef.current?.getTracks().forEach((t) => t.stop())
     streamRef.current = null
     setModo(null)
@@ -285,7 +232,6 @@ export function CheckpointMediaPanel({
     setPendingCaption('')
   }
 
-  // ── Foto (câmera fallback) — single file → caption prompt, multiple → auto-save ──
   async function handleFotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? [])
     if (!files.length) return
@@ -307,7 +253,6 @@ export function CheckpointMediaPanel({
     }
   }
 
-  // ── Arquivo (galeria / computador) ────────────────────────────────────────
   async function handleArquivoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? [])
     if (!files.length) return
@@ -328,7 +273,6 @@ export function CheckpointMediaPanel({
     }
   }
 
-  // ── Audio ─────────────────────────────────────────────────────────────────
   async function handleIniciarGravacao() {
     setAudioError(null)
     try {
@@ -351,7 +295,7 @@ export function CheckpointMediaPanel({
       mediaRecorderRef.current = recorder
       setGravando(true)
     } catch {
-      setAudioError('Permissão de microfone negada ou indisponível.')
+      setAudioError('Erro: Permissão de microfone negada.')
     }
   }
 
@@ -383,7 +327,6 @@ export function CheckpointMediaPanel({
     setModo(null)
   }
 
-  // ── Nota ─────────────────────────────────────────────────────────────────
   function handleSalvarNota() {
     const texto = nota.trim()
     if (!texto) return
@@ -400,7 +343,6 @@ export function CheckpointMediaPanel({
     })
   }
 
-  // ── Delete ────────────────────────────────────────────────────────────────
   function handleDelete(midiaId: string) {
     startTransition(async () => {
       try {
@@ -410,7 +352,6 @@ export function CheckpointMediaPanel({
     })
   }
 
-  // ── Contato ───────────────────────────────────────────────────────────────
   async function handleSalvarContato() {
     if (!tribunalSigla || !varaNome) return
     setLoadingContato(true)
@@ -422,590 +363,302 @@ export function CheckpointMediaPanel({
     setLoadingContato(false)
   }
 
-  // ── Finalizar ─────────────────────────────────────────────────────────────
   async function handleFinalizar() {
     setFinalizando(true)
     try {
       await updateCheckpointStatus(checkpointId, 'concluido')
-    } catch { /* swallow — status update failure shouldn't block navigation */ }
+    } catch { /* swallow */ }
     setFinalizando(false)
     onConcluido()
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-
   return (
     <>
-      {/* Backdrop — z-[1000] stays above Leaflet's max z-index (~700) */}
       <div
         className="fixed inset-0 z-[1000] bg-black/40 backdrop-blur-[2px]"
         onClick={onClose}
         aria-hidden
       />
 
-      {/* Slide-over panel */}
-      <div className="fixed inset-y-0 right-0 z-[1001] flex w-full max-w-md flex-col bg-white shadow-2xl sm:border-l sm:border-slate-200">
+      <div className="fixed inset-y-0 right-0 z-[1001] flex w-full max-w-md flex-col bg-white shadow-2xl sm:border-l sm:border-slate-100">
 
         {/* Header */}
-        <div className="flex items-start gap-3 border-b border-slate-100 bg-slate-50 px-5 py-4">
-          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-lime-100">
-            <MapPin className="h-5 w-5 text-lime-700" />
-          </div>
+        <div className="flex items-start gap-4 border-b border-slate-100 bg-white px-8 py-8">
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-slate-900 truncate">{checkpointTitulo}</p>
+            <h2 className="text-xl font-bold text-slate-900 tracking-tight leading-tight uppercase">{checkpointTitulo}</h2>
             {endereco && (
-              <p className="text-xs text-slate-500 mt-0.5 truncate">{endereco}</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2 truncate">{endereco}</p>
             )}
-            <Badge className="mt-1.5" variant="warning">Você chegou</Badge>
+            <div className="mt-4">
+              <span className="inline-block bg-[#a3e635] text-slate-900 text-[10px] font-bold uppercase tracking-[0.2em] px-2 py-1 select-none">
+                VOCÊ CHEGOU
+              </span>
+            </div>
           </div>
           <button
             onClick={onClose}
-            className="flex-shrink-0 rounded-lg p-1.5 text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition-colors"
+            className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors pt-1.5"
           >
-            <X className="h-4 w-4" />
+            FECHAR
           </button>
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto p-8 space-y-8">
 
-          {/* Action row */}
-          <div className="flex gap-2">
-            {/* Hidden inputs */}
-            <input
-              ref={fotoInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              className="hidden"
-              onChange={handleFotoChange}
-            />
-            <input
-              ref={arquivoInputRef}
-              type="file"
-              accept="image/*,application/pdf,.docx,.doc,.xlsx,.xls"
-              multiple
-              className="hidden"
-              onChange={handleArquivoChange}
-            />
+          {/* Action grid */}
+          <div className="grid grid-cols-2 gap-px bg-slate-100 border border-slate-100">
+            <input ref={fotoInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFotoChange} />
+            <input ref={arquivoInputRef} type="file" accept="image/*,application/pdf,.docx,.doc,.xlsx,.xls" multiple className="hidden" onChange={handleArquivoChange} />
 
-            {/* Câmera */}
             <button
               onClick={() => handleAbrirCamera()}
               disabled={isPending}
-              className={`flex flex-1 flex-col items-center gap-1.5 rounded-xl border py-3 transition-all disabled:opacity-50 ${
-                modo === 'camera'
-                  ? 'border-blue-400 bg-blue-50 text-blue-700'
-                  : 'border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700'
-              }`}
+              className={cn(
+                "flex h-24 flex-col items-center justify-center bg-white transition-all disabled:opacity-50",
+                modo === 'camera' ? "bg-slate-50 ring-1 ring-inset ring-slate-200" : "hover:bg-slate-50"
+              )}
             >
-              <Camera className="h-5 w-5" />
-              <span className="text-[11px] font-medium">Câmera</span>
+              <span className="text-[11px] font-bold uppercase tracking-widest text-slate-900">Câmera</span>
+              {modo === 'camera' && <span className="h-0.5 w-4 bg-[#a3e635] mt-2 animate-pulse" />}
             </button>
 
-            {/* Áudio */}
             <button
               onClick={() => { handleFecharCamera(); setModo(modo === 'audio' ? null : 'audio') }}
-              className={`flex flex-1 flex-col items-center gap-1.5 rounded-xl border py-3 transition-all ${
-                modo === 'audio'
-                  ? 'border-violet-300 bg-violet-50 text-violet-700'
-                  : 'border-slate-200 bg-white text-slate-600 hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700'
-              }`}
+              className={cn(
+                "flex h-24 flex-col items-center justify-center bg-white transition-all",
+                modo === 'audio' ? "bg-slate-50 ring-1 ring-inset ring-slate-200" : "hover:bg-slate-50"
+              )}
             >
-              <Mic className="h-5 w-5" />
-              <span className="text-[11px] font-medium">Áudio</span>
+              <span className="text-[11px] font-bold uppercase tracking-widest text-slate-900">Áudio</span>
+              {modo === 'audio' && <span className="h-0.5 w-4 bg-[#a3e635] mt-2 animate-pulse" />}
             </button>
 
-            {/* Nota */}
             <button
               onClick={() => { handleFecharCamera(); setModo(modo === 'nota' ? null : 'nota') }}
-              className={`flex flex-1 flex-col items-center gap-1.5 rounded-xl border py-3 transition-all ${
-                modo === 'nota'
-                  ? 'border-lime-400 bg-lime-50 text-lime-700'
-                  : 'border-slate-200 bg-white text-slate-600 hover:border-lime-400 hover:bg-lime-50 hover:text-lime-700'
-              }`}
+              className={cn(
+                "flex h-24 flex-col items-center justify-center bg-white transition-all",
+                modo === 'nota' ? "bg-slate-50 ring-1 ring-inset ring-slate-200" : "hover:bg-slate-50"
+              )}
             >
-              <Type className="h-5 w-5" />
-              <span className="text-[11px] font-medium">Nota</span>
+              <span className="text-[11px] font-bold uppercase tracking-widest text-slate-900">Nota</span>
+              {modo === 'nota' && <span className="h-0.5 w-4 bg-[#a3e635] mt-2" />}
             </button>
 
-            {/* Arquivo — galeria / computador */}
             <button
               onClick={() => { handleFecharCamera(); setModo(null); arquivoInputRef.current?.click() }}
               disabled={isPending}
-              className="flex flex-1 flex-col items-center gap-1.5 rounded-xl border border-slate-200 bg-white py-3 text-slate-600 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700 transition-all disabled:opacity-50"
+              className="flex h-24 flex-col items-center justify-center bg-white hover:bg-slate-50 transition-all disabled:opacity-50"
             >
-              <FolderOpen className="h-5 w-5" />
-              <span className="text-[11px] font-medium">Arquivo</span>
+              <span className="text-[11px] font-bold uppercase tracking-widest text-slate-900">Arquivo</span>
             </button>
 
-            {/* Contato — only for FORUM/VARA_CIVEL */}
             {isVara && (
               <button
                 onClick={() => { handleFecharCamera(); setModo(modo === 'contato' ? null : 'contato') }}
-                className={`flex flex-1 flex-col items-center gap-1.5 rounded-xl border py-3 transition-all ${
-                  modo === 'contato'
-                    ? 'border-violet-400 bg-violet-50 text-violet-700'
-                    : 'border-slate-200 bg-white text-slate-600 hover:border-violet-400 hover:bg-violet-50 hover:text-violet-700'
-                }`}
+                className={cn(
+                  "col-span-2 flex h-14 items-center justify-center bg-white border-t border-slate-100 transition-all",
+                  modo === 'contato' ? "bg-slate-50" : "hover:bg-slate-50"
+                )}
               >
-                <Users className="h-5 w-5" />
-                <span className="text-[11px] font-medium">Contato</span>
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">Contatos da Vara</span>
               </button>
             )}
           </div>
 
-          {/* Pending photo — caption prompt */}
+          {/* Pending photo */}
           {pendingFoto && (
-            <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 space-y-3">
-              <p className="text-xs font-semibold text-blue-800 flex items-center gap-1.5">
-                <Camera className="h-3.5 w-3.5" />
-                Foto capturada — adicione uma legenda
-              </p>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={pendingFoto.base64}
-                alt="preview"
-                className="w-full rounded-lg object-cover max-h-48 border border-blue-100"
-              />
-              <input
-                type="text"
-                value={pendingCaption}
-                onChange={(e) => setPendingCaption(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') handleSalvarPendingFoto() }}
-                placeholder="Ex: Fachada do imóvel, rachadura lateral…"
-                autoFocus
-                className="w-full h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400"
-              />
-              <div className="flex gap-2 justify-end">
-                <Button size="sm" variant="ghost" onClick={handleDescartarPendingFoto}>
-                  Descartar
-                </Button>
-                <Button
-                  size="sm"
-                  className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5"
-                  onClick={handleSalvarPendingFoto}
-                  disabled={isPending}
-                >
-                  {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-                  Salvar foto
-                </Button>
+            <div className="border border-slate-100 pt-0 overflow-hidden">
+              <div className="bg-slate-900 aspect-video flex items-center justify-center overflow-hidden">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={pendingFoto.base64} alt="preview" className="w-full h-full object-cover" />
+              </div>
+              <div className="p-6 space-y-4">
+                <input
+                  type="text"
+                  value={pendingCaption}
+                  onChange={(e) => setPendingCaption(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleSalvarPendingFoto() }}
+                  placeholder="LEGENDA DA FOTO..."
+                  autoFocus
+                  className="w-full text-[11px] font-bold uppercase tracking-widest text-slate-900 placeholder:text-slate-300 bg-transparent border-0 border-b border-slate-100 py-2 focus:border-slate-900 focus:ring-0 transition-all"
+                />
+                <div className="flex gap-4">
+                  <button onClick={handleDescartarPendingFoto} className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-red-500 transition-colors">DESCARTAR</button>
+                  <button onClick={handleSalvarPendingFoto} disabled={isPending} className="flex-1 h-10 bg-[#a3e635] text-slate-900 text-[10px] font-bold uppercase tracking-widest hover:brightness-105 transition-all">SALVAR FOTO</button>
+                </div>
               </div>
             </div>
           )}
 
-          {/* Camera viewfinder */}
+          {/* Camera Viewfinder */}
           {modo === 'camera' && (
-            <div className="rounded-xl border border-blue-200 bg-slate-900 overflow-hidden space-y-0">
-              {cameraError && (
-                <p className="text-xs text-red-400 bg-red-950/50 px-3 py-2 flex items-center gap-1.5">
-                  <ZapOff className="h-3.5 w-3.5 flex-shrink-0" />
-                  {cameraError}
-                </p>
-              )}
-              {/* Viewfinder */}
-              <div className="relative aspect-[4/3] bg-black">
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className="w-full h-full object-cover"
-                />
+            <div className="border border-slate-100 overflow-hidden">
+              <div className="relative aspect-square bg-black overflow-hidden">
+                <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
                 <canvas ref={canvasRef} className="hidden" />
-                {/* Flip camera button */}
                 <button
                   onClick={handleVirarCamera}
-                  className="absolute top-2 right-2 rounded-full bg-black/50 p-2 text-white hover:bg-black/70 transition-colors"
-                  title="Virar câmera"
+                  className="absolute bottom-4 right-4 bg-white/20 hover:bg-white/40 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-2 transition-all"
                 >
-                  <SwitchCamera className="h-4 w-4" />
+                  VIRAR
                 </button>
               </div>
-              {/* Controls */}
-              <div className="flex items-center gap-2 p-3 bg-slate-800">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="text-slate-300 hover:text-white hover:bg-slate-700"
-                  onClick={handleFecharCamera}
-                >
-                  Fechar
-                </Button>
-                <Button
-                  size="sm"
-                  className="flex-1 bg-white hover:bg-slate-100 text-slate-900 font-semibold gap-1.5"
-                  onClick={handleCapturar}
-                  disabled={isPending}
-                >
-                  {isPending ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <><Camera className="h-3.5 w-3.5" /> Tirar foto</>
-                  )}
-                </Button>
+              <div className="p-6 flex gap-4">
+                <button onClick={handleFecharCamera} className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors">FECHAR</button>
+                <button onClick={handleCapturar} disabled={isPending} className="flex-1 h-12 bg-slate-900 text-white text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-slate-800 transition-all">
+                  CAPTURAR
+                </button>
               </div>
             </div>
           )}
 
-          {/* Nota input */}
+          {/* Nota Input */}
           {modo === 'nota' && (
-            <div className="rounded-xl border border-lime-200 bg-lime-50 p-3 space-y-2">
+            <div className="border border-slate-100 p-6 space-y-4">
               <textarea
                 value={nota}
                 onChange={(e) => setNota(e.target.value)}
-                placeholder="Descreva o que observou neste local..."
+                placeholder="NOTAS DE OBSERVAÇÃO..."
                 rows={4}
-                className="w-full resize-none rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-lime-400 focus:outline-none focus:ring-1 focus:ring-lime-400"
+                className="w-full text-xs font-medium text-slate-700 bg-slate-50 border-0 p-4 focus:ring-0 placeholder:text-slate-300"
               />
-              <div className="flex gap-2 justify-end">
-                <Button size="sm" variant="ghost" onClick={() => { setNota(''); setModo(null) }}>
-                  Cancelar
-                </Button>
-                <Button
-                  size="sm"
-                  className="bg-lime-500 hover:bg-lime-600 text-slate-900 font-semibold"
-                  onClick={handleSalvarNota}
-                  disabled={!nota.trim() || isPending}
-                >
-                  {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Salvar nota'}
-                </Button>
+              <div className="flex gap-4 items-center">
+                <button onClick={() => { setNota(''); setModo(null) }} className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors">CANCELAR</button>
+                <button onClick={handleSalvarNota} disabled={!nota.trim() || isPending} className="flex-1 h-10 bg-[#a3e635] text-slate-900 text-[10px] font-bold uppercase tracking-widest hover:brightness-105 transition-all">SALVAR NOTA</button>
               </div>
             </div>
           )}
 
           {/* Audio controls */}
           {modo === 'audio' && (
-            <div className="rounded-xl border border-violet-200 bg-violet-50 p-3 space-y-3">
-              {audioError && (
-                <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{audioError}</p>
-              )}
-
+            <div className="border border-slate-100 p-6 space-y-6">
               {!audioPreview ? (
-                <div className="flex items-center gap-3">
-                  {!gravando ? (
-                    <Button
-                      size="sm"
-                      className="bg-violet-600 hover:bg-violet-700 text-white gap-1.5"
-                      onClick={handleIniciarGravacao}
-                    >
-                      <Mic className="h-3.5 w-3.5" />
-                      Iniciar gravação
-                    </Button>
-                  ) : (
-                    <Button
-                      size="sm"
-                      className="bg-red-600 hover:bg-red-700 text-white gap-1.5 animate-pulse"
-                      onClick={handlePararGravacao}
-                    >
-                      <Square className="h-3 w-3 fill-current" />
-                      Parar gravação
-                    </Button>
-                  )}
-                  {gravando && (
-                    <span className="text-xs text-violet-700 font-medium flex items-center gap-1.5">
-                      <MicOff className="h-3.5 w-3.5" />
-                      Gravando…
-                    </span>
-                  )}
+                <div className="flex flex-col items-center gap-6 py-4">
+                  <div className={cn("h-1 w-24 bg-slate-100 relative overflow-hidden", gravando && "after:content-[''] after:absolute after:inset-y-0 after:bg-red-500 after:animate-progress")}>
+                    <style jsx>{`
+                      @keyframes progress { 0% { left: -100%; width: 100%; } 100% { left: 100%; width: 100%; } }
+                      .after\:animate-progress::after { animation: progress 2s infinite linear; }
+                    `}</style>
+                  </div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400">{gravando ? 'GRAVANDO ÁUDIO...' : 'PRONTO PARA GRAVAR'}</p>
+                  <button
+                    onClick={gravando ? handlePararGravacao : handleIniciarGravacao}
+                    className={cn(
+                      "h-16 w-16 border-2 transition-all flex items-center justify-center text-[10px] font-bold tracking-tighter",
+                      gravando ? "border-red-500 text-red-500 animate-pulse" : "border-slate-900 text-slate-900 hover:bg-slate-50"
+                    )}
+                  >
+                    {gravando ? 'STOP' : 'REC'}
+                  </button>
                 </div>
               ) : (
-                <div className="space-y-2">
-                  <audio src={audioPreview} controls className="w-full h-9" />
-                  <div className="flex gap-2 justify-end">
-                    <Button size="sm" variant="ghost" onClick={handleDescartarAudio}>
-                      Descartar
-                    </Button>
-                    <Button
-                      size="sm"
-                      className="bg-violet-600 hover:bg-violet-700 text-white"
-                      onClick={handleSalvarAudio}
-                      disabled={isPending}
-                    >
-                      {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Salvar áudio'}
-                    </Button>
+                <div className="space-y-4">
+                  <audio src={audioPreview} controls className="w-full h-8" />
+                  <div className="flex gap-4 items-center">
+                    <button onClick={handleDescartarAudio} className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-red-500 transition-colors">DESCARTAR</button>
+                    <button onClick={handleSalvarAudio} disabled={isPending} className="flex-1 h-10 bg-[#a3e635] text-slate-900 text-[10px] font-bold uppercase tracking-widest">SALVAR ÁUDIO</button>
                   </div>
                 </div>
               )}
             </div>
           )}
 
-          {/* Contato form — FORUM/VARA only */}
-          {modo === 'contato' && (
-            <div className="rounded-xl border border-violet-200 bg-violet-50 p-3 space-y-3">
-              <p className="text-xs font-semibold text-violet-800 flex items-center gap-1.5">
-                <Users className="h-3.5 w-3.5" />
-                Contatos da Vara / Fórum
-              </p>
+          {/* Media list */}
+          <div className="pt-4">
+            <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-6 flex items-center gap-4">
+              EVIDÊNCIAS COLETADAS
+              <span className="h-px flex-1 bg-slate-100" />
+            </h3>
+            
+            {midias.length === 0 && !loadingMidias && (
+              <div className="py-12 text-center border border-dashed border-slate-100">
+                <p className="text-[11px] font-bold uppercase tracking-widest text-slate-300">NENHUMA MÍDIA COLETADA</p>
+              </div>
+            )}
 
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Telefone</label>
-                  <input
-                    type="tel"
-                    value={contato.telefone ?? ''}
-                    onChange={(e) => setContato((p) => ({ ...p, telefone: e.target.value }))}
-                    placeholder="(11) 9999-9999"
-                    className="mt-0.5 w-full h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-400"
-                  />
+            <div className="space-y-3">
+              {midias.map((m) => (
+                <div key={m.id} className="group border border-slate-100 p-4 transition-all hover:border-slate-200">
+                  <div className="flex gap-4">
+                    {m.tipo === 'foto' && m.url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={m.url} alt="" className="h-16 w-16 grayscale hover:grayscale-0 transition-all object-cover" />
+                    ) : (
+                      <div className="h-16 w-16 bg-slate-50 flex items-center justify-center">
+                        <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">{m.tipo}</span>
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0 py-1">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-[#a3e635]">{m.tipo}</p>
+                      <p className="text-xs font-bold text-slate-900 mt-1 truncate">{m.descricao || m.texto || 'SEM DESCRIÇÃO'}</p>
+                      <p className="text-[9px] font-bold text-slate-300 mt-1 uppercase">
+                        {new Date(m.criadoEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleDelete(m.id)}
+                      className="opacity-0 group-hover:opacity-100 text-[9px] font-bold text-red-300 hover:text-red-500 transition-all"
+                    >
+                      EXCLUIR
+                    </button>
+                  </div>
                 </div>
-                <div>
-                  <label className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">E-mail</label>
-                  <input
-                    type="email"
-                    value={contato.email ?? ''}
-                    onChange={(e) => setContato((p) => ({ ...p, email: e.target.value }))}
-                    placeholder="vara@tjsp.jus.br"
-                    className="mt-0.5 w-full h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-400"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Nome do Juiz</label>
-                <input
-                  type="text"
-                  value={contato.juizNome ?? ''}
-                  onChange={(e) => setContato((p) => ({ ...p, juizNome: e.target.value }))}
-                  placeholder="Dr. João Silva"
-                  className="mt-0.5 w-full h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-400"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Secretário(a)</label>
-                  <input
-                    type="text"
-                    value={contato.secretarioNome ?? ''}
-                    onChange={(e) => setContato((p) => ({ ...p, secretarioNome: e.target.value }))}
-                    placeholder="Maria Costa"
-                    className="mt-0.5 w-full h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-400"
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">LinkedIn</label>
-                  <input
-                    type="url"
-                    value={contato.secretarioLinkedin ?? ''}
-                    onChange={(e) => setContato((p) => ({ ...p, secretarioLinkedin: e.target.value }))}
-                    placeholder="linkedin.com/in/..."
-                    className="mt-0.5 w-full h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-400"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Observações</label>
-                <textarea
-                  value={contato.observacoes ?? ''}
-                  onChange={(e) => setContato((p) => ({ ...p, observacoes: e.target.value }))}
-                  placeholder="Horário de atendimento, preferências..."
-                  rows={2}
-                  className="mt-0.5 w-full resize-none rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-400"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2">
-                {savedContato && (
-                  <span className="text-xs text-emerald-700 font-medium flex items-center gap-1">
-                    <CheckCircle2 className="h-3.5 w-3.5" /> Salvo
-                  </span>
-                )}
-                <Button
-                  size="sm"
-                  className="bg-violet-600 hover:bg-violet-700 text-white gap-1.5"
-                  onClick={handleSalvarContato}
-                  disabled={loadingContato}
-                >
-                  {loadingContato ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-                  Salvar contato
-                </Button>
-              </div>
+              ))}
             </div>
-          )}
+          </div>
 
           {/* Checklist */}
-          <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+          <div className="border border-slate-100">
             <button
               onClick={() => setShowChecklist((v) => !v)}
-              className="flex w-full items-center justify-between px-3 py-2.5 hover:bg-slate-50 transition-colors"
+              className="flex w-full items-center justify-between px-6 py-5 hover:bg-slate-50 transition-all"
             >
-              <span className="flex items-center gap-2 text-xs font-semibold text-slate-700">
-                <ListChecks className="h-3.5 w-3.5 text-lime-600" />
-                Checklist da vistoria
-                {checklist.length > 0 && (
-                  <span className="text-[10px] font-semibold text-slate-400">
-                    {checklist.filter((i) => i.feito).length}/{checklist.length}
-                  </span>
-                )}
-              </span>
-              <span className="text-[10px] text-slate-400">{showChecklist ? '▲' : '▼'}</span>
+              <h3 className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-900">CHECKLIST DA VISTORIA</h3>
+              <span className="text-[10px] font-bold text-slate-300">{showChecklist ? 'FECHAR' : 'ABRIR'}</span>
             </button>
 
             {showChecklist && (
-              <div className="border-t border-slate-100 p-3 space-y-2">
-                {checklist.length === 0 && (
-                  <p className="text-[11px] text-slate-400 text-center py-1">
-                    Adicione itens para guiar a coleta de evidências
-                  </p>
-                )}
-
-                {checklist.map((item) => (
-                  <div key={item.id} className="flex items-center gap-2 group">
+              <div className="p-6 pt-0 space-y-4">
+                <div className="space-y-1">
+                  {checklist.map((item) => (
                     <button
+                      key={item.id}
                       onClick={() => toggleItem(item.id)}
-                      className={`flex h-4.5 w-4.5 flex-shrink-0 items-center justify-center rounded border transition-colors ${
-                        item.feito
-                          ? 'border-emerald-400 bg-emerald-400 text-white'
-                          : 'border-slate-300 bg-white hover:border-lime-400'
-                      }`}
-                      style={{ width: 18, height: 18 }}
+                      className="flex w-full items-center gap-4 py-2 text-left group"
                     >
-                      {item.feito && <CheckCircle2 className="h-3 w-3" />}
+                      <div className={cn("h-4 w-4 border transition-all", item.feito ? "bg-slate-900 border-slate-900" : "border-slate-200 group-hover:border-slate-900")} />
+                      <span className={cn("text-xs font-medium transition-all", item.feito ? "text-slate-300 line-through" : "text-slate-700")}>{item.texto}</span>
                     </button>
-                    <span className={`flex-1 text-xs ${item.feito ? 'line-through text-slate-400' : 'text-slate-700'}`}>
-                      {item.texto}
-                    </span>
-                    <button
-                      onClick={() => removerItem(item.id)}
-                      className="opacity-0 group-hover:opacity-100 rounded p-0.5 text-slate-300 hover:text-red-400 transition-all"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </div>
-                ))}
-
-                {/* Add item */}
-                <div className="flex gap-1.5 pt-1">
+                  ))}
+                </div>
+                <div className="flex gap-2 pt-4">
                   <input
                     type="text"
                     value={novoItem}
                     onChange={(e) => setNovoItem(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') adicionarItem() }}
-                    placeholder="Novo item…"
-                    className="flex-1 h-8 rounded-lg border border-slate-200 bg-slate-50 px-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-lime-400 focus:outline-none focus:ring-1 focus:ring-lime-400"
+                    placeholder="ADICIONAR ITEM..."
+                    className="flex-1 bg-slate-50 border-0 text-[11px] font-bold tracking-widest h-10 px-4 focus:ring-0"
                   />
-                  <button
-                    onClick={adicionarItem}
-                    disabled={!novoItem.trim()}
-                    className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-lime-500 text-white hover:bg-lime-600 disabled:opacity-40 transition-colors"
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                  </button>
-                  {checklist.some((i) => i.feito) && (
-                    <button
-                      onClick={() => salvarChecklist(checklist.map((i) => ({ ...i, feito: false })))}
-                      title="Resetar todos"
-                      className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
-                    >
-                      <RotateCcw className="h-3 w-3" />
-                    </button>
-                  )}
+                  <button onClick={adicionarItem} disabled={!novoItem.trim()} className="h-10 px-4 bg-slate-900 text-white text-[10px] font-bold tracking-widest disabled:opacity-20 transition-all">OK</button>
                 </div>
-              </div>
-            )}
-          </div>
-
-          {/* Media grid */}
-          <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-              Evidências coletadas
-            </p>
-
-            {loadingMidias ? (
-              <div className="flex items-center justify-center py-6">
-                <Loader2 className="h-5 w-5 animate-spin text-slate-300" />
-              </div>
-            ) : midias.length === 0 ? (
-              <EmptyState
-                icon={Camera}
-                title="Nenhuma evidência ainda"
-                description="Adicione fotos, áudios ou notas acima."
-                className="py-8"
-              />
-            ) : (
-              <div className="space-y-2">
-                {midias.map((m) => {
-                  const TipoIcon = tipoIcon[m.tipo] ?? FileText
-                  return (
-                    <div
-                      key={m.id}
-                      className="flex items-start gap-3 rounded-xl border border-slate-100 bg-white p-3"
-                    >
-                      {/* Preview */}
-                      <div className="flex-shrink-0">
-                        {m.tipo === 'foto' && m.url ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={m.url}
-                            alt={m.descricao ?? 'Foto'}
-                            className="h-14 w-14 rounded-lg object-cover border border-slate-100"
-                          />
-                        ) : m.tipo === 'audio' && m.url ? (
-                          <audio src={m.url} controls className="h-9 w-36" />
-                        ) : (
-                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100">
-                            <TipoIcon className="h-5 w-5 text-slate-400" />
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 mb-1">
-                          <span
-                            className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${tipoBadgeClass[m.tipo] ?? 'bg-slate-100 text-slate-600'}`}
-                          >
-                            {tipoLabel[m.tipo] ?? m.tipo}
-                          </span>
-                          <span className="text-[10px] text-slate-400">
-                            {new Date(m.criadoEm).toLocaleTimeString('pt-BR', {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
-                          </span>
-                        </div>
-                        {m.tipo === 'texto' && m.texto && (
-                          <p className="text-xs text-slate-700 line-clamp-3">{m.texto}</p>
-                        )}
-                        {m.descricao && (
-                          <p className="text-xs text-slate-500 mt-0.5">{m.descricao}</p>
-                        )}
-                      </div>
-
-                      {/* Delete */}
-                      <button
-                        onClick={() => handleDelete(m.id)}
-                        disabled={isPending}
-                        className="flex-shrink-0 rounded-lg p-1.5 text-slate-300 hover:bg-red-50 hover:text-red-500 transition-colors disabled:opacity-40"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  )
-                })}
               </div>
             )}
           </div>
         </div>
 
         {/* Footer */}
-        <div className="border-t border-slate-100 bg-white px-4 py-3">
-          <Button
-            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white gap-2 font-semibold"
+        <div className="p-8 border-t border-slate-100">
+          <button
             onClick={handleFinalizar}
-            disabled={finalizando}
+            disabled={finalizando || isPending}
+            className="w-full h-16 bg-[#a3e635] hover:brightness-105 transition-all text-slate-900 text-[11px] font-bold uppercase tracking-[0.3em] disabled:opacity-50"
           >
-            {finalizando ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <CheckCircle2 className="h-4 w-4" />
-            )}
-            Finalizar Checkpoint
-          </Button>
-          <p className="mt-2 text-center text-[11px] text-slate-400">
-            Salva evidências e marca este ponto como concluído
+            {finalizando ? 'FINALIZANDO...' : 'FINALIZAR CHECKPOINT'}
+          </button>
+          <p className="mt-4 text-center text-[9px] font-bold text-slate-300 uppercase tracking-widest">
+            SALVA EVIDÊNCIAS E FINALIZA O PONTO
           </p>
         </div>
       </div>

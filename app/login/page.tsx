@@ -7,7 +7,7 @@ function PeriLabLogo() {
     <div className="font-display leading-tight select-none">
       <div className="text-[2rem] font-black tracking-tightest leading-none">
         <span className="text-white">Peri</span>
-        <span className="text-[#84cc16]">LaB</span>
+        <span className="text-[#a3e635]">LaB</span>
       </div>
       <div className="text-[0.6rem] font-medium tracking-[0.14em] uppercase mt-1.5 text-white/40">
         de perito para perito
@@ -29,7 +29,7 @@ export default function LoginPage() {
         <Link href="/" className="inline-block">
           <div className="flex items-center gap-2 mb-3">
             <span style={{ fontFamily: 'var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif', fontWeight: 900, color: '#ffffff', fontSize: '2rem', letterSpacing: '-0.03em' }}>
-              Peri<span style={{ color: '#84cc16' }}>LaB</span>
+              Peri<span style={{ color: '#a3e635' }}>LaB</span>
             </span>
           </div>
         </Link>
@@ -80,7 +80,7 @@ export default function LoginPage() {
         <div className="mb-12 lg:hidden w-full max-w-[400px]">
           <Link href="/">
             <div className="text-3xl font-black tracking-tighter">
-              <span className="text-[#1f2937]">Peri</span><span className="text-[#84cc16]">LaB</span>
+              <span className="text-[#1f2937]">Peri</span><span className="text-[#a3e635]">LaB</span>
             </div>
           </Link>
         </div>
@@ -105,7 +105,7 @@ export default function LoginPage() {
             Não tem uma conta?{' '}
             <Link 
               href="/signup" 
-              className="font-bold text-[#84cc16] hover:text-[#345300] transition-colors underline decoration-[#84cc16]/30 underline-offset-4 hover:decoration-[#84cc16]"
+              className="font-bold text-[#84cc16] hover:text-[#345300] transition-colors underline decoration-[#a3e635]/30 underline-offset-4 hover:decoration-[#a3e635]"
             >
               Crie sua conta gratuitamente
             </Link>

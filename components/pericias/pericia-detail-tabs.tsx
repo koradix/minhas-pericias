@@ -202,7 +202,7 @@ export function PericiaDetailTabs({
         : <ClipboardList className="h-3.5 w-3.5" />,
       disabled: false, // always clickable — shows locked state inside
       badge:    hasProposta && hasAnalise
-        ? <span className="ml-1 flex h-2 w-2 rounded-full bg-[#84cc16]" />
+        ? <span className="ml-1 flex h-2 w-2 rounded-full bg-[#a3e635]" />
         : undefined,
     },
     {
@@ -233,12 +233,12 @@ export function PericiaDetailTabs({
           <button
             key={tab.id}
             onClick={() => !tab.disabled && setActiveTab(tab.id)}
-            className={`flex items-center gap-2 py-4 text-[11px] font-black uppercase tracking-[0.2em] transition-all border-b-2 -mb-[1px] ${
+            className={`flex items-center gap-2 py-4 text-[11px] font-bold uppercase tracking-wider transition-all border-b-2 -mb-[1px] ${
               activeTab === tab.id
-                ? 'border-[#1f2937] text-[#1f2937]'
+                ? 'border-slate-900 text-slate-900'
                 : tab.disabled
                   ? 'border-transparent text-slate-200 cursor-not-allowed'
-                  : 'border-transparent text-slate-400 hover:text-[#1f2937] hover:border-slate-300'
+                  : 'border-transparent text-slate-400 hover:text-slate-900 hover:border-slate-300'
             }`}
           >
             {tab.icon}
@@ -278,14 +278,14 @@ export function PericiaDetailTabs({
         )}
 
         {activeTab === 'laudo' && (
-          <section className="rounded-none border-l-4 border-[#1f2937] bg-white animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <div className="flex items-center gap-3 px-8 py-8 border-b border-slate-50">
-              <h2 className="text-lg font-black text-[#1f2937] font-manrope uppercase tracking-tight">Laudo pericial</h2>
+          <section className="rounded-xl border border-slate-200 bg-white animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="flex items-center gap-3 px-8 py-8 border-b border-slate-100">
+              <h2 className="text-lg font-bold text-slate-900 font-manrope uppercase tracking-tight">Laudo pericial</h2>
             </div>
             <div className="px-8 py-8 space-y-6">
               {periciaStatus === 'concluida' ? (
                 <Link href="/documentos/modelos" className="block">
-                  <button className="w-full flex items-center justify-center gap-3 rounded-none bg-[#1f2937] hover:bg-[#84cc16] hover:text-[#1f2937] text-white font-black text-[11px] uppercase tracking-widest px-8 py-5 transition-all cursor-pointer">
+                  <button className="w-full flex items-center justify-center gap-3 rounded-xl bg-slate-900 hover:bg-[#a3e635] hover:text-slate-900 text-white font-bold text-[11px] uppercase tracking-wider px-8 py-5 transition-all cursor-pointer">
                     <ScrollText className="h-5 w-5" />
                     Gerar laudo pericial
                   </button>

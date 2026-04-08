@@ -1,3 +1,4 @@
+
 import { type ButtonHTMLAttributes, forwardRef } from "react"
 import { cn } from "@/lib/utils"
 
@@ -8,22 +9,29 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = "primary", size = "md", children, ...props }, ref) => {
+    // ─── Digital Atelier Base ────────────────────────────────────────────────
     const base =
-      "inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
+      "inline-flex items-center justify-center gap-0 rounded-none font-bold uppercase tracking-widest transition-all duration-200 focus-visible:outline-none disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
 
     const variants = {
-      primary: "bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800",
-      brand: "bg-[#84cc16] text-[#0f172a] hover:bg-[#a3e635] shadow-lg shadow-lime-500/20",
-      secondary: "bg-slate-100 text-slate-700 hover:bg-slate-200 active:bg-slate-300",
-      ghost: "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
-      danger: "bg-red-600 text-white hover:bg-red-700 active:bg-red-800",
-      outline: "border border-slate-300 text-slate-700 bg-white hover:bg-slate-50 active:bg-slate-100",
+      // Midnight black
+      primary: "bg-[#0f172a] text-white hover:bg-black active:scale-[0.98]",
+      // Lime green brand
+      brand: "bg-[#a3e635] text-slate-900 hover:bg-[#bef264] active:scale-[0.98]",
+      // Light slate
+      secondary: "bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-900",
+      // Text only
+      ghost: "text-slate-400 hover:text-slate-900 bg-transparent",
+      // Signal red
+      danger: "bg-red-600 text-white hover:bg-red-700",
+      // Precise outline
+      outline: "border border-slate-200 text-slate-900 bg-white hover:border-slate-900 hover:bg-slate-50",
     }
 
     const sizes = {
-      sm: "h-8 px-3 text-xs",
-      md: "h-9 px-4 text-sm",
-      lg: "h-11 px-6 text-base",
+      sm: "h-8 px-4 text-[10px]",
+      md: "h-11 px-6 text-[11px]",
+      lg: "h-14 px-8 text-[12px]",
     }
 
     return (

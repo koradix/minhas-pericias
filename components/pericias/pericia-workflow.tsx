@@ -6,17 +6,6 @@ import { uploadFile } from '@/lib/client/upload'
 import { atualizarDadosPericia } from '@/lib/actions/pericias-update'
 import { buscarDocumentosPorPericia, listarDocumentosPorPericia, sugerirProcessosSemCNJ, vincularProcessoPericia } from '@/lib/actions/nomeacoes-documentos'
 import type { ProcessoDocumentoRow, ProcessoSugestao } from '@/lib/actions/nomeacoes-documentos'
-import {
-  ExternalLink,
-  Upload,
-  CheckCircle2,
-  Loader2,
-  AlertCircle,
-  Search,
-  FileText,
-  Calendar,
-  ChevronRight,
-} from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 // ─── Tribunal portal URLs ──────────────────────────────────────────────────────
@@ -83,20 +72,24 @@ type UploadState =
 // ─── Step indicator ────────────────────────────────────────────────────────────
 
 function StepDot({ done, active, num }: { done: boolean; active: boolean; num: number }) {
-  if (done) return <CheckCircle2 className="h-8 w-8 text-lime-500 flex-shrink-0" />
+  if (done) return (
+    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#a3e635] text-[11px] font-bold text-slate-900 flex-shrink-0">
+      OK
+    </span>
+  )
   if (active) return (
-    <span className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-slate-900 bg-slate-900 text-[11px] font-black text-white flex-shrink-0">
+    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-900 text-[11px] font-bold text-white flex-shrink-0">
       {num}
     </span>
   )
   return (
-    <span className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-slate-200 bg-white text-[11px] font-black text-slate-300 flex-shrink-0">
+    <span className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-[11px] font-bold text-slate-300 flex-shrink-0">
       {num}
     </span>
   )
 }
 
-// ─── Análise result card (compact — full data shown in PericiaEditCard below) ──
+// ─── Análise result card ───────────────────────────────────────────────────────
 
 function AnaliseCard({ analise }: { analise: AnaliseIA }) {
   const tipo = analise.resumoProcesso?.tipoAcao ?? analise.nomeacaoDespacho?.determinacaoJuiz ?? null
@@ -104,23 +97,24 @@ function AnaliseCard({ analise }: { analise: AnaliseIA }) {
   const quesitosCount = analise.nomeacaoDespacho?.quesitos?.length ?? 0
 
   return (
-    <div className="rounded-xl border border-lime-200 bg-lime-50/40 p-5 space-y-3">
-      <div className="flex items-center gap-3">
-        <CheckCircle2 className="h-5 w-5 text-lime-600 flex-shrink-0" />
-        <p className="text-sm font-bold text-slate-900">
+    <div className="rounded-xl border border-[#a3e635]/30 bg-slate-50 p-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-[12px] font-bold text-slate-900 uppercase tracking-widest">
           Análise concluída
-          {quesitosCount > 0 && (
-            <span className="ml-3 font-medium text-slate-400 normal-case tracking-normal">
-              · {quesitosCount} quesito{quesitosCount > 1 ? 's' : ''} identificado{quesitosCount > 1 ? 's' : ''}
-            </span>
-          )}
         </p>
+        {quesitosCount > 0 && (
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+            {quesitosCount} quesito{quesitosCount > 1 ? 's' : ''} identificado{quesitosCount > 1 ? 's' : ''}
+          </span>
+        )}
       </div>
-      {tipo && <p className="text-[14px] text-slate-600 pl-8 font-medium leading-relaxed">{tipo}</p>}
-      {partes && <p className="text-[13px] text-slate-400 pl-8 font-medium italic">{partes}</p>}
-      <div className="pt-2 pl-8">
-        <p className="text-[11px] font-bold text-slate-900 bg-lime-500 inline-block rounded px-2 py-1">
-          Dados extraídos com sucesso
+      <div className="space-y-2">
+        {tipo && <p className="text-sm text-slate-600 font-medium leading-relaxed">{tipo}</p>}
+        {partes && <p className="text-xs text-slate-400 font-medium italic">{partes}</p>}
+      </div>
+      <div className="pt-2">
+        <p className="text-[10px] font-bold text-slate-900 bg-[#a3e635] inline-block rounded-md px-3 py-1 uppercase tracking-widest">
+          Dados extraídos
         </p>
       </div>
     </div>
@@ -144,7 +138,7 @@ export function PericiaWorkflow({
   const [cnj, setCnj] = useState<string | null>(processoNumero)
   const router = useRouter()
 
-  const tribunal = TRIBUNAL_URLS[tribunalSigla.toUpperCase()]
+  const tribunal = TRIBUNAL_URLS[(tribunalSigla || 'DESCONHECIDO').toUpperCase()]
   const analise: AnaliseIA | null =
     uploadState.fase === 'ok' ? uploadState.analise : analiseInicial
 
@@ -169,7 +163,7 @@ export function PericiaWorkflow({
     if (!json.ok) {
       const raw = json.message ?? 'Erro ao processar documento'
       const mensagem = raw.includes('rate_limit') || raw.includes('rate limit') || raw.includes('429')
-        ? 'Limite de requisições da IA atingido. Aguarde 1 minuto e tente novamente.'
+        ? 'Limite atingido. Aguarde 1 minuto.'
         : raw.length > 200 ? raw.substring(0, 200) + '…' : raw
       setUploadState({ fase: 'erro', mensagem })
       return
@@ -190,7 +184,6 @@ export function PericiaWorkflow({
     router.refresh()
   }
 
-  // Busca com CNJ conhecido
   function handleBuscarEscavador() {
     setEscavadorFase({ fase: 'buscando' })
     startEscavador(async () => {
@@ -203,7 +196,6 @@ export function PericiaWorkflow({
     })
   }
 
-  // Busca por nome quando não há CNJ
   function handleBuscarPorNome() {
     setEscavadorFase({ fase: 'buscando_processo' })
     startEscavador(async () => {
@@ -214,28 +206,26 @@ export function PericiaWorkflow({
     })
   }
 
-  // Vincula CNJ selecionado à perícia e inicia busca de docs
   async function handleSelecionarProcesso(sugestao: ProcessoSugestao) {
     const vinc = await vincularProcessoPericia(periciaId, sugestao.cnj)
-    if (!vinc.ok) { setEscavadorFase({ fase: 'erro', mensagem: vinc.error ?? 'Erro ao vincular' }); return }
+    if (!vinc.ok) { setEscavadorFase({ fase: 'erro', mensagem: vinc.error ?? 'Erro' }); return }
     setCnj(sugestao.cnj)
     router.refresh()
     handleBuscarEscavador()
   }
 
   async function handleAnalisarDocEscavador(doc: ProcessoDocumentoRow) {
-    setUploadState({ fase: 'uploading', progresso: 'Baixando do Escavador…' })
+    setUploadState({ fase: 'uploading', progresso: 'Baixando...' })
     try {
       const res = await fetch(`/api/nomeacoes/doc-download?docId=${doc.id}`)
-      if (!res.ok) throw new Error(`Erro ao baixar: HTTP ${res.status}`)
+      if (!res.ok) throw new Error('Erro ao baixar')
       const blob = await res.blob()
-      const file = new File([blob], doc.nome.replace(/[^a-zA-Z0-9._\- ]/g, '_') + '.pdf', { type: 'application/pdf' })
-      setUploadState({ fase: 'uploading', progresso: 'Enviando para análise…' })
+      const file = new File([blob], 'nomeacao.pdf', { type: 'application/pdf' })
+      setUploadState({ fase: 'uploading', progresso: 'Analisando...' })
       const blobUrl = await uploadFile(file, (pct) => setUploadState({ fase: 'uploading', progresso: `Enviando… ${pct}%` }))
-      setUploadState({ fase: 'uploading', progresso: 'Analisando com IA…' })
       await sendToApi(blobUrl, file)
     } catch (err) {
-      setUploadState({ fase: 'erro', mensagem: err instanceof Error ? err.message : 'Erro ao processar documento' })
+      setUploadState({ fase: 'erro', mensagem: 'Erro ao processar' })
     }
   }
 
@@ -243,26 +233,13 @@ export function PericiaWorkflow({
     const file = e.target.files?.[0]
     if (!file) return
     if (fileRef.current) fileRef.current.value = ''
-
-    setUploadState({ fase: 'uploading', progresso: 'Enviando arquivo…' })
-
-    // ── Upload chunked (mesmo domínio, sem CORS, sem limite de tamanho) ────────
-    let blobUrl: string
+    setUploadState({ fase: 'uploading', progresso: 'Enviando...' })
     try {
-      blobUrl = await uploadFile(file, (pct) => {
-        setUploadState({ fase: 'uploading', progresso: `Enviando… ${pct}%` })
-      })
+      const blobUrl = await uploadFile(file, (pct) => setUploadState({ fase: 'uploading', progresso: `${pct}%` }))
+      await sendToApi(blobUrl, file)
     } catch (err) {
-      setUploadState({
-        fase: 'erro',
-        mensagem: err instanceof Error ? err.message : 'Erro ao enviar arquivo. Tente novamente.',
-      })
-      return
+      setUploadState({ fase: 'erro', mensagem: 'Erro no upload' })
     }
-
-    // ── IA: servidor baixa do Blob, analisa, deleta ───────────────────────────
-    setUploadState({ fase: 'uploading', progresso: 'Analisando com IA…' })
-    await sendToApi(blobUrl, file)
   }
 
   const steps = [
@@ -270,128 +247,51 @@ export function PericiaWorkflow({
     { num: 2, done: analiseFeita },
     { num: 3, done: analiseFeita },
   ]
-
   const activeStep = steps.find((s) => !s.done)?.num ?? 3
 
   return (
-    <section className="rounded-2xl border border-slate-100 bg-white overflow-hidden shadow-sm">
-      <div className="flex items-center gap-3 px-8 py-6 border-b border-slate-100">
-        <h2 className="text-base font-bold text-slate-900">Fluxo de Trabalho</h2>
+    <section className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+      <div className="flex items-center justify-between px-8 py-6 border-b border-slate-100">
+        <h2 className="text-base font-bold text-slate-900 tracking-tight">FLUXO DE TRABALHO</h2>
         {analiseFeita && (
-          <span className="ml-auto flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-900 bg-lime-500 rounded-lg px-3 py-1.5">
-            <CheckCircle2 className="h-3 w-3" />
-            Concluído
+          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-900 bg-[#a3e635] rounded-md px-3 py-1.5">
+            CONCLUÍDO
           </span>
         )}
       </div>
 
       <div className="divide-y divide-slate-100">
-
-        {/* ── Step 1: Obter documento do processo ──────────────────────────── */}
-        <div className="px-8 py-6 flex gap-5">
+        {/* Passo 1 */}
+        <div className="px-8 py-10 flex gap-8">
           <StepDot done={step1Done || analiseFeita} active={activeStep === 1} num={1} />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-slate-900">
-              Obter documento
-            </p>
-            <p className="text-sm text-slate-400 mt-1 leading-relaxed">
-              Busque automaticamente ou acesse o portal do tribunal para baixar a nomeação.
+            <p className="text-[14px] font-bold text-slate-900 uppercase tracking-widest">Obter Nomeação</p>
+            <p className="text-sm text-slate-400 mt-2 leading-relaxed font-medium">
+              Busque automaticamente ou use os portais dos tribunais.
             </p>
 
-            {/* ── Busca automática de documentos ─────────────────────────────── */}
-            <div className="mt-6 space-y-3">
-
-              {/* Sem CNJ: botão para buscar por nome */}
+            <div className="mt-8 space-y-4">
               {escavadorFase.fase === 'idle' && !analiseFeita && !cnj && (
-                <button
-                  onClick={handleBuscarPorNome}
-                  disabled={isPendingEscavador}
-                  className="inline-flex items-center gap-2 rounded-xl bg-lime-500 hover:bg-lime-600 px-5 py-2.5 text-sm font-bold text-slate-900 transition-all disabled:opacity-50"
-                >
-                  <Search className="h-4 w-4" /> Buscar nomeações no Escavador
+                <button onClick={handleBuscarPorNome} disabled={isPendingEscavador} className="bg-slate-900 text-white px-6 py-3 text-[12px] font-bold uppercase tracking-widest hover:bg-slate-800 transition-all disabled:opacity-30">
+                  Buscar Nomeações
                 </button>
               )}
-
-              {/* Com CNJ: botão para buscar documentos */}
               {escavadorFase.fase === 'idle' && !analiseFeita && cnj && (
-                <button
-                  onClick={handleBuscarEscavador}
-                  disabled={isPendingEscavador}
-                  className="inline-flex items-center gap-2 rounded-xl bg-lime-500 hover:bg-lime-600 px-5 py-2.5 text-sm font-bold text-slate-900 transition-all disabled:opacity-50"
-                >
-                  <Search className="h-4 w-4" /> Buscar documentos (CNJ: {cnj.substring(0,7)}...)
+                <button onClick={handleBuscarEscavador} disabled={isPendingEscavador} className="bg-[#a3e635] text-slate-900 px-6 py-3 text-[12px] font-bold uppercase tracking-widest hover:bg-[#bef264] transition-all">
+                  Buscar Documentos
                 </button>
-              )}
-
-              {/* Buscando processo por nome */}
-              {(escavadorFase.fase === 'buscando_processo' || (isPendingEscavador && !cnj)) && (
-                <div className="flex items-center gap-3 text-[13px] font-bold text-slate-600">
-                  <Loader2 className="h-5 w-5 animate-spin text-[#1f2937]" />
-                  Varrendo bases do Escavador…
-                </div>
-              )}
-
-              {/* Lista de processos sugeridos */}
-              {escavadorFase.fase === 'escolher_processo' && (
-                <div className="space-y-3 pt-2">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">
-                    {escavadorFase.sugestoes.length} Resultados Encontrados
-                  </p>
-                  {escavadorFase.sugestoes.map((s) => (
-                    <div key={s.cnj} className="flex items-start gap-4 rounded-none border border-slate-100 bg-slate-50 px-5 py-4 transition-all hover:border-slate-200">
-                      <FileText className="h-5 w-5 text-slate-300 flex-shrink-0 mt-0.5" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[13px] font-black text-[#1f2937] font-mono tracking-tighter">{s.cnj}</p>
-                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-tight mt-1 truncate">{s.orgao}</p>
-                        {s.partes && <p className="text-[11px] text-slate-400 mt-1 italic truncate">{s.partes}</p>}
-                      </div>
-                      <button
-                        onClick={() => handleSelecionarProcesso(s)}
-                        className="flex items-center gap-1.5 flex-shrink-0 rounded-xl bg-lime-500 hover:bg-lime-600 text-slate-900 text-xs font-bold px-3.5 py-2 transition-all cursor-pointer"
-                      >
-                        Selecionar <ChevronRight className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {escavadorFase.fase === 'nenhum_processo' && (
-                <div className="flex items-center gap-2 p-4 bg-slate-50 border border-slate-100 italic text-[13px] text-slate-400">
-                  <AlertCircle className="h-4 w-4" />
-                  Nenhum processo encontrado com seu nome. Informe o CNJ manualmente.
-                </div>
-              )}
-
-              {(escavadorFase.fase === 'buscando' || (isPendingEscavador && !!cnj)) && (
-                <div className="flex items-center gap-3 text-[13px] font-bold text-slate-600">
-                  <Loader2 className="h-5 w-5 animate-spin text-[#1f2937]" />
-                  Acessando diários oficiais…
-                </div>
               )}
 
               {escavadorFase.fase === 'found' && (
-                <div className="space-y-3 pt-2">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">
-                    Publicações Disponíveis
-                  </p>
-                  {escavadorFase.docs.map((doc) => (
-                    <div key={doc.id} className="flex items-start gap-4 rounded-none border border-slate-100 bg-slate-50 px-5 py-4 transition-all hover:border-slate-200">
-                      <FileText className="h-5 w-5 text-slate-300 flex-shrink-0 mt-0.5" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[13px] font-black text-[#1f2937] uppercase tracking-tight truncate leading-snug">{doc.nome}</p>
-                        {doc.dataPublicacao && (
-                          <p className="flex items-center gap-1.5 text-[11px] text-slate-400 mt-2 font-bold">
-                            <Calendar className="h-3.5 w-3.5" />
-                            {doc.dataPublicacao.split('-').reverse().join('/')}
-                          </p>
-                        )}
+                <div className="space-y-3 pt-4">
+                  {escavadorFase.docs.map(doc => (
+                    <div key={doc.id} className="flex items-center justify-between p-4 bg-slate-50 border border-slate-100 group">
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-slate-900 truncate uppercase tracking-tight">{doc.nome}</p>
+                        <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase">{doc.dataPublicacao}</p>
                       </div>
-                      <button
-                        onClick={() => handleAnalisarDocEscavador(doc)}
-                        className="flex items-center gap-1.5 flex-shrink-0 rounded-xl bg-lime-500 hover:bg-lime-600 text-slate-900 text-xs font-bold px-3.5 py-2 transition-all cursor-pointer"
-                      >
-                        Analisar <ChevronRight className="h-3.5 w-3.5" />
+                      <button onClick={() => handleAnalisarDocEscavador(doc)} className="text-[11px] font-bold text-slate-900 hover:text-slate-600 uppercase tracking-widest ml-4 transition-colors">
+                        Analisar →
                       </button>
                     </div>
                   ))}
@@ -399,102 +299,63 @@ export function PericiaWorkflow({
               )}
             </div>
 
-            {/* ── Portal do tribunal (fallback manual) ───────────────────────── */}
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-10 flex flex-wrap gap-4">
               {tribunal && (
-                <a
-                  href={tribunal.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => setStep1Done(true)}
-                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-4 py-2.5 text-xs font-semibold text-slate-700 transition-all"
-                >
-                  <ExternalLink className="h-4 w-4" strokeWidth={2} />
+                <a href={tribunal.url} target="_blank" rel="noreferrer" onClick={() => setStep1Done(true)} className="text-[11px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-200 pb-0.5 hover:text-slate-900 transition-colors">
                   Acessar {tribunal.label}
                 </a>
               )}
-              {processoNumero && (
-                <span className="inline-flex items-center gap-2 rounded-none bg-slate-50 border border-slate-100 px-4 py-3 text-[12px] font-mono font-bold text-slate-600">
-                  {processoNumero}
+              {cnj && (
+                <span className="text-[11px] font-bold text-slate-300 font-mono tracking-tighter">
+                  {cnj}
                 </span>
               )}
             </div>
           </div>
         </div>
 
-        {/* ── Step 2: Documento para análise ──────────────────────────────── */}
-        <div className={cn('px-8 py-6 flex gap-5', !step1Done && !analiseFeita ? 'opacity-30 pointer-events-none' : '')}>
+        {/* Passo 2 */}
+        <div className={cn("px-8 py-10 flex gap-8 transition-opacity duration-300", !step1Done && !analiseFeita ? "opacity-30" : "opacity-100")}>
           <StepDot done={analiseFeita} active={activeStep === 2} num={2} />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-slate-900">
-              Análise com Inteligência Artificial
-            </p>
-            <p className="text-sm text-slate-400 mt-1 leading-relaxed">
-              Suba o PDF da nomeação. Extraímos partes, vara e quesitos automaticamente.
+            <p className="text-[14px] font-bold text-slate-900 uppercase tracking-widest">Processamento IA</p>
+            <p className="text-sm text-slate-400 mt-2 leading-relaxed font-medium">
+              Extraímos dados estruturados, quesitos e partes automaticamente.
             </p>
 
-            {uploadState.fase === 'idle' && !analiseFeita && (
-              <div className="mt-6">
-                <input ref={fileRef} type="file" accept=".pdf,.docx" className="hidden" onChange={handleUpload} />
-                <div className="space-y-3">
-                  <button
-                    onClick={() => fileRef.current?.click()}
-                    className="inline-flex items-center gap-2.5 rounded-xl bg-lime-500 hover:bg-lime-600 px-6 py-3 text-sm font-bold text-slate-900 transition-all cursor-pointer"
-                  >
-                    <Upload className="h-5 w-5" />
-                    Fazer Upload do Documento
+            <div className="mt-8">
+              {!analiseFeita && uploadState.fase === 'idle' && (
+                <>
+                  <input ref={fileRef} type="file" className="hidden" onChange={handleUpload} />
+                  <button onClick={() => fileRef.current?.click()} className="bg-slate-900 text-white px-6 py-3 text-[12px] font-bold uppercase tracking-widest hover:bg-slate-800 transition-all">
+                    Upload PDF / DOCX
                   </button>
-                  <p className="text-[11px] text-slate-300 font-bold uppercase tracking-widest px-1">PDF ou DOCX · Máx. 50 MB</p>
-                </div>
-              </div>
-            )}
-
-            {uploadState.fase === 'uploading' && (
-              <div className="mt-6 flex items-center gap-3 text-[13px] font-bold text-slate-600">
-                <Loader2 className="h-5 w-5 animate-spin text-[#1f2937] flex-shrink-0" />
-                {uploadState.progresso}
-              </div>
-            )}
-
-            {uploadState.fase === 'erro' && (
-              <div className="mt-6 flex items-start gap-4 rounded-none bg-red-50 border border-red-100 px-6 py-5">
-                <AlertCircle className="h-6 w-6 text-red-500 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-[14px] font-black text-red-900 uppercase tracking-tight">{uploadState.mensagem}</p>
-                  <button
-                    onClick={() => { setUploadState({ fase: 'idle' }); if (fileRef.current) fileRef.current.value = '' }}
-                    className="mt-2 text-[12px] font-bold text-red-600 hover:text-red-800 underline underline-offset-4 uppercase tracking-widest"
-                  >
-                    Tentar novamente
-                  </button>
-                </div>
-              </div>
-            )}
+                </>
+              )}
+              {uploadState.fase === 'uploading' && (
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest animate-pulse">
+                  {uploadState.progresso}
+                </p>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* ── Step 3: Resultado IA ─────────────────────────────────────────── */}
-        <div className="px-8 py-6 flex gap-5">
+        {/* Passo 3 */}
+        <div className="px-8 py-10 flex gap-8">
           <StepDot done={analiseFeita} active={activeStep === 3} num={3} />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-slate-900">
-              Dados Extraídos
-            </p>
-            {!analiseFeita && uploadState.fase !== 'uploading' && (
-              <p className="text-[14px] text-slate-300 mt-2 font-medium italic">
-                Aguardando documento para iniciar processamento.
-              </p>
-            )}
-            {analise && (
-              <div className="mt-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <p className="text-[14px] font-bold text-slate-900 uppercase tracking-widest">Resultado da Análise</p>
+            {analise ? (
+              <div className="mt-8">
                 <AnaliseCard analise={analise} />
               </div>
+            ) : (
+              <p className="text-xs text-slate-300 mt-4 italic font-medium">Aguardando dados...</p>
             )}
           </div>
         </div>
-
       </div>
     </section>
-
   )
 }

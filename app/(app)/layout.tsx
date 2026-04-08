@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { auth } from '@/auth'
 import AppShell from '@/components/layout/app-shell'
+import { DevResetBtn } from '@/components/dev/reset-btn'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await auth()
@@ -15,5 +16,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     role: (session.user as { role?: string }).role ?? 'perito',
   }
 
-  return <AppShell user={user}>{children}</AppShell>
+  return (
+    <AppShell user={user}>
+      {children}
+      <DevResetBtn />
+    </AppShell>
+  )
 }

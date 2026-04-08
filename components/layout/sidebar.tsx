@@ -1,9 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import {
   navigation,
   navigationParceiro,
@@ -39,7 +37,7 @@ export default function Sidebar({
   return (
     <aside
       className={cn(
-        'fixed inset-y-0 left-0 z-30 flex flex-col bg-[#0f172a] transition-all duration-300',
+        'fixed inset-y-0 left-0 z-30 flex flex-col bg-slate-50 border-r border-slate-200 transition-all duration-300',
         collapsed ? 'w-16' : 'w-[240px]',
         mobileOpen ? 'translate-x-0' : '-translate-x-full',
         'lg:translate-x-0',
@@ -48,26 +46,26 @@ export default function Sidebar({
       {/* ── Logo ── */}
       <div
         className={cn(
-          'flex h-20 flex-shrink-0 items-center border-b border-slate-800',
+          'flex h-20 flex-shrink-0 items-center border-b border-slate-50',
           collapsed ? 'justify-center px-1' : 'justify-between px-6',
         )}
       >
         {collapsed ? (
-          <Link href="/dashboard" className="font-black text-xl tracking-tighter">
-            <span className="text-white">P</span><span className="text-[#84cc16]">B</span>
+          <Link href="/dashboard" className="font-bold text-xl tracking-tighter">
+            <span className="text-slate-900">P</span><span className="text-[#a3e635]">B</span>
           </Link>
         ) : (
           <>
-            <Link href="/dashboard" className="flex items-center min-w-0 font-manrope">
-              <span className="text-xl font-black text-white tracking-tighter">
-                Peri<span className="text-[#84cc16]">LaB</span>
+            <Link href="/dashboard" className="flex items-center min-w-0">
+              <span className="text-xl font-bold text-slate-900 tracking-tight">
+                Peri<span className="text-[#a3e635]">LaB</span>
               </span>
             </Link>
             <button
               onClick={onMobileClose}
-              className="lg:hidden flex h-8 w-8 items-center justify-center rounded-none text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              className="lg:hidden text-[10px] font-bold text-slate-400 hover:text-slate-900 uppercase tracking-widest transition-colors"
             >
-              <X className="h-5 w-5" />
+              FECHAR
             </button>
           </>
         )}
@@ -79,16 +77,15 @@ export default function Sidebar({
           <div key={section.title} className="px-0">
             {/* Section label */}
             {!collapsed && (
-              <p className="mb-4 px-6 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+              <p className="mb-4 px-8 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
                 {section.title}
               </p>
             )}
-            {collapsed && <div className="mx-4 mb-4 border-t border-slate-800" />}
+            {collapsed && <div className="mx-4 mb-4 border-t border-slate-50" />}
 
             <ul className="space-y-1">
               {section.items.map((item) => {
                 const active = isActive(item.href)
-                const Icon = item.icon
                 return (
                   <li key={item.href}>
                     <Link
@@ -101,36 +98,36 @@ export default function Sidebar({
                           ? cn(
                               'justify-center h-12 w-full',
                               active
-                                ? 'bg-slate-800/50 text-[#84cc16] border-[#84cc16]'
-                                : 'border-transparent text-slate-400 hover:bg-slate-800/30 hover:text-white',
+                                ? 'bg-white text-slate-900 border-[#a3e635]'
+                                : 'border-transparent text-slate-500 hover:bg-white/50 hover:text-slate-900',
                             )
                           : cn(
-                              'gap-4 py-3.5 w-full pl-5 pr-6',
+                              'gap-4 py-3 w-full pl-8 pr-6',
                               active
-                                ? 'bg-slate-800/50 text-[#84cc16] border-[#84cc16]'
-                                : 'border-transparent text-slate-400 hover:bg-slate-800/30 hover:text-white',
+                                ? 'bg-[#a3e635]/5 text-slate-900 border-[#a3e635]'
+                                : 'border-transparent text-slate-500 hover:bg-white/50 hover:text-slate-900',
                             ),
                       )}
                     >
-                      <Icon
-                        className={cn(
-                          'flex-shrink-0 h-[18px] w-[18px]',
-                          active ? 'text-[#84cc16]' : 'text-slate-500',
-                        )}
-                        strokeWidth={active ? 2.5 : 2}
-                      />
-                      {!collapsed && (
+                      {!collapsed ? (
                         <>
                           <span className={cn(
-                            "flex-1 text-[13px] tracking-wide font-manrope",
-                            active ? "font-black" : "font-medium"
+                            "flex-1 text-[14px] tracking-tight",
+                            active ? "font-bold text-slate-900" : "font-medium text-slate-500"
                           )}>{item.title}</span>
                           {item.badge != null && (
-                            <span className="flex h-5 min-w-5 items-center justify-center rounded-none bg-[#84cc16] px-1.5 text-[10px] font-black text-[#0f172a]">
+                            <span className="flex h-5 min-w-5 items-center justify-center rounded-md bg-[#a3e635] px-1.5 text-[10px] font-bold text-slate-900">
                               {item.badge}
                             </span>
                           )}
                         </>
+                      ) : (
+                        <span className={cn(
+                          "text-xs font-bold",
+                          active ? "text-[#a3e635]" : "text-slate-400"
+                        )}>
+                          {item.title.charAt(0)}
+                        </span>
                       )}
                     </Link>
                   </li>
@@ -142,10 +139,9 @@ export default function Sidebar({
       </nav>
 
       {/* ── Bottom ── */}
-      <div className="flex-shrink-0 py-6 border-t border-slate-800">
+      <div className="flex-shrink-0 py-6 border-t border-slate-100">
         {activeBottom.map((item) => {
           const active = isActive(item.href)
-          const Icon = item.icon
           return (
             <Link
               key={item.href}
@@ -157,25 +153,26 @@ export default function Sidebar({
                   ? cn(
                       'justify-center h-12 w-full',
                       active
-                        ? 'bg-slate-800/50 text-[#84cc16] border-[#84cc16]'
-                        : 'border-transparent text-slate-400 hover:bg-slate-800/30 hover:text-white',
+                        ? 'bg-white text-slate-900 border-[#a3e635]'
+                        : 'border-transparent text-slate-500 hover:bg-white/50 hover:text-slate-900',
                     )
                   : cn(
-                      'gap-4 px-5 py-3.5 w-full',
+                      'gap-4 px-8 py-3 w-full',
                       active
-                        ? 'bg-slate-800/50 text-[#84cc16] border-[#84cc16]'
-                        : 'border-transparent text-slate-400 hover:bg-slate-800/30 hover:text-white',
+                        ? 'bg-[#a3e635]/5 text-slate-900 border-[#a3e635]'
+                        : 'border-transparent text-slate-500 hover:bg-white/50 hover:text-slate-900',
                     ),
               )}
             >
-              <Icon
-                className={cn(
-                  'flex-shrink-0 h-[18px] w-[18px]',
-                  active ? 'text-[#84cc16]' : 'text-slate-500',
-                )}
-                strokeWidth={active ? 2.5 : 2}
-              />
-              {!collapsed && <span className="text-[13px] font-manrope font-medium tracking-wide">{item.title}</span>}
+              {!collapsed && <span className="text-[14px] font-medium tracking-tight h-5 flex items-center">{item.title}</span>}
+              {collapsed && (
+                 <span className={cn(
+                   "text-xs font-bold",
+                   active ? "text-[#a3e635]" : "text-slate-400"
+                 )}>
+                   {item.title.charAt(0)}
+                 </span>
+              )}
             </Link>
           )
         })}
@@ -185,17 +182,17 @@ export default function Sidebar({
           onClick={onToggleCollapse}
           title={collapsed ? 'Expandir menu' : 'Recolher menu'}
           className={cn(
-            'hidden lg:flex items-center border-l-4 border-transparent transition-all duration-200 text-slate-500 hover:bg-slate-800/30 hover:text-white',
-            collapsed ? 'justify-center h-12 w-full' : 'gap-4 px-5 py-3.5 w-full',
+            'hidden lg:flex items-center border-l-4 border-transparent transition-all duration-200 text-slate-400 hover:bg-white/50 hover:text-slate-900',
+            collapsed ? 'justify-center h-12 w-full' : 'gap-4 px-8 py-3 w-full',
           )}
         >
           {collapsed ? (
-            <ChevronRight className="h-4 w-4" />
+            <span className="text-[10px] font-bold text-slate-400">»</span>
           ) : (
-            <>
-              <ChevronLeft className="h-4 w-4 flex-shrink-0" />
-              <span className="text-[13px] font-manrope font-medium tracking-wide">Recolher</span>
-            </>
+            <div className="flex items-center gap-4 px-8">
+              <span className="text-[10px] font-bold text-slate-400">«</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Recolher</span>
+            </div>
           )}
         </button>
       </div>

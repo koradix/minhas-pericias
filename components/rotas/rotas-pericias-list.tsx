@@ -2,15 +2,6 @@
 
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
-import {
-  MapPin,
-  Navigation,
-  CheckCircle2,
-  Clock,
-  Loader2,
-  ExternalLink,
-  ChevronRight,
-} from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -85,44 +76,42 @@ function RotaCard({ rota }: { rota: Rota }) {
 
   return (
     <div className={cn(
-      'rounded-2xl border bg-white shadow-sm overflow-hidden transition-all',
-      emCampo ? 'border-amber-200' : concluida ? 'border-slate-100 opacity-70' : 'border-slate-200',
+      'rounded-none border bg-white transition-all',
+      status === 'concluida' ? 'opacity-30 border-slate-100 grayscale' : 'border-slate-200',
     )}>
       {/* Card header */}
-      <div className="px-5 py-4">
-        <div className="flex items-start justify-between gap-3">
+      <div className="px-8 py-8">
+        <div className="flex items-start justify-between gap-6">
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-              <Badge variant={st.variant}>{st.label}</Badge>
-              <span className="text-xs text-slate-400">{rota.data}</span>
+            <div className="flex items-center gap-3 mb-4 flex-wrap">
+              <Badge variant={st.variant} className="rounded-none">{st.label}</Badge>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{rota.data}</span>
               {rota.pontos.length > 0 && (
-                <span className="text-xs text-slate-400">
-                  · {rota.pontos.length} local{rota.pontos.length > 1 ? 'is' : ''}
+                <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">
+                  · {rota.pontos.length} LOCAL{rota.pontos.length > 1 ? 'IS' : ''}
                 </span>
               )}
             </div>
 
-            <h3 className="text-base font-bold text-slate-900 leading-snug">{rota.titulo}</h3>
+            <h3 className="text-xl font-bold text-slate-900 tracking-tight uppercase leading-tight">{rota.titulo}</h3>
 
             {/* Endereço principal — só quando planejada */}
             {!emCampo && !concluida && enderecosPrincipais.length > 0 && (
-              <p className="flex items-center gap-1 text-xs text-slate-500 mt-1.5">
-                <MapPin className="h-3 w-3 flex-shrink-0 text-slate-400" />
+              <p className="text-[11px] font-medium text-slate-500 mt-4 uppercase tracking-tight">
                 <span className="truncate">{enderecosPrincipais[0]}</span>
                 {enderecosPrincipais.length > 1 && (
-                  <span className="text-slate-400 flex-shrink-0">+{rota.pontos.length - 1} mais</span>
+                  <span className="text-slate-300 ml-2">+{rota.pontos.length - 1} MAIS</span>
                 )}
               </p>
             )}
 
-            {/* Link para a perícia se existir */}
+            {/* Link para a perícia if exists */}
             {rota.pontos.some((p) => p.pericoId) && (
               <Link
                 href={`/pericias/${rota.pontos.find((p) => p.pericoId)?.pericoId}`}
-                className="inline-flex items-center gap-1 mt-1.5 text-[11px] text-violet-600 hover:text-violet-800 transition-colors"
+                className="inline-block mt-4 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 hover:text-slate-900 transition-colors"
               >
-                <ChevronRight className="h-3 w-3" />
-                Ver perícia
+                DETALHES DA PERÍCIA
               </Link>
             )}
           </div>
@@ -130,32 +119,26 @@ function RotaCard({ rota }: { rota: Rota }) {
           {/* Ações */}
           <div className="flex-shrink-0 flex flex-col items-end gap-2">
             {(status === 'planejada' || status === 'em_andamento') && (
-              <Button
-                size="sm"
-                className="bg-lime-500 hover:bg-lime-600 text-white font-semibold gap-1.5"
+              <button
+                className="h-12 px-6 bg-slate-900 text-white text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-slate-800 disabled:opacity-20 transition-all"
                 onClick={handleIniciar}
                 disabled={isPending}
               >
-                {isPending
-                  ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  : <Navigation className="h-3.5 w-3.5" />
-                }
-                Iniciar vistoria
-              </Button>
+                {isPending ? 'PROCESSANDO...' : 'INICIAR ROTA'}
+              </button>
             )}
 
             {concluida && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-4">
                 <button
                   onClick={handleReabrir}
                   disabled={isPending}
-                  className="text-[11px] font-medium text-slate-400 hover:text-slate-600 underline underline-offset-2 transition-colors disabled:opacity-40"
+                  className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors disabled:opacity-20"
                 >
-                  Reabrir
+                  REABRIR
                 </button>
-                <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
-                  <CheckCircle2 className="h-3.5 w-3.5" />
-                  Finalizada
+                <span className="text-[10px] font-bold uppercase tracking-widest text-[#a3e635]">
+                  FINALIZADA
                 </span>
               </div>
             )}
@@ -165,7 +148,7 @@ function RotaCard({ rota }: { rota: Rota }) {
 
       {/* Checkpoints — só aparecem quando em campo */}
       {emCampo && (
-        <div className="border-t border-amber-100 px-5 py-4">
+        <div className="border-t border-slate-100 p-8 pt-0">
           <RotaPericiasExecucao
             rotaId={rota.id}
             onFinalizar={handleFinalizar}
@@ -184,20 +167,16 @@ function RotaCard({ rota }: { rota: Rota }) {
         </div>
       )}
 
-      {/* Rodapé — Google Maps link */}
+      {/* Footer — Google Maps link */}
       {mapsUrl && (
-        <div className={cn(
-          'flex justify-end px-5 py-2.5 border-t',
-          emCampo ? 'border-amber-100 bg-amber-50/40' : 'border-slate-50 bg-slate-50/60',
-        )}>
+        <div className="flex justify-end px-8 py-4 border-t border-slate-50 bg-slate-50/30">
           <a
             href={mapsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-blue-600 transition-colors"
+            className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors"
           >
-            <ExternalLink className="h-3 w-3" />
-            Abrir no Google Maps
+            ABRIR NO GOOGLE MAPS
           </a>
         </div>
       )}
@@ -208,34 +187,32 @@ function RotaCard({ rota }: { rota: Rota }) {
 // ─── List ─────────────────────────────────────────────────────────────────────
 
 export function RotasPericiasListClient({ rotas }: { rotas: Rota[] }) {
-  // Sort: em campo first, then planejada, then concluida
   const sorted = [...rotas].sort((a, b) => {
     const order = { em_execucao: 0, em_andamento: 1, planejada: 1, concluida: 2, cancelada: 3 }
     return (order[a.status as keyof typeof order] ?? 1) - (order[b.status as keyof typeof order] ?? 1)
   })
 
   const ativas = sorted.filter((r) => r.status !== 'concluida' && r.status !== 'cancelada')
-
   const concluidas = sorted.filter((r) => r.status === 'concluida' || r.status === 'cancelada')
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-12">
       {/* Rotas ativas */}
       {ativas.length > 0 && (
-        <div className="space-y-3">
+        <div className="space-y-6">
           {ativas.map((rota) => (
             <RotaCard key={rota.id} rota={rota} />
           ))}
         </div>
       )}
 
-      {/* Concluídas — colapsadas */}
+      {/* Concluídas */}
       {concluidas.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-            Concluídas ({concluidas.length})
-          </p>
-          <div className="space-y-2">
+        <div className="space-y-4">
+          <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-300">
+            CONCLUÍDAS ({concluidas.length})
+          </h3>
+          <div className="space-y-4">
             {concluidas.map((rota) => (
               <RotaCard key={rota.id} rota={rota} />
             ))}

@@ -1,11 +1,10 @@
 'use client'
 
-import { useState, useTransition } from 'react'
-import { MapPin, Camera, CheckCircle2, Clock, Loader2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import React, { useState, useTransition } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { CheckpointMediaPanel } from '@/components/rotas/checkpoint-media-panel'
 import { updateCheckpointStatus } from '@/lib/actions/checkpoint-media'
+import { cn } from '@/lib/utils'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -63,115 +62,76 @@ export function RotaPericiasExecucao({ rotaId, checkpoints, onFinalizar }: Props
     setActiveCheckpoint(null)
   }
 
-  const statusConfig: Record<CPStatus, { label: string; variant: 'secondary' | 'warning' | 'success' }> = {
-    pendente: { label: 'Pendente', variant: 'secondary' },
-    chegou: { label: 'No local', variant: 'warning' },
-    concluido: { label: 'Concluído', variant: 'success' },
-  }
-
   return (
     <>
-      <div className="mb-1 flex items-center gap-2">
-        <span className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
-          Em campo
+      <div className="mb-6 flex items-center gap-6">
+        <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">
+          CHECKPOINTS EM CAMPO
         </span>
-        <span className="text-[10px] text-slate-400">
-          {checkpoints.filter((c) => statusMap[c.id] === 'concluido').length}/{checkpoints.length} checkpoints
+        <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-200">
+          {checkpoints.filter((c) => statusMap[c.id] === 'concluido').length} / {checkpoints.length} CONCLUÍDOS
         </span>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-px bg-slate-100 border border-slate-100 shadow-sm overflow-hidden">
         {checkpoints.map((cp) => {
           const status = statusMap[cp.id]
-          const conf = statusConfig[status]
           const isLoading = loadingId === cp.id
+          const isChegou = status === 'chegou'
 
           return (
             <div
               key={cp.id}
-              className={`flex items-center gap-3 rounded-xl border p-3 transition-all ${
-                status === 'concluido'
-                  ? 'border-emerald-100 bg-emerald-50/60 opacity-75'
-                  : status === 'chegou'
-                    ? 'border-amber-200 bg-amber-50'
-                    : 'border-slate-100 bg-white'
-              }`}
+              className={cn(
+                "flex items-center gap-8 bg-white p-6 transition-all",
+                status === 'concluido' ? 'opacity-30 grayscale' : '',
+              )}
             >
-              {/* Ordem badge */}
-              <div
-                className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
-                  status === 'concluido'
-                    ? 'bg-emerald-100 text-emerald-700'
-                    : status === 'chegou'
-                      ? 'bg-amber-200 text-amber-800'
-                      : 'bg-slate-100 text-slate-500'
-                }`}
-              >
-                {status === 'concluido' ? (
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                ) : (
-                  cp.ordem
-                )}
+              {/* Ordem */}
+              <div className={cn(
+                "flex h-8 w-8 flex-shrink-0 items-center justify-center text-[10px] font-bold tracking-widest",
+                status === 'concluido' ? "bg-slate-50 text-slate-300" : isChegou ? "bg-[#a3e635] text-slate-900" : "bg-slate-900 text-white"
+              )}>
+                {cp.ordem}
               </div>
 
               {/* Info */}
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-slate-900 truncate">{cp.titulo}</p>
+                <p className={cn("text-[11px] font-bold uppercase tracking-wider", status === 'concluido' ? 'text-slate-300' : 'text-slate-900')}>{cp.titulo}</p>
                 {cp.endereco && (
-                  <p className="flex items-center gap-1 text-[10px] text-slate-500 mt-0.5">
-                    <MapPin className="h-2.5 w-2.5 flex-shrink-0" />
-                    <span className="truncate">{cp.endereco}</span>
-                  </p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-2 truncate">{cp.endereco}</p>
                 )}
               </div>
 
-              {/* Action / status */}
-              <div className="flex-shrink-0 flex items-center gap-2">
+              {/* Actions */}
+              <div className="flex-shrink-0 flex items-center gap-8">
                 {status === 'pendente' && (
-                  <Button
-                    size="sm"
-                    className="h-7 gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
+                  <button
+                    className="h-10 px-8 bg-white border-2 border-[#a3e635] text-slate-900 text-[10px] font-bold uppercase tracking-widest rounded-full hover:bg-slate-50 transition-all shadow-sm"
                     onClick={() => handleCheguei(cp)}
                     disabled={isPending}
                   >
-                    {isLoading ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      <MapPin className="h-3 w-3" />
-                    )}
-                    Cheguei
-                  </Button>
+                    {isLoading ? '...' : 'CHEGUEI'}
+                  </button>
                 )}
 
-                {status === 'chegou' && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-7 gap-1.5 border-amber-300 text-amber-700 hover:bg-amber-50 text-xs"
+                {(status === 'chegou' || status === 'concluido') && (
+                  <button
                     onClick={() => setActiveCheckpoint(cp)}
+                    className="text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:text-slate-900 transition-colors"
                   >
-                    <Camera className="h-3 w-3" />
-                    Evidências
-                  </Button>
+                    EVIDÊNCIAS
+                  </button>
                 )}
 
+                {isChegou && (
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-[#a3e635]">
+                    NO LOCAL
+                  </span>
+                )}
+                
                 {status === 'concluido' && (
-                  <>
-                    <button
-                      onClick={() => setActiveCheckpoint(cp)}
-                      className="flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-1 text-[10px] font-medium text-emerald-700 hover:bg-emerald-100 transition-colors"
-                    >
-                      <Camera className="h-2.5 w-2.5" />
-                      Evidências
-                    </button>
-                    <Badge variant="success">Concluído</Badge>
-                  </>
-                )}
-
-                {status !== 'concluido' && (
-                  <Badge variant={conf.variant} className="text-[10px]">
-                    {conf.label}
-                  </Badge>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-[#a3e635]">OK</span>
                 )}
               </div>
             </div>
@@ -179,33 +139,24 @@ export function RotaPericiasExecucao({ rotaId, checkpoints, onFinalizar }: Props
         })}
       </div>
 
-      {/* Empty state */}
-      {checkpoints.length === 0 && (
-        <div className="flex items-center gap-2 rounded-xl bg-slate-50 border border-slate-100 px-4 py-3">
-          <MapPin className="h-4 w-4 text-slate-300 flex-shrink-0" />
-          <p className="text-xs text-slate-400">Nenhum checkpoint nesta rota.</p>
-        </div>
-      )}
-
-      {/* Progress footer — all done, show finalize button */}
+      {/* Progress footer */}
       {checkpoints.length > 0 && checkpoints.every((c) => statusMap[c.id] === 'concluido') && (
-        <div className="mt-3 flex items-center gap-3 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3">
-          <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0" />
-          <p className="text-xs font-semibold text-emerald-800 flex-1">
-            Todos os checkpoints concluídos!
+        <div className="mt-12 pt-12 border-t border-dashed border-slate-100 flex flex-col items-center">
+          <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest mb-4">
+            TODOS OS CHECKPOINTS CONCLUÍDOS
           </p>
           {onFinalizar && (
             <button
               onClick={onFinalizar}
-              className="flex-shrink-0 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 transition-colors"
+              className="h-12 px-8 bg-[#a3e635] text-slate-900 text-[10px] font-bold uppercase tracking-widest hover:brightness-105 transition-all"
             >
-              Finalizar rota
+              FINALIZAR ROTA
             </button>
           )}
         </div>
       )}
 
-      {/* Media panel (portal-like overlay) */}
+      {/* Media panel overlay */}
       {activeCheckpoint && (
         <CheckpointMediaPanel
           checkpointId={activeCheckpoint.id}

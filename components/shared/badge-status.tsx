@@ -1,8 +1,9 @@
+
 import { cn } from '@/lib/utils'
 
-// ─── Status maps (domínio centralizado) ───────────────────────────────────────
+// ─── Status maps (Centralized Digital Atelier) ────────────────────────────────
 
-type Variant = 'lime' | 'emerald' | 'amber' | 'rose' | 'slate' | 'violet'
+type Variant = 'lime' | 'success' | 'amber' | 'rose' | 'slate' | 'black'
 
 interface StatusDef {
   label: string
@@ -13,30 +14,30 @@ const STATUS_MAP: Record<string, StatusDef> = {
   // Pericias
   em_andamento:   { label: 'Em andamento',    variant: 'amber'   },
   aguardando:     { label: 'Aguardando',       variant: 'slate'   },
-  concluida:      { label: 'Concluída',        variant: 'emerald' },
+  concluida:      { label: 'Concluída',        variant: 'success' },
   cancelada:      { label: 'Cancelada',        variant: 'rose'    },
 
   // Demandas (perito)
   disponivel:     { label: 'Disponível',       variant: 'lime'    },
-  aceita:         { label: 'Aceita',           variant: 'emerald' },
+  aceita:         { label: 'Aceita',           variant: 'success' },
   expirada:       { label: 'Expirada',         variant: 'rose'    },
 
   // Demandas (parceiro)
   aberta:         { label: 'Aberta',           variant: 'lime'    },
-  em_andamento_d: { label: 'Em andamento',     variant: 'amber'   }, // alias interno
+  em_andamento_d: { label: 'Em andamento',     variant: 'amber'   },
 
   // Propostas
   enviada:        { label: 'Enviada',          variant: 'slate'   },
   visualizada:    { label: 'Visualizada',      variant: 'amber'   },
   recusada:       { label: 'Recusada',         variant: 'rose'    },
-  em_negociacao:  { label: 'Em negociação',    variant: 'violet'  },
+  em_negociacao:  { label: 'Em negociação',    variant: 'black'   }, // Changed from violet
 
   // Rotas
   planejada:      { label: 'Planejada',        variant: 'slate'   },
   em_execucao:    { label: 'Em execução',      variant: 'amber'   },
 
   // Parceiros
-  ativo:          { label: 'Ativo',            variant: 'emerald' },
+  ativo:          { label: 'Ativo',            variant: 'success' },
   inativo:        { label: 'Inativo',          variant: 'rose'    },
 
   // Prioridade
@@ -46,31 +47,31 @@ const STATUS_MAP: Record<string, StatusDef> = {
 }
 
 const variantClass: Record<Variant, string> = {
-  lime:    'bg-[#a3e635] text-[#1f2937]',
-  emerald: 'bg-emerald-100 text-emerald-900',
-  amber:   'bg-amber-100   text-amber-900',
-  rose:    'bg-red-100     text-red-900',
-  slate:   'bg-slate-100   text-slate-900',
-  violet:  'bg-violet-100  text-violet-900',
+  lime:    'bg-[#a3e635] text-slate-900',
+  success: 'bg-[#a3e635]/10 text-[#4d7c0f]',
+  amber:   'bg-amber-100 text-amber-950',
+  rose:    'bg-red-50 text-red-900',
+  slate:   'bg-slate-100 text-slate-500',
+  black:   'bg-slate-900 text-white',
 }
 
 // ─── Dot indicator ─────────────────────────────────────────────────────────────
 
 const dotClass: Record<Variant, string> = {
   lime:    'bg-[#a3e635]',
-  emerald: 'bg-emerald-500',
+  success: 'bg-[#a3e635]',
   amber:   'bg-amber-500',
   rose:    'bg-red-500',
   slate:   'bg-slate-400',
-  violet:  'bg-violet-500',
+  black:   'bg-slate-900',
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 interface BadgeStatusProps {
   status: string
-  label?: string         // override do label automático
-  dot?: boolean          // mostrar dot colorido ao invés de fundo
+  label?: string
+  dot?: boolean
   className?: string
 }
 
@@ -81,8 +82,8 @@ export function BadgeStatus({ status, label, dot = false, className }: BadgeStat
 
   if (dot) {
     return (
-      <span className={cn('inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-slate-500', className)}>
-        <span className={cn('h-2 w-2 rounded-none flex-shrink-0', dotClass[variant])} />
+      <span className={cn('inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-500', className)}>
+        <span className={cn('h-1.5 w-1.5 rounded-none flex-shrink-0', dotClass[variant])} />
         {displayLabel}
       </span>
     )
@@ -91,7 +92,7 @@ export function BadgeStatus({ status, label, dot = false, className }: BadgeStat
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-none px-2 py-1 text-[10px] font-black uppercase tracking-widest',
+        'inline-flex items-center rounded-none px-3 py-1 text-[10px] font-bold uppercase tracking-widest',
         variantClass[variant],
         className,
       )}

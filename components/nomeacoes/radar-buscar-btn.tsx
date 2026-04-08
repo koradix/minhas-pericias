@@ -79,7 +79,7 @@ export function RadarBuscarBtn({ radarConfigurado, siglas }: Props) {
         <Button
           onClick={handleBuscar}
           disabled={isBusy}
-          className="bg-[#416900] hover:bg-[#345300] text-white font-manrope font-bold text-[14.5px] px-6 py-5 rounded-xl gap-2.5 shadow-none border border-transparent transition-colors"
+          className="bg-[#a3e635] hover:bg-[#bef264] text-[#0f172a] font-manrope font-black text-[14.5px] px-6 py-5 rounded-xl gap-2.5 shadow-lg shadow-lime-200 border border-transparent transition-all"
         >
           {isBusy
             ? <><Loader2 className="h-4 w-4 animate-spin" /> Buscando…</>
@@ -91,7 +91,7 @@ export function RadarBuscarBtn({ radarConfigurado, siglas }: Props) {
           onClick={() => setShowManual(true)}
           variant="outline"
           disabled={isBusy}
-          className="bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-[#416900] hover:border-[#416900]/30 font-manrope font-bold text-[14.5px] px-6 py-5 rounded-xl gap-2.5 shadow-none transition-all"
+          className="bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-[#4d7c0f] hover:border-[#a3e635]/30 font-manrope font-bold text-[14.5px] px-6 py-5 rounded-xl gap-2.5 shadow-none transition-all"
         >
           <Plus className="h-4 w-4" /> Registrar manualmente
         </Button>
