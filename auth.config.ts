@@ -13,7 +13,7 @@ export const authConfig: NextAuthConfig = {
       const peritoOnlyPrefixes = [
         '/pericias', '/rotas', '/visitas', '/financeiro', '/recebimentos',
         '/nomeacoes', '/alertas-nomeacoes', '/relatorios', '/documentos',
-        '/contatos', '/parceiros', '/demandas', '/integracoes',
+        '/contatos', '/parceiros', '/demandas', '/integracoes', '/agenda',
       ]
       const isPeritoOnly = peritoOnlyPrefixes.some((p) => nextUrl.pathname.startsWith(p))
       const isParceiroRoute = nextUrl.pathname.startsWith('/parceiro')

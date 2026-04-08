@@ -18,6 +18,7 @@ export const navigation: NavSection[] = [
       { title: "Dashboard",       href: "/dashboard" },
       { title: "Nomeações",       href: "/nomeacoes" },
       { title: "Pericias",        href: "/pericias" },
+      { title: "Agenda",           href: "/agenda" },
       { title: "Rotas e Vistorias", href: "/rotas/pericias" },
       { title: "Prospecção",      href: "/prospeccao" },
     ],

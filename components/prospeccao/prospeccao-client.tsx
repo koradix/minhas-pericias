@@ -3,7 +3,7 @@
 import { useState, useTransition, useMemo } from 'react'
 import type { VaraPublicaRow } from '@/lib/data/prospeccao'
 import { registrarVisita, marcarEmailEnviado } from '@/lib/actions/prospeccao'
-import { salvarRotaProspeccao } from '@/lib/actions/rotas-nova'
+import { salvarRotaComarcas } from '@/lib/actions/rotas-nova'
 import { getCoordsComarca } from '@/lib/data/coords-rj'
 import { cn } from '@/lib/utils'
 
@@ -582,14 +582,25 @@ export default function ProspeccaoClient({ varas, comarcas: _c, visitas: initial
 
   function handleSalvarRota(titulo: string) {
     const varasSel = varas.filter((v) => selecionadasIds.has(v.id))
+    // Group selected varas by comarca (city) — 1 checkpoint per city
+    const byComarca = new Map<string, VaraPublicaRow[]>()
+    for (const v of varasSel) {
+      const list = byComarca.get(v.comarca) ?? []
+      list.push(v)
+      byComarca.set(v.comarca, list)
+    }
+
     startSalvando(async () => {
-      await salvarRotaProspeccao({
-        titulo,
-        pontos: varasSel.map((v, i) => {
-          const [lat, lng] = getCoordsComarca(v.comarca)
-          return { titulo: `${v.comarca} — ${v.varaNome}`, endereco: v.endereco ?? `${v.comarca} — ${v.varaNome}`, latitude: lat + i * 0.0002, longitude: lng + i * 0.0002, ordem: i + 1 }
-        }),
-      })
+      await salvarRotaComarcas(titulo, Array.from(byComarca.entries()).map(([comarca, vs]) => {
+        const [lat, lng] = getCoordsComarca(comarca)
+        return {
+          comarca,
+          endereco: vs[0].endereco ?? comarca,
+          latitude: lat,
+          longitude: lng,
+          varas: vs.map((v) => ({ varaNome: v.varaNome, juizNome: v.juizTitular ?? undefined })),
+        }
+      }))
       setShowSalvarModal(false)
       setModoRota(false)
       setSelecionadasIds(new Set())
@@ -671,7 +682,7 @@ export default function ProspeccaoClient({ varas, comarcas: _c, visitas: initial
           <div className={cn('pointer-events-auto flex items-center bg-white border border-slate-200 shadow-2xl transition-all h-20 px-8',
             selecionadasIds.size === 0 ? 'opacity-30' : 'opacity-100')}>
             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mr-12">
-              <span className="text-slate-900">{selecionadasIds.size}</span> VARAS SELECIONADAS
+              <span className="text-slate-900">{selecionadasIds.size}</span> SELECIONADA{selecionadasIds.size !== 1 ? 'S' : ''}
             </p>
             <button onClick={() => selecionadasIds.size > 0 && setShowSalvarModal(true)}
               disabled={selecionadasIds.size === 0 || isSalvando}
