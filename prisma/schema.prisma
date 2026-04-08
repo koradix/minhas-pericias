@@ -385,21 +385,28 @@ model RotaPericia {
 }
 
 model Checkpoint {
-  id            String    @id @default(cuid())
-  rotaId        String
-  ordem         Int
-  titulo        String
-  endereco      String?
-  lat           Float?
-  lng           Float?
-  status        String    @default("pendente")
-  chegadaEm     DateTime?
-  criadoEm      DateTime  @default(now())
-  pericoId      String?
-  tribunalSigla String?
-  varaNome      String?
-  periciaId     String?
-  pericia       Pericia?  @relation("PericiaCheckpoints", fields: [periciaId], references: [id])
+  id              String    @id @default(cuid())
+  rotaId          String
+  ordem           Int
+  titulo          String
+  endereco        String?
+  lat             Float?
+  lng             Float?
+  status          String    @default("pendente")
+  chegadaEm       DateTime?
+  criadoEm        DateTime  @default(now())
+  pericoId        String?
+  tribunalSigla   String?
+  varaNome        String?
+  comarca         String?
+  periciaId       String?
+  pericia         Pericia?  @relation("PericiaCheckpoints", fields: [periciaId], references: [id])
+  // Dados coletados na visita
+  juizNome        String?
+  secretarioNome  String?
+  foiNomeado      Boolean   @default(false)
+  observacoes     String?
+  varasJson       String?   // JSON: varas dentro desta comarca [{varaNome, juiz, secretario, foiNomeado, visitada}]
 }
 
 model VaraContato {

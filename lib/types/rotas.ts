@@ -27,7 +27,14 @@ export interface PontoRota {
   pericoId?:      string // pericia mock id
   tribunalSigla?: string // para tipo FORUM / VARA_CIVEL
   varaNome?:      string // para tipo FORUM / VARA_CIVEL
+  comarca?:       string
   statusCheckpoint?: 'pendente' | 'chegou' | 'concluido'
+  // ── Dados de visita ─────────────────────────────────────────────────────────
+  varasJson?:       string | null
+  juizNome?:        string | null
+  secretarioNome?:  string | null
+  foiNomeado?:      boolean
+  observacoes?:     string | null
 }
 
 export interface Rota {

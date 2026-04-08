@@ -1,8 +1,8 @@
 'use client'
 
-import React, { useState, useTransition, useMemo } from 'react'
+import { useState, useTransition, useMemo } from 'react'
 import { cn } from '@/lib/utils'
-import { salvarRotaProspeccao } from '@/lib/actions/rotas-nova'
+import { salvarRotaComarcas } from '@/lib/actions/rotas-nova'
 import type { VaraPublicaRow } from '@/lib/data/prospeccao'
 import { getCoordsComarca } from '@/lib/data/coords-rj'
 import dynamic from 'next/dynamic'
@@ -209,35 +209,38 @@ export function NovaRotaProspeccaoForm({ varas }: { varas: VaraPublicaRow[] }) {
     }
   }
 
-  function moveUp(idx: number) {
-    setSelecionadas((p) => {
-      if (idx === 0) return p
-      const next = [...p]; [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]]; return next
-    })
-  }
-
-  function moveDown(idx: number) {
-    setSelecionadas((p) => {
-      if (idx >= p.length - 1) return p
-      const next = [...p]; [next[idx], next[idx + 1]] = [next[idx + 1], next[idx]]; return next
-    })
-  }
+  // Agrupa varas selecionadas por comarca para criar 1 checkpoint por comarca
+  const comarcasAgrupadas = useMemo(() => {
+    const map = new Map<string, VaraSelected[]>()
+    for (const v of selecionadas) {
+      const list = map.get(v.comarca) ?? []
+      list.push(v)
+      map.set(v.comarca, list)
+    }
+    return Array.from(map.entries()).map(([comarca, vs]) => ({
+      comarca,
+      varas: vs,
+      lat: vs[0].lat,
+      lng: vs[0].lng,
+      endereco: vs[0].endereco ?? comarca,
+    }))
+  }, [selecionadas])
 
   const mapRoute = useMemo(() => ({
     id: 'nova-prospeccao',
-    pontos: selecionadas.map((v, i) => ({
-      id: v.id,
+    pontos: comarcasAgrupadas.map((c, i) => ({
+      id: c.comarca,
       rotaId: 'nova-prospeccao',
-      nome: `${v.comarca} — ${v.varaNome}`,
-      latitude: v.lat,
-      longitude: v.lng,
-      tipo: 'VARA_CIVEL' as const,
+      nome: `${c.comarca} (${c.varas.length} varas)`,
+      latitude: c.lat,
+      longitude: c.lng,
+      tipo: 'FORUM' as const,
       ordem: i + 1,
-      endereco: v.endereco ?? undefined,
+      endereco: c.endereco,
     })),
-  }), [selecionadas])
+  }), [comarcasAgrupadas])
 
-  const gmapsUrl = buildGoogleMapsUrl(selecionadas)
+  const gmapsUrl = buildGoogleMapsUrl(comarcasAgrupadas)
 
   function copyLink() {
     navigator.clipboard.writeText(gmapsUrl)
@@ -250,16 +253,16 @@ export function NovaRotaProspeccaoForm({ varas }: { varas: VaraPublicaRow[] }) {
     if (selecionadas.length < 1) { setError('SELECIONE AO MENOS 1 VARA'); return }
     setError(null)
     startTransition(async () => {
-      const res = await salvarRotaProspeccao({
-        titulo,
-        pontos: selecionadas.map((v, i) => ({
-          titulo: `${v.comarca} — ${v.varaNome}`,
-          endereco: v.endereco ?? `${v.comarca} — ${v.varaNome}`,
-          latitude: v.lat,
-          longitude: v.lng,
-          ordem: i + 1,
+      const res = await salvarRotaComarcas(titulo, comarcasAgrupadas.map((c) => ({
+        comarca: c.comarca,
+        endereco: c.endereco,
+        latitude: c.lat,
+        longitude: c.lng,
+        varas: c.varas.map((v) => ({
+          varaNome: v.varaNome,
+          juizNome: v.juizTitular ?? undefined,
         })),
-      })
+      })))
       if (res && !res.ok) setError(res.error ?? 'ERRO AO SALVAR')
     })
   }
@@ -318,25 +321,33 @@ export function NovaRotaProspeccaoForm({ varas }: { varas: VaraPublicaRow[] }) {
             )}
           </div>
 
-          {selecionadas.length === 0 ? (
+          {comarcasAgrupadas.length === 0 ? (
             <div className="h-96 flex flex-col items-center justify-center text-slate-200 border border-dashed border-slate-100">
               <p className="text-[10px] font-bold uppercase tracking-widest">NENHUMA VARA SELECIONADA</p>
             </div>
           ) : (
             <div className="space-y-px bg-slate-50 border border-slate-50 max-h-[500px] overflow-y-auto">
-              {selecionadas.map((vara, idx) => (
-                <div key={vara.id} className="flex items-center gap-6 bg-white p-6 group leading-none">
-                  <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center bg-slate-900 text-[10px] font-bold text-white leading-none">
-                    {idx + 1}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[11px] font-bold text-slate-900 uppercase tracking-wider truncate leading-tight">{vara.varaNome}</p>
-                    <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest mt-1.5 truncate">{vara.comarca}</p>
+              {comarcasAgrupadas.map((comarca, idx) => (
+                <div key={comarca.comarca} className="bg-white">
+                  <div className="flex items-center gap-6 p-6 leading-none">
+                    <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center bg-slate-900 text-[10px] font-bold text-white leading-none">
+                      {idx + 1}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[11px] font-bold text-slate-900 uppercase tracking-wider truncate leading-tight">{comarca.comarca}</p>
+                      <p className="text-[9px] font-bold text-[#a3e635] uppercase tracking-widest mt-1.5">{comarca.varas.length} VARA{comarca.varas.length > 1 ? 'S' : ''}</p>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-6 opacity-0 group-hover:opacity-100 transition-all">
-                    <button onClick={() => moveUp(idx)} disabled={idx === 0} className="text-[10px] font-bold text-slate-300 hover:text-slate-900 disabled:opacity-10">↑</button>
-                    <button onClick={() => moveDown(idx)} disabled={idx === selecionadas.length - 1} className="text-[10px] font-bold text-slate-300 hover:text-slate-900 disabled:opacity-10">↓</button>
-                    <button onClick={() => handleToggle(vara)} className="text-[10px] font-bold text-red-300 hover:text-red-500">X</button>
+                  <div className="px-6 pb-4 space-y-1">
+                    {comarca.varas.map((v) => (
+                      <div key={v.id} className="flex items-center gap-4 px-4 py-2 bg-slate-50 group">
+                        <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider truncate flex-1">{v.varaNome}</p>
+                        {v.juizTitular && v.juizTitular !== 'Vago' && (
+                          <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest truncate">{v.juizTitular}</p>
+                        )}
+                        <button onClick={() => handleToggle(v)} className="text-[9px] font-bold text-red-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">X</button>
+                      </div>
+                    ))}
                   </div>
                 </div>
               ))}

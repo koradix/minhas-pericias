@@ -107,7 +107,13 @@ export function RotasProspeccaoListClient({ rotas }: { rotas: Rota[] }) {
                       tipo: p.tipo,
                       tribunalSigla: p.tribunalSigla,
                       varaNome: p.varaNome,
+                      comarca: p.comarca,
                       statusCheckpoint: p.statusCheckpoint,
+                      varasJson: p.varasJson,
+                      juizNome: p.juizNome,
+                      secretarioNome: p.secretarioNome,
+                      foiNomeado: p.foiNomeado,
+                      observacoes: p.observacoes,
                     }))}
                   />
                 ) : (

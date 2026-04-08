@@ -108,6 +108,143 @@ export async function salvarRotaProspeccao(input: SalvarRotaInput) {
   redirect('/rotas/pericias')
 }
 
+// ─── Action: Criar rota por comarca (agrupa varas dentro de cada comarca) ────
+
+export interface ComarcaPonto {
+  comarca: string
+  endereco: string
+  latitude: number
+  longitude: number
+  varas: { varaNome: string; juizNome?: string; secretarioNome?: string }[]
+}
+
+export async function salvarRotaComarcas(titulo: string, comarcas: ComarcaPonto[]) {
+  const session = await auth()
+  if (!session?.user?.id) return { ok: false, error: 'Não autenticado' }
+  if (!titulo.trim()) return { ok: false, error: 'Título obrigatório' }
+  if (comarcas.length < 1) return { ok: false, error: 'Selecione ao menos 1 comarca' }
+
+  try {
+    const rota = await prisma.rotaPericia.create({
+      data: { peritoId: session.user.id, titulo: titulo.trim(), status: 'planejada' },
+      select: { id: true },
+    })
+
+    await prisma.checkpoint.createMany({
+      data: comarcas.map((c, idx) => ({
+        rotaId: rota.id,
+        ordem: idx + 1,
+        titulo: c.comarca,
+        endereco: c.endereco,
+        lat: c.latitude,
+        lng: c.longitude,
+        comarca: c.comarca,
+        status: 'pendente',
+        varasJson: JSON.stringify(c.varas.map((v) => ({
+          varaNome: v.varaNome,
+          juizNome: v.juizNome ?? null,
+          secretarioNome: v.secretarioNome ?? null,
+          foiNomeado: false,
+          visitada: false,
+        }))),
+      })),
+    })
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    return { ok: false, error: msg.slice(0, 120) }
+  }
+
+  redirect('/rotas/pericias')
+}
+
+// ─── Action: Atualizar dados de visita do checkpoint ─────────────────────────
+
+export interface VaraVisitaData {
+  varaNome: string
+  juizNome: string | null
+  secretarioNome: string | null
+  foiNomeado: boolean
+  visitada: boolean
+}
+
+export async function atualizarCheckpointVisita(
+  checkpointId: string,
+  data: {
+    juizNome?: string
+    secretarioNome?: string
+    foiNomeado?: boolean
+    observacoes?: string
+    varas?: VaraVisitaData[]
+  }
+): Promise<{ ok: boolean; error?: string }> {
+  const session = await auth()
+  if (!session?.user?.id) return { ok: false, error: 'Não autenticado' }
+
+  try {
+    const cp = await prisma.checkpoint.findUnique({
+      where: { id: checkpointId },
+      select: { rotaId: true },
+    })
+    if (!cp) return { ok: false, error: 'Checkpoint não encontrado' }
+
+    const rota = await prisma.rotaPericia.findUnique({
+      where: { id: cp.rotaId, peritoId: session.user.id },
+      select: { id: true },
+    })
+    if (!rota) return { ok: false, error: 'Rota não encontrada' }
+
+    const juiz = data.juizNome ?? null
+    const sec = data.secretarioNome ?? null
+    const nomeado = data.foiNomeado ?? false
+    const obs = data.observacoes ?? null
+    const varasStr = data.varas ? JSON.stringify(data.varas) : null
+
+    await prisma.$executeRaw`
+      UPDATE "Checkpoint" SET
+        "juizNome" = COALESCE(${juiz}, "juizNome"),
+        "secretarioNome" = COALESCE(${sec}, "secretarioNome"),
+        "foiNomeado" = ${nomeado},
+        "observacoes" = COALESCE(${obs}, "observacoes"),
+        "varasJson" = COALESCE(${varasStr}, "varasJson")
+      WHERE id = ${checkpointId}
+    `
+
+    // Sincroniza dados com VaraContato para persistência cross-rota
+    if (data.varas && cp) {
+      for (const v of data.varas) {
+        if (v.juizNome || v.secretarioNome) {
+          await prisma.varaContato.upsert({
+            where: {
+              peritoId_tribunalSigla_varaNome: {
+                peritoId: session.user.id,
+                tribunalSigla: 'TJRJ', // TODO: tornar dinâmico
+                varaNome: v.varaNome,
+              },
+            },
+            create: {
+              peritoId: session.user.id,
+              tribunalSigla: 'TJRJ',
+              varaNome: v.varaNome,
+              juizNome: v.juizNome,
+              secretarioNome: v.secretarioNome,
+            },
+            update: {
+              ...(v.juizNome ? { juizNome: v.juizNome } : {}),
+              ...(v.secretarioNome ? { secretarioNome: v.secretarioNome } : {}),
+            },
+          })
+        }
+      }
+    }
+
+    revalidatePath('/rotas/pericias')
+    return { ok: true }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    return { ok: false, error: msg.slice(0, 120) }
+  }
+}
+
 // ─── Action: Iniciar rota (planejada / em_andamento → em_execucao) ───────────
 
 export async function iniciarRota(rotaId: string): Promise<{ ok: boolean; error?: string }> {

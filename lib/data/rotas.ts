@@ -77,7 +77,13 @@ async function _getRotas(peritoId: string): Promise<Rota[]> {
       pericoId: c.pericoId ?? undefined,
       tribunalSigla: c.tribunalSigla ?? undefined,
       varaNome: c.varaNome ?? undefined,
+      comarca: c.comarca ?? undefined,
       statusCheckpoint: (c.status as 'pendente' | 'chegou' | 'concluido') ?? 'pendente',
+      varasJson: c.varasJson ?? null,
+      juizNome: c.juizNome ?? null,
+      secretarioNome: c.secretarioNome ?? null,
+      foiNomeado: c.foiNomeado ?? false,
+      observacoes: c.observacoes ?? null,
     }))
 
     // Infer tipo from checkpoints
