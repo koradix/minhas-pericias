@@ -165,8 +165,8 @@ export default function SignupPage() {
       setLoading(false)
       return
     }
-    // Don't auto-sign in — user must verify email first
-    setEmailSent(true)
+    // Auto sign-in após cadastro (email já verificado automaticamente)
+    await signIn('credentials', { email, password: senha, callbackUrl: '/dashboard' })
   }
 
   const stepLabels = ['Conta', 'Formação', 'Tribunais']

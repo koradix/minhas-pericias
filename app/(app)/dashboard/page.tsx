@@ -36,8 +36,9 @@ export default async function DashboardPage() {
   let subtitle = 'BEM-VINDO AO PERILAB'
   let citacoesNaoLidas = 0
   let periciasAtivas: PericiaResumo[] = []
-  let rotasAtivas: { id: string; titulo: string; status: string; _count: { checkpoints: number } }[] = []
+  let rotasAtivas: { id: string; titulo: string; status: string; totalCheckpoints: number }[] = []
   let laudosPendentes = 0
+  let totalAReceber = 0
 
   if (userId) {
     try {
@@ -69,13 +70,24 @@ export default async function DashboardPage() {
         total: 0,
       }))
 
-      laudosPendentes = await prisma.documentoGerado.count()
+      laudosPendentes = await prisma.documentoGerado.count().catch(() => 0)
+
+      // Valor real a receber — propostas aceitas
+      const propostas = await prisma.feeProposal.findMany({
+        where: { userId, status: 'aceita' },
+        select: { valorHonorarios: true },
+      }).catch(() => [])
+      totalAReceber = propostas.reduce((s, p) => s + (p.valorHonorarios ?? 0), 0)
 
       const dbRotas = await prisma.rotaPericia.findMany({
-        where: { peritoId: userId, status: { in: ['planejada', 'em_andamento'] } },
+        where: { peritoId: userId, status: { in: ['planejada', 'em_andamento', 'em_execucao'] } },
+        include: { _count: { select: { checkpoints: true } } } as never,
         take: 3,
-      })
-      rotasAtivas = dbRotas.map((r) => ({ ...r, _count: { checkpoints: 0 } }))
+      }).catch(() => [])
+      for (const r of dbRotas) {
+        const cpCount = await prisma.checkpoint.count({ where: { rotaId: r.id } }).catch(() => 0)
+        rotasAtivas.push({ id: r.id, titulo: r.titulo, status: r.status, totalCheckpoints: cpCount })
+      }
     } catch { /* DB not ready */ }
   }
 
@@ -117,32 +129,31 @@ export default async function DashboardPage() {
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Link href="/nomeacoes" className="h-full">
           <KPICard
-            title="NOMEAÇÕES NOVAS"
-            value={citacoesNaoLidas || 12}
-            trendText="+2 DESDE ONTEM"
+            title="NOMEAÇÕES"
+            value={citacoesNaoLidas}
+            trendText={citacoesNaoLidas > 0 ? 'CITAÇÕES ENCONTRADAS' : 'NENHUMA CITAÇÃO'}
           />
         </Link>
         <Link href="/pericias" className="h-full">
           <KPICard
             title="PERÍCIAS ATIVAS"
-            value={periciasAtivas.length || 45}
-            trendText="5 AGENDADAS HOJE"
+            value={periciasAtivas.length}
+            trendText={periciasAtivas.length > 0 ? 'EM ANDAMENTO' : 'NENHUMA ATIVA'}
           />
         </Link>
         <Link href="/documentos/modelos" className="h-full">
           <KPICard
-            title="LAUDOS PENDENTES"
-            value={laudosPendentes || '08'}
-            trendText="3 VENCEM EM BREVE"
-            trendClass="text-red-500"
+            title="DOCUMENTOS"
+            value={laudosPendentes}
+            trendText={laudosPendentes > 0 ? 'GERADOS' : 'NENHUM GERADO'}
           />
         </Link>
         <Link href="/financeiro" className="h-full">
           <KPICard
-            title="FUTURO A RECEBER"
-            value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(48500)}
-            subtitle="ATUALIZADO AGORA"
-            highlight={true}
+            title="A RECEBER"
+            value={totalAReceber > 0 ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalAReceber) : 'R$ 0'}
+            subtitle={totalAReceber > 0 ? 'PROPOSTAS ACEITAS' : 'NENHUMA PROPOSTA ACEITA'}
+            highlight={totalAReceber > 0}
           />
         </Link>
       </section>
@@ -211,7 +222,7 @@ export default async function DashboardPage() {
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-bold text-slate-900 uppercase tracking-tight truncate group-hover:translate-x-1 transition-transform">{rota.titulo}</p>
                         <p className="mt-2 text-[9px] uppercase tracking-widest font-bold text-slate-300">
-                           {rota._count?.checkpoints || 0} LOCAIS NO TRAJETO
+                           {rota.totalCheckpoints} LOCAIS NO TRAJETO
                         </p>
                       </div>
                       <span className="text-[10px] font-bold text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">ABRIR →</span>
