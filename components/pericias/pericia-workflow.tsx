@@ -4,6 +4,7 @@ import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { uploadFile } from '@/lib/client/upload'
 import { atualizarDadosPericia } from '@/lib/actions/pericias-update'
+import { cn } from '@/lib/utils'
 
 // ─── Tribunal portal URLs ──────────────────────────────────────────────────────
 
@@ -59,18 +60,18 @@ type UploadState =
 
 function StepDot({ done, active, num }: { done: boolean; active: boolean; num: number }) {
   if (done) return (
-    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#a3e635] text-[11px] font-bold text-slate-900 flex-shrink-0">
+    <span className="flex h-6 w-12 items-center justify-center rounded-none bg-[#a3e635] text-[10px] font-bold text-slate-900 flex-shrink-0 tracking-widest leading-none">
       OK
     </span>
   )
   if (active) return (
-    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-900 text-[11px] font-bold text-white flex-shrink-0">
-      {num}
+    <span className="flex h-6 w-12 items-center justify-center rounded-none bg-slate-900 text-[10px] font-bold text-white flex-shrink-0 tracking-widest leading-none">
+      0{num}
     </span>
   )
   return (
-    <span className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-[11px] font-bold text-slate-300 flex-shrink-0">
-      {num}
+    <span className="flex h-6 w-12 items-center justify-center rounded-none border border-slate-200 bg-white text-[10px] font-bold text-slate-300 flex-shrink-0 tracking-widest leading-none">
+      0{num}
     </span>
   )
 }
@@ -83,24 +84,24 @@ function AnaliseCard({ analise }: { analise: AnaliseIA }) {
   const quesitosCount = analise.nomeacaoDespacho?.quesitos?.length ?? 0
 
   return (
-    <div className="rounded-xl border border-[#a3e635]/30 bg-slate-50 p-6 space-y-4">
+    <div className="rounded-none border border-slate-200 bg-slate-50 p-8 space-y-6">
       <div className="flex items-center justify-between">
-        <p className="text-[12px] font-bold text-slate-900 uppercase tracking-widest">
+        <p className="text-[10px] font-bold text-slate-900 uppercase tracking-[0.2em]">
           Análise concluída
         </p>
         {quesitosCount > 0 && (
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-            {quesitosCount} quesito{quesitosCount > 1 ? 's' : ''} identificado{quesitosCount > 1 ? 's' : ''}
+            {quesitosCount} quesitos
           </span>
         )}
       </div>
-      <div className="space-y-2">
-        {tipo && <p className="text-sm text-slate-600 font-medium leading-relaxed">{tipo}</p>}
-        {partes && <p className="text-xs text-slate-400 font-medium italic">{partes}</p>}
+      <div className="space-y-3">
+        {tipo && <p className="text-[13px] text-slate-900 font-bold leading-relaxed uppercase tracking-tight">{tipo}</p>}
+        {partes && <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">{partes}</p>}
       </div>
-      <div className="pt-2">
-        <p className="text-[10px] font-bold text-slate-900 bg-[#a3e635] inline-block rounded-md px-3 py-1 uppercase tracking-widest">
-          Dados extraídos
+      <div className="pt-4 border-t border-slate-100">
+        <p className="text-[10px] font-bold text-slate-900 bg-[#a3e635] inline-block rounded-none px-3 py-1.5 uppercase tracking-widest leading-none">
+          Dados extraídos via IA
         </p>
       </div>
     </div>
@@ -182,11 +183,11 @@ export function PericiaWorkflow({
   }
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-      <div className="flex items-center justify-between px-8 py-6 border-b border-slate-100">
-        <h2 className="text-base font-bold text-slate-900 tracking-tight">FLUXO DE TRABALHO</h2>
+    <section className="rounded-none border border-slate-200 bg-white overflow-hidden">
+      <div className="flex items-center justify-between px-8 py-6 border-b border-slate-100 bg-slate-50/50">
+        <h2 className="text-[11px] font-bold text-slate-900 uppercase tracking-[0.2em]">Fluxo de Trabalho</h2>
         {analiseFeita && (
-          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-900 bg-[#a3e635] rounded-md px-3 py-1.5">
+          <span className="text-[9px] font-bold uppercase tracking-widest text-slate-900 bg-[#a3e635] rounded-none px-3 py-1.5 leading-none">
             CONCLUÍDO
           </span>
         )}
@@ -194,22 +195,22 @@ export function PericiaWorkflow({
 
       <div className="divide-y divide-slate-100">
         {/* Passo 1 — Obter nomeação (informativo, sem bloqueio) */}
-        <div className="px-8 py-10 flex gap-8">
+        <div className="px-8 py-12 flex gap-10">
           <StepDot done={analiseFeita} active={false} num={1} />
           <div className="flex-1 min-w-0">
-            <p className="text-[14px] font-bold text-slate-900 uppercase tracking-widest">Obter Nomeação</p>
-            <p className="text-sm text-slate-400 mt-2 leading-relaxed font-medium">
-              Acesse o portal do tribunal para obter o documento da nomeação.
+            <p className="text-[11px] font-bold text-slate-900 uppercase tracking-[0.2em]">Obter Nomeação</p>
+            <p className="text-[13px] text-slate-400 mt-4 leading-relaxed font-medium">
+              Acesse o portal do tribunal para obter o documento da nomeação oficial.
             </p>
-            <div className="mt-6 flex flex-wrap gap-4">
+            <div className="mt-8 flex flex-wrap gap-6">
               {tribunal && (
                 <a href={tribunal.url} target="_blank" rel="noreferrer"
-                  className="text-[11px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-200 pb-0.5 hover:text-slate-900 transition-colors">
+                  className="text-[10px] font-bold text-slate-900 uppercase tracking-widest border-b-2 border-slate-900 pb-1 hover:text-[#a3e635] hover:border-[#a3e635] transition-all">
                   Acessar {tribunal.label}
                 </a>
               )}
               {processoNumero && (
-                <span className="text-[11px] font-bold text-slate-300 font-mono tracking-tighter">
+                <span className="text-[10px] font-bold text-slate-300 tracking-[0.2em] leading-none pt-1">
                   {processoNumero}
                 </span>
               )}
@@ -218,37 +219,37 @@ export function PericiaWorkflow({
         </div>
 
         {/* Passo 2 — Upload do documento */}
-        <div className="px-8 py-10 flex gap-8">
+        <div className="px-8 py-12 flex gap-10">
           <StepDot done={analiseFeita} active={activeStep === 2} num={2} />
           <div className="flex-1 min-w-0">
-            <p className="text-[14px] font-bold text-slate-900 uppercase tracking-widest">Processamento IA</p>
-            <p className="text-sm text-slate-400 mt-2 leading-relaxed font-medium">
-              Extraímos dados estruturados, quesitos e partes automaticamente.
+            <p className="text-[11px] font-bold text-slate-900 uppercase tracking-[0.2em]">Processamento IA</p>
+            <p className="text-[13px] text-slate-400 mt-4 leading-relaxed font-medium">
+              Extraímos dados estruturados, quesitos e partes automaticamente do seu PDF ou DOCX.
             </p>
 
-            <div className="mt-8">
+            <div className="mt-10">
               {!analiseFeita && uploadState.fase === 'idle' && (
                 <>
                   <input ref={fileRef} type="file" accept=".pdf,.docx" className="hidden" onChange={handleUpload} />
                   <button onClick={() => fileRef.current?.click()}
-                    className="bg-[#a3e635] text-slate-900 px-6 py-3 text-[12px] font-bold uppercase tracking-widest hover:bg-[#bef264] transition-all">
-                    Upload PDF / DOCX
+                    className="bg-[#a3e635] text-slate-900 px-8 py-4 text-[10px] font-bold uppercase tracking-widest hover:bg-[#bef264] transition-all rounded-none leading-none">
+                    Upload Nomeação
                   </button>
                 </>
               )}
               {uploadState.fase === 'uploading' && (
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest animate-pulse">
+                <p className="text-[10px] font-bold text-slate-900 uppercase tracking-[0.2em] animate-pulse">
                   {uploadState.progresso}
                 </p>
               )}
               {uploadState.fase === 'erro' && (
-                <div className="space-y-3">
-                  <p className="text-[11px] font-bold text-red-500 uppercase tracking-widest">
+                <div className="space-y-4">
+                  <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest">
                     {uploadState.mensagem}
                   </p>
                   <input ref={fileRef} type="file" accept=".pdf,.docx" className="hidden" onChange={handleUpload} />
                   <button onClick={() => fileRef.current?.click()}
-                    className="bg-slate-900 text-white px-6 py-3 text-[12px] font-bold uppercase tracking-widest hover:bg-slate-800 transition-all">
+                    className="bg-slate-900 text-white px-8 py-4 text-[10px] font-bold uppercase tracking-widest hover:bg-slate-800 transition-all rounded-none leading-none">
                     Tentar novamente
                   </button>
                 </div>
@@ -258,16 +259,16 @@ export function PericiaWorkflow({
         </div>
 
         {/* Passo 3 — Resultado */}
-        <div className="px-8 py-10 flex gap-8">
+        <div className="px-8 py-12 flex gap-10">
           <StepDot done={analiseFeita} active={activeStep === 3} num={3} />
           <div className="flex-1 min-w-0">
-            <p className="text-[14px] font-bold text-slate-900 uppercase tracking-widest">Resultado da Análise</p>
+            <p className="text-[11px] font-bold text-slate-900 uppercase tracking-[0.2em]">Laudo e Resultado</p>
             {analise ? (
-              <div className="mt-8">
+              <div className="mt-10">
                 <AnaliseCard analise={analise} />
               </div>
             ) : (
-              <p className="text-xs text-slate-300 mt-4 italic font-medium">Aguardando upload...</p>
+              <p className="text-[11px] text-slate-300 mt-6 italic font-bold uppercase tracking-widest">Aguardando dados...</p>
             )}
           </div>
         </div>

@@ -3,19 +3,19 @@
 import { useState, useRef } from 'react'
 import {
  Lock,
- Sparkles,
  Loader2,
- CheckCircle2,
- AlertCircle,
- FileDown,
  Upload,
  X,
  Trash2,
- RotateCcw,
  ChevronDown,
  ChevronUp,
- ClipboardList,
  Clock,
+ ClipboardList,
+ AlertCircle,
+ Sparkles,
+ CheckCircle2,
+ FileDown,
+ RotateCcw,
 } from 'lucide-react'
 import { uploadFile } from '@/lib/client/upload'
 import { upsertFeeProposal } from '@/lib/actions/fee-proposal'
@@ -96,13 +96,13 @@ export interface PropostaTabProps {
 // ─── Style constants ──────────────────────────────────────────────────────────
 
 const inputCls =
- 'w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-lime-500/20 focus:border-lime-600 placeholder-slate-300 transition-all'
+ 'w-full rounded-none border-2 border-slate-200 bg-white px-5 py-4 text-[13px] font-bold text-slate-900 focus:outline-none focus:border-slate-900 placeholder-slate-200 uppercase tracking-wide transition-all'
 
 const textareaCls =
- `${inputCls} resize-none`
+ `${inputCls} resize-none min-h-[120px]`
 
 const labelCls =
- 'block text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-400 mb-1.5'
+ 'block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
