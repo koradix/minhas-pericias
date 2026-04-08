@@ -1,12 +1,9 @@
 'use client'
 
-import { useState, useRef, useTransition } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { uploadFile } from '@/lib/client/upload'
 import { atualizarDadosPericia } from '@/lib/actions/pericias-update'
-import { buscarDocumentosPorPericia, listarDocumentosPorPericia, sugerirProcessosSemCNJ, vincularProcessoPericia } from '@/lib/actions/nomeacoes-documentos'
-import type { ProcessoDocumentoRow, ProcessoSugestao } from '@/lib/actions/nomeacoes-documentos'
-import { cn } from '@/lib/utils'
 
 // ─── Tribunal portal URLs ──────────────────────────────────────────────────────
 
@@ -51,17 +48,6 @@ interface Props {
   analiseInicial: AnaliseIA | null
   nomeacaoId?: string | null
 }
-
-type EscavadorFase =
-  | { fase: 'idle' }
-  | { fase: 'buscando' }
-  | { fase: 'aguardando' }
-  | { fase: 'found'; docs: ProcessoDocumentoRow[] }
-  | { fase: 'nenhum' }
-  | { fase: 'erro'; mensagem: string }
-  | { fase: 'buscando_processo' }
-  | { fase: 'escolher_processo'; sugestoes: ProcessoSugestao[] }
-  | { fase: 'nenhum_processo' }
 
 type UploadState =
   | { fase: 'idle' }
@@ -132,10 +118,6 @@ export function PericiaWorkflow({
 }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [uploadState, setUploadState] = useState<UploadState>({ fase: 'idle' })
-  const [step1Done, setStep1Done] = useState(false)
-  const [escavadorFase, setEscavadorFase] = useState<EscavadorFase>({ fase: 'idle' })
-  const [isPendingEscavador, startEscavador] = useTransition()
-  const [cnj, setCnj] = useState<string | null>(processoNumero)
   const router = useRouter()
 
   const tribunal = TRIBUNAL_URLS[(tribunalSigla || 'DESCONHECIDO').toUpperCase()]
@@ -143,6 +125,8 @@ export function PericiaWorkflow({
     uploadState.fase === 'ok' ? uploadState.analise : analiseInicial
 
   const analiseFeita = hasAnalise || uploadState.fase === 'ok'
+
+  const activeStep: 1 | 2 | 3 = analiseFeita ? 3 : 2
 
   async function sendToApi(blobUrl: string, file: File) {
     const res = await fetch('/api/nomeacoes/upload', {
@@ -184,51 +168,6 @@ export function PericiaWorkflow({
     router.refresh()
   }
 
-  function handleBuscarEscavador() {
-    setEscavadorFase({ fase: 'buscando' })
-    startEscavador(async () => {
-      const res = await buscarDocumentosPorPericia(periciaId)
-      if (!res.ok) { setEscavadorFase({ fase: 'erro', mensagem: res.error }); return }
-      if (res.atualizacaoSolicitada) { setEscavadorFase({ fase: 'aguardando' }); return }
-      if (!res.suportado || res.total === 0) { setEscavadorFase({ fase: 'nenhum' }); return }
-      const docs = await listarDocumentosPorPericia(periciaId)
-      setEscavadorFase(docs.length > 0 ? { fase: 'found', docs } : { fase: 'nenhum' })
-    })
-  }
-
-  function handleBuscarPorNome() {
-    setEscavadorFase({ fase: 'buscando_processo' })
-    startEscavador(async () => {
-      const res = await sugerirProcessosSemCNJ(periciaId)
-      if (!res.ok) { setEscavadorFase({ fase: 'erro', mensagem: res.error }); return }
-      if (res.processos.length === 0) { setEscavadorFase({ fase: 'nenhum_processo' }); return }
-      setEscavadorFase({ fase: 'escolher_processo', sugestoes: res.processos })
-    })
-  }
-
-  async function handleSelecionarProcesso(sugestao: ProcessoSugestao) {
-    const vinc = await vincularProcessoPericia(periciaId, sugestao.cnj)
-    if (!vinc.ok) { setEscavadorFase({ fase: 'erro', mensagem: vinc.error ?? 'Erro' }); return }
-    setCnj(sugestao.cnj)
-    router.refresh()
-    handleBuscarEscavador()
-  }
-
-  async function handleAnalisarDocEscavador(doc: ProcessoDocumentoRow) {
-    setUploadState({ fase: 'uploading', progresso: 'Baixando...' })
-    try {
-      const res = await fetch(`/api/nomeacoes/doc-download?docId=${doc.id}`)
-      if (!res.ok) throw new Error('Erro ao baixar')
-      const blob = await res.blob()
-      const file = new File([blob], 'nomeacao.pdf', { type: 'application/pdf' })
-      setUploadState({ fase: 'uploading', progresso: 'Analisando...' })
-      const blobUrl = await uploadFile(file, (pct) => setUploadState({ fase: 'uploading', progresso: `Enviando… ${pct}%` }))
-      await sendToApi(blobUrl, file)
-    } catch (err) {
-      setUploadState({ fase: 'erro', mensagem: 'Erro ao processar' })
-    }
-  }
-
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
@@ -237,17 +176,10 @@ export function PericiaWorkflow({
     try {
       const blobUrl = await uploadFile(file, (pct) => setUploadState({ fase: 'uploading', progresso: `${pct}%` }))
       await sendToApi(blobUrl, file)
-    } catch (err) {
+    } catch {
       setUploadState({ fase: 'erro', mensagem: 'Erro no upload' })
     }
   }
-
-  const steps = [
-    { num: 1, done: step1Done || analiseFeita },
-    { num: 2, done: analiseFeita },
-    { num: 3, done: analiseFeita },
-  ]
-  const activeStep = steps.find((s) => !s.done)?.num ?? 3
 
   return (
     <section className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
@@ -261,61 +193,32 @@ export function PericiaWorkflow({
       </div>
 
       <div className="divide-y divide-slate-100">
-        {/* Passo 1 */}
+        {/* Passo 1 — Obter nomeação (informativo, sem bloqueio) */}
         <div className="px-8 py-10 flex gap-8">
-          <StepDot done={step1Done || analiseFeita} active={activeStep === 1} num={1} />
+          <StepDot done={analiseFeita} active={false} num={1} />
           <div className="flex-1 min-w-0">
             <p className="text-[14px] font-bold text-slate-900 uppercase tracking-widest">Obter Nomeação</p>
             <p className="text-sm text-slate-400 mt-2 leading-relaxed font-medium">
-              Busque automaticamente ou use os portais dos tribunais.
+              Acesse o portal do tribunal para obter o documento da nomeação.
             </p>
-
-            <div className="mt-8 space-y-4">
-              {escavadorFase.fase === 'idle' && !analiseFeita && !cnj && (
-                <button onClick={handleBuscarPorNome} disabled={isPendingEscavador} className="bg-slate-900 text-white px-6 py-3 text-[12px] font-bold uppercase tracking-widest hover:bg-slate-800 transition-all disabled:opacity-30">
-                  Buscar Nomeações
-                </button>
-              )}
-              {escavadorFase.fase === 'idle' && !analiseFeita && cnj && (
-                <button onClick={handleBuscarEscavador} disabled={isPendingEscavador} className="bg-[#a3e635] text-slate-900 px-6 py-3 text-[12px] font-bold uppercase tracking-widest hover:bg-[#bef264] transition-all">
-                  Buscar Documentos
-                </button>
-              )}
-
-              {escavadorFase.fase === 'found' && (
-                <div className="space-y-3 pt-4">
-                  {escavadorFase.docs.map(doc => (
-                    <div key={doc.id} className="flex items-center justify-between p-4 bg-slate-50 border border-slate-100 group">
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold text-slate-900 truncate uppercase tracking-tight">{doc.nome}</p>
-                        <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase">{doc.dataPublicacao}</p>
-                      </div>
-                      <button onClick={() => handleAnalisarDocEscavador(doc)} className="text-[11px] font-bold text-slate-900 hover:text-slate-600 uppercase tracking-widest ml-4 transition-colors">
-                        Analisar →
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="mt-10 flex flex-wrap gap-4">
+            <div className="mt-6 flex flex-wrap gap-4">
               {tribunal && (
-                <a href={tribunal.url} target="_blank" rel="noreferrer" onClick={() => setStep1Done(true)} className="text-[11px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-200 pb-0.5 hover:text-slate-900 transition-colors">
+                <a href={tribunal.url} target="_blank" rel="noreferrer"
+                  className="text-[11px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-200 pb-0.5 hover:text-slate-900 transition-colors">
                   Acessar {tribunal.label}
                 </a>
               )}
-              {cnj && (
+              {processoNumero && (
                 <span className="text-[11px] font-bold text-slate-300 font-mono tracking-tighter">
-                  {cnj}
+                  {processoNumero}
                 </span>
               )}
             </div>
           </div>
         </div>
 
-        {/* Passo 2 */}
-        <div className={cn("px-8 py-10 flex gap-8 transition-opacity duration-300", !step1Done && !analiseFeita ? "opacity-30" : "opacity-100")}>
+        {/* Passo 2 — Upload do documento */}
+        <div className="px-8 py-10 flex gap-8">
           <StepDot done={analiseFeita} active={activeStep === 2} num={2} />
           <div className="flex-1 min-w-0">
             <p className="text-[14px] font-bold text-slate-900 uppercase tracking-widest">Processamento IA</p>
@@ -326,8 +229,9 @@ export function PericiaWorkflow({
             <div className="mt-8">
               {!analiseFeita && uploadState.fase === 'idle' && (
                 <>
-                  <input ref={fileRef} type="file" className="hidden" onChange={handleUpload} />
-                  <button onClick={() => fileRef.current?.click()} className="bg-slate-900 text-white px-6 py-3 text-[12px] font-bold uppercase tracking-widest hover:bg-slate-800 transition-all">
+                  <input ref={fileRef} type="file" accept=".pdf,.docx" className="hidden" onChange={handleUpload} />
+                  <button onClick={() => fileRef.current?.click()}
+                    className="bg-[#a3e635] text-slate-900 px-6 py-3 text-[12px] font-bold uppercase tracking-widest hover:bg-[#bef264] transition-all">
                     Upload PDF / DOCX
                   </button>
                 </>
@@ -337,11 +241,23 @@ export function PericiaWorkflow({
                   {uploadState.progresso}
                 </p>
               )}
+              {uploadState.fase === 'erro' && (
+                <div className="space-y-3">
+                  <p className="text-[11px] font-bold text-red-500 uppercase tracking-widest">
+                    {uploadState.mensagem}
+                  </p>
+                  <input ref={fileRef} type="file" accept=".pdf,.docx" className="hidden" onChange={handleUpload} />
+                  <button onClick={() => fileRef.current?.click()}
+                    className="bg-slate-900 text-white px-6 py-3 text-[12px] font-bold uppercase tracking-widest hover:bg-slate-800 transition-all">
+                    Tentar novamente
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Passo 3 */}
+        {/* Passo 3 — Resultado */}
         <div className="px-8 py-10 flex gap-8">
           <StepDot done={analiseFeita} active={activeStep === 3} num={3} />
           <div className="flex-1 min-w-0">
@@ -351,7 +267,7 @@ export function PericiaWorkflow({
                 <AnaliseCard analise={analise} />
               </div>
             ) : (
-              <p className="text-xs text-slate-300 mt-4 italic font-medium">Aguardando dados...</p>
+              <p className="text-xs text-slate-300 mt-4 italic font-medium">Aguardando upload...</p>
             )}
           </div>
         </div>
