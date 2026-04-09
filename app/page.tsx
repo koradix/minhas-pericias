@@ -223,13 +223,6 @@ export default function LandingPage() {
             </div>
 
 
-            {/* Floating Services */}
-            <div className="mt-14 flex flex-wrap items-center gap-4 text-sm font-semibold text-[#4b5563]">
-               <span className="flex items-start">Gestão <sup className="ml-0.5 text-[9px] font-bold text-[#9ca3af]">01</sup></span> <span className="text-slate-300">/</span>
-               <span className="flex items-start">Radar <sup className="ml-0.5 text-[9px] font-bold text-[#9ca3af]">02</sup></span> <span className="text-slate-300">/</span>
-               <span className="flex items-start">Rotas <sup className="ml-0.5 text-[9px] font-bold text-[#9ca3af]">03</sup></span> <span className="text-slate-300">/</span>
-               <span className="flex items-start">Documentos <sup className="ml-0.5 text-[9px] font-bold text-[#9ca3af]">04</sup></span>
-            </div>
           </div>
 
           {/* Right Column - Leaf Image & Stat Card */}
@@ -604,9 +597,6 @@ export default function LandingPage() {
             ))}
           </div>
 
-          <p className="mt-8 text-center text-xs text-slate-400">
-            Cancele a qualquer momento
-          </p>
         </div>
       </section>
 
