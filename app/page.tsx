@@ -222,10 +222,6 @@ export default function LandingPage() {
               </a>
             </div>
 
-            {/* Trust signal */}
-            <p className="mt-5 text-[12px] text-slate-400 font-medium">
-              Sem cartão de crédito · Comece em minutos
-            </p>
 
             {/* Floating Services */}
             <div className="mt-14 flex flex-wrap items-center gap-4 text-sm font-semibold text-[#4b5563]">
@@ -464,7 +460,7 @@ export default function LandingPage() {
               Escolha o seu plano
             </h2>
             <p className="mt-4 text-base text-slate-500">
-              Comece grátis por 1 mês. Sem cartão de crédito.
+              Escolha o plano ideal para sua atuação.
             </p>
           </div>
 
