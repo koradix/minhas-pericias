@@ -58,52 +58,54 @@ const plans = [
     name: 'Essencial',
     price: 'Grátis',
     period: '',
-    description: 'Para quem está começando a organizar sua atuação pericial.',
+    description: 'Para quem está começando',
     highlight: false,
     badge: null,
     features: [
-      'Até 20 péricias ativas',
-      'Gestão de documentos',
+      'Até 3 processos ativos',
+      'Gestão básica de documentos',
       'Controle de visitas',
       'Contatos e parceiros',
-      'Dashboard financeiro',
     ],
+    micro: 'Ideal para testar antes de escalar',
     cta: 'Começar grátis',
     ctaStyle: 'secondary',
   },
   {
-    name: 'Pro (IA)',
-    price: 'R$ 189',
+    name: 'Profissional',
+    price: 'R$ 97',
     period: '/mês',
-    description: 'Para peritos que querem crescer com inteligência artificial.',
+    description: 'Para quem quer crescer com organização',
     highlight: true,
     badge: 'Mais popular',
     features: [
-      'Pericias ilimitadas',
-      'Resumo automático de processos',
-      'Geração de proposta de honorários',
-      'Rascunho de laudo com IA',
-      'Radar de Nomeações',
+      'Processos ilimitados',
+      'Gestão completa de processos',
+      'Geração de propostas de honorários',
+      'Apoio de IA para laudos',
+      'Radar de nomeações',
       'Rotas inteligentes',
     ],
+    micro: 'Mais utilizado por peritos ativos',
     cta: 'Começar agora',
     ctaStyle: 'primary',
   },
   {
     name: 'Avançado',
-    price: 'R$ 389',
+    price: 'R$ 250',
     period: '/mês',
-    description: 'Automação completa para maximizar sua captação de trabalhos.',
+    description: 'Para quem quer máxima performance',
     highlight: false,
     badge: null,
     features: [
-      'Tudo do Pro (IA)',
+      'Tudo do Profissional',
       'CRM de advogados e escritórios',
-      'Automação de e-mails de prospecção',
-      'Gestão de contatos de varas',
+      'Automação de prospecção',
+      'Gestão de contas e varas',
       'Leads qualificados',
       'Suporte prioritário',
     ],
+    micro: null,
     cta: 'Falar com consultor',
     ctaStyle: 'secondary',
   },
@@ -268,6 +270,33 @@ export default function LandingPage() {
             </div>
           </div>
 
+        </div>
+      </section>
+
+      {/* ── Social Proof ── */}
+      <section className="mx-auto max-w-6xl px-4 sm:px-6 py-16">
+        <p className="text-center text-sm font-semibold text-slate-400 uppercase tracking-widest mb-10">
+          Peritos que já estão organizando sua atuação com o PeriLab
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {[
+            { nome: 'Carlos Henrique', cargo: 'Perito Judicial', frase: 'Depois que comecei a usar, nunca mais perdi prazo. Mudou completamente minha rotina.', iniciais: 'CH' },
+            { nome: 'Fernanda Souza', cargo: 'Perita Contábil', frase: 'Consigo organizar várias perícias ao mesmo tempo sem me perder.', iniciais: 'FS' },
+            { nome: 'Ricardo Alves', cargo: 'Perito Engenheiro', frase: 'O laudo ficou muito mais rápido de fazer.', iniciais: 'RA' },
+          ].map((t) => (
+            <div key={t.nome} className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
+              <p className="text-slate-600 text-[15px] leading-relaxed mb-5 italic">&ldquo;{t.frase}&rdquo;</p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-500 flex-shrink-0">
+                  {t.iniciais}
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-slate-900">{t.nome}</p>
+                  <p className="text-xs text-slate-400">{t.cargo}</p>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -518,6 +547,11 @@ export default function LandingPage() {
                   >
                     {plan.description}
                   </p>
+                  {plan.micro && (
+                    <p className="mt-2 text-[11px] font-medium italic" style={{ color: plan.highlight ? '#6b7280' : '#94a3b8' }}>
+                      {plan.micro}
+                    </p>
+                  )}
                 </div>
 
                 <ul className="mb-8 flex-1 space-y-3">
@@ -593,19 +627,19 @@ export default function LandingPage() {
                 </span>
               </div>
               <h2 className="font-manrope text-5xl sm:text-6xl lg:text-[5rem] font-black tracking-tighter text-[#1f2937] leading-[0.95]">
-                Profissionalize <br className="hidden lg:block"/>sua atuação pericial.
+                Profissionalize sua atuação pericial <br className="hidden lg:block"/>e pare de perder oportunidades.
               </h2>
             </div>
             
             <div className="flex flex-col items-start lg:items-end gap-8 flex-shrink-0">
               <p className="text-[#1f2937] font-medium text-xl max-w-md lg:text-right leading-relaxed">
-                Junte-se a centenas de grandes peritos que já usam o Perilab para organizar processos e multiplicar escalas.
+                Junte-se a peritos que já estão organizando seus processos e aumentando sua produtividade.
               </p>
               <Link
                 href="/login"
                 className="inline-flex h-16 items-center gap-4 bg-[#1f2937] px-10 text-[15px] font-black text-white hover:bg-black transition-colors rounded-full shadow-2xl shadow-[#1f2937]/30"
               >
-                Acessar a Plataforma
+                Começar agora
                 <ArrowRight className="h-5 w-5" />
               </Link>
             </div>
