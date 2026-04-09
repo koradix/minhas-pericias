@@ -201,9 +201,9 @@ export default function LandingPage() {
           {/* Left Column - Typography & CTA */}
           <div className="w-full lg:w-1/2 flex flex-col items-start text-left z-10">
             <h1 className="text-[#111827] font-black leading-[1.05] tracking-tight mb-8"
-                style={{ fontSize: 'clamp(3.5rem, 6vw, 5.5rem)', fontFamily: 'var(--font-manrope), var(--font-montserrat), ui-sans-serif, system-ui, sans-serif' }}>
+                style={{ fontSize: 'clamp(3.3rem, 5.7vw, 5.2rem)', fontFamily: 'var(--font-manrope), var(--font-montserrat), ui-sans-serif, system-ui, sans-serif' }}>
               Gestão pericial completa,<br/>
-              <span className="text-[#84cc16]">do processo ao laudo — sem perder prazos.</span>
+              <span className="text-[#84cc16]">do processo ao laudo.</span>
             </h1>
             
             <p className="text-[#6b7280] text-lg sm:text-xl font-medium mb-10 max-w-md leading-relaxed">
