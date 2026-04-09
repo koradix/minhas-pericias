@@ -201,24 +201,29 @@ export default function LandingPage() {
             <h1 className="text-[#111827] font-black leading-[1.05] tracking-tight mb-8"
                 style={{ fontSize: 'clamp(3.5rem, 6vw, 5.5rem)', fontFamily: 'var(--font-manrope), var(--font-montserrat), ui-sans-serif, system-ui, sans-serif' }}>
               Gestão pericial completa,<br/>
-              <span className="text-[#84cc16]">do processo ao laudo.</span>
+              <span className="text-[#84cc16]">do processo ao laudo — sem perder prazos.</span>
             </h1>
             
             <p className="text-[#6b7280] text-lg sm:text-xl font-medium mb-10 max-w-md leading-relaxed">
-              O Perilab organiza suas péricias, identifica oportunidades de nomeação e gera documentos profissionais com precisão.
+              Organize suas perícias, evite perdas de prazo e produza laudos mais rápido para conquistar mais nomeações.
             </p>
             
             <div className="flex flex-wrap items-center gap-4">
               <Link href="/login" 
                     className="flex bg-[#a3e635] hover:bg-[#84cc16] text-[#111827] font-bold px-8 py-4 rounded-full transition-transform hover:scale-105 active:scale-95 text-lg items-center gap-2">
-                Acessar plataforma
+                Começar agora
                 <ArrowRight className="h-5 w-5" />
               </Link>
-              <a href="#planos" 
+              <a href="#funcionalidades"
                  className="bg-[#1f2937] hover:bg-[#111827] text-white font-bold px-8 py-4 rounded-full transition-transform hover:scale-105 active:scale-95 text-lg">
-                Ver planos
+                Ver como funciona
               </a>
             </div>
+
+            {/* Trust signal */}
+            <p className="mt-5 text-[12px] text-slate-400 font-medium">
+              Sem cartão de crédito · Comece em minutos
+            </p>
 
             {/* Floating Services */}
             <div className="mt-14 flex flex-wrap items-center gap-4 text-sm font-semibold text-[#4b5563]">
