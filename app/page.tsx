@@ -609,7 +609,7 @@ export default function LandingPage() {
           </div>
 
           <p className="mt-8 text-center text-xs text-slate-400">
-            Todos os planos incluem 1 mês de teste gratuito · Cancele a qualquer momento
+            Cancele a qualquer momento
           </p>
         </div>
       </section>
