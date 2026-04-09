@@ -531,8 +531,14 @@ function RegiaoSection({
 
 // ─── Main Client ──────────────────────────────────────────────────────────────
 
+// Tribunais disponíveis por tipo
+const TRIBUNAIS_TIPO = ['TJ', 'TRT', 'TRF'] as const
+const ESTADOS_LISTA = ['RJ', 'SP', 'MG', 'RS', 'PR', 'SC', 'BA', 'PE', 'GO', 'MT', 'MS', 'CE', 'AM', 'PA', 'ES']
+
 export default function ProspeccaoClient({ varas, comarcas: _c, visitas: initialVisitas }: Props) {
   const [search, setSearch] = useState('')
+  const [estadoFiltro, setEstadoFiltro] = useState('RJ')
+  const [tribunalFiltro, setTribunalFiltro] = useState('TJ')
   const [varaForm, setVaraForm] = useState<VaraPublicaRow | null>(null)
   const [visitas, setVisitas] = useState<VisitaRow[]>(initialVisitas)
   const [modoRota, setModoRota] = useState(false)
@@ -624,11 +630,43 @@ export default function ProspeccaoClient({ varas, comarcas: _c, visitas: initial
         ))}
       </div>
 
+      {/* Filtros Estado + Tribunal */}
+      <div className="flex items-center gap-3">
+        <select
+          value={estadoFiltro}
+          onChange={(e) => setEstadoFiltro(e.target.value)}
+          className="h-12 bg-white border border-slate-200 px-4 text-[10px] font-bold uppercase tracking-widest text-slate-700 focus:outline-none focus:border-slate-900 shadow-sm"
+        >
+          {ESTADOS_LISTA.map((uf) => (
+            <option key={uf} value={uf}>{uf}</option>
+          ))}
+        </select>
+        <div className="flex gap-0 border border-slate-200 shadow-sm overflow-hidden">
+          {TRIBUNAIS_TIPO.map((tipo) => (
+            <button
+              key={tipo}
+              onClick={() => setTribunalFiltro(tipo)}
+              className={cn(
+                "h-12 px-6 text-[10px] font-bold uppercase tracking-widest transition-all",
+                tribunalFiltro === tipo
+                  ? 'bg-slate-900 text-white'
+                  : 'bg-white text-slate-400 hover:text-slate-900'
+              )}
+            >
+              {tipo}{estadoFiltro}
+            </button>
+          ))}
+        </div>
+        <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest ml-2">
+          {estadoFiltro === 'RJ' && tribunalFiltro === 'TJ' ? `${filteredVaras.length} VARAS` : 'EM BREVE'}
+        </p>
+      </div>
+
       {/* Toolbar */}
       <div className="flex flex-col md:flex-row items-stretch gap-0 border border-slate-200 shadow-sm bg-white overflow-hidden">
         <div className="flex-1 relative border-b md:border-b-0 md:border-r border-slate-100">
           <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-            placeholder="PROCURAR POR VARA, COMARCA OU JUIZ..."
+            placeholder="PROCURAR POR VARA, CIDADE OU JUIZ..."
             className="w-full h-16 bg-white px-8 text-xs font-bold uppercase tracking-widest focus:outline-none placeholder:text-slate-200" />
         </div>
         <button onClick={() => { setModoRota((v) => !v); setSelecionadasIds(new Set()) }}
@@ -645,7 +683,13 @@ export default function ProspeccaoClient({ varas, comarcas: _c, visitas: initial
         </div>
       )}
 
-      {/* Regiões */}
+      {/* Regiões — só mostra dados disponíveis (RJ/TJ por enquanto) */}
+      {estadoFiltro !== 'RJ' || tribunalFiltro !== 'TJ' ? (
+        <div className="border border-dashed border-slate-200 bg-slate-50 py-16 text-center">
+          <p className="text-sm font-semibold text-slate-500">{tribunalFiltro}{estadoFiltro} — em breve</p>
+          <p className="text-xs text-slate-400 mt-1">Catálogo de varas do {tribunalFiltro}{estadoFiltro} será adicionado em breve.</p>
+        </div>
+      ) : (
       <div className="space-y-4">
         {REGIOES.map((regiao) => (
           <RegiaoSection
@@ -665,6 +709,7 @@ export default function ProspeccaoClient({ varas, comarcas: _c, visitas: initial
           />
         ))}
       </div>
+      )}
 
       {/* Modals */}
       {varaForm && !modoRota && (
