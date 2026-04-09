@@ -19,6 +19,7 @@ import { getFeeProposal, getFeeProposalVersions } from '@/lib/actions/fee-propos
 import { getAgendaItems, autoPopulateAgenda } from '@/lib/actions/agenda'
 import { AgendaPanel } from '@/components/pericias/agenda-panel'
 import { getProposalTemplates } from '@/lib/actions/proposal-template'
+import { getLaudoTemplates, getLaudoDraft } from '@/lib/actions/laudo'
 import type { ResumoData } from '@/lib/actions/processos-intake'
 import { isAnaliseProcessoV2, isAnaliseProcesso, toAnaliseCompativel } from '@/lib/ai/prompt-mestre-resumo'
 import { AnaliseProcessoV2Block } from '@/components/nomeacoes/analise-processo-v2-block'
@@ -317,12 +318,14 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
       })()
     : null
 
-  const [feeProposal, feeVersoes, proposalTemplates, peritoPerfil2, agendaItems] = await Promise.all([
+  const [feeProposal, feeVersoes, proposalTemplates, peritoPerfil2, agendaItems, laudoTemplates, laudoDraft] = await Promise.all([
     getFeeProposal(pericia.id, userId2),
     getFeeProposalVersions(pericia.id, userId2),
     getProposalTemplates(userId2),
     prisma.peritoPerfil.findUnique({ where: { userId: userId2 }, select: { formacao: true, registro: true, telefone: true } }).catch(() => null),
     getAgendaItems(pericia.id),
+    getLaudoTemplates(),
+    getLaudoDraft(pericia.id),
   ])
 
   // Auto-populate agenda (idempotent, non-blocking)
@@ -437,6 +440,22 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
               rascunho:        feeProposal,
               versoes:       feeVersoes,
               templates:     proposalTemplates,
+            }}
+            laudoProps={{
+              pericia: {
+                numero:   pericia.numero,
+                assunto:  pericia.assunto,
+                processo: pericia.processo,
+                vara:     pericia.vara,
+                partes:   pericia.partes,
+                tribunal: citacaoLink?.diarioSigla ?? pericia.vara?.match(/TJ[A-Z]{2}|DJ[A-Z]{2}/)?.[0] ?? 'TJRJ',
+              },
+              analise: analiseIA2,
+              peritoNome:     session2?.user?.name ?? '',
+              peritoFormacao: peritoPerfil2?.formacao ?? '',
+              templates:      laudoTemplates,
+              rascunho:       laudoDraft,
+              midias:         midias.map((m) => ({ tipo: m.tipo, url: m.url, texto: m.texto, descricao: m.descricao })),
             }}
             resumoContent={
               <div className="space-y-16 pt-4 max-w-5xl mx-auto">

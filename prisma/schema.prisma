@@ -608,3 +608,37 @@ model AgendaItem {
   @@index([peritoId])
   @@index([periciaId])
 }
+
+// ─── Laudo Pericial ───────────────────────────────────────────────────────────
+
+model LaudoTemplate {
+  id           String   @id @default(cuid())
+  userId       String?  // null = template padrão PeriLaB
+  categoria    String   // Água | Energia | Médica | Grafotécnica | custom
+  nome         String
+  secoes       String   // JSON: { titulo: string, placeholder: string }[]
+  ativo        Boolean  @default(true)
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@index([userId])
+  @@index([categoria])
+}
+
+model LaudoDraft {
+  id          String   @id @default(cuid())
+  periciaId   String
+  userId      String
+  templateId  String?
+  categoria   String   @default("")
+  secoes      String   @default("[]") // JSON: { titulo: string, conteudo: string }[]
+  status      String   @default("rascunho") // rascunho | revisado | finalizado
+  iaModel     String   @default("")
+  iaRawOutput String   @default("")
+  versao      Int      @default(1)
+  criadoEm    DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@unique([periciaId, userId])
+  @@index([userId])
+}

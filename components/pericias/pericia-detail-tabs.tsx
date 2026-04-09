@@ -2,7 +2,6 @@
 
 import { useState, useTransition, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import Link from 'next/link'
 import {
   Navigation,
   Loader2,
@@ -12,6 +11,8 @@ import { cn } from '@/lib/utils'
 import { criarRotaDaPericia } from '@/lib/actions/pericias-rota'
 import { PropostaTab } from '@/components/pericias/proposta-tab'
 import type { PropostaTabProps } from '@/components/pericias/proposta-tab'
+import { LaudoTab } from '@/components/pericias/laudo-tab'
+import type { LaudoTabProps } from '@/components/pericias/laudo-tab'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -35,6 +36,8 @@ interface Props {
   propostaProps:  Omit<PropostaTabProps, 'periciaId'>
   hasAnalise:     boolean
   hasProposta:    boolean
+  // Laudo
+  laudoProps?:    Omit<LaudoTabProps, 'periciaId'> | null
   defaultTab?:    Tab
 }
 
@@ -180,6 +183,7 @@ export function PericiaDetailTabs({
   propostaProps,
   hasAnalise,
   hasProposta,
+  laudoProps,
   defaultTab,
 }: Props) {
   const searchParams = useSearchParams()
@@ -276,61 +280,16 @@ export function PericiaDetailTabs({
         )}
 
         {activeTab === 'laudo' && (
-          <section className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <div className="space-y-12">
-               <div className="space-y-4">
-                  <h2 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.3em]">Geração de documentos</h2>
-                  <p className="text-[13px] font-bold text-slate-400 uppercase tracking-tight max-w-2xl">
-                    Utilize os ativos coletados em campo e as informações do processo para gerar automaticamente o laudo pericial final baseado em seus modelos editoriais.
-                  </p>
-               </div>
-
-               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {periciaStatus === 'concluida' ? (
-                    <Link href="/documentos/modelos" className="block transform hover:-translate-y-1 transition-transform">
-                      <div className="border border-slate-200 bg-white p-8 space-y-6">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">SISTEMA DE LAUDO</span>
-                        </div>
-                        <div className="space-y-2">
-                           <p className="text-[14px] font-black uppercase tracking-tight text-slate-900">Gerar Laudo Final</p>
-                           <p className="text-[11px] font-bold text-[#a3e635] uppercase tracking-widest">Acesso liberado</p>
-                        </div>
-                      </div>
-                    </Link>
-                  ) : (
-                    <div className="border border-slate-100 bg-slate-50 p-8 space-y-6 opacity-60">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em]">SISTEMA DE LAUDO</span>
-                      </div>
-                      <div className="space-y-2">
-                         <p className="text-[14px] font-black uppercase tracking-tight text-slate-300">Laudo Pericial</p>
-                         <p className="text-[11px] font-black text-slate-300 uppercase tracking-widest border border-slate-200 px-2 py-0.5 inline-block">PERÍCIA EM ANDAMENTO</p>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="border border-slate-100 bg-slate-50 p-8 space-y-6 opacity-40">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em]">ATIVO EDITORIAIS</span>
-                    </div>
-                    <div className="space-y-2">
-                       <p className="text-[14px] font-black uppercase tracking-tight text-slate-300">Rascunho do laudo</p>
-                       <p className="text-[11px] font-black text-slate-200 uppercase tracking-widest">Brevemente</p>
-                    </div>
-                  </div>
-               </div>
-
-               {periciaStatus !== 'concluida' && (
-                  <div className="flex items-center gap-3 pt-6">
-                    <span className="h-1.5 w-1.5 rounded-full bg-slate-900 animate-pulse" />
-                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest italic">
-                      Conclua o fluxo de trabalho para liberar o gerador.
-                    </p>
-                  </div>
-               )}
-            </div>
-          </section>
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+            {laudoProps ? (
+              <LaudoTab periciaId={periciaId} {...laudoProps} />
+            ) : (
+              <div className="border border-dashed border-slate-200 bg-slate-50 py-16 text-center">
+                <p className="text-sm font-semibold text-slate-500">Laudo pericial</p>
+                <p className="text-xs text-slate-400 mt-1">Selecione um modelo e gere o rascunho com IA.</p>
+              </div>
+            )}
+          </div>
         )}
       </div>
     </div>
