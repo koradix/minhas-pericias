@@ -218,6 +218,23 @@ export const KEYWORDS_SUGERIDAS_POR_AREA: Record<AreaPrincipalId, string[]> = {
   outros:        ['laudo', 'perícia', 'avaliação', 'relatório técnico'],
 }
 
+// ─── Tags comuns de perícia ───────────────────────────────────────────────────
+
+export const TAGS_PERICIA = [
+  'Água',
+  'Energia',
+  'Avaliação Imobiliária',
+  'Grafotecnia',
+  'Médica',
+  'Trabalhista',
+  'Engenharia Civil',
+  'Meio Ambiente',
+  'Contábil',
+  'Trânsito',
+  'Informática',
+  'Seguros',
+] as const
+
 // ─── Helper ────────────────────────────────────────────────────────────────────
 
 /** Retorna o label de uma área principal pelo id */

@@ -227,6 +227,7 @@ async function MockPericiaView({ id, userId }: { id: string; userId: string }) {
 
 type PericiaRow = {
   id: string; peritoId: string; numero: string; assunto: string; tipo: string
+  tags: string
   processo: string | null; vara: string | null; partes: string | null
   endereco: string | null; status: string; prazo: string | null
   valorHonorarios: number | null; criadoEm: Date; atualizadoEm: Date
@@ -540,6 +541,7 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
                              prazo={pericia.prazo}
                              valorHonorarios={pericia.valorHonorarios}
                              analise={analiseIA}
+                             tags={(() => { try { return JSON.parse(pericia.tags ?? '[]') } catch { return [] } })()}
                            />
                          </div>
                       </section>

@@ -86,6 +86,7 @@ interface Props {
   prazo: string | null
   valorHonorarios: number | null
   analise: AnaliseIA | null
+  tags?: string[]
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -139,9 +140,12 @@ function Field({
 
 // ─── Main component ────────────────────────────────────────────────────────────
 
+const COMMON_TAGS = ['Água', 'Energia', 'Avaliação Imobiliária', 'Grafotecnia', 'Médica', 'Trabalhista', 'Engenharia Civil', 'Contábil', 'Trânsito']
+
 export function PericiaEditCard(props: Props) {
   const { periciaId, analise } = props
 
+  const [tags, setTags] = useState<string[]>(props.tags ?? [])
   const [editing, setEditing] = useState(false)
   const [saved, setSaved] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -199,7 +203,7 @@ export function PericiaEditCard(props: Props) {
   function handleSave() {
     setSaveError(null)
     startTransition(async () => {
-      const res = await atualizarDadosPericia(periciaId, form)
+      const res = await atualizarDadosPericia(periciaId, { ...form, tags })
       if (res.ok) {
         setDisplay({
           assunto:  form.assunto || null,
@@ -654,6 +658,36 @@ export function PericiaEditCard(props: Props) {
       )}
 
 
+      {/* Tags */}
+      <div className="px-8 py-4 border-t border-slate-100">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[8px] font-bold text-slate-300 uppercase tracking-widest mr-2">TAGS</span>
+          {(editing ? COMMON_TAGS : tags).map((tag) => {
+            const active = tags.includes(tag)
+            if (!editing && !active) return null
+            return (
+              <button
+                key={tag}
+                onClick={() => {
+                  if (!editing) return
+                  setTags((prev) => active ? prev.filter((t) => t !== tag) : [...prev, tag])
+                }}
+                className={cn(
+                  "text-[9px] font-bold uppercase tracking-widest px-2.5 py-1 transition-all",
+                  active
+                    ? 'bg-slate-900 text-white'
+                    : 'bg-slate-50 text-slate-300 hover:text-slate-500'
+                )}
+              >
+                {tag}
+              </button>
+            )
+          })}
+          {!editing && tags.length === 0 && (
+            <span className="text-[9px] font-bold text-slate-200 uppercase tracking-widest">Nenhuma tag</span>
+          )}
+        </div>
+      </div>
     </section>
   )
 }

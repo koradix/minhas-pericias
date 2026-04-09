@@ -11,6 +11,7 @@ export interface DadosPericia {
   endereco?: string
   prazo?: string
   valorHonorarios?: number | null
+  tags?: string[]
 }
 
 export async function atualizarDadosPericia(
@@ -37,6 +38,7 @@ export async function atualizarDadosPericia(
       ...(dados.endereco  !== undefined ? { endereco: dados.endereco.trim() || null } : {}),
       ...(dados.prazo     !== undefined ? { prazo:    dados.prazo.trim() || null   } : {}),
       ...(dados.valorHonorarios !== undefined ? { valorHonorarios: dados.valorHonorarios } : {}),
+      ...(dados.tags !== undefined ? { tags: JSON.stringify(dados.tags) } : {}),
     },
   })
 

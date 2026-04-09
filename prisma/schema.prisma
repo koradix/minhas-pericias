@@ -360,6 +360,7 @@ model Pericia {
   numero          String
   assunto         String
   tipo            String
+  tags            String    @default("[]") // JSON: string[] — ex: ["Água","Energia","Avaliação Imobiliária"]
   processo        String?
   vara            String?
   partes          String?

@@ -10,6 +10,11 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Pericias — Perilab' }
 
+function safeParse(v: string | null | undefined): string[] {
+  if (!v) return []
+  try { return JSON.parse(v) as string[] } catch { return [] }
+}
+
 function toISO(d: Date | string | null | undefined): string {
   if (!d) return new Date().toISOString()
   if (d instanceof Date) return d.toISOString()
@@ -22,7 +27,7 @@ export default async function PericiasPage() {
   const userId = session.user.id
 
   type RotaRow = { id: string; titulo: string; status: string; criadoEm: string; concluidos: number; total: number }
-  type PericiaRow = { id: string; numero: string; assunto: string; tipo: string; status: string; prazo: string | null; vara: string | null; rotaTitulo?: string }
+  type PericiaRow = { id: string; numero: string; assunto: string; tipo: string; tags: string[]; status: string; prazo: string | null; vara: string | null; rotaTitulo?: string }
 
   let rotas: RotaRow[] = []
   let dbPericias: PericiaRow[] = []
@@ -36,7 +41,7 @@ export default async function PericiasPage() {
       prisma.pericia.findMany({
         where: { peritoId: userId },
         orderBy: { criadoEm: 'desc' },
-        select: { id: true, numero: true, assunto: true, tipo: true, status: true, prazo: true, vara: true },
+        select: { id: true, numero: true, assunto: true, tipo: true, tags: true, status: true, prazo: true, vara: true },
       }),
     ])
 
@@ -67,9 +72,9 @@ export default async function PericiasPage() {
       }).catch(() => [])
       const rotaMap = new Map(rotas.map((r) => [r.id, r.titulo]))
       const periciaRotaMap = new Map(linkedCps.map((c) => [c.periciaId!, rotaMap.get(c.rotaId)]))
-      dbPericias = pericias.map((p) => ({ ...p, rotaTitulo: periciaRotaMap.get(p.id) }))
+      dbPericias = pericias.map((p) => ({ ...p, tags: safeParse(p.tags), rotaTitulo: periciaRotaMap.get(p.id) }))
     } else {
-      dbPericias = pericias.map((p) => ({ ...p }))
+      dbPericias = pericias.map((p) => ({ ...p, tags: safeParse(p.tags) }))
     }
   } catch { /* DB not ready */ }
 
@@ -110,9 +115,14 @@ export default async function PericiasPage() {
               <div className="flex-1 min-w-0">
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-3">{p.numero}</p>
                 <p className="text-lg font-bold text-slate-900 uppercase tracking-tight group-hover:translate-x-1 transition-transform duration-300">{p.assunto}</p>
-                <div className="flex flex-wrap items-center gap-6 mt-4">
+                <div className="flex flex-wrap items-center gap-3 mt-4">
+                  {p.tags.length > 0 && p.tags.map((tag) => (
+                    <span key={tag} className="text-[9px] font-bold uppercase tracking-widest bg-slate-100 text-slate-500 px-2 py-0.5">
+                      {tag}
+                    </span>
+                  ))}
                   <span className="text-[10px] font-bold text-[#4d7c0f] uppercase tracking-widest">
-                    {p.rotaTitulo ? `ROTA: ${p.rotaTitulo.toUpperCase()}` : (p.vara?.toUpperCase() ?? 'VARA NÃO INFORMADA')}
+                    {p.rotaTitulo ? `ROTA: ${p.rotaTitulo.toUpperCase()}` : (p.vara?.toUpperCase() ?? '')}
                   </span>
                   {p.prazo && (
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
