@@ -300,6 +300,84 @@ async function main() {
     ],
   })
 
+  // ─── Templates de Laudo Pericial (PeriLaB — padrão) ─────────────────────────
+  // Estrutura extraída fielmente dos templates PDF reais
+
+  await prisma.laudoTemplate.deleteMany({ where: { userId: null } })
+
+  const laudoTemplates = [
+    // ━━━ ÁGUA / SANEAMENTO ━━━
+    {
+      categoria: 'Água',
+      nome: 'Laudo Pericial — Saneamento e Abastecimento de Água',
+      secoes: JSON.stringify([
+        { titulo: '1. Objetivo da Perícia', conteudo: '[EDITAR PELO PERITO] Transcrição literal do despacho judicial que fixou o ponto controvertido da causa.' },
+        { titulo: '2. Localização', conteudo: 'O imóvel em questão situa-se na [EDITAR PELO PERITO], inscrito sob a matrícula nº [EDITAR PELO PERITO].\n\nA localidade é dotada de infraestrutura urbana, ruas pavimentadas e serviços públicos, tais como: iluminação, telefonia, TV a cabo, coleta de lixo, etc. Nas proximidades, a ocupação é predominante [EDITAR PELO PERITO].\n\n[COMPLEMENTAR] Descrição do imóvel: número de residências/economias, tipo de abastecimento, número de hidrômetros.' },
+        { titulo: '3. Agendamento da Vistoria', conteudo: 'A vistoria foi devidamente agendada e comunicada às partes, sendo realizada no dia [EDITAR PELO PERITO], com o comparecimento [EDITAR PELO PERITO].' },
+        { titulo: '4. Histórico Resumido do Processo', conteudo: '4.1. AUTOR\n\n[EDITAR PELO PERITO] Resumo das alegações do autor conforme petição inicial.\n\n4.2. RÉU\n\n[EDITAR PELO PERITO] Resumo da contestação e teses defensivas da parte ré.' },
+        { titulo: '5. Perícia', conteudo: '5.1. DA LEGISLAÇÃO PERTINENTE\n\n1. Código de Defesa do Consumidor (Lei nº 8.078/1990)\nArt. 6º – Direitos Básicos do Consumidor (Incisos III, VI, X)\nArt. 39 – Práticas Abusivas (Incisos III, VI)\nArt. 43, § 2º – Cadastro do consumidor\nArt. 51 – Cláusulas Abusivas (Inciso IV)\n\n2. Lei nº 11.445/2007 – Política Nacional de Saneamento Básico\nArt. 3º, Inciso III; Art. 6º, §1º; Art. 22\n\n3. Lei nº 14.026/2020 – Marco Legal do Saneamento\nArt. 10-A, §1º; Art. 6º-A\n\n4. Decreto Estadual nº 22.872/1996 – RJ\nArts. 37, 38, 39, 43, 54\n\nInstrução Normativa nº 120/2024 — AGENERSA\nArt. 2º (Incisos I a VIII)\n\n5.2. HISTÓRICO DE CONSUMO E FATURAMENTO\n\n[EDITAR PELO PERITO] Análise das faturas com tabela: Referência | Leitura (m³) | Faturado (m³) | Observações\n\n5.3. ANÁLISE DOS FATOS\n\n[EDITAR PELO PERITO] Avaliação técnica baseada no histórico de consumo e documentos dos autos.\n\n5.4. PROCEDIMENTO TÉCNICO-OPERACIONAL ESPERADO\n\nNos casos em que há indícios de irregularidade no funcionamento do hidrômetro, o procedimento técnico adequado consiste na solicitação de verificação do medidor pelo usuário, ocasião em que a concessionária deve realizar inspeção em campo. Persistindo a suspeita de mau funcionamento, o equipamento deve ser retirado e encaminhado para aferição em laboratório. Após constatada falha, deve-se proceder à substituição do hidrômetro e revisão dos valores faturados.\n\n5.5. ANÁLISE DA COBRANÇA\n\n[EDITAR PELO PERITO] Parecer sobre a adequação técnica dos valores faturados no período contestado.' },
+        { titulo: '6. Fotos', conteudo: '[Inserir fotografias da vistoria pericial: hidrômetro, instalações hidráulicas, área externa, documentos verificados in loco, etc.]\n\nAs fotos da vistoria serão inseridas automaticamente nesta seção.' },
+        { titulo: '7. Respostas aos Quesitos', conteudo: '7.1. QUESITO DO JUIZ\n\nQuesito — [EDITAR PELO PERITO]\nResposta: [EDITAR PELO PERITO]\n\n7.2. QUESITOS DO AUTOR\n\n[EDITAR PELO PERITO] Responder cada quesito individualmente.\n\n7.3. QUESITOS DO RÉU\n\n[EDITAR PELO PERITO] Responder cada quesito individualmente.' },
+        { titulo: '8. Conclusão', conteudo: 'Com base na análise do histórico de consumo, dos documentos constantes dos autos e dos elementos técnicos apurados, conclui-se que [EDITAR PELO PERITO]\n\n[COMPLEMENTAR] Desenvolvimento analítico.\n\nDiante desse cenário, conclui-se que:\n1. [EDITAR PELO PERITO]\n2. [EDITAR PELO PERITO]\n3. [EDITAR PELO PERITO]\n\nAssim, sob o ponto de vista técnico, [EDITAR PELO PERITO]' },
+        { titulo: '9. Encerramento', conteudo: 'Tendo concluído o presente laudo pericial em [EDITAR PELO PERITO] folhas impressas em formato A4 em um só lado, se coloca à disposição desse Juízo para dirimir qualquer dúvida ainda existente, e por fim pede a juntada deste laudo aos autos.\n\nNestes termos,\nPede deferimento,\n\n[EDITAR PELO PERITO] Local e data.\n\n___________________________________________________\n[EDITAR PELO PERITO] Nome do Perito\n[EDITAR PELO PERITO] Qualificação\nCREA [EDITAR PELO PERITO]' },
+      ]),
+    },
+    // ━━━ ENERGIA — TOI / TARL ━━━
+    {
+      categoria: 'TOI',
+      nome: 'Laudo Pericial — Energia / Irregularidade (TOI/TARL)',
+      secoes: JSON.stringify([
+        { titulo: 'Princípios e Ressalvas', conteudo: 'a. Foi elaborado com estrita observância dos postulados constantes do Código de Ética Profissional;\nb. Os honorários profissionais do Perito não estão, de forma alguma, sujeitos às conclusões deste laudo;\nc. O Perito não tem nenhuma inclinação pessoal em relação à matéria envolvida neste laudo;\nd. No melhor conhecimento e crédito do Perito, as análises e conclusões são baseadas em dados, diligências e levantamentos verdadeiros e corretos.' },
+        { titulo: '1. Objetivo da Perícia', conteudo: 'Identificar as condições da rede pública de energia elétrica, verificando a regularidade de atendimento da unidade do requisitante, bem como se houve irregularidade na rede de energia do Autor. E por fim, responder aos quesitos apresentados pelo Magistrado, autor e réu.' },
+        { titulo: '2. Localização do Imóvel', conteudo: '[EDITAR PELO PERITO] Endereço completo. Imóvel padrão [EDITAR PELO PERITO], composto por [EDITAR PELO PERITO] pessoa(s) e [EDITAR PELO PERITO] cômodo(s). A localidade é dotada de infraestrutura urbana e serviços públicos. Nas proximidades, a ocupação é predominante residencial.\n\nCliente: [EDITAR PELO PERITO]' },
+        { titulo: '3. Agendamento', conteudo: 'A vistoria foi regularmente agendada e realizada, no dia [EDITAR PELO PERITO].' },
+        { titulo: '4. Histórico do Processo', conteudo: '4.1. ALEGAÇÕES DO AUTOR\n\n[EDITAR PELO PERITO] Resumo das alegações.\nApresentou [EDITAR PELO PERITO] quesitos.\n\n4.2. CONTESTAÇÃO DO RÉU\n\n[EDITAR PELO PERITO] Resumo da contestação.\nApresentou [EDITAR PELO PERITO] quesitos.' },
+        { titulo: '5. Identificação do Cliente', conteudo: '[EDITAR PELO PERITO] Nome da concessionária abreviado.\n[EDITAR PELO PERITO] Observações sobre fachada da unidade consumidora.\n\n5.2. HISTÓRICO DE RECLAMAÇÕES\n\n[EDITAR PELO PERITO]\n\n5.3. HISTÓRICO DE ENERGIA FATURADA\n\nCONSUMO MÉDIO MEDIDO no período [EDITAR PELO PERITO]: [EDITAR PELO PERITO] KWH.\n\n[EDITAR PELO PERITO] Tabela: Data Leitura | Modo Fat. | Cons. Lido (kWh) | Cons. Fat. (kWh)\n\nMÉDIA RECLAMADA: [EDITAR PELO PERITO]' },
+        { titulo: '6. Ocorrência de Irregularidades — TOI/TARL', conteudo: '[EDITAR PELO PERITO] Descrição do TOI lavrado pela concessionária.\n\n[Inserir cópias digitalizadas do TOI e demais documentos de inspeção constantes nos autos]' },
+        { titulo: '7. Perícia', conteudo: '7.1. REPRESENTANTES\n\n- Na data e hora agendada, [EDITAR PELO PERITO]\n- Na data e hora agendada, [EDITAR PELO PERITO]\n\n7.2. PROCEDIMENTOS ADOTADOS\n\na. Realização de levantamento de cargas da unidade autora;\nb. Identificação de possíveis fugas de corrente elétrica e integridade dos condutores;\nc. Cálculo do consumo presumido de energia elétrica;\nd. Comparação dos valores em kWh faturados com o consumo elétrico presumido.\n\n7.3. FOTOS DA VERIFICAÇÃO\n\na. Fotos da residência.\n[Inserir registro fotográfico: fachada, instalações elétricas, caixas de medição, ramal de entrada]\n\nb. Fotos do medidor e fatura.\n[Inserir fotos do medidor instalado e da fatura contestada]' },
+        { titulo: '8. Cálculo do Consumo Presumido', conteudo: 'Estimativa baseada no simulador da ENEL.\n\n[EDITAR PELO PERITO] Tabela: Equipamento | Potência (W) | Horas/dia | Dias/mês | Consumo (kWh)\n\nTOTAL PRESUMIDO: [EDITAR PELO PERITO] kWh' },
+        { titulo: '9. Referências e Normas — Resolução ANEEL 1.000/2021', conteudo: 'Da Medição Externa: Arts. 242, 243\nDa Inspeção: Arts. 248, 250\nDos Procedimentos Irregulares:\nArt. 590 — Providências para caracterização de irregularidade (TOI, perícia metrológica, relatório técnico, histórico de consumo).\nArt. 591 — Obrigação de entregar cópia do TOI ao consumidor e informar sobre perícia metrológica.\nArt. 595 — Comprovado o procedimento irregular, apurar receita a ser recuperada.\nArt. 596 — Período de duração determinado tecnicamente. Prazo máximo de cobrança retroativa: 36 meses.' },
+        { titulo: '10. Respostas aos Quesitos', conteudo: '10.1. QUESITO DO JUIZ\n\nQuesito — [EDITAR PELO PERITO]\nResposta: [EDITAR PELO PERITO]\n\n10.2. QUESITOS DO AUTOR\n\n[EDITAR PELO PERITO] Responder cada quesito individualmente.\n\n10.3. QUESITOS DO RÉU\n\n[EDITAR PELO PERITO] Responder cada quesito individualmente.' },
+        { titulo: '11. Conclusão', conteudo: 'Período do suposto TOI nº [EDITAR PELO PERITO]: [EDITAR PELO PERITO] kWh.\n\nO Laudo Pericial tem por finalidade investigar os fatos técnicos alegados pelas partes, com base na análise dos documentos constantes nos autos e na realização da vistoria técnica.\n\nCumpre destacar que, nos termos dos artigos 590 e 591 da Resolução Normativa nº 1000/2021 da ANEEL, a concessionária pode lavrar Termo de Ocorrência de Irregularidade, desde que constitua conjunto probatório suficiente.\n\n[COMPLEMENTAR] Desenvolvimento da conclusão.\n\n11.1. HISTÓRICO DE CONTAS\n\n[EDITAR PELO PERITO]\n\n11.2. CONSUMO PRESUMIDO\n\n[EDITAR PELO PERITO]\n\nDessa forma, [EDITAR PELO PERITO]' },
+        { titulo: '12. Encerramento', conteudo: 'Tendo concluído o presente laudo pericial em [EDITAR PELO PERITO] folhas impressas em formato A4 em um só lado, o qual se coloca à disposição desse Juízo para dirimir qualquer dúvida ainda existente, e por fim pede a juntada deste laudo aos autos.\n\nNestes termos, Pede deferimento,\n\n[EDITAR PELO PERITO] Local e data.\n\n___________________________________________________\n[EDITAR PELO PERITO] Nome do Perito\n[EDITAR PELO PERITO] Qualificação\nCREA [EDITAR PELO PERITO]' },
+      ]),
+    },
+    // ━━━ ENERGIA — CONSUMO CONTESTADO ━━━
+    {
+      categoria: 'Consumo',
+      nome: 'Laudo Pericial — Energia / Consumo Contestado',
+      secoes: JSON.stringify([
+        { titulo: 'Princípios e Ressalvas', conteudo: 'a. Foi elaborado com estrita observância dos postulados constantes do Código de Ética Profissional;\nb. Os honorários profissionais do Perito não estão, de forma alguma, sujeitos às conclusões deste laudo;\nc. O Perito não tem nenhuma inclinação pessoal em relação à matéria envolvida neste laudo;\nd. No melhor conhecimento e crédito do Perito, as análises e conclusões são baseadas em dados, diligências e levantamentos verdadeiros e corretos.' },
+        { titulo: '1. Objetivo da Perícia', conteudo: 'Identificar as condições da rede pública de energia elétrica, verificando a regularidade de atendimento da(s) unidade(s) do requisitante, bem como se houve irregularidade na rede de energia do Autor. E por fim, responder aos quesitos apresentados pelo Magistrado, autor e réu.' },
+        { titulo: '2. Localização do Imóvel', conteudo: '[EDITAR PELO PERITO] Endereço completo. Imóvel padrão [EDITAR PELO PERITO], composto por [EDITAR PELO PERITO] pessoa(s) e [EDITAR PELO PERITO] cômodo(s). A localidade é dotada de infraestrutura urbana e serviços públicos.\n\n[EDITAR PELO PERITO] Descrição das múltiplas unidades consumidoras com número de cliente e tipo de uso.' },
+        { titulo: '3. Agendamento', conteudo: 'A vistoria foi regularmente agendada e realizada, no dia [EDITAR PELO PERITO].' },
+        { titulo: '4. Histórico do Processo', conteudo: '4.1. ALEGAÇÕES DO AUTOR\n\n[EDITAR PELO PERITO] Resumo das alegações.\nApresentou [EDITAR PELO PERITO] quesitos.\n\n4.2. CONTESTAÇÃO DO RÉU\n\n[EDITAR PELO PERITO] Resumo da contestação.\nApresentou [EDITAR PELO PERITO] quesitos.' },
+        { titulo: '5. Identificação do(s) Cliente(s), Histórico dos Faturamentos', conteudo: '━━━ UNIDADE 1 ━━━\n[EDITAR PELO PERITO] Nome do titular (Cliente [EDITAR PELO PERITO])\n\n5.1. FACHADA DA UNIDADE 1\n[EDITAR PELO PERITO]\n\n5.2. HISTÓRICO DE RECLAMAÇÕES — UNIDADE 1\n[EDITAR PELO PERITO]\n\n5.3. HISTÓRICO DE ENERGIA FATURADA — UNIDADE 1\nCONSUMO MÉDIO no período [EDITAR PELO PERITO]: [EDITAR PELO PERITO] KWH.\n\n[EDITAR PELO PERITO] Tabela por unidade.\n\n━━━ UNIDADE 2 ━━━\n[Repetir subitens 5.1 a 5.3 para cada unidade adicional]' },
+        { titulo: '6. Ocorrência de Irregularidades — TOI/TARL', conteudo: '[EDITAR PELO PERITO] Documentos TOI/TARL nos autos.\n\n[Se não houver TOI lavrado: "Não consta nos autos Termo de Ocorrência de Irregularidade (TOI) relacionado à presente demanda."]' },
+        { titulo: '7. Perícia', conteudo: '7.1. REPRESENTANTES\n\n- Na data e hora agendada, [EDITAR PELO PERITO]\n- Na data e hora agendada, [EDITAR PELO PERITO]\n\n7.2. PROCEDIMENTOS ADOTADOS\n\na. Realização de levantamento de cargas da(s) unidade(s) autora(s);\nb. Identificação de possíveis fugas de corrente elétrica;\nc. Cálculo do consumo presumido de energia elétrica;\nd. Comparação dos valores em kWh faturados com o consumo elétrico presumido.\n\n7.3. FOTOS DA VERIFICAÇÃO\n\na. Fotos da residência/estabelecimento.\n[Inserir registro fotográfico: fachada, instalações, quadro de distribuição, ramal de entrada]\n\nb. Fotos do(s) medidor(es).\n[Inserir fotos dos medidores instalados e respectivas faturas]' },
+        { titulo: '8. Cálculo da Carga Presumida', conteudo: 'Estimativa baseada no simulador da ENEL.\n\n━━━ UNIDADE 1 ━━━\n[EDITAR PELO PERITO] Tabela: Equipamento | Potência (W) | Horas/dia | Dias/mês | Consumo (kWh)\nTOTAL PRESUMIDO — UNID. 1: [EDITAR PELO PERITO] kWh\n\n━━━ UNIDADE 2 ━━━\n[EDITAR PELO PERITO] Tabela por unidade.\nTOTAL PRESUMIDO — UNID. 2: [EDITAR PELO PERITO] kWh' },
+        { titulo: '9. Referências e Normas — Resolução ANEEL 1.000/2021', conteudo: 'Art. 248 — Inspeção do sistema de medição.\nArt. 590 — Providências para caracterização de irregularidade.\nArt. 591 — Obrigação de entregar cópia do TOI ao consumidor.\nArt. 595 — Comprovado o procedimento irregular, apurar receita.\nArt. 596 — Prazo máximo de cobrança retroativa: 36 meses.' },
+        { titulo: '10. Respostas aos Quesitos', conteudo: '10.1. QUESITO DO JUIZ\n\nQuesito — [EDITAR PELO PERITO]\nResposta: [EDITAR PELO PERITO]\n\n10.2. QUESITOS DO AUTOR\n\n[EDITAR PELO PERITO] Responder cada quesito individualmente.\n\n10.3. QUESITOS DO RÉU\n\n[EDITAR PELO PERITO] Responder cada quesito individualmente.' },
+        { titulo: '11. Conclusão', conteudo: 'O Laudo Pericial tem por finalidade investigar os fatos técnicos alegados pelas partes, com base na análise dos documentos constantes nos autos e na realização da vistoria técnica.\n\n[COMPLEMENTAR] Desenvolvimento da conclusão.\n\n11.1. HISTÓRICO DE CONTAS\n\n[EDITAR PELO PERITO]\n\n11.2. CONSUMO PRESUMIDO\n\n[EDITAR PELO PERITO]\n\nDessa forma, [EDITAR PELO PERITO]' },
+        { titulo: '12. Encerramento', conteudo: 'Tendo concluído o presente laudo pericial em [EDITAR PELO PERITO] folhas impressas em formato A4 em um só lado, o qual se coloca à disposição desse Juízo para dirimir qualquer dúvida ainda existente, e por fim pede a juntada deste laudo aos autos.\n\nNestes termos, Pede deferimento,\n\n[EDITAR PELO PERITO] Local e data.\n\n___________________________________________________\n[EDITAR PELO PERITO] Nome do Perito\n[EDITAR PELO PERITO] Qualificação\nCREA [EDITAR PELO PERITO]' },
+      ]),
+    },
+  ]
+
+  for (const tpl of laudoTemplates) {
+    await prisma.laudoTemplate.create({
+      data: {
+        userId: null,
+        categoria: tpl.categoria,
+        nome: tpl.nome,
+        secoes: tpl.secoes,
+        ativo: true,
+      },
+    })
+  }
+
+  console.log(`${laudoTemplates.length} templates de laudo criados`)
+
   console.log('=== Seed concluído ===')
   console.log('mmbonassi@gmail.com          — 123456  — perito')
   console.log('perito@demo.com              — senha123 — perito  ← 7 péricias + 2 rotas reais')

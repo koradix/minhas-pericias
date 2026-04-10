@@ -115,7 +115,10 @@ export async function POST(request: NextRequest) {
   const contexto = `Tribunal: ${tribunal}${numeroRaw ? `\nNúmero: ${numeroRaw}` : ''}`
   let analise: Record<string, unknown> = {}
 
-  // ── Prepara PDF (truncado a 20 páginas) ───────────────────────────────────
+  // ── Prepara PDF (truncado progressivamente para caber no limite da API) ──
+  // A API do Claude aceita no máximo ~20MB de base64. Como base64 infla ~33%,
+  // o buffer bruto precisa ficar abaixo de ~15MB para ser seguro.
+  const MAX_PDF_BYTES = 15 * 1024 * 1024 // 15MB — ~20MB em base64
   let pdfParaEnviar: Buffer = buffer
   if (mimeType === 'application/pdf') {
     const mbSize = (buffer.length / 1024 / 1024).toFixed(1)
@@ -123,14 +126,36 @@ export async function POST(request: NextRequest) {
     const pdfDoc = await PDFDocument.load(buffer, { ignoreEncryption: true })
     const totalPaginas = pdfDoc.getPageCount()
     console.log(`[upload] PDF: ${fileName} | ${mbSize}MB | ${totalPaginas} páginas`)
-    const MAX_PAGINAS = 20
-    if (totalPaginas > MAX_PAGINAS) {
-      const novoPdf = await PDFDocument.create()
-      const indices = Array.from({ length: MAX_PAGINAS }, (_, i) => i)
-      const copias = await novoPdf.copyPages(pdfDoc, indices)
-      copias.forEach((p) => novoPdf.addPage(p))
-      pdfParaEnviar = Buffer.from(await novoPdf.save())
-      console.log(`[upload] PDF truncado: ${(pdfParaEnviar.length / 1024 / 1024).toFixed(1)}MB`)
+
+    // Tenta com até MAX_PAGINAS, mas reduz se o buffer resultante for grande demais
+    let maxPags = Math.min(totalPaginas, 20)
+    while (maxPags > 0) {
+      if (maxPags < totalPaginas) {
+        const novoPdf = await PDFDocument.create()
+        const indices = Array.from({ length: maxPags }, (_, i) => i)
+        const copias = await novoPdf.copyPages(pdfDoc, indices)
+        copias.forEach((p) => novoPdf.addPage(p))
+        pdfParaEnviar = Buffer.from(await novoPdf.save())
+      }
+      const pdfMb = (pdfParaEnviar.length / 1024 / 1024).toFixed(1)
+      if (pdfParaEnviar.length <= MAX_PDF_BYTES) {
+        console.log(`[upload] PDF pronto: ${pdfMb}MB | ${maxPags} páginas`)
+        break
+      }
+      console.log(`[upload] PDF ainda grande (${pdfMb}MB / ${maxPags} págs), reduzindo...`)
+      maxPags = Math.floor(maxPags * 0.6) // reduz 40% a cada iteração
+      if (maxPags < 1) maxPags = 1
+    }
+
+    // Último recurso: se mesmo com 1 página o buffer excede, rejeita com mensagem clara
+    if (pdfParaEnviar.length > MAX_PDF_BYTES) {
+      if (blobUrl) await del(blobUrl).catch(() => {})
+      const finalMb = (pdfParaEnviar.length / 1024 / 1024).toFixed(1)
+      console.error(`[upload] PDF impossível de reduzir: ${finalMb}MB com 1 página`)
+      return NextResponse.json(
+        { ok: false, message: `PDF muito pesado para análise (${finalMb}MB mesmo com 1 página). Tente um arquivo menor.` },
+        { status: 400 },
+      )
     }
   }
 

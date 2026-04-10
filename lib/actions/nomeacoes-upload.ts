@@ -77,18 +77,25 @@ export async function registrarNomeacao(formData: FormData): Promise<RegistrarNo
       const totalPaginas = pdfDoc.getPageCount()
       console.log(`[registrar] pdf-lib: ${totalPaginas} páginas`)
 
+      const MAX_PDF_BYTES = 15 * 1024 * 1024
       const MAX_PAGINAS = 40
-      let pdfParaEnviar: Buffer
+      let maxPags = Math.min(totalPaginas, MAX_PAGINAS)
+      let pdfParaEnviar: Buffer = buffer
 
-      if (totalPaginas <= MAX_PAGINAS) {
+      if (totalPaginas <= maxPags && buffer.length <= MAX_PDF_BYTES) {
         pdfParaEnviar = buffer
       } else {
-        console.log(`[registrar] Extraindo páginas 1-${MAX_PAGINAS} de ${totalPaginas}`)
-        const novoPdf = await PDFDocument.create()
-        const indices = Array.from({ length: MAX_PAGINAS }, (_, i) => i)
-        const copias = await novoPdf.copyPages(pdfDoc, indices)
-        copias.forEach(p => novoPdf.addPage(p))
-        pdfParaEnviar = Buffer.from(await novoPdf.save())
+        while (maxPags > 0) {
+          const novoPdf = await PDFDocument.create()
+          const indices = Array.from({ length: maxPags }, (_, i) => i)
+          const copias = await novoPdf.copyPages(pdfDoc, indices)
+          copias.forEach(p => novoPdf.addPage(p))
+          pdfParaEnviar = Buffer.from(await novoPdf.save())
+          if (pdfParaEnviar.length <= MAX_PDF_BYTES) break
+          console.log(`[registrar] PDF ainda grande (${(pdfParaEnviar.length / 1024 / 1024).toFixed(1)}MB / ${maxPags} págs), reduzindo...`)
+          maxPags = Math.floor(maxPags * 0.6)
+          if (maxPags < 1) maxPags = 1
+        }
       }
 
       userContent = [

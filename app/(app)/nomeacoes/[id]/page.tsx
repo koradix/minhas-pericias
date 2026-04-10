@@ -77,17 +77,16 @@ export default async function NomeacaoDetailPage({ params }: { params: Promise<{
 
   if (!nomeacao || nomeacao.peritoId !== userId) notFound()
 
+  // Se perícia já existe, redireciona direto para ela
+  if (nomeacao.periciaId) {
+    redirect(`/pericias/${nomeacao.periciaId}`)
+  }
+
   // Fetch documentos do Escavador (já salvos no banco)
   const docsEscavador = await listarDocumentosNomeacao(nomeacao.id).catch(() => [])
 
-  // Fetch linked perícia if exists
-  let pericia: { id: string; numero: string } | null = null
-  if (nomeacao.periciaId) {
-    pericia = await prisma.pericia.findUnique({
-      where: { id: nomeacao.periciaId },
-      select: { id: true, numero: true },
-    }).catch(() => null)
-  }
+  // perícia não existe neste ponto (redirecionamos acima se existir)
+  const pericia: { id: string; numero: string } | null = null
 
   // Fetch peritoPerfil for emphasis detection
   const peritoPerfil = await prisma.peritoPerfil.findUnique({
@@ -326,28 +325,6 @@ export default async function NomeacaoDetailPage({ params }: { params: Promise<{
             </section>
           )}
 
-          {/* Link to perícia if created */}
-          {pericia && (
-            <section className="rounded-2xl border border-emerald-200 bg-emerald-50 shadow-sm">
-              <div className="flex items-center justify-between px-5 py-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-100">
-                    <FileText className="h-3.5 w-3.5 text-emerald-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-emerald-800">Perícia criada</p>
-                    <p className="text-xs text-emerald-600">{pericia.numero}</p>
-                  </div>
-                </div>
-                <Link href={`/pericias/${pericia.id}`}>
-                  <button className="flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs px-3 py-1.5 transition-colors">
-                    Abrir
-                    <ChevronRight className="h-3.5 w-3.5" />
-                  </button>
-                </Link>
-              </div>
-            </section>
-          )}
 
         </div>
 
@@ -366,8 +343,8 @@ export default async function NomeacaoDetailPage({ params }: { params: Promise<{
                 nomeArquivo={nomeacao.nomeArquivo ?? null}
                 hasExtracted={!!nomeacao.extractedData}
                 hasSummary={!!nomeacao.processSummary}
-                periciaId={nomeacao.periciaId ?? null}
-                periciaNumero={pericia?.numero ?? null}
+                periciaId={null}
+                periciaNumero={null}
               />
             </div>
           </section>

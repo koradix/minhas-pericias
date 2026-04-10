@@ -642,3 +642,50 @@ model LaudoDraft {
   @@unique([periciaId, userId])
   @@index([userId])
 }
+
+// ─── Judit — Movimentacoes do processo ───────────────────────────────────────
+// Isolado do Escavador. Source sempre = 'judit'.
+
+model ProcessMovement {
+  id          String   @id @default(cuid())
+  periciaId   String
+  source      String   @default("judit") // provedor de origem
+  externalId  String?  // ID da movimentacao na Judit
+  eventDate   DateTime
+  capturedAt  DateTime @default(now())
+  type        String?  // tipo da movimentacao (ex: "despacho", "sentenca")
+  description String
+  content     String?  // conteudo complementar
+  rawJson     String?  // payload bruto JSON para auditoria
+
+  @@unique([periciaId, source, externalId])
+  @@index([periciaId])
+}
+
+// ─── Judit — Anexos/Documentos do processo ───────────────────────────────────
+// Separado do ProcessoDocumento (Escavador). Nao conflita.
+
+model ProcessAttachment {
+  id                String   @id @default(cuid())
+  periciaId         String
+  source            String   @default("judit")
+  externalId        String   // ID do anexo na Judit
+  name              String
+  type              String?  // tipo do documento
+  mimeType          String?
+  isPublic          Boolean  @default(false)
+  downloadAvailable Boolean  @default(false)
+  url               String?  // URL original do provedor (Judit)
+  blobUrl           String?  // URL no Vercel Blob apos download
+  blobPathname      String?  // pathname no Vercel Blob (para del)
+  sizeBytes         Int?
+  downloadStatus    String   @default("pending") // pending | downloaded | failed | unavailable
+  downloadError     String?  // mensagem de erro se falhou
+  downloadedAt      DateTime?
+  publishedAt       DateTime?
+  capturedAt        DateTime @default(now())
+
+  @@unique([periciaId, source, externalId])
+  @@index([periciaId])
+}
+

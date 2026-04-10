@@ -9,6 +9,7 @@ import {
   deleteCheckpointMidia,
   getCheckpointMidias,
   updateCheckpointStatus,
+  updateMidiaTexto,
 } from '@/lib/actions/checkpoint-media'
 import { getVaraContato, upsertVaraContato, type VaraContatoData } from '@/lib/actions/vara-contato'
 
@@ -82,6 +83,11 @@ export function CheckpointMediaPanel({
   const [gravando, setGravando] = useState(false)
   const [audioPreview, setAudioPreview] = useState<string | null>(null)
   const [audioError, setAudioError] = useState<string | null>(null)
+  const [audioTimer, setAudioTimer] = useState(0)
+  const [transcrevendo, setTranscrevendo] = useState<Record<string, boolean>>({})
+  const audioTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const MAX_AUDIO_SECONDS = 60
+  const MAX_AUDIOS = 3
   const [cameraError, setCameraError] = useState<string | null>(null)
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment')
 
@@ -273,7 +279,16 @@ export function CheckpointMediaPanel({
     }
   }
 
+  const audioCount = midias.filter((m) => m.tipo === 'audio').length
+  const audioLimitReached = audioCount >= MAX_AUDIOS
+
+  function clearAudioTimer() {
+    if (audioTimerRef.current) { clearInterval(audioTimerRef.current); audioTimerRef.current = null }
+    setAudioTimer(0)
+  }
+
   async function handleIniciarGravacao() {
+    if (audioLimitReached) return
     setAudioError(null)
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
@@ -286,6 +301,7 @@ export function CheckpointMediaPanel({
 
       recorder.onstop = async () => {
         stream.getTracks().forEach((t) => t.stop())
+        clearAudioTimer()
         const blob = new Blob(chunksRef.current, { type: 'audio/webm' })
         const base64 = await blobToBase64(blob)
         setAudioPreview(base64)
@@ -294,6 +310,20 @@ export function CheckpointMediaPanel({
       recorder.start()
       mediaRecorderRef.current = recorder
       setGravando(true)
+
+      // Timer with auto-stop at MAX_AUDIO_SECONDS
+      setAudioTimer(0)
+      audioTimerRef.current = setInterval(() => {
+        setAudioTimer((prev) => {
+          const next = prev + 1
+          if (next >= MAX_AUDIO_SECONDS) {
+            recorder.stop()
+            mediaRecorderRef.current = null
+            setGravando(false)
+          }
+          return next
+        })
+      }, 1000)
     } catch {
       setAudioError('Erro: Permissão de microfone negada.')
     }
@@ -303,21 +333,44 @@ export function CheckpointMediaPanel({
     mediaRecorderRef.current?.stop()
     mediaRecorderRef.current = null
     setGravando(false)
+    clearAudioTimer()
+  }
+
+  async function transcreverAudio(midiaId: string, audioBase64: string) {
+    setTranscrevendo((prev) => ({ ...prev, [midiaId]: true }))
+    try {
+      const res = await fetch('/api/transcribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ midiaId, audioBase64 }),
+      })
+      const json = await res.json()
+      if (json.ok && json.textoPericial) {
+        await updateMidiaTexto(midiaId, json.textoPericial)
+        setMidias((prev) =>
+          prev.map((m) => m.id === midiaId ? { ...m, texto: json.textoPericial } : m)
+        )
+      }
+    } catch { /* swallow */ }
+    setTranscrevendo((prev) => ({ ...prev, [midiaId]: false }))
   }
 
   function handleSalvarAudio() {
     if (!audioPreview) return
+    const savedBase64 = audioPreview
     startTransition(async () => {
       try {
         const { id, criadoEm } = await addCheckpointMidia(checkpointId, 'audio', {
-          url: audioPreview,
+          url: savedBase64,
         })
         setMidias((prev) => [
           ...prev,
-          { id, tipo: 'audio', url: audioPreview, texto: null, descricao: null, criadoEm },
+          { id, tipo: 'audio', url: savedBase64, texto: null, descricao: null, criadoEm },
         ])
         setAudioPreview(null)
         setModo(null)
+        // Auto-transcribe in background
+        transcreverAudio(id, savedBase64)
       } catch { /* swallow */ }
     })
   }
@@ -425,12 +478,17 @@ export function CheckpointMediaPanel({
 
             <button
               onClick={() => { handleFecharCamera(); setModo(modo === 'audio' ? null : 'audio') }}
+              disabled={audioLimitReached && modo !== 'audio'}
               className={cn(
                 "flex h-24 flex-col items-center justify-center bg-white transition-all",
+                audioLimitReached && modo !== 'audio' ? "opacity-40 cursor-not-allowed" : "",
                 modo === 'audio' ? "bg-slate-50 ring-1 ring-inset ring-slate-200" : "hover:bg-slate-50"
               )}
             >
               <span className="text-[11px] font-bold uppercase tracking-widest text-slate-900">Áudio</span>
+              {audioLimitReached && modo !== 'audio' && (
+                <span className="text-[8px] font-bold text-slate-400 mt-1">{MAX_AUDIOS}/{MAX_AUDIOS}</span>
+              )}
               {modo === 'audio' && <span className="h-0.5 w-4 bg-[#a3e635] mt-2 animate-pulse" />}
             </button>
 
@@ -533,15 +591,30 @@ export function CheckpointMediaPanel({
           {/* Audio controls */}
           {modo === 'audio' && (
             <div className="border border-slate-100 p-6 space-y-6">
-              {!audioPreview ? (
+              {audioLimitReached ? (
+                <div className="py-6 text-center">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">LIMITE DE {MAX_AUDIOS} ÁUDIOS ATINGIDO</p>
+                  <p className="text-[10px] text-slate-300 mt-2">Exclua um áudio existente para gravar outro.</p>
+                </div>
+              ) : !audioPreview ? (
                 <div className="flex flex-col items-center gap-6 py-4">
-                  <div className={cn("h-1 w-24 bg-slate-100 relative overflow-hidden", gravando && "after:content-[''] after:absolute after:inset-y-0 after:bg-red-500 after:animate-progress")}>
-                    <style jsx>{`
-                      @keyframes progress { 0% { left: -100%; width: 100%; } 100% { left: 100%; width: 100%; } }
-                      .after\:animate-progress::after { animation: progress 2s infinite linear; }
-                    `}</style>
+                  {/* Timer bar */}
+                  <div className="w-full max-w-[200px]">
+                    <div className="h-1 w-full bg-slate-100 relative overflow-hidden">
+                      <div
+                        className={cn("h-full transition-all", gravando ? "bg-red-500" : "bg-slate-200")}
+                        style={{ width: `${(audioTimer / MAX_AUDIO_SECONDS) * 100}%` }}
+                      />
+                    </div>
+                    {gravando && (
+                      <p className="text-[10px] font-mono text-center text-red-400 mt-2">
+                        {String(Math.floor(audioTimer / 60)).padStart(1, '0')}:{String(audioTimer % 60).padStart(2, '0')} / 1:00
+                      </p>
+                    )}
                   </div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400">{gravando ? 'GRAVANDO ÁUDIO...' : 'PRONTO PARA GRAVAR'}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400">
+                    {gravando ? 'GRAVANDO ÁUDIO...' : `PRONTO PARA GRAVAR (${audioCount}/${MAX_AUDIOS})`}
+                  </p>
                   <button
                     onClick={gravando ? handlePararGravacao : handleIniciarGravacao}
                     className={cn(
@@ -551,6 +624,7 @@ export function CheckpointMediaPanel({
                   >
                     {gravando ? 'STOP' : 'REC'}
                   </button>
+                  {audioError && <p className="text-[10px] text-red-500">{audioError}</p>}
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -603,6 +677,28 @@ export function CheckpointMediaPanel({
                       EXCLUIR
                     </button>
                   </div>
+                  {/* Audio transcription status */}
+                  {m.tipo === 'audio' && (
+                    <div className="mt-3 pl-20">
+                      {transcrevendo[m.id] ? (
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-amber-500 animate-pulse">
+                          TRANSCREVENDO...
+                        </p>
+                      ) : m.texto ? (
+                        <div className="bg-slate-50 p-3">
+                          <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">TRANSCRIÇÃO PERICIAL</p>
+                          <p className="text-[11px] text-slate-600 leading-relaxed">{m.texto}</p>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => m.url && transcreverAudio(m.id, m.url)}
+                          className="text-[9px] font-bold uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors"
+                        >
+                          TRANSCREVER ÁUDIO
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

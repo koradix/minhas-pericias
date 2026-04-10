@@ -138,6 +138,22 @@ export async function addCheckpointMidia(
   return { id: midia.id, criadoEm: toISO(midia.criadoEm) }
 }
 
+/** Update the texto field of a media item (used after transcription). */
+export async function updateMidiaTexto(
+  midiaId: string,
+  texto: string,
+): Promise<void> {
+  const session = await auth()
+  if (!session?.user?.id) return
+
+  try {
+    await prisma.checkpointMidia.update({
+      where: { id: midiaId },
+      data: { texto },
+    })
+  } catch {}
+}
+
 /** Hard-delete a single media item. */
 export async function deleteCheckpointMidia(midiaId: string): Promise<void> {
   const session = await auth()

@@ -225,37 +225,17 @@ export default function LandingPage() {
 
           </div>
 
-          {/* Right Column - Leaf Image & Stat Card */}
+          {/* Right Column - Hero Image */}
           <div className="w-full lg:w-1/2 relative lg:h-[650px] mt-10 lg:mt-0 flex justify-end">
             <div className="relative w-full max-w-lg aspect-[4/5] lg:aspect-auto lg:h-[90%] lg:absolute right-0 top-0">
-              <img 
-                src="https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=1470" 
-                alt="Equipe trabalhando" 
+              <img
+                src="/hero-perito.webp"
+                alt="Perito usando o sistema no celular"
                 className="w-full h-full object-cover shadow-2xl"
                 style={{
-                  borderRadius: '160px 40px 20px 160px', // Leaf shape
+                  borderRadius: '160px 40px 20px 160px',
                 }}
               />
-              
-              {/* Stats Overlay Card */}
-              <div className="absolute -bottom-6 -left-4 sm:-left-12 bg-white border border-slate-100 p-8 pb-10 w-[260px] shadow-2xl z-20"
-                   style={{ borderRadius: '24px' }}>
-                <h3 className="text-slate-900 text-4xl font-black font-manrope tracking-tight mb-2">5.000+</h3>
-                <p className="text-slate-700 font-bold text-lg mb-3">Péricias Gerenciadas</p>
-                <p className="text-slate-500 text-[13px] font-medium leading-relaxed">
-                  Pronto para escalar sua atuação no mercado jurídico? Nossas ferramentas entregam precisão cirúrgica.
-                </p>
-              </div>
-
-              {/* Small floating card */}
-              <div className="absolute top-[40%] -left-12 bg-white rounded-3xl p-6 shadow-xl w-[220px] hidden sm:block">
-                <p className="text-[#1f2937] font-bold text-sm mb-4 leading-snug">Criando fluxos dinâmicos para sua atuação.</p>
-                <div className="flex items-end justify-between">
-                   <p className="text-3xl font-black text-[#1f2937]">9.8</p>
-                   <p className="text-[10px] text-slate-400 font-medium">Nota dos peritos</p>
-                </div>
-              </div>
-
             </div>
           </div>
 

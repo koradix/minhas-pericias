@@ -126,11 +126,19 @@ export function PericiaMediaSection({ pericoId, midias }: Props) {
               </p>
               <div className="space-y-3">
                 {audios.map((m) => (
-                  <div key={m.id} className="flex items-center gap-4 rounded-lg bg-[#f8f9ff] border border-[#e2e8f0] px-4 py-3">
-                    <span className="text-[12px] text-[#6b7280] font-semibold font-inter whitespace-nowrap">
-                      {new Date(m.criadoEm).toLocaleString('pt-BR', { day: '2-digit', hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                    {m.url && <audio src={m.url} controls className="h-8 flex-1 min-w-0" />}
+                  <div key={m.id} className="rounded-lg bg-[#f8f9ff] border border-[#e2e8f0] px-4 py-3">
+                    <div className="flex items-center gap-4">
+                      <span className="text-[12px] text-[#6b7280] font-semibold font-inter whitespace-nowrap">
+                        {new Date(m.criadoEm).toLocaleString('pt-BR', { day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      {m.url && <audio src={m.url} controls className="h-8 flex-1 min-w-0" />}
+                    </div>
+                    {m.texto && (
+                      <div className="mt-3 pt-3 border-t border-[#e2e8f0]">
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af] mb-1 font-inter">Transcrição pericial</p>
+                        <p className="text-[13px] text-[#374151] leading-relaxed font-inter">{m.texto}</p>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

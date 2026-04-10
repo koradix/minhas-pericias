@@ -148,6 +148,9 @@ export async function autoPopulateAgenda(
   if (!context.hasMidias && context.hasVistoria) {
     items.push({ titulo: 'Registrar evidências da vistoria', tipo: 'action', prioridade: 'normal', sourceKey: 'sys_registrar_midias' })
   }
+  if (context.hasProposta && !context.hasVistoria) {
+    items.push({ titulo: 'Cobrar resposta da Vara sobre honorários', tipo: 'action', prioridade: 'normal', sourceKey: 'sys_cobrar_vara' })
+  }
   if (context.periciaStatus !== 'concluida' && context.hasMidias) {
     items.push({ titulo: 'Elaborar laudo pericial', tipo: 'action', prioridade: 'normal', sourceKey: 'sys_elaborar_laudo' })
   }
@@ -169,6 +172,7 @@ export async function autoPopulateAgenda(
   }
   if (context.hasVistoria) {
     await prisma.agendaItem.deleteMany({ where: { periciaId, sourceKey: 'sys_agendar_vistoria', status: 'pending' } }).catch(() => {})
+    await prisma.agendaItem.deleteMany({ where: { periciaId, sourceKey: 'sys_cobrar_vara', status: 'pending' } }).catch(() => {})
   }
   if (context.hasMidias) {
     await prisma.agendaItem.deleteMany({ where: { periciaId, sourceKey: 'sys_registrar_midias', status: 'pending' } }).catch(() => {})

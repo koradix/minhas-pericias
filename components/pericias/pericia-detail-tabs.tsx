@@ -237,7 +237,7 @@ export function PericiaDetailTabs({
                   : tab.disabled
                     ? 'border-transparent text-slate-200 cursor-not-allowed'
                     : tab.done
-                      ? 'border-[#a3e635]/50 text-slate-500 hover:text-slate-900'
+                      ? 'border-[#a3e635] text-[#4d7c0f] hover:text-slate-900'
                       : 'border-transparent text-slate-400 hover:text-slate-900 hover:border-slate-300'
               )}
             >

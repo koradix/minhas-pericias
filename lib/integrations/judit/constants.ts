@@ -1,0 +1,21 @@
+/**
+ * Judit — Constantes da integracao.
+ */
+
+/** Tempo maximo de polling para request assíncrona (ms) */
+export const JUDIT_POLL_TIMEOUT_MS = 120_000
+
+/** Intervalo entre polls (ms) */
+export const JUDIT_POLL_INTERVAL_MS = 3_000
+
+/** Source tag para registros vindos da Judit */
+export const JUDIT_SOURCE = 'judit' as const
+
+/** Status possiveis de uma request Judit */
+export const JUDIT_REQUEST_STATUSES = ['pending', 'processing', 'done', 'error'] as const
+
+/** Headers padrao para API Judit */
+export const JUDIT_CONTENT_TYPE = 'application/json'
+
+/** Versao da integracao (para logs e debug) */
+export const JUDIT_INTEGRATION_VERSION = '1.0.0'

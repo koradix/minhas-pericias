@@ -47,11 +47,15 @@ export async function buscarNomeacoesDireto(): Promise<BuscarDiretoResult> {
   try {
     const todas: CitacaoResult[] = []
     for (const termo of termos) {
-      try {
-        const res = await radar.buscarPorNome(termo, siglas)
-        todas.push(...res)
-      } catch {
-        // one term failing doesn't abort the other
+      // Paginar até 3 páginas (150 resultados) para não perder nomeações recentes
+      for (let page = 1; page <= 3; page++) {
+        try {
+          const res = await radar.buscarPorNome(termo, siglas, page)
+          todas.push(...res)
+          if (res.length < 50) break // última página
+        } catch {
+          break
+        }
       }
     }
 
@@ -63,8 +67,10 @@ export async function buscarNomeacoesDireto(): Promise<BuscarDiretoResult> {
       return true
     })
 
-    // Filter to last 30 days
-    const recentes = unicas.filter((c) => new Date(c.diarioData) >= umMesAtras)
+    // Filter to last 60 days (ampliado para não perder nomeações recentes)
+    const sessentaDiasAtras = new Date()
+    sessentaDiasAtras.setDate(sessentaDiasAtras.getDate() - 60)
+    const recentes = unicas.filter((c) => new Date(c.diarioData) >= sessentaDiasAtras)
 
     const resultados: NomeacaoCard[] = recentes.map((c) => ({
       id: c.externalId,

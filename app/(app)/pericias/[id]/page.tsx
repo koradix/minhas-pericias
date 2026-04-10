@@ -17,7 +17,7 @@ import { PericiaWorkflow } from '@/components/pericias/pericia-workflow'
 import { PericiaEditCard } from '@/components/pericias/pericia-edit-card'
 import { getFeeProposal, getFeeProposalVersions } from '@/lib/actions/fee-proposal'
 import { getAgendaItems, autoPopulateAgenda } from '@/lib/actions/agenda'
-import { AgendaPanel } from '@/components/pericias/agenda-panel'
+// AgendaPanel is rendered only inside the Agenda tab
 import { getProposalTemplates } from '@/lib/actions/proposal-template'
 import { getLaudoTemplates, getLaudoDraft } from '@/lib/actions/laudo'
 import type { ResumoData } from '@/lib/actions/processos-intake'
@@ -25,6 +25,10 @@ import { isAnaliseProcessoV2, isAnaliseProcesso, toAnaliseCompativel } from '@/l
 import { AnaliseProcessoV2Block } from '@/components/nomeacoes/analise-processo-v2-block'
 import { AnaliseProcessoBlock } from '@/components/nomeacoes/analise-processo-block'
 import { NomeacaoDocumentosSection } from '@/components/nomeacoes/nomeacao-documentos'
+import { BaixarAutosBtn } from '@/components/pericias/baixar-autos-btn'
+import { ProcessTimeline } from '@/components/pericias/process-timeline'
+import { ProcessDocuments } from '@/components/pericias/process-documents'
+import { isJuditReady } from '@/lib/integrations/judit/config'
 import type { Metadata } from 'next'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -269,11 +273,11 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
   } catch {}
 
   // Fetch linked NomeacaoCitacao (Radar flow) for tribunal info
-  let citacaoLink: { diarioSigla: string } | null = null
+  let citacaoLink: { diarioSigla: string; linkCitacao: string } | null = null
   try {
     citacaoLink = await prisma.nomeacaoCitacao.findFirst({
       where: { periciaId: pericia.id },
-      select: { diarioSigla: true },
+      select: { diarioSigla: true, linkCitacao: true },
     })
   } catch {}
 
@@ -303,6 +307,20 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
     }
   } catch {}
 
+  // Extract vistoria date/address from first completed checkpoint
+  const vistoriaInfo: { data: string | null; endereco: string | null } = { data: null, endereco: null }
+  try {
+    const cpVistoria = await prisma.checkpoint.findFirst({
+      where: { periciaId: pericia.id, status: 'concluido' },
+      orderBy: { ordem: 'asc' },
+      select: { chegadaEm: true, endereco: true },
+    })
+    if (cpVistoria) {
+      vistoriaInfo.data = cpVistoria.chegadaEm ? toISO(cpVistoria.chegadaEm) : null
+      vistoriaInfo.endereco = cpVistoria.endereco
+    }
+  } catch {}
+
   // Fetch proposal data
   const session2 = await import('@/auth').then((m) => m.auth())
   const userId2  = session2?.user?.id ?? ''
@@ -318,7 +336,7 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
       })()
     : null
 
-  const [feeProposal, feeVersoes, proposalTemplates, peritoPerfil2, agendaItems, laudoTemplates, laudoDraft] = await Promise.all([
+  const [feeProposal, feeVersoes, proposalTemplates, peritoPerfil2, , laudoTemplates, laudoDraft] = await Promise.all([
     getFeeProposal(pericia.id, userId2),
     getFeeProposalVersions(pericia.id, userId2),
     getProposalTemplates(userId2),
@@ -327,6 +345,44 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
     getLaudoTemplates(),
     getLaudoDraft(pericia.id),
   ])
+
+  // ─── Judit data (isolado, feature-flagged) ──────────────────────────────────
+  let juditMovements: { id: string; eventDate: string; type: string | null; description: string }[] = []
+  let juditAttachments: { id: string; name: string; type: string | null; mimeType: string | null; isPublic: boolean; downloadAvailable: boolean; url: string | null; blobUrl: string | null; downloadStatus: string; publishedAt: string | null }[] = []
+  if (isJuditReady()) {
+    try {
+      const [dbMov, dbAtt] = await Promise.all([
+        prisma.processMovement.findMany({
+          where: { periciaId: pericia.id, source: 'judit' },
+          orderBy: { eventDate: 'desc' },
+          select: { id: true, eventDate: true, type: true, description: true },
+        }),
+        prisma.processAttachment.findMany({
+          where: { periciaId: pericia.id, source: 'judit' },
+          orderBy: { capturedAt: 'desc' },
+          select: { id: true, name: true, type: true, mimeType: true, isPublic: true, downloadAvailable: true, url: true, blobUrl: true, downloadStatus: true, publishedAt: true },
+        }),
+      ])
+      juditMovements = dbMov.map((m: { id: string; eventDate: Date; type: string | null; description: string }) => ({
+        id: m.id,
+        eventDate: m.eventDate.toISOString(),
+        type: m.type,
+        description: m.description,
+      }))
+      juditAttachments = dbAtt.map((a: { id: string; name: string; type: string | null; mimeType: string | null; isPublic: boolean; downloadAvailable: boolean; url: string | null; blobUrl: string | null; downloadStatus: string; publishedAt: Date | null }) => ({
+        id: a.id,
+        name: a.name,
+        type: a.type,
+        mimeType: a.mimeType,
+        isPublic: a.isPublic,
+        downloadAvailable: a.downloadAvailable,
+        url: a.url,
+        blobUrl: a.blobUrl,
+        downloadStatus: a.downloadStatus,
+        publishedAt: a.publishedAt?.toISOString() ?? null,
+      }))
+    } catch {}
+  }
 
   // Auto-populate agenda (idempotent, non-blocking)
   const hasAnalise2 = !!nomeacaoLink?.extractedData
@@ -401,6 +457,22 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
           </div>
         </div>
 
+        {/* Quick links bar */}
+        {citacaoLink?.linkCitacao && (
+          <div className="bg-slate-50 border-t border-slate-200">
+            <div className="max-w-7xl mx-auto px-6 py-3 flex items-center gap-6">
+              <a
+                href={citacaoLink.linkCitacao}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-slate-700 transition-colors"
+              >
+                Ver no diário oficial ↗
+              </a>
+            </div>
+          </div>
+        )}
+
         {/* Address bar underline highlight */}
         {pericia.endereco && (
           <div className="bg-slate-50 border-t border-slate-200">
@@ -456,6 +528,7 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
               templates:      laudoTemplates,
               rascunho:       laudoDraft,
               midias:         midias.map((m) => ({ tipo: m.tipo, url: m.url, texto: m.texto, descricao: m.descricao })),
+              vistoriaData:   vistoriaInfo,
             }}
             resumoContent={
               <div className="space-y-16 pt-4 max-w-5xl mx-auto">
@@ -469,6 +542,9 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
                       nomeArquivo={nomeacaoLink?.nomeArquivo ?? null}
                       periciaId={pericia.id}
                     />
+                    <div className="mt-4">
+                      <BaixarAutosBtn cnj={pericia.processo ?? ''} />
+                    </div>
                   </div>
 
                   {/* 2. Análise IA — RESULTADO SEQUENCIAL */}
@@ -567,7 +643,21 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
                     )
                   })()}
 
-                  {/* 5. Histórico de Documentos (Fundo da página) */}
+                  {/* 5. Judit — Movimentacoes do Processo (na frente) */}
+                  {juditMovements.length > 0 && (
+                    <div className="pt-12 border-t border-slate-100">
+                      <ProcessTimeline movements={juditMovements} />
+                    </div>
+                  )}
+
+                  {/* 5b. Judit — Documentos do Processo (na frente) */}
+                  {isJuditReady() && (
+                    <div className={juditAttachments.length > 0 || juditMovements.length > 0 ? 'pt-12 border-t border-slate-100' : ''}>
+                      <ProcessDocuments periciaId={pericia.id} attachments={juditAttachments} />
+                    </div>
+                  )}
+
+                  {/* 6. Escavador — Histórico de Documentos */}
                    <NomeacaoDocumentosSection
                     nomeacaoId={nomeacaoLink?.id ?? ''}
                     tribunal={citacaoLink?.diarioSigla ?? pericia.vara?.match(/TJ[A-Z]{2}|DJ[A-Z]{2}/)?.[0] ?? 'TJRJ'}
@@ -597,10 +687,6 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
           />
         </Suspense>
 
-        {/* Agenda do Perito */}
-        <div className="mt-12">
-          <AgendaPanel periciaId={pericia.id} initialItems={agendaItems} />
-        </div>
       </div>
     </div>
   )
