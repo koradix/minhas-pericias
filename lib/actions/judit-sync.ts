@@ -1,23 +1,23 @@
 'use server'
 
 /**
- * Judit — Server actions para sincronizar dados Judit → DB.
+ * Judit — Server actions.
  *
- * Fluxos:
- *   fetchAndSyncByCnj(cnj)   — busca 1 processo por CNJ
- *   fetchAndSyncByCpf(cpf)   — busca N processos por CPF
- *   syncPericia(periciaId)   — re-sync de pericia existente
- *   downloadPericiaAttachments(periciaId) — baixa anexos reais
+ * Fluxo principal (CPF):
+ *   1. Busca processos por CPF na Judit
+ *   2. Filtra: só processos onde o perito é nomeado (PERITO/keywords)
+ *   3. Cria NomeacaoCitacao (NAO Pericia) → aparece na lista de nomeações
+ *   4. Perito cria perícia manualmente pelo botão existente
  *
- * Isolado do Escavador. Protegido por feature flag.
- * Deduplicacao: CNJ + peritoId (campo Pericia.processo).
+ * Fluxo perícia (CNJ):
+ *   1. Busca processo por CNJ
+ *   2. Sincroniza movimentações e anexos na perícia existente
  */
 
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/auth'
 import { put } from '@vercel/blob'
-import { isJuditReady, juditLog } from '@/lib/integrations/judit/config'
-import { juditConfig } from '@/lib/integrations/judit/config'
+import { isJuditReady, juditLog, juditConfig } from '@/lib/integrations/judit/config'
 import { judit } from '@/lib/integrations/judit/service'
 import type { JuditFetchResult } from '@/lib/integrations/judit/service'
 import { formatPartesString } from '@/lib/integrations/judit/mappers'
@@ -28,7 +28,7 @@ import type {
   AttachmentDownloadResult,
 } from '@/lib/integrations/judit/types'
 
-// ─── Shared result type for single-process sync ─────────────────────────────
+// ─── Types ──────────────────────────────────────────────────────────────────
 
 export interface JuditSyncResult {
   ok: boolean
@@ -40,249 +40,131 @@ export interface JuditSyncResult {
   attachmentsCount?: number
 }
 
-// ─── Upsert pericia (strong dedup by CNJ + peritoId) ────────────────────────
+// ─── Filtro: só processos com nomeação de perito ────────────────────────────
 
-async function upsertPericiaFromJudit(
-  peritoId: string,
-  normalized: NormalizedLawsuit,
-): Promise<{ periciaId: string; created: boolean }> {
-  const cnj = normalized.cnj
+const PERITO_KEYWORDS = ['perit', 'expert', 'laudo', 'vistori', 'nomea', 'designa']
 
-  // Dedup: busca por CNJ exato no campo processo
-  const existing = await prisma.pericia.findFirst({
-    where: { peritoId, processo: cnj },
-  })
+function isNomeacaoRelevante(n: NormalizedLawsuit, peritoNome: string | null, peritoCpf: string | null): boolean {
+  // 1. Perito aparece como parte (PERITO, PERITA)
+  const hasPeritoPart = n.partes.some((p) =>
+    p.tipo.toUpperCase().includes('PERITO') || p.tipo.toUpperCase().includes('PERITA')
+  )
+  if (hasPeritoPart) return true
 
-  const partesStr = formatPartesString(normalized.partes)
-
-  if (existing) {
-    await prisma.pericia.update({
-      where: { id: existing.id },
-      data: {
-        assunto: normalized.assunto || existing.assunto,
-        vara: normalized.vara || existing.vara,
-        partes: partesStr || existing.partes,
-        atualizadoEm: new Date(),
-      },
-    })
-    juditLog(`Pericia atualizada: ${existing.id} (CNJ: ${cnj})`)
-    return { periciaId: existing.id, created: false }
+  // 2. Se temos nome/CPF do perito, verificar se aparece nas partes
+  if (peritoCpf) {
+    const cleanCpf = peritoCpf.replace(/\D/g, '')
+    const matchCpf = n.partes.some((p) => p.documento?.replace(/\D/g, '') === cleanCpf)
+    if (matchCpf) return true
+  }
+  if (peritoNome) {
+    const nomeUpper = peritoNome.toUpperCase()
+    const matchNome = n.partes.some((p) => p.nome.toUpperCase().includes(nomeUpper))
+    if (matchNome) return true
   }
 
-  const pericia = await prisma.pericia.create({
-    data: {
-      peritoId,
-      numero: cnj.replace(/[^\d]/g, '').slice(0, 20) || cnj.slice(0, 20),
-      assunto: normalized.assunto || `Processo ${cnj}`,
-      tipo: normalized.classe || 'Perícia Judicial',
-      processo: cnj,
-      vara: normalized.vara || null,
-      partes: partesStr || null,
-      status: 'processo_importado',
-      tags: JSON.stringify([JUDIT_SOURCE]),
-    },
+  // 3. Movimentações mencionam perito/nomeação
+  const hasKeywordInSteps = n.movimentacoes.some((m) => {
+    const text = (m.descricao + ' ' + (m.tipo ?? '')).toLowerCase()
+    return PERITO_KEYWORDS.some((kw) => text.includes(kw))
   })
-  juditLog(`Pericia criada: ${pericia.id} (CNJ: ${cnj})`)
-  return { periciaId: pericia.id, created: true }
+  if (hasKeywordInSteps) return true
+
+  return false
 }
 
-// ─── Sync movimentacoes ─────────────────────────────────────────────────────
+// ─── Criar NomeacaoCitacao (NAO Pericia) ────────────────────────────────────
 
-async function syncMovements(
-  periciaId: string,
+async function upsertCitacaoFromJudit(
+  peritoId: string,
   normalized: NormalizedLawsuit,
-): Promise<number> {
+): Promise<{ citacaoId: string; created: boolean }> {
+  const cnj = normalized.cnj
+  const externalId = `judit_${cnj.replace(/\D/g, '')}`
+
+  const existing = await prisma.nomeacaoCitacao.findUnique({
+    where: { peritoId_externalId: { peritoId, externalId } },
+  })
+
+  if (existing) {
+    juditLog(`Citacao ja existe: ${existing.id} (CNJ: ${cnj})`)
+    return { citacaoId: existing.id, created: false }
+  }
+
+  const partesStr = formatPartesString(normalized.partes)
+  const snippet = [
+    normalized.classe,
+    normalized.assunto,
+    `Partes: ${partesStr}`,
+    normalized.juiz ? `Juiz: ${normalized.juiz}` : '',
+  ].filter(Boolean).join(' — ')
+
+  const citacao = await prisma.nomeacaoCitacao.create({
+    data: {
+      peritoId,
+      externalId,
+      diarioSigla: normalized.tribunal || 'JUDIT',
+      diarioNome: `${normalized.tribunal} — ${normalized.vara}`,
+      diarioData: normalized.dataDistribuicao ? new Date(normalized.dataDistribuicao) : new Date(),
+      snippet: snippet.slice(0, 1000),
+      numeroProcesso: cnj,
+      linkCitacao: '',
+      fonte: JUDIT_SOURCE,
+      status: 'pendente',
+    },
+  })
+
+  juditLog(`Citacao criada: ${citacao.id} (CNJ: ${cnj})`)
+  return { citacaoId: citacao.id, created: true }
+}
+
+// ─── Sync movimentações (para perícia existente) ────────────────────────────
+
+async function syncMovements(periciaId: string, normalized: NormalizedLawsuit): Promise<number> {
   let count = 0
   for (const mov of normalized.movimentacoes) {
     const externalId = mov.externalId ?? `${mov.data}_${mov.descricao.slice(0, 50)}`
-
     await prisma.processMovement.upsert({
-      where: {
-        periciaId_source_externalId: {
-          periciaId,
-          source: JUDIT_SOURCE,
-          externalId,
-        },
-      },
+      where: { periciaId_source_externalId: { periciaId, source: JUDIT_SOURCE, externalId } },
       create: {
-        periciaId,
-        source: JUDIT_SOURCE,
-        externalId,
-        eventDate: new Date(mov.data),
-        type: mov.tipo,
-        description: mov.descricao,
-        content: mov.conteudo,
-        rawJson: null,
+        periciaId, source: JUDIT_SOURCE, externalId,
+        eventDate: new Date(mov.data), type: mov.tipo,
+        description: mov.descricao, content: mov.conteudo,
       },
-      update: {
-        description: mov.descricao,
-        content: mov.conteudo,
-        type: mov.tipo,
-      },
+      update: { description: mov.descricao, content: mov.conteudo, type: mov.tipo },
     })
     count++
   }
-  juditLog(`Movimentacoes sincronizadas: ${count} para pericia ${periciaId}`)
   return count
 }
 
-// ─── Sync anexos (metadata) ─────────────────────────────────────────────────
+// ─── Sync anexos metadata (para perícia existente) ──────────────────────────
 
-async function syncAttachments(
-  periciaId: string,
-  normalized: NormalizedLawsuit,
-): Promise<number> {
+async function syncAttachments(periciaId: string, normalized: NormalizedLawsuit): Promise<number> {
   let count = 0
   for (const anexo of normalized.anexos) {
     await prisma.processAttachment.upsert({
-      where: {
-        periciaId_source_externalId: {
-          periciaId,
-          source: JUDIT_SOURCE,
-          externalId: anexo.externalId,
-        },
-      },
+      where: { periciaId_source_externalId: { periciaId, source: JUDIT_SOURCE, externalId: anexo.externalId } },
       create: {
-        periciaId,
-        source: JUDIT_SOURCE,
-        externalId: anexo.externalId,
-        name: anexo.nome,
-        type: anexo.tipo,
-        mimeType: anexo.mimeType,
-        isPublic: anexo.isPublic,
-        downloadAvailable: anexo.downloadAvailable,
-        url: anexo.url,
-        sizeBytes: anexo.tamanhoBytes,
+        periciaId, source: JUDIT_SOURCE, externalId: anexo.externalId,
+        name: anexo.nome, type: anexo.tipo, mimeType: anexo.mimeType,
+        isPublic: anexo.isPublic, downloadAvailable: anexo.downloadAvailable,
+        url: anexo.url, sizeBytes: anexo.tamanhoBytes,
         publishedAt: anexo.data ? new Date(anexo.data) : null,
         downloadStatus: 'pending',
       },
-      update: {
-        name: anexo.nome,
-        type: anexo.tipo,
-        downloadAvailable: anexo.downloadAvailable,
-        url: anexo.url,
-      },
+      update: { name: anexo.nome, type: anexo.tipo, downloadAvailable: anexo.downloadAvailable, url: anexo.url },
     })
     count++
   }
-  juditLog(`Anexos sincronizados (metadata): ${count} para pericia ${periciaId}`)
   return count
-}
-
-// ─── Sync completo de 1 processo normalizado ────────────────────────────────
-
-async function syncOneProcess(
-  peritoId: string,
-  normalized: NormalizedLawsuit,
-): Promise<{ periciaId: string; created: boolean; movCount: number; attCount: number }> {
-  const { periciaId, created } = await upsertPericiaFromJudit(peritoId, normalized)
-  const movCount = await syncMovements(periciaId, normalized)
-  const attCount = await syncAttachments(periciaId, normalized)
-  return { periciaId, created, movCount, attCount }
-}
-
-// ─── Helper: processar resultado multi-processo ─────────────────────────────
-
-async function syncFetchResult(
-  peritoId: string,
-  result: JuditFetchResult,
-): Promise<{
-  periciaIds: string[]
-  created: number
-  updated: number
-  movTotal: number
-  attTotal: number
-  skippedNoCnj: number
-}> {
-  let created = 0
-  let updated = 0
-  let movTotal = 0
-  let attTotal = 0
-  let skippedNoCnj = 0
-  const periciaIds: string[] = []
-
-  // Consolidar por CNJ para evitar duplicidade quando multiplas instancias
-  // do mesmo processo aparecem
-  const seenCnj = new Set<string>()
-
-  for (const n of result.normalized) {
-    // Validar CNJ
-    if (!n.cnj || n.cnj.trim().length < 10) {
-      juditLog(`Processo sem CNJ confiavel, pulando: ${JSON.stringify({ assunto: n.assunto, tribunal: n.tribunal })}`)
-      skippedNoCnj++
-      continue
-    }
-
-    // Consolidar: se ja vimos esse CNJ nesta batch, pular (evita duplicidade)
-    const deduKey = n.cnj.replace(/\D/g, '')
-    if (seenCnj.has(deduKey)) {
-      juditLog(`CNJ duplicado na mesma batch, pulando: ${n.cnj}`)
-      continue
-    }
-    seenCnj.add(deduKey)
-
-    const r = await syncOneProcess(peritoId, n)
-    periciaIds.push(r.periciaId)
-    if (r.created) created++
-    else updated++
-    movTotal += r.movCount
-    attTotal += r.attCount
-  }
-
-  return { periciaIds, created, updated, movTotal, attTotal, skippedNoCnj }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // PUBLIC ACTIONS
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// ─── Buscar por CNJ ─────────────────────────────────────────────────────────
-
-export async function fetchAndSyncByCnj(cnj: string): Promise<JuditSyncResult> {
-  if (!isJuditReady()) {
-    return { ok: false, message: 'Judit nao esta habilitada (JUDIT_ENABLED=false)' }
-  }
-
-  const session = await auth()
-  if (!session?.user?.id) {
-    return { ok: false, message: 'Nao autenticado' }
-  }
-
-  try {
-    const result = await judit.fetchProcessByCnj(cnj)
-
-    if (!result) {
-      return { ok: false, message: 'Erro ao consultar Judit' }
-    }
-    if (result.status === 'timeout') {
-      return { ok: false, message: `Request timeout (id: ${result.requestId})`, requestId: result.requestId }
-    }
-    if (result.status === 'failed') {
-      return { ok: false, message: `Request falhou (id: ${result.requestId})`, requestId: result.requestId }
-    }
-    if (result.normalized.length === 0) {
-      return { ok: false, message: 'Nenhum dado retornado pela Judit', requestId: result.requestId }
-    }
-
-    const { periciaIds, created, movTotal, attTotal } = await syncFetchResult(session.user.id, result)
-
-    return {
-      ok: true,
-      message: created > 0 ? 'Pericia criada via Judit' : 'Pericia atualizada via Judit',
-      periciaId: periciaIds[0],
-      requestId: result.requestId,
-      created: created > 0,
-      movementsCount: movTotal,
-      attachmentsCount: attTotal,
-    }
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e)
-    juditLog('fetchAndSyncByCnj error:', msg)
-    return { ok: false, message: `Erro: ${msg}` }
-  }
-}
-
-// ─── Buscar por CPF ─────────────────────────────────────────────────────────
+// ─── Buscar nomeações por CPF → cria NomeacaoCitacao ────────────────────────
 
 export async function fetchAndSyncByCpf(cpf: string): Promise<CpfSearchSyncResult> {
   const empty: CpfSearchSyncResult = {
@@ -291,61 +173,74 @@ export async function fetchAndSyncByCpf(cpf: string): Promise<CpfSearchSyncResul
     movimentacoesSincronizadas: 0, anexosSincronizados: 0, periciaIds: [],
   }
 
-  if (!isJuditReady()) {
-    return { ...empty, message: 'Judit nao esta habilitada (JUDIT_ENABLED=false)' }
-  }
+  if (!isJuditReady()) return { ...empty, message: 'Judit nao habilitada' }
 
   const session = await auth()
-  if (!session?.user?.id) {
-    return { ...empty, message: 'Nao autenticado' }
-  }
+  if (!session?.user?.id) return { ...empty, message: 'Nao autenticado' }
 
   const cleanCpf = cpf.replace(/\D/g, '')
-  if (cleanCpf.length !== 11) {
-    return { ...empty, message: 'CPF invalido (deve ter 11 digitos)' }
-  }
+  if (cleanCpf.length !== 11) return { ...empty, message: 'CPF invalido (11 digitos)' }
+
+  // Buscar nome do perito para filtrar
+  const perfil = await prisma.peritoPerfil.findUnique({
+    where: { userId: session.user.id },
+    select: { cpf: true },
+  })
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { name: true },
+  })
 
   try {
     const result = await judit.fetchProcessesByCpf(cleanCpf)
 
-    if (!result) {
-      return { ...empty, message: 'Erro ao consultar Judit' }
-    }
-    if (result.status === 'timeout') {
-      return { ...empty, message: `Request timeout (id: ${result.requestId})`, requestId: result.requestId }
-    }
-    if (result.status === 'failed') {
-      return { ...empty, message: `Request falhou (id: ${result.requestId})`, requestId: result.requestId }
-    }
+    if (!result) return { ...empty, message: 'Erro ao consultar Judit' }
+    if (result.status === 'timeout') return { ...empty, message: `Timeout (id: ${result.requestId})`, requestId: result.requestId }
+    if (result.status === 'failed') return { ...empty, message: `Falhou (id: ${result.requestId})`, requestId: result.requestId }
 
     const totalProcessos = result.normalized.length
-
     if (totalProcessos === 0) {
-      return {
-        ...empty,
-        ok: true,
-        message: `Nenhum processo encontrado para CPF ${cleanCpf}`,
-        requestId: result.requestId,
-      }
+      return { ...empty, ok: true, message: `Nenhum processo para CPF ${cleanCpf}`, requestId: result.requestId }
     }
 
-    juditLog(`CPF ${cleanCpf}: ${totalProcessos} processos encontrados`)
+    juditLog(`CPF ${cleanCpf}: ${totalProcessos} processos, filtrando nomeações...`)
 
-    const sync = await syncFetchResult(session.user.id, result)
+    // Filtrar: só processos relevantes (perito nomeado)
+    const relevantes = result.normalized.filter((n) =>
+      isNomeacaoRelevante(n, user?.name ?? null, perfil?.cpf ?? cleanCpf)
+    )
+
+    juditLog(`${relevantes.length} nomeações relevantes de ${totalProcessos} processos`)
+
+    let criadas = 0
+    let jaExistiam = 0
+    let skippedNoCnj = 0
+    const seenCnj = new Set<string>()
+
+    for (const n of relevantes) {
+      if (!n.cnj || n.cnj.trim().length < 10) { skippedNoCnj++; continue }
+      const deduKey = n.cnj.replace(/\D/g, '')
+      if (seenCnj.has(deduKey)) continue
+      seenCnj.add(deduKey)
+
+      const { created } = await upsertCitacaoFromJudit(session.user.id, n)
+      if (created) criadas++
+      else jaExistiam++
+    }
 
     return {
       ok: true,
-      message: `CPF ${cleanCpf}: ${totalProcessos} processos encontrados, ${sync.created} pericias criadas, ${sync.updated} atualizadas`,
+      message: `${totalProcessos} processos encontrados, ${relevantes.length} com nomeação, ${criadas} novas citações criadas`,
       requestId: result.requestId,
       cpf: cleanCpf,
       totalProcessos,
-      processosComCnj: totalProcessos - sync.skippedNoCnj,
-      processosSemCnj: sync.skippedNoCnj,
-      periciasCriadas: sync.created,
-      periciasAtualizadas: sync.updated,
-      movimentacoesSincronizadas: sync.movTotal,
-      anexosSincronizados: sync.attTotal,
-      periciaIds: sync.periciaIds,
+      processosComCnj: relevantes.length - skippedNoCnj,
+      processosSemCnj: skippedNoCnj,
+      periciasCriadas: criadas,
+      periciasAtualizadas: jaExistiam,
+      movimentacoesSincronizadas: 0,
+      anexosSincronizados: 0,
+      periciaIds: [],
     }
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
@@ -354,31 +249,78 @@ export async function fetchAndSyncByCpf(cpf: string): Promise<CpfSearchSyncResul
   }
 }
 
-// ─── Re-sync pericia existente ──────────────────────────────────────────────
+// ─── Buscar por CNJ → sync pericias existente ──────────────────────────────
 
-export async function syncPericia(periciaId: string): Promise<JuditSyncResult> {
-  if (!isJuditReady()) {
-    return { ok: false, message: 'Judit nao esta habilitada' }
-  }
+export async function fetchAndSyncByCnj(cnj: string): Promise<JuditSyncResult> {
+  if (!isJuditReady()) return { ok: false, message: 'Judit nao habilitada' }
 
   const session = await auth()
-  if (!session?.user?.id) {
-    return { ok: false, message: 'Nao autenticado' }
+  if (!session?.user?.id) return { ok: false, message: 'Nao autenticado' }
+
+  try {
+    const result = await judit.fetchProcessByCnj(cnj)
+    if (!result) return { ok: false, message: 'Erro ao consultar Judit' }
+    if (result.status === 'timeout') return { ok: false, message: 'Timeout', requestId: result.requestId }
+    if (result.status === 'failed') return { ok: false, message: 'Falhou', requestId: result.requestId }
+    if (result.normalized.length === 0) return { ok: false, message: 'Nenhum dado', requestId: result.requestId }
+
+    const n = result.normalized[0]
+
+    // Buscar pericia existente com esse CNJ
+    const pericia = await prisma.pericia.findFirst({
+      where: { peritoId: session.user.id, processo: cnj },
+    })
+
+    if (!pericia) {
+      return { ok: false, message: 'Nenhuma perícia encontrada com esse CNJ. Crie a perícia primeiro.' }
+    }
+
+    // Atualizar dados da pericia
+    const partesStr = formatPartesString(n.partes)
+    await prisma.pericia.update({
+      where: { id: pericia.id },
+      data: {
+        assunto: n.assunto || pericia.assunto,
+        vara: n.vara || pericia.vara,
+        partes: partesStr || pericia.partes,
+        atualizadoEm: new Date(),
+      },
+    })
+
+    const movementsCount = await syncMovements(pericia.id, n)
+    const attachmentsCount = await syncAttachments(pericia.id, n)
+
+    return {
+      ok: true,
+      message: `Sincronizado: ${movementsCount} movimentações, ${attachmentsCount} anexos`,
+      periciaId: pericia.id,
+      requestId: result.requestId,
+      movementsCount,
+      attachmentsCount,
+    }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    juditLog('fetchAndSyncByCnj error:', msg)
+    return { ok: false, message: `Erro: ${msg}` }
   }
+}
+
+// ─── Re-sync pericias existente ─────────────────────────────────────────────
+
+export async function syncPericia(periciaId: string): Promise<JuditSyncResult> {
+  if (!isJuditReady()) return { ok: false, message: 'Judit nao habilitada' }
+
+  const session = await auth()
+  if (!session?.user?.id) return { ok: false, message: 'Nao autenticado' }
 
   const pericia = await prisma.pericia.findUnique({ where: { id: periciaId } })
-  if (!pericia || pericia.peritoId !== session.user.id) {
-    return { ok: false, message: 'Pericia nao encontrada' }
-  }
-
-  if (!pericia.processo) {
-    return { ok: false, message: 'Pericia nao tem numero de processo (CNJ)' }
-  }
+  if (!pericia || pericia.peritoId !== session.user.id) return { ok: false, message: 'Pericia nao encontrada' }
+  if (!pericia.processo) return { ok: false, message: 'Sem CNJ' }
 
   return fetchAndSyncByCnj(pericia.processo)
 }
 
-// ─── Download real dos anexos ───────────────────────────────────────────────
+// ─── Download de anexos ─────────────────────────────────────────────────────
 
 export async function downloadPericiaAttachments(periciaId: string): Promise<AttachmentDownloadResult> {
   const empty: AttachmentDownloadResult = {
@@ -386,112 +328,56 @@ export async function downloadPericiaAttachments(periciaId: string): Promise<Att
     totalAnexos: 0, jaExistiam: 0, baixados: 0, falharam: 0, apenasMetadata: 0,
   }
 
-  if (!isJuditReady()) {
-    return { ...empty, message: 'Judit nao esta habilitada' }
-  }
-  if (!juditConfig.useAttachments) {
-    return { ...empty, message: 'Download de anexos desabilitado (JUDIT_USE_ATTACHMENTS=false)' }
-  }
+  if (!isJuditReady()) return { ...empty, message: 'Judit nao habilitada' }
+  if (!juditConfig.useAttachments) return { ...empty, message: 'Download desabilitado (JUDIT_USE_ATTACHMENTS=false)' }
 
   const session = await auth()
-  if (!session?.user?.id) {
-    return { ...empty, message: 'Nao autenticado' }
-  }
+  if (!session?.user?.id) return { ...empty, message: 'Nao autenticado' }
 
   const pericia = await prisma.pericia.findUnique({ where: { id: periciaId } })
-  if (!pericia || pericia.peritoId !== session.user.id) {
-    return { ...empty, message: 'Pericia nao encontrada' }
-  }
+  if (!pericia || pericia.peritoId !== session.user.id) return { ...empty, message: 'Pericia nao encontrada' }
 
-  // Buscar anexos pendentes ou que falharam (retry)
   const attachments = await prisma.processAttachment.findMany({
-    where: {
-      periciaId,
-      source: JUDIT_SOURCE,
-      downloadStatus: { in: ['pending', 'failed'] },
-    },
+    where: { periciaId, source: JUDIT_SOURCE, downloadStatus: { in: ['pending', 'failed'] } },
   })
 
   if (attachments.length === 0) {
-    // Contar os ja baixados
     const total = await prisma.processAttachment.count({ where: { periciaId, source: JUDIT_SOURCE } })
     const downloaded = await prisma.processAttachment.count({ where: { periciaId, source: JUDIT_SOURCE, downloadStatus: 'downloaded' } })
-    return {
-      ...empty,
-      ok: true,
-      message: `Nenhum anexo pendente (${downloaded}/${total} ja baixados)`,
-      totalAnexos: total,
-      jaExistiam: downloaded,
-    }
+    return { ...empty, ok: true, message: `Nenhum pendente (${downloaded}/${total} baixados)`, totalAnexos: total, jaExistiam: downloaded }
   }
 
-  let baixados = 0
-  let falharam = 0
-  let apenasMetadata = 0
+  let baixados = 0, falharam = 0, apenasMetadata = 0
 
   for (const att of attachments) {
-    // Sem URL = apenas metadata
     if (!att.url) {
-      await prisma.processAttachment.update({
-        where: { id: att.id },
-        data: { downloadStatus: 'unavailable', downloadError: 'Sem URL de download' },
-      })
-      apenasMetadata++
-      continue
-    }
-
-    // Ja tem blob = ja baixou antes (safety check)
-    if (att.blobUrl && att.downloadStatus !== 'failed') {
+      await prisma.processAttachment.update({ where: { id: att.id }, data: { downloadStatus: 'unavailable', downloadError: 'Sem URL' } })
       apenasMetadata++
       continue
     }
 
     try {
       const result = await judit.downloadAttachment(att.url)
-
       if (!result) {
-        await prisma.processAttachment.update({
-          where: { id: att.id },
-          data: { downloadStatus: 'failed', downloadError: 'Download retornou vazio ou indisponivel' },
-        })
+        await prisma.processAttachment.update({ where: { id: att.id }, data: { downloadStatus: 'failed', downloadError: 'Vazio' } })
         falharam++
         continue
       }
 
-      // Inferir extensao do mime type
       const ext = mimeToExt(result.contentType)
-      const safeName = (result.fileName ?? att.name ?? 'documento').replace(/[^a-zA-Z0-9._-]/g, '_')
+      const safeName = (result.fileName ?? att.name ?? 'doc').replace(/[^a-zA-Z0-9._-]/g, '_')
       const pathname = `judit-attachments/${periciaId}/${att.externalId}/${safeName}${ext ? `.${ext}` : ''}`
 
-      // Upload para Vercel Blob
-      const blob = await put(pathname, result.buffer, {
-        access: 'public',
-        contentType: result.contentType,
-        addRandomSuffix: false,
-      })
+      const blob = await put(pathname, result.buffer, { access: 'public', contentType: result.contentType, addRandomSuffix: false })
 
       await prisma.processAttachment.update({
         where: { id: att.id },
-        data: {
-          blobUrl: blob.url,
-          blobPathname: blob.pathname,
-          mimeType: result.contentType,
-          sizeBytes: result.buffer.length,
-          downloadStatus: 'downloaded',
-          downloadedAt: new Date(),
-          downloadError: null,
-        },
+        data: { blobUrl: blob.url, blobPathname: blob.pathname, mimeType: result.contentType, sizeBytes: result.buffer.length, downloadStatus: 'downloaded', downloadedAt: new Date(), downloadError: null },
       })
-
-      juditLog(`Anexo baixado: ${att.name} → ${blob.url} (${result.buffer.length} bytes)`)
       baixados++
     } catch (e) {
       const errMsg = e instanceof Error ? e.message : String(e)
-      await prisma.processAttachment.update({
-        where: { id: att.id },
-        data: { downloadStatus: 'failed', downloadError: errMsg.slice(0, 500) },
-      })
-      juditLog(`Erro ao baixar anexo ${att.id}: ${errMsg}`)
+      await prisma.processAttachment.update({ where: { id: att.id }, data: { downloadStatus: 'failed', downloadError: errMsg.slice(0, 500) } })
       falharam++
     }
   }
@@ -499,29 +385,10 @@ export async function downloadPericiaAttachments(periciaId: string): Promise<Att
   const totalAnexos = await prisma.processAttachment.count({ where: { periciaId, source: JUDIT_SOURCE } })
   const jaExistiam = await prisma.processAttachment.count({ where: { periciaId, source: JUDIT_SOURCE, downloadStatus: 'downloaded' } })
 
-  return {
-    ok: true,
-    message: `Download concluido: ${baixados} baixados, ${falharam} falharam, ${apenasMetadata} sem URL`,
-    periciaId,
-    totalAnexos,
-    jaExistiam,
-    baixados,
-    falharam,
-    apenasMetadata,
-  }
+  return { ok: true, message: `${baixados} baixados, ${falharam} falharam, ${apenasMetadata} sem URL`, periciaId, totalAnexos, jaExistiam, baixados, falharam, apenasMetadata }
 }
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
-
 function mimeToExt(mime: string): string {
-  const map: Record<string, string> = {
-    'application/pdf': 'pdf',
-    'application/msword': 'doc',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
-    'image/jpeg': 'jpg',
-    'image/png': 'png',
-    'text/html': 'html',
-    'text/plain': 'txt',
-  }
+  const map: Record<string, string> = { 'application/pdf': 'pdf', 'application/msword': 'doc', 'image/jpeg': 'jpg', 'image/png': 'png', 'text/html': 'html' }
   return map[mime.split(';')[0].trim()] ?? ''
 }

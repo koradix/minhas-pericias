@@ -1,10 +1,10 @@
 'use client'
 
 /**
- * Botao de busca de processos via Judit (CPF).
+ * Busca nomeações via Judit (CPF do perito).
  *
- * Pesquisa por CPF do perito → encontra processos → cria/atualiza pericias.
- * Isolado do Escavador. Protegido por JUDIT_ENABLED no endpoint.
+ * Cria NomeacaoCitacao (NAO Pericia).
+ * O perito cria a perícia manualmente pelo botão existente.
  */
 
 import { useState, useTransition } from 'react'
@@ -22,9 +22,6 @@ interface SearchResult {
   totalProcessos?: number
   periciasCriadas?: number
   periciasAtualizadas?: number
-  movimentacoesSincronizadas?: number
-  anexosSincronizados?: number
-  periciaIds?: string[]
 }
 
 export function JuditSearchBtn({ cpf }: Props) {
@@ -44,13 +41,7 @@ export function JuditSearchBtn({ cpf }: Props) {
         })
         const data: SearchResult = await res.json()
         setResult(data)
-        if (data.ok) {
-          router.refresh()
-          // Se criou 1 pericia, redireciona direto
-          if (data.periciasCriadas === 1 && data.periciaIds?.length === 1) {
-            setTimeout(() => router.push(`/pericias/${data.periciaIds![0]}`), 1500)
-          }
-        }
+        if (data.ok) router.refresh()
       } catch {
         setResult({ ok: false, message: 'Erro de conexao' })
       }
@@ -69,19 +60,19 @@ export function JuditSearchBtn({ cpf }: Props) {
         {loading ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" />
-            Buscando processos na Judit...
+            Buscando nomeações na Judit...
           </>
         ) : (
           <>
             <Search className="h-4 w-4" />
-            Buscar processos por CPF (Judit)
+            Buscar nomeações por CPF (Judit)
           </>
         )}
       </button>
 
       {result && (
         <div className={cn(
-          'border px-5 py-4 space-y-2',
+          'border px-5 py-4',
           result.ok ? 'border-lime-200 bg-lime-50' : 'border-rose-200 bg-rose-50',
         )}>
           <div className="flex items-center gap-2">
@@ -90,28 +81,12 @@ export function JuditSearchBtn({ cpf }: Props) {
               : <AlertTriangle className="h-4 w-4 text-rose-600" />
             }
             <p className={cn(
-              'text-[11px] font-bold uppercase tracking-widest',
+              'text-[11px] font-bold',
               result.ok ? 'text-[#4d7c0f]' : 'text-rose-600',
             )}>
               {result.message}
             </p>
           </div>
-
-          {result.ok && result.totalProcessos !== undefined && result.totalProcessos > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-              {[
-                { label: 'Processos', value: result.totalProcessos },
-                { label: 'Criadas', value: result.periciasCriadas },
-                { label: 'Atualizadas', value: result.periciasAtualizadas },
-                { label: 'Movimentacoes', value: result.movimentacoesSincronizadas },
-              ].map((s, i) => (
-                <div key={i} className="text-center">
-                  <p className="text-[18px] font-black text-slate-900">{s.value ?? 0}</p>
-                  <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{s.label}</p>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       )}
     </div>
