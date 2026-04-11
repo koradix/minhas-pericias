@@ -1,5 +1,3 @@
-// ─── Re-exports centralizados da integracao Judit ───────────────────────────
-
 export { juditConfig, isJuditReady, juditLog, validateJuditConfig } from './config'
 export { JuditService, judit } from './service'
 export type { JuditFetchResult } from './service'
@@ -11,13 +9,14 @@ export { JUDIT_SOURCE, JUDIT_POLL_TIMEOUT_MS, JUDIT_POLL_INTERVAL_MS } from './c
 export type {
   JuditLawsuit,
   JuditParty,
-  JuditMovement,
+  JuditStep,
   JuditAttachment,
   JuditCreateRequestBody,
   JuditCreateRequestResponse,
   JuditRequestStatus,
-  JuditRequestStatusValue,
-  JuditResponsesResult,
+  JuditResponsesPage,
+  JuditResponseItem,
+  JuditSearchType,
   NormalizedLawsuit,
   NormalizedParty,
   NormalizedMovement,
@@ -25,8 +24,4 @@ export type {
   CpfSearchSyncResult,
   AttachmentDownloadResult,
   AttachmentDownloadStatus,
-  JuditTrackingCreatePayload,
-  JuditTrackingCreateResponse,
-  JuditTrackingStatusResponse,
-  JuditTrackingEvent,
 } from './types'

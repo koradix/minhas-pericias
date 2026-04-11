@@ -1,39 +1,28 @@
 /**
- * Judit — Mappers de normalizacao.
+ * Judit — Mappers REAIS baseados no payload da API.
  *
- * Centraliza TODA transformacao de dados Judit → formato interno PeriLaB.
- * Nenhum parsing espalhado em rotas ou componentes.
- *
- * Campos mapeados (Judit → PeriLaB):
- *   cnj               → cnj
- *   instance           → instance
- *   court              → tribunal
- *   court_branch       → vara
- *   subject            → assunto
- *   class_name         → classe
- *   judge              → juiz
- *   distribution_date  → dataDistribuicao
- *   last_update        → dataUltimaAtualizacao
- *   status             → status
- *   parties[].name     → partes[].nome
- *   parties[].role     → partes[].tipo
- *   parties[].document → partes[].documento
- *   movements[].id     → movimentacoes[].externalId
- *   movements[].date   → movimentacoes[].data
- *   movements[].description → movimentacoes[].descricao
- *   movements[].type   → movimentacoes[].tipo
- *   movements[].content → movimentacoes[].conteudo
- *   attachments[].id   → anexos[].externalId
- *   attachments[].name → anexos[].nome
- *   attachments[].type → anexos[].tipo
- *   attachments[].url  → anexos[].url
- *   attachments[].mime_type → anexos[].mimeType
- *   attachments[].is_public → anexos[].isPublic
- *   attachments[].download_available → anexos[].downloadAvailable
- *   attachments[].size_bytes → anexos[].tamanhoBytes
- *   attachments[].created_at → anexos[].data
- *
- * Para adaptar se a API variar: altere apenas este arquivo.
+ * response_data real:
+ *   code            → cnj
+ *   instance        → instance
+ *   tribunal_acronym → tribunal
+ *   courts[0].name  → vara
+ *   subjects[0].name → assunto
+ *   classifications[0].name → classe
+ *   judge           → juiz
+ *   distribution_date → dataDistribuicao
+ *   updated_at      → dataUltimaAtualizacao
+ *   status          → status
+ *   parties[].name  → partes[].nome
+ *   parties[].person_type → partes[].tipo
+ *   parties[].main_document → partes[].documento
+ *   steps[].step_id → movimentacoes[].externalId
+ *   steps[].step_date → movimentacoes[].data
+ *   steps[].content → movimentacoes[].descricao
+ *   steps[].step_type → movimentacoes[].tipo
+ *   attachments[].attachment_id → anexos[].externalId
+ *   attachments[].attachment_name → anexos[].nome
+ *   attachments[].extension → anexos[].tipo
+ *   attachments[].attachment_date → anexos[].data
  */
 
 import type {
@@ -44,8 +33,6 @@ import type {
   NormalizedAttachment,
 } from './types'
 
-// ─── Helpers seguros ─────────────────────────────────────────────────────────
-
 function safeStr(v: unknown): string | null {
   if (typeof v === 'string' && v.trim()) return v.trim()
   return null
@@ -55,12 +42,9 @@ function safeDate(v: unknown): string | null {
   if (!v) return null
   const s = String(v).trim()
   if (!s) return null
-  // Tenta parsear — se invalido, retorna o string original
   const d = new Date(s)
   return isNaN(d.getTime()) ? s : d.toISOString()
 }
-
-// ─── Party helpers ───────────────────────────────────────────────────────────
 
 function findPartyByRole(parties: NormalizedParty[], ...roles: string[]): string | null {
   for (const role of roles) {
@@ -72,47 +56,48 @@ function findPartyByRole(parties: NormalizedParty[], ...roles: string[]): string
   return null
 }
 
-// ─── Main mapper ─────────────────────────────────────────────────────────────
-
 export function normalizeLawsuit(j: JuditLawsuit): NormalizedLawsuit {
   const partes: NormalizedParty[] = (j.parties ?? []).map((p) => ({
     nome: p.name ?? 'Desconhecido',
-    tipo: p.role ?? 'Parte',
-    documento: safeStr(p.document),
+    tipo: p.person_type ?? 'Parte',
+    documento: safeStr(p.main_document),
   }))
 
-  const movimentacoes: NormalizedMovement[] = (j.movements ?? []).map((m) => ({
-    externalId: safeStr(m.id),
-    data: safeDate(m.date) ?? new Date().toISOString(),
-    descricao: m.description ?? '',
-    tipo: safeStr(m.type),
-    conteudo: safeStr(m.content),
+  const movimentacoes: NormalizedMovement[] = (j.steps ?? []).map((s) => ({
+    externalId: safeStr(s.step_id),
+    data: safeDate(s.step_date) ?? new Date().toISOString(),
+    descricao: s.content ?? '',
+    tipo: safeStr(s.step_type),
+    conteudo: null,
     source: 'judit' as const,
   }))
 
   const anexos: NormalizedAttachment[] = (j.attachments ?? []).map((a) => ({
-    externalId: a.id ?? '',
-    nome: a.name ?? 'Documento sem nome',
-    tipo: a.type ?? 'unknown',
-    url: safeStr(a.url),
-    mimeType: safeStr(a.mime_type),
-    isPublic: a.is_public ?? false,
-    downloadAvailable: a.download_available ?? false,
-    tamanhoBytes: a.size_bytes ?? null,
-    data: safeDate(a.created_at),
+    externalId: a.attachment_id ?? '',
+    nome: a.attachment_name ?? 'Documento sem nome',
+    tipo: a.extension ?? 'unknown',
+    url: null, // Judit nao retorna URL direta no payload — download separado
+    mimeType: a.extension === 'pdf' ? 'application/pdf' : null,
+    isPublic: !(a.private ?? false),
+    downloadAvailable: a.status !== 'error',
+    tamanhoBytes: null,
+    data: safeDate(a.attachment_date),
     source: 'judit' as const,
   }))
 
+  // Pegar vara do courts array
+  const vara = j.courts?.[0]?.name ?? j.courts?.[1]?.name ?? ''
+
   return {
-    cnj: j.cnj,
+    cnj: j.code,
     instance: j.instance ?? null,
-    tribunal: j.court ?? '',
-    vara: j.court_branch ?? '',
-    assunto: j.subject ?? '',
-    classe: j.class_name ?? '',
+    tribunal: j.tribunal_acronym ?? '',
+    vara,
+    assunto: j.subjects?.[0]?.name ?? '',
+    classe: j.classifications?.[0]?.name ?? '',
     juiz: safeStr(j.judge),
     dataDistribuicao: safeDate(j.distribution_date),
-    dataUltimaAtualizacao: safeDate(j.last_update),
+    dataUltimaAtualizacao: safeDate(j.updated_at),
     status: j.status ?? '',
     autor: findPartyByRole(partes, 'AUTOR', 'AUTORA', 'REQUERENTE'),
     reu: findPartyByRole(partes, 'REU', 'RÉU', 'REQUERIDO', 'REQUERIDA'),
@@ -124,12 +109,9 @@ export function normalizeLawsuit(j: JuditLawsuit): NormalizedLawsuit {
   }
 }
 
-/**
- * Formata partes como string unica para campo `Pericia.partes`.
- * Ex: "AUTOR: João Silva × RÉU: Maria Santos"
- */
 export function formatPartesString(partes: NormalizedParty[]): string {
   return partes
+    .filter((p) => !['ADVOGADO', 'ADVOGADA'].includes(p.tipo.toUpperCase()))
     .map((p) => `${p.tipo.toUpperCase()}: ${p.nome}`)
     .join(' × ')
 }

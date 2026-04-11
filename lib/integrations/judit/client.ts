@@ -1,33 +1,27 @@
 /**
  * Judit — HTTP Client centralizado.
  *
- * Toda chamada HTTP a Judit passa por aqui.
- * Autenticacao e headers centralizados — nenhum fetch solto no projeto.
+ * Auth: header "api-key" (NAO Bearer).
+ * Base URL: https://requests.prod.judit.io
  */
 
 import { juditConfig, juditLog } from './config'
 
 export class JuditClient {
-  private jsonHeaders(): Record<string, string> {
+  private headers(): Record<string, string> {
     return {
-      'Authorization': `Bearer ${juditConfig.apiKey}`,
+      'api-key': juditConfig.apiKey,
       'Content-Type': 'application/json',
       'Accept': 'application/json',
     }
   }
 
-  private authHeaders(): Record<string, string> {
-    return {
-      'Authorization': `Bearer ${juditConfig.apiKey}`,
-    }
-  }
-
-  async get<T>(baseUrl: string, path: string): Promise<T> {
-    const url = `${baseUrl}${path}`
+  async get<T>(path: string): Promise<T> {
+    const url = `${juditConfig.baseUrl}${path}`
     juditLog(`GET ${url}`)
     const res = await fetch(url, {
       method: 'GET',
-      headers: this.jsonHeaders(),
+      headers: this.headers(),
       cache: 'no-store',
     })
     if (!res.ok) {
@@ -37,12 +31,12 @@ export class JuditClient {
     return res.json() as Promise<T>
   }
 
-  async post<T>(baseUrl: string, path: string, body: unknown): Promise<T> {
-    const url = `${baseUrl}${path}`
-    juditLog(`POST ${url}`)
+  async post<T>(path: string, body: unknown): Promise<T> {
+    const url = `${juditConfig.baseUrl}${path}`
+    juditLog(`POST ${url}`, body)
     const res = await fetch(url, {
       method: 'POST',
-      headers: this.jsonHeaders(),
+      headers: this.headers(),
       body: JSON.stringify(body),
       cache: 'no-store',
     })
@@ -53,11 +47,7 @@ export class JuditClient {
     return res.json() as Promise<T>
   }
 
-  /**
-   * Download binario de um arquivo.
-   * Trata redirect, signed URL, e respostas de blob/stream.
-   * Retorna { buffer, contentType, fileName } ou null se indisponivel.
-   */
+  /** Download binario (para anexos futuros). */
   async downloadBinary(url: string): Promise<{
     buffer: Buffer
     contentType: string
@@ -67,34 +57,20 @@ export class JuditClient {
     try {
       const res = await fetch(url, {
         method: 'GET',
-        headers: this.authHeaders(),
+        headers: { 'api-key': juditConfig.apiKey },
         redirect: 'follow',
       })
-
-      if (!res.ok) {
-        juditLog(`Download falhou: ${res.status} para ${url}`)
-        return null
-      }
-
+      if (!res.ok) return null
       const contentType = res.headers.get('content-type') ?? 'application/octet-stream'
-
-      // Extrair filename do Content-Disposition se presente
       const disposition = res.headers.get('content-disposition')
       let fileName: string | null = null
       if (disposition) {
         const match = disposition.match(/filename[*]?=(?:UTF-8''|"?)([^";]+)/i)
         if (match) fileName = decodeURIComponent(match[1].trim())
       }
-
       const arrayBuffer = await res.arrayBuffer()
       const buffer = Buffer.from(arrayBuffer)
-
-      if (buffer.length === 0) {
-        juditLog(`Download vazio para ${url}`)
-        return null
-      }
-
-      juditLog(`Download ok: ${buffer.length} bytes, type=${contentType}`)
+      if (buffer.length === 0) return null
       return { buffer, contentType, fileName }
     } catch (e) {
       juditLog(`Download error: ${e instanceof Error ? e.message : String(e)}`)
@@ -103,7 +79,6 @@ export class JuditClient {
   }
 }
 
-/** Erro tipado da API Judit — facilita debug sem poluir logs. */
 export class JuditApiError extends Error {
   constructor(
     public statusCode: number,

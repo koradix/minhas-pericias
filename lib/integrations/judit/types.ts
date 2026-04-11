@@ -1,89 +1,143 @@
 /**
- * Judit API — Tipos TypeScript
+ * Judit API — Tipos REAIS baseados no payload da API.
  *
- * Tipos isolados da integracao Judit. Nenhum import do Escavador.
+ * Endpoints:
+ *   POST /requests → { search: { search_type, search_key } }
+ *   GET  /requests/:id → { request_id, status }
+ *   GET  /responses?request_id=:id&page=1 → { page_data: [{ response_data }] }
  */
 
-// ─── Request (criar consulta assincrona) ─────────────────────────────────────
+// ─── Request ─────────────────────────────────────────────────────────────────
+
+export type JuditSearchType = 'cpf' | 'cnpj' | 'oab' | 'lawsuit_cnj' | 'lawsuit_id'
 
 export interface JuditCreateRequestBody {
-  lawsuit_cnj?: string
-  person_cpf?: string
-  callback_url?: string
+  search: {
+    search_type: JuditSearchType
+    search_key: string
+    response_type?: string
+    cache_ttl_in_days?: number
+  }
 }
 
 export interface JuditCreateRequestResponse {
   request_id: string
-  status: JuditRequestStatusValue
+  status: string
+  search: {
+    search_type: string
+    search_key: string
+  }
   created_at: string
+  updated_at: string
 }
 
 // ─── Request Status ──────────────────────────────────────────────────────────
 
-export type JuditRequestStatusValue = 'pending' | 'processing' | 'completed' | 'failed'
-
 export interface JuditRequestStatus {
   request_id: string
-  status: JuditRequestStatusValue
+  status: 'pending' | 'processing' | 'completed' | 'failed'
   created_at: string
   updated_at: string
-  lawsuit_id?: string
   error?: string
-  responses_count?: number
 }
 
-// ─── Responses (resultado da consulta) ───────────────────────────────────────
+// ─── Responses ───────────────────────────────────────────────────────────────
 
-export interface JuditResponsesResult {
+export interface JuditResponsesPage {
+  request_status: string
+  page: number
+  page_count: number
+  all_pages_count: number
+  all_count: number
+  page_data: JuditResponseItem[]
+}
+
+export interface JuditResponseItem {
   request_id: string
-  responses: JuditLawsuit[]
+  response_id: string
+  response_type: string
+  response_data: JuditLawsuit
 }
 
-// ─── Lawsuit (processo completo) ─────────────────────────────────────────────
+// ─── Lawsuit (response_data real) ────────────────────────────────────────────
 
 export interface JuditLawsuit {
-  id: string
-  cnj: string
+  code: string           // CNJ
   instance?: number | null
-  court: string
-  court_branch: string
-  subject: string
-  class_name: string
-  distribution_date: string
-  last_update: string
-  status: string
+  tribunal_acronym?: string
+  tribunal?: string
+  justice?: string
+  justice_description?: string
+  distribution_date?: string | null
+  secrecy_level?: number
   judge?: string | null
-  parties: JuditParty[]
-  movements: JuditMovement[]
-  attachments: JuditAttachment[]
+  county?: string | null
+  status?: string | null
+  phase?: string | null
+  amount?: number | null
+  area?: string | null
+  city?: string | null
+  state?: string | null
+  free_justice?: boolean | null
+  subjects?: JuditSubject[]
+  classifications?: JuditClassification[]
+  courts?: JuditCourt[]
+  parties?: JuditParty[]
+  steps?: JuditStep[]
+  attachments?: JuditAttachment[]
+  last_step?: JuditStep | null
+  related_lawsuits?: unknown[]
+  created_at?: string
+  updated_at?: string
+  tags?: Record<string, unknown>
+}
+
+export interface JuditSubject {
+  code: string
+  name: string
+  date?: string
+}
+
+export interface JuditClassification {
+  code: string
+  name: string
+  date?: string
+}
+
+export interface JuditCourt {
+  code?: string
+  name: string
+  date?: string
 }
 
 export interface JuditParty {
   name: string
-  role: string
-  document?: string | null
-  lawyers?: { name: string; oab?: string | null }[]
+  main_document?: string | null
+  person_type?: string  // AUTOR, RÉU, ADVOGADO, PERITO, etc.
+  side?: string         // Active, Passive
+  entity_type?: string  // person, company
+  documents?: unknown[]
+  lawyers?: unknown[]
 }
 
-export interface JuditMovement {
-  id: string
-  date: string
-  description: string
-  type?: string | null
+export interface JuditStep {
+  step_id: string
+  lawsuit_cnj?: string
+  lawsuit_instance?: number
+  step_date?: string | null
+  step_type?: string | null
   content?: string | null
+  private?: boolean
 }
 
 export interface JuditAttachment {
-  id: string
-  name: string
-  type: string
-  url: string
-  mime_type?: string | null
-  is_public?: boolean
-  download_available?: boolean
-  size_bytes?: number | null
-  movement_id?: string | null
-  created_at: string
+  attachment_id: string
+  attachment_name?: string | null
+  attachment_date?: string | null
+  extension?: string | null
+  status?: string
+  private?: boolean
+  step_id?: string | null
 }
 
 // ─── Normalized (formato interno PeriLaB) ────────────────────────────────────
@@ -136,32 +190,22 @@ export interface NormalizedAttachment {
   source: 'judit'
 }
 
-// ─── CPF Search result ──────────────────────────────────────────────────────
+// ─── Result types ────────────────────────────────────────────────────────────
 
 export interface CpfSearchSyncResult {
   ok: boolean
   message: string
   requestId?: string
   cpf: string
-  /** Quantos processos vieram da Judit */
   totalProcessos: number
-  /** Quantos tinham CNJ confiavel */
   processosComCnj: number
-  /** Quantos tinham dados incompletos (sem CNJ) */
   processosSemCnj: number
-  /** Pericias efetivamente criadas */
   periciasCriadas: number
-  /** Pericias atualizadas (ja existiam) */
   periciasAtualizadas: number
-  /** Total de movimentacoes sincronizadas */
   movimentacoesSincronizadas: number
-  /** Total de anexos sincronizados (metadata) */
   anexosSincronizados: number
-  /** IDs das pericias tocadas */
   periciaIds: string[]
 }
-
-// ─── Attachment download result ──────────────────────────────────────────────
 
 export type AttachmentDownloadStatus = 'pending' | 'downloaded' | 'failed' | 'unavailable'
 
@@ -176,33 +220,9 @@ export interface AttachmentDownloadResult {
   apenasMetadata: number
 }
 
-// ─── Tracking (stubs para futuro) ────────────────────────────────────────────
+// ─── Tracking (stubs) ────────────────────────────────────────────────────────
 
-export interface JuditTrackingCreatePayload {
-  lawsuit_cnj: string
-  webhook_url?: string
-}
-
-export interface JuditTrackingCreateResponse {
-  tracking_id: string
-  lawsuit_cnj: string
-  status: 'active' | 'paused' | 'error'
-  created_at: string
-}
-
-export interface JuditTrackingStatusResponse {
-  tracking_id: string
-  lawsuit_cnj: string
-  status: 'active' | 'paused' | 'error'
-  last_check_at?: string | null
-  events_count?: number
-}
-
-export interface JuditTrackingEvent {
-  event_id: string
-  tracking_id: string
-  event_type: string
-  event_date: string
-  description: string
-  raw?: unknown
-}
+export interface JuditTrackingCreatePayload { lawsuit_cnj: string; webhook_url?: string }
+export interface JuditTrackingCreateResponse { tracking_id: string; status: string; created_at: string }
+export interface JuditTrackingStatusResponse { tracking_id: string; status: string }
+export interface JuditTrackingEvent { event_id: string; tracking_id: string; event_type: string; event_date: string; description: string; raw?: unknown }

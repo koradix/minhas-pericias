@@ -1,24 +1,23 @@
 /**
- * Judit — Service Layer
+ * Judit — Service Layer (formato REAL da API).
  *
- * A Judit tem UMA API que faz tudo:
- *   POST /api/requests          → cria request (CNJ ou CPF)
- *   GET  /api/requests/:id      → status da request
- *   GET  /api/requests/:id/responses → dados do processo
- *
- * Totalmente isolado do Escavador.
+ * Endpoints reais:
+ *   POST /requests                          → criar request
+ *   GET  /requests/:id                      → poll status
+ *   GET  /responses?request_id=:id&page=N   → buscar resultados
  */
 
-import { juditConfig, isJuditReady, juditLog } from './config'
+import { isJuditReady, juditLog } from './config'
 import { JuditClient } from './client'
-import { normalizeLawsuit, formatPartesString } from './mappers'
+import { normalizeLawsuit } from './mappers'
 import { JUDIT_POLL_TIMEOUT_MS, JUDIT_POLL_INTERVAL_MS } from './constants'
 import type {
   JuditCreateRequestResponse,
   JuditRequestStatus,
-  JuditResponsesResult,
+  JuditResponsesPage,
   JuditLawsuit,
   NormalizedLawsuit,
+  JuditSearchType,
 } from './types'
 
 const client = new JuditClient()
@@ -27,7 +26,6 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-/** Resultado generico de um fluxo request+poll+responses */
 export interface JuditFetchResult {
   requestId: string
   status: string
@@ -37,41 +35,31 @@ export interface JuditFetchResult {
 
 export class JuditService {
 
-  private get base() { return juditConfig.baseUrl }
+  // ─── Criar request ─────────────────────────────────────────────────────────
 
-  // ─── Request lifecycle ───────────────────────────────────────────────────────
-
-  /** Cria request por CNJ. */
-  async createLawsuitRequestByCnj(cnj: string): Promise<JuditCreateRequestResponse> {
+  async createRequest(searchType: JuditSearchType, searchKey: string): Promise<JuditCreateRequestResponse> {
     this.assertReady()
-    return client.post<JuditCreateRequestResponse>(
-      this.base, '/api/requests', { lawsuit_cnj: cnj },
-    )
+    return client.post<JuditCreateRequestResponse>('/requests', {
+      search: {
+        search_type: searchType,
+        search_key: searchKey,
+      },
+    })
   }
 
-  /** Cria request por CPF. */
-  async createRequestByCpf(cpf: string): Promise<JuditCreateRequestResponse> {
-    this.assertReady()
-    const cleanCpf = cpf.replace(/\D/g, '')
-    juditLog(`Criando request por CPF: ${cleanCpf}`)
-    return client.post<JuditCreateRequestResponse>(
-      this.base, '/api/requests', { person_cpf: cleanCpf },
-    )
-  }
+  // ─── Poll status ───────────────────────────────────────────────────────────
 
-  /** Verifica status de uma request. */
   async getRequestStatus(requestId: string): Promise<JuditRequestStatus> {
     this.assertReady()
-    return client.get<JuditRequestStatus>(
-      this.base, `/api/requests/${requestId}`,
-    )
+    return client.get<JuditRequestStatus>(`/requests/${requestId}`)
   }
 
-  /** Busca respostas de uma request completada. */
-  async getResponsesByRequestId(requestId: string): Promise<JuditResponsesResult> {
+  // ─── Buscar responses (paginado) ───────────────────────────────────────────
+
+  async getResponses(requestId: string, page = 1): Promise<JuditResponsesPage> {
     this.assertReady()
-    return client.get<JuditResponsesResult>(
-      this.base, `/api/requests/${requestId}/responses`,
+    return client.get<JuditResponsesPage>(
+      `/responses?request_id=${requestId}&page=${page}`,
     )
   }
 
@@ -79,34 +67,44 @@ export class JuditService {
 
   private async pollAndFetch(requestId: string, initialStatus: string): Promise<JuditFetchResult> {
     const start = Date.now()
-    let lastStatus: JuditRequestStatus = {
-      request_id: requestId,
-      status: initialStatus as JuditRequestStatus['status'],
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }
+    let status = initialStatus
 
-    while (lastStatus.status !== 'completed' && lastStatus.status !== 'failed') {
+    while (status !== 'completed' && status !== 'failed') {
       if (Date.now() - start > JUDIT_POLL_TIMEOUT_MS) {
-        juditLog(`Timeout no polling (${JUDIT_POLL_TIMEOUT_MS}ms) — request: ${requestId}`)
+        juditLog(`Timeout (${JUDIT_POLL_TIMEOUT_MS}ms) — request: ${requestId}`)
         return { requestId, status: 'timeout', responses: [], normalized: [] }
       }
       await sleep(JUDIT_POLL_INTERVAL_MS)
-      lastStatus = await this.getRequestStatus(requestId)
-      juditLog(`Poll ${requestId}: ${lastStatus.status}`)
+      const s = await this.getRequestStatus(requestId)
+      status = s.status
+      juditLog(`Poll ${requestId}: ${status}`)
     }
 
-    if (lastStatus.status === 'failed') {
-      juditLog(`Request falhou: ${requestId} — ${lastStatus.error}`)
+    if (status === 'failed') {
+      juditLog(`Request falhou: ${requestId}`)
       return { requestId, status: 'failed', responses: [], normalized: [] }
     }
 
-    const result = await this.getResponsesByRequestId(requestId)
-    const lawsuits = result.responses ?? []
-    juditLog(`Request ${requestId}: ${lawsuits.length} processos retornados`)
+    // Buscar todas as paginas de responses
+    const allLawsuits: JuditLawsuit[] = []
+    let page = 1
+    let totalPages = 1
 
-    const normalized = lawsuits.map((l) => normalizeLawsuit(l))
-    return { requestId, status: 'completed', responses: lawsuits, normalized }
+    do {
+      const resp = await this.getResponses(requestId, page)
+      totalPages = resp.all_pages_count ?? 1
+      for (const item of resp.page_data ?? []) {
+        if (item.response_data) {
+          allLawsuits.push(item.response_data)
+        }
+      }
+      page++
+    } while (page <= totalPages)
+
+    juditLog(`Request ${requestId}: ${allLawsuits.length} processos retornados`)
+
+    const normalized = allLawsuits.map((l) => normalizeLawsuit(l))
+    return { requestId, status: 'completed', responses: allLawsuits, normalized }
   }
 
   // ─── Fluxo completo por CNJ ────────────────────────────────────────────────
@@ -114,8 +112,8 @@ export class JuditService {
   async fetchProcessByCnj(cnj: string): Promise<JuditFetchResult | null> {
     if (!isJuditReady()) return null
     try {
-      const req = await this.createLawsuitRequestByCnj(cnj)
-      juditLog(`Request CNJ criado: ${req.request_id} (status: ${req.status})`)
+      const req = await this.createRequest('lawsuit_cnj', cnj)
+      juditLog(`Request CNJ criado: ${req.request_id}`)
       return this.pollAndFetch(req.request_id, req.status)
     } catch (e) {
       juditLog('fetchProcessByCnj error:', e)
@@ -128,8 +126,9 @@ export class JuditService {
   async fetchProcessesByCpf(cpf: string): Promise<JuditFetchResult | null> {
     if (!isJuditReady()) return null
     try {
-      const req = await this.createRequestByCpf(cpf)
-      juditLog(`Request CPF criado: ${req.request_id} (status: ${req.status})`)
+      const cleanCpf = cpf.replace(/\D/g, '')
+      const req = await this.createRequest('cpf', cleanCpf)
+      juditLog(`Request CPF criado: ${req.request_id}`)
       return this.pollAndFetch(req.request_id, req.status)
     } catch (e) {
       juditLog('fetchProcessesByCpf error:', e)
@@ -137,7 +136,7 @@ export class JuditService {
     }
   }
 
-  // ─── Download de anexo ─────────────────────────────────────────────────────
+  // ─── Download de anexo (futuro — endpoint ainda nao confirmado) ────────────
 
   async downloadAttachment(attachmentUrl: string): Promise<{
     buffer: Buffer
@@ -154,16 +153,11 @@ export class JuditService {
     return normalizeLawsuit(lawsuit)
   }
 
-  formatPartes(normalized: NormalizedLawsuit): string {
-    return formatPartesString(normalized.partes)
-  }
-
   private assertReady() {
     if (!isJuditReady()) {
-      throw new Error('[Judit] Integracao nao esta habilitada ou API key ausente')
+      throw new Error('[Judit] Integracao nao habilitada ou API key ausente')
     }
   }
 }
 
-/** Singleton */
 export const judit = new JuditService()
