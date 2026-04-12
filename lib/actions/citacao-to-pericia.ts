@@ -76,22 +76,15 @@ export async function criarPericiaDeCitacao(
   const count = await prisma.pericia.count({ where: { peritoId } })
   const numero = `PRC-${new Date().getFullYear()}-${String(count + 1).padStart(3, '0')}`
 
-  // Extrair número: 1) campo da citação, 2) Claude, 3) regex no snippet (CNJ, IE, ID)
-  let processoFinal = citacao.numeroProcesso ?? dados.processo ?? null
+  // Extrair CNJ: 1) campo da citação, 2) Claude, 3) regex no snippet (só CNJ válido)
+  let processoFinal = null as string | null
+  // Verificar se é CNJ válido (formato 0000000-00.0000.0.00.0000)
+  const isCnj = (s: string | null) => s && /^\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}$/.test(s)
+  if (isCnj(citacao.numeroProcesso)) processoFinal = citacao.numeroProcesso
+  if (!processoFinal && isCnj(dados.processo)) processoFinal = dados.processo
   if (!processoFinal && citacao.snippet) {
-    // CNJ padrão
     const cnjMatch = citacao.snippet.match(/\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}/)
     if (cnjMatch) processoFinal = cnjMatch[0]
-  }
-  if (!processoFinal && citacao.snippet) {
-    // IE do tribunal (TJRJ): "IE 201953402"
-    const ieMatch = citacao.snippet.match(/\bIE\s+(\d{6,15})/i)
-    if (ieMatch) processoFinal = ieMatch[1]
-  }
-  if (!processoFinal && citacao.snippet) {
-    // "id." seguido de dígitos: "id. 224568192"
-    const idMatch = citacao.snippet.match(/\bid[.\s]+(\d{6,15})/i)
-    if (idMatch) processoFinal = idMatch[1]
   }
 
   const pericia = await prisma.pericia.create({

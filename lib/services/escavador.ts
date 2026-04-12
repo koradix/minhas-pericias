@@ -10,18 +10,10 @@ import { getEnderecoTribunal } from '@/lib/data/varas-enderecos'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-/** Extrai número de processo do texto — tenta CNJ primeiro, depois IE/ID do tribunal */
+/** Extrai número CNJ do texto (só formato válido: 0000000-00.0000.0.00.0000) */
 function extrairNumeroProcesso(texto: string): string | null {
-  // 1. CNJ padrão: 0000000-00.0000.0.00.0000
   const cnj = texto.match(/\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}/)
-  if (cnj) return cnj[0]
-  // 2. IE/ID do tribunal (TJRJ usa "IE 123456789")
-  const ie = texto.match(/\bIE\s+(\d{6,15})/i)
-  if (ie) return ie[1]
-  // 3. "id." seguido de dígitos
-  const idNum = texto.match(/\bid[.\s]+(\d{6,15})/i)
-  if (idNum) return idNum[1]
-  return null
+  return cnj ? cnj[0] : null
 }
 
 // ─── Response shapes ──────────────────────────────────────────────────────────
