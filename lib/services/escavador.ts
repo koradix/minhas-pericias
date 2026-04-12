@@ -8,6 +8,14 @@ import {
 } from '@/lib/services/radar-provider'
 import { getEnderecoTribunal } from '@/lib/data/varas-enderecos'
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+/** Extrai número CNJ de texto (formato: 0000000-00.0000.0.00.0000) */
+function extrairCnj(texto: string): string | null {
+  const match = texto.match(/\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}/)
+  return match ? match[0] : null
+}
+
 // ─── Response shapes ──────────────────────────────────────────────────────────
 
 interface EscavadorSaldoResponse {
@@ -479,7 +487,7 @@ export class EscavadorService implements RadarProvider {
         ? item.data_diario_formatada.split('/').reverse().join('-')
         : new Date().toISOString().split('T')[0],
       snippet: item.conteudo_snippet,
-      numeroProcesso: item.numero_processo,
+      numeroProcesso: item.numero_processo ?? extrairCnj(item.conteudo_snippet ?? ''),
       linkCitacao: item.movimentacao?.link ?? '',
     }))
   }
@@ -751,7 +759,7 @@ export class EscavadorService implements RadarProvider {
       diarioNome: item.diario_nome,
       diarioData: item.diario_data,
       snippet: item.texto,
-      numeroProcesso: null,
+      numeroProcesso: extrairCnj(item.texto),
       linkCitacao: item.link,
     }))
   }
