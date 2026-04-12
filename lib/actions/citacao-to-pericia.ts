@@ -76,8 +76,20 @@ export async function criarPericiaDeCitacao(
   const count = await prisma.pericia.count({ where: { peritoId } })
   const numero = `PRC-${new Date().getFullYear()}-${String(count + 1).padStart(3, '0')}`
 
-  // Use process number from AI or from citation field
-  const processoFinal = dados.processo ?? citacao.numeroProcesso ?? undefined
+  // Extrair CNJ: 1) do campo, 2) do Claude, 3) regex no snippet
+  let processoFinal = citacao.numeroProcesso ?? dados.processo ?? null
+  if (!processoFinal && citacao.snippet) {
+    const cnjMatch = citacao.snippet.match(/\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}/)
+    if (cnjMatch) processoFinal = cnjMatch[0]
+  }
+  // Também aceitar formato sem pontuação (20 dígitos)
+  if (!processoFinal && citacao.snippet) {
+    const rawMatch = citacao.snippet.match(/(?:processo|autos|n[.ºo°]\s*)\s*(\d{20})/i)
+    if (rawMatch) {
+      const d = rawMatch[1]
+      processoFinal = `${d.slice(0,7)}-${d.slice(7,9)}.${d.slice(9,13)}.${d.slice(13,14)}.${d.slice(14,16)}.${d.slice(16,20)}`
+    }
+  }
 
   const pericia = await prisma.pericia.create({
     data: {
@@ -86,7 +98,7 @@ export async function criarPericiaDeCitacao(
       assunto: dados.assunto,
       tipo: dados.tipo,
       vara: dados.vara ?? undefined,
-      processo: processoFinal,
+      processo: processoFinal ?? undefined,
       partes: dados.partes ?? undefined,
       status: 'planejada',
     },

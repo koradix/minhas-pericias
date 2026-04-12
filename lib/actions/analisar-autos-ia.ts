@@ -9,9 +9,10 @@
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import Anthropic from '@anthropic-ai/sdk'
-import { juditLog } from '@/lib/integrations/judit/config'
+import { isJuditReady, juditLog } from '@/lib/integrations/judit/config'
 import { judit } from '@/lib/integrations/judit/service'
 import { JUDIT_SOURCE } from '@/lib/integrations/judit/constants'
+import { fetchAndSyncByCnj } from './judit-sync'
 import { SYSTEM_PROMPT_V2, buildPdfUserPromptV2 } from '@/lib/ai/prompt-mestre-resumo'
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -64,6 +65,12 @@ export async function analisarAutosIA(periciaId: string, attachmentIds?: string[
   const pericia = await prisma.pericia.findUnique({ where: { id: periciaId } })
   if (!pericia || pericia.peritoId !== session.user.id) return { ...empty, message: 'Pericia nao encontrada' }
   if (!pericia.processo) return { ...empty, message: 'Pericia sem CNJ' }
+
+  // Sync com with_attachments para garantir que a Judit capturou os PDFs
+  if (isJuditReady()) {
+    juditLog('[analisar-ia] Sync com with_attachments...')
+    await fetchAndSyncByCnj(pericia.processo, { withAttachments: true })
+  }
 
   // Buscar anexos — se IDs especificados, usar esses; senão, todos downloaded
   const attachments = await prisma.processAttachment.findMany({
