@@ -1,14 +1,16 @@
 /**
  * GET /api/integrations/judit/attachment?id=<attachmentId>
  *
- * Proxy de download para anexos ja salvos no Vercel Blob.
- * Se o blob nao existir, retorna 404.
+ * Proxy de download para anexos.
+ * - blobUrl → redirect (publico)
+ * - url Judit → proxy com api-key (autenticado)
  * Protegido por auth + ownership check.
  */
 
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { juditConfig } from '@/lib/integrations/judit/config'
 
 export async function GET(req: Request) {
   const session = await auth()
@@ -27,7 +29,6 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'Attachment not found' }, { status: 404 })
   }
 
-  // Ownership: verificar que o perito eh dono da pericia
   const pericia = await prisma.pericia.findUnique({
     where: { id: att.periciaId },
     select: { peritoId: true },
@@ -36,14 +37,32 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  // Se tem blobUrl, redirecionar
+  // blobUrl → redirect direto (público)
   if (att.blobUrl) {
     return NextResponse.redirect(att.blobUrl)
   }
 
-  // Se tem URL original mas nao foi baixado ainda
+  // url Judit → proxy com api-key
   if (att.url) {
-    return NextResponse.redirect(att.url)
+    try {
+      const res = await fetch(att.url, {
+        headers: { 'api-key': juditConfig.apiKey },
+        redirect: 'follow',
+      })
+      if (!res.ok) {
+        return NextResponse.json({ error: 'Download failed' }, { status: 502 })
+      }
+      const buffer = await res.arrayBuffer()
+      const contentType = res.headers.get('content-type') ?? 'application/octet-stream'
+      return new NextResponse(buffer, {
+        headers: {
+          'Content-Type': contentType,
+          'Content-Disposition': `inline; filename="${att.name}.${att.type ?? 'pdf'}"`,
+        },
+      })
+    } catch {
+      return NextResponse.json({ error: 'Download error' }, { status: 502 })
+    }
   }
 
   return NextResponse.json({ error: 'File not available' }, { status: 404 })
