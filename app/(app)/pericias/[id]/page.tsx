@@ -623,9 +623,9 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
                     </div>
                   )}
 
-                  {/* 5b. Judit — Documentos do Processo (na frente) */}
-                  {isJuditReady() && (
-                    <div className={juditAttachments.length > 0 || juditMovements.length > 0 ? 'pt-12 border-t border-slate-100' : ''}>
+                  {/* 5b. Documentos do Processo */}
+                  {juditAttachments.length > 0 && (
+                    <div className="pt-12 border-t border-slate-100">
                       <ProcessDocuments periciaId={pericia.id} attachments={juditAttachments} />
                     </div>
                   )}

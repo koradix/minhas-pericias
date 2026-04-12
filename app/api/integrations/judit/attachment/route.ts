@@ -12,6 +12,8 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { juditConfig } from '@/lib/integrations/judit/config'
 
+export const maxDuration = 60
+
 export async function GET(req: Request) {
   const session = await auth()
   if (!session?.user?.id) {
