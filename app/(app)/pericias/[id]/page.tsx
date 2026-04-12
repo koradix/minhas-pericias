@@ -554,6 +554,9 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
               rascunho:       laudoDraft,
               midias:         midias.map((m) => ({ tipo: m.tipo, url: m.url, texto: m.texto, descricao: m.descricao })),
               vistoriaData:   vistoriaInfo,
+              documentosProcesso: juditAttachments
+                .filter(a => a.downloadStatus === 'downloaded')
+                .map(a => ({ id: a.id, nome: a.name, tipo: a.type })),
             }}
             resumoContent={
               <div className="space-y-16 pt-4 max-w-5xl mx-auto">

@@ -37,6 +37,7 @@ export interface LaudoTabProps {
   rascunho: LaudoDraftRow | null
   midias: MidiaItem[]
   vistoriaData?: { data: string | null; endereco: string | null }
+  documentosProcesso?: { id: string; nome: string; tipo: string | null }[]
 }
 
 type Phase = 'setup' | 'editor'
@@ -44,7 +45,7 @@ type Phase = 'setup' | 'editor'
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function LaudoTab({
-  periciaId, pericia, analise, peritoNome, peritoFormacao,
+  periciaId, pericia, analise, peritoNome, peritoFormacao, documentosProcesso = [],
   templates: initialTemplates, rascunho, midias, vistoriaData,
 }: LaudoTabProps) {
 
@@ -178,6 +179,7 @@ export function LaudoTab({
         fotos,
         transcricoes,
         observacoesVistoria: notasVistoria.join('\n\n') || null,
+        documentosProcesso,
       }
 
       const res = await fetch('/api/pericias/laudo/gerar', {
@@ -257,6 +259,7 @@ export function LaudoTab({
           reu: analise?.reu ?? pericia.partes?.split('×')[1]?.trim(),
           secoes,
           fotos,
+          documentosProcesso: documentosProcesso.map(d => ({ nome: d.nome, tipo: d.tipo })),
         }),
       })
       if (!res.ok) {

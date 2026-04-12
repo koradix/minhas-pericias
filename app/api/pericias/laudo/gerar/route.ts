@@ -45,6 +45,13 @@ export interface GerarLaudoInput {
 
   // Observações gerais da vistoria
   observacoesVistoria: string | null
+
+  // Documentos do processo (baixados via Judit)
+  documentosProcesso: {
+    id: string
+    nome: string
+    tipo: string | null
+  }[]
 }
 
 // ─── Output ───────────────────────────────────────────────────────────────────
@@ -53,7 +60,8 @@ export interface GerarLaudoOutput {
   secoes: {
     titulo: string
     conteudo: string
-    fotosReferenciadas: number[] // índices das fotos usadas nesta seção
+    fotosReferenciadas: number[]
+    docsReferenciados: number[] // índices dos docs do processo usados nesta seção
   }[]
   qa: {
     campos_faltantes: string[]
@@ -97,6 +105,12 @@ REGRA #4 — USO DAS FOTOS:
 - NÃO afirmar conclusões definitivas baseadas apenas em fotos
 - Exemplo: "Observa-se nas imagens indícios de irregularidade na instalação, sendo necessária análise técnica mais aprofundada para confirmação."
 
+REGRA #4b — USO DOS DOCUMENTOS DO PROCESSO:
+- Referenciar documentos pelo índice usando [DOC_X] (ex: [DOC_0], [DOC_2])
+- Citar o documento na seção onde ele é relevante (ex: "conforme petição inicial [DOC_0]")
+- Na fundamentação, referenciar as peças processuais usadas como base
+- Incluir docsReferenciados no JSON de cada seção com os índices dos docs citados
+
 REGRA #5 — ANÁLISE TÉCNICA:
 - Preencher parcialmente com base nos dados disponíveis
 - Citar legislação pertinente quando a categoria indicar (CDC, normas ABNT, NRs, etc.)
@@ -132,7 +146,8 @@ RETORNE APENAS JSON VÁLIDO, sem markdown, sem texto adicional:
     {
       "titulo": "Título exato da seção do template",
       "conteudo": "Texto completo da seção, formal, com [FOTO_X] e marcadores editáveis onde necessário",
-      "fotosReferenciadas": [0, 3, 5]
+      "fotosReferenciadas": [0, 3, 5],
+      "docsReferenciados": [0, 1]
     }
   ],
   "qa": {
@@ -193,6 +208,11 @@ ${transcricoesTexto || '[nenhuma transcrição disponível]'}
 
 Observações e notas do perito:
 ${input.observacoesVistoria ?? '[nenhuma observação adicional]'}
+
+DOCUMENTOS DO PROCESSO (${input.documentosProcesso?.length ?? 0} peças):
+${(input.documentosProcesso ?? []).length > 0
+  ? input.documentosProcesso.map((d, i) => `Doc ${i}: ${d.nome}${d.tipo ? ` (${d.tipo})` : ''}`).join('\n')
+  : '[nenhum documento do processo disponível]'}
 
 Gere a PRIMEIRA VERSÃO do laudo seguindo todas as regras do system prompt. Retorne APENAS o JSON.`
 }

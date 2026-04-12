@@ -45,6 +45,9 @@ export interface LaudoDocxInput {
 
   // Fotos da vistoria
   fotos?: { url: string; descricao: string }[]
+
+  // Documentos do processo referenciados
+  documentosProcesso?: { nome: string; tipo: string | null }[]
 }
 
 // ─── Build ────────────────────────────────────────────────────────────────────
@@ -179,6 +182,42 @@ export async function gerarLaudoDocx(input: LaudoDocxInput): Promise<Buffer> {
           children: runs,
         }))
       }
+    }
+  }
+
+  // ── Documentação do Processo ────────────────────────────────────────────
+  if (input.documentosProcesso && input.documentosProcesso.length > 0) {
+    children.push(
+      new Paragraph({
+        heading: HeadingLevel.HEADING_2,
+        spacing: { before: 400, after: 200 },
+        children: [
+          new TextRun({ text: 'DOCUMENTAÇÃO DO PROCESSO', bold: true, size: 24, font: 'Arial' }),
+        ],
+        border: {
+          bottom: { style: BorderStyle.SINGLE, size: 1, color: '999999' },
+        },
+      }),
+      new Paragraph({
+        spacing: { after: 200 },
+        children: [
+          new TextRun({ text: 'Os seguintes documentos do processo foram utilizados como base para elaboração deste laudo:', size: 22, font: 'Arial' }),
+        ],
+      }),
+    )
+
+    for (let i = 0; i < input.documentosProcesso.length; i++) {
+      const doc = input.documentosProcesso[i]
+      children.push(
+        new Paragraph({
+          spacing: { after: 80 },
+          children: [
+            new TextRun({ text: `Doc. ${i + 1} — `, bold: true, size: 22, font: 'Arial' }),
+            new TextRun({ text: doc.nome, size: 22, font: 'Arial' }),
+            ...(doc.tipo ? [new TextRun({ text: ` (${doc.tipo.toUpperCase()})`, size: 20, font: 'Arial', color: '666666' })] : []),
+          ],
+        }),
+      )
     }
   }
 
