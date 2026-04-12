@@ -219,7 +219,7 @@ export async function carregarAutosJudit(periciaId: string): Promise<CarregarAut
 
   try {
     const anthropic = new Anthropic({ apiKey })
-    const model = process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-4-5-20250514'
+    const model = process.env.ANTHROPIC_MODEL ?? 'claude-haiku-4-5-20251001'
 
     const res = await anthropic.messages.create({
       model,
