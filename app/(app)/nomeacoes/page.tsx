@@ -8,9 +8,7 @@ import { prisma } from '@/lib/prisma'
 import { PageHeader } from '@/components/shared/page-header'
 import { getNomeacoesByPerito } from '@/lib/data/nomeacoes-datajud'
 import { getCitacoes } from '@/lib/data/nomeacoes'
-import { RadarBuscarBtn } from '@/components/nomeacoes/radar-buscar-btn'
-import { JuditSearchBtn } from '@/components/nomeacoes/judit-search-btn'
-import { isJuditReady } from '@/lib/integrations/judit/config'
+import { SearchProviderSwitch } from '@/components/nomeacoes/search-provider-switch'
 import { NomeacaoCard } from '@/components/nomeacoes/nomeacao-card'
 import { ArquivadosCollapse } from '@/components/nomeacoes/arquivados-collapse'
 import { CitacoesList } from '@/components/nomeacoes/citacoes-list'
@@ -64,13 +62,12 @@ export default async function NomeacoesPage() {
         description="Citações nos diários e nomeações recebidas"
       />
 
-      {/* CTA — Judit (principal) */}
-      {isJuditReady() && (
-        <JuditSearchBtn cpf={peritoPerfil?.cpf ?? null} />
-      )}
-
-      {/* CTA — Escavador (fallback) */}
-      <RadarBuscarBtn novas={0} siglas={siglas} radarConfigurado={radarConfigurado} />
+      {/* CTA — provedor escolhido pelo usuario em /integracoes */}
+      <SearchProviderSwitch
+        cpf={peritoPerfil?.cpf ?? null}
+        siglas={siglas}
+        radarConfigurado={radarConfigurado}
+      />
 
       {/* Citações do Escavador */}
       {citacoes.length > 0 && (
