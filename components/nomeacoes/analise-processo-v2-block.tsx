@@ -75,23 +75,23 @@ function ParagraphStack({ items, empty }: { items: string[]; empty: string }) {
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 export function AnaliseProcessoV2Block({ analise }: { analise: AnaliseProcessoV2; nomeacaoId?: string }) {
-  const op   = analise.operacional
-  const nd   = op.nomeacaoDespacho
-  const ah   = op.aceiteHonorarios
-  const pr   = op.prazos
+  const op   = analise.operacional ?? {} as NonNullable<typeof analise.operacional>
+  const nd   = op?.nomeacaoDespacho ?? {} as NonNullable<(typeof analise.operacional)['nomeacaoDespacho']>
+  const ah   = op?.aceiteHonorarios ?? {} as NonNullable<(typeof analise.operacional)['aceiteHonorarios']>
+  const pr   = op?.prazos ?? {} as NonNullable<(typeof analise.operacional)['prazos']>
 
-  const autor      = analise.partes.autor
-  const reu        = analise.partes.reu
-  const terceiros  = safe(analise.partes.terceiros_relevantes)
-  const tipo       = analise.tipo_processo.natureza ?? analise.tipo_processo.classe ?? null
-  const objeto     = analise.objeto_processo.resumo_curto ?? null
+  const autor      = analise.partes?.autor ?? null
+  const reu        = analise.partes?.reu ?? null
+  const terceiros  = safe(analise.partes?.terceiros_relevantes)
+  const tipo       = analise.tipo_processo?.natureza ?? analise.tipo_processo?.classe ?? null
+  const objeto     = analise.objeto_processo?.resumo_curto ?? null
 
   const pIni = paragraphs(analise.peticao_inicial)
   const cont = paragraphs(analise.contestacao)
   const repl = paragraphs(analise.replica)
 
-  const pontoCont      = analise.ponto_controvertido.resumo ?? null
-  const opiniao        = analise.opiniao_tecnica_breve.resumo ?? null
+  const pontoCont      = analise.ponto_controvertido?.resumo ?? null
+  const opiniao        = analise.opiniao_tecnica_breve?.resumo ?? null
   const quesitos       = safe(nd.quesitos)
   const proxPassos     = safe(analise.proximos_passos)
   const outrosPrazos   = safe(pr.outrosPrazos)
