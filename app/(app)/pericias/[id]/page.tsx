@@ -27,7 +27,7 @@ import { isAnaliseProcessoV2, isAnaliseProcesso, toAnaliseCompativel } from '@/l
 import { AnaliseProcessoV2Block } from '@/components/nomeacoes/analise-processo-v2-block'
 import { AnaliseProcessoBlock } from '@/components/nomeacoes/analise-processo-block'
 import { NomeacaoDocumentosSection } from '@/components/nomeacoes/nomeacao-documentos'
-import { BaixarAutosBtn } from '@/components/pericias/baixar-autos-btn'
+
 import { JuditAutosBtn } from '@/components/pericias/judit-autos-btn'
 import { ProcessTimeline } from '@/components/pericias/process-timeline'
 import { ProcessDocuments } from '@/components/pericias/process-documents'
@@ -570,11 +570,8 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
                       nomeArquivo={nomeacaoLink?.nomeArquivo ?? null}
                       periciaId={pericia.id}
                     />
-                    <div className="mt-4 flex flex-wrap gap-3">
-                      {isJuditReady() && (
-                        <JuditAutosBtn periciaId={pericia.id} cnj={pericia.processo ?? null} />
-                      )}
-                      <BaixarAutosBtn cnj={pericia.processo ?? ''} />
+                    <div className="mt-4">
+                      <JuditAutosBtn periciaId={pericia.id} cnj={pericia.processo ?? null} />
                     </div>
                   </div>
 

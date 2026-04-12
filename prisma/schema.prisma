@@ -15,6 +15,7 @@ model User {
   name          String
   passwordHash  String?        // nullable — social login users don't have a password
   role          String         @default("perito")
+  apiProvider   String         @default("both") // escavador | judit | both | manual
   emailVerified DateTime?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
