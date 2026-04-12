@@ -128,10 +128,8 @@ export function ProcessDocuments({ periciaId, attachments }: Props) {
               {attachments.map((att) => {
                 const statusCfg = STATUS_CONFIG[att.downloadStatus] ?? STATUS_CONFIG.pending
                 const StatusIcon = statusCfg.icon
-                const fileUrl = att.blobUrl
-                  ? `/api/integrations/judit/attachment?id=${att.id}`
-                  : att.url
-                const canOpen = att.downloadStatus === 'downloaded' || !!att.url
+                const fileUrl = (att.blobUrl || att.url) ? `/api/integrations/judit/attachment?id=${att.id}` : null
+                const canOpen = att.downloadStatus === 'downloaded' && fileUrl
 
                 return (
                   <div key={att.id} className="flex items-center gap-4 px-6 py-4 hover:bg-slate-50 transition-colors">
