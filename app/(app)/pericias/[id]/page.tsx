@@ -616,17 +616,17 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
 
                   {/* Dados Cadastrais — movido para o header */}
 
-                  {/* 5. Judit — Movimentacoes do Processo (na frente) */}
-                  {juditMovements.length > 0 && (
-                    <div className="pt-12 border-t border-slate-100">
-                      <ProcessTimeline movements={juditMovements} />
-                    </div>
-                  )}
-
-                  {/* 5b. Documentos do Processo */}
+                  {/* 5. Documentos do Processo (prioridade) */}
                   {juditAttachments.length > 0 && (
                     <div className="pt-12 border-t border-slate-100">
                       <ProcessDocuments periciaId={pericia.id} attachments={juditAttachments} />
+                    </div>
+                  )}
+
+                  {/* 5b. Movimentações (abaixo dos documentos) */}
+                  {juditMovements.length > 0 && (
+                    <div className="pt-12 border-t border-slate-100">
+                      <ProcessTimeline movements={juditMovements} />
                     </div>
                   )}
 
