@@ -8,6 +8,7 @@ import {
   Document,
   Paragraph,
   TextRun,
+  ImageRun,
   HeadingLevel,
   AlignmentType,
   Header,
@@ -41,6 +42,9 @@ export interface LaudoDocxInput {
 
   // Seções
   secoes: { titulo: string; conteudo: string }[]
+
+  // Fotos da vistoria
+  fotos?: { url: string; descricao: string }[]
 }
 
 // ─── Build ────────────────────────────────────────────────────────────────────
@@ -174,6 +178,63 @@ export async function gerarLaudoDocx(input: LaudoDocxInput): Promise<Buffer> {
           spacing: { after: 120 },
           children: runs,
         }))
+      }
+    }
+  }
+
+  // ── Fotos da Vistoria ──────────────────────────────────────────────────
+  if (input.fotos && input.fotos.length > 0) {
+    children.push(
+      new Paragraph({
+        heading: HeadingLevel.HEADING_2,
+        spacing: { before: 400, after: 200 },
+        children: [
+          new TextRun({ text: 'REGISTRO FOTOGRÁFICO', bold: true, size: 24, font: 'Arial' }),
+        ],
+        border: {
+          bottom: { style: BorderStyle.SINGLE, size: 1, color: '999999' },
+        },
+      }),
+    )
+
+    for (let i = 0; i < input.fotos.length; i++) {
+      const foto = input.fotos[i]
+      try {
+        const res = await fetch(foto.url)
+        if (!res.ok) continue
+        const arrayBuffer = await res.arrayBuffer()
+        const buffer = Buffer.from(arrayBuffer)
+        if (buffer.length === 0) continue
+
+        children.push(
+          new Paragraph({
+            spacing: { before: 200, after: 80 },
+            children: [
+              new TextRun({ text: `Foto ${i + 1}`, bold: true, size: 20, font: 'Arial', color: '333333' }),
+              ...(foto.descricao ? [new TextRun({ text: ` — ${foto.descricao}`, size: 20, font: 'Arial', color: '666666' })] : []),
+            ],
+          }),
+          new Paragraph({
+            spacing: { after: 200 },
+            children: [
+              new ImageRun({
+                data: buffer,
+                transformation: { width: 500, height: 375 },
+                type: 'jpg',
+              }),
+            ],
+          }),
+        )
+      } catch {
+        // Skip foto que falhou o download
+        children.push(
+          new Paragraph({
+            spacing: { after: 100 },
+            children: [
+              new TextRun({ text: `Foto ${i + 1}: ${foto.descricao || '[sem descrição]'} — imagem indisponível`, italics: true, size: 20, font: 'Arial', color: '999999' }),
+            ],
+          }),
+        )
       }
     }
   }

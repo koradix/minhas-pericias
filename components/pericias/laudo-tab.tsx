@@ -240,6 +240,10 @@ export function LaudoTab({
     setIsExporting(true)
     setError(null)
     try {
+      const fotos = midias
+        .filter((m) => m.tipo === 'foto' && m.url)
+        .map((m) => ({ url: m.url!, descricao: m.descricao ?? '' }))
+
       const res = await fetch('/api/pericias/laudo/exportar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -252,6 +256,7 @@ export function LaudoTab({
           autor: analise?.autor ?? pericia.partes?.split('×')[0]?.trim(),
           reu: analise?.reu ?? pericia.partes?.split('×')[1]?.trim(),
           secoes,
+          fotos,
         }),
       })
       if (!res.ok) {
