@@ -11,7 +11,8 @@ function paragraphs(block: {
   paragrafo_2: string | null
   paragrafo_3: string | null
   paragrafo_4: string | null
-}): string[] {
+} | null | undefined): string[] {
+  if (!block) return []
   return [block.paragrafo_1, block.paragrafo_2, block.paragrafo_3, block.paragrafo_4]
     .filter((p): p is string => !!p)
 }
