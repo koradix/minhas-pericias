@@ -10,7 +10,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { FileText, Download, RefreshCw, Loader2, Check, X, Clock } from 'lucide-react'
+import { FileText, Download, RefreshCw, Loader2, Check, X, Clock, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface Attachment {
@@ -54,10 +54,12 @@ const STATUS_CONFIG: Record<string, { icon: typeof Check; label: string; classNa
 export function ProcessDocuments({ periciaId, attachments }: Props) {
   const [syncLoading, startSyncTransition] = useTransition()
   const [dlLoading, startDlTransition] = useTransition()
+  const [iaLoading, startIaTransition] = useTransition()
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null)
   const router = useRouter()
 
   const hasPending = attachments.some((a) => a.downloadStatus !== 'downloaded')
+  const hasDownloaded = attachments.some((a) => a.downloadStatus === 'downloaded')
 
   function handleSync() {
     startSyncTransition(async () => {
@@ -95,7 +97,25 @@ export function ProcessDocuments({ periciaId, attachments }: Props) {
     })
   }
 
-  const loading = syncLoading || dlLoading
+  function handleAnaliseIA() {
+    startIaTransition(async () => {
+      setResult(null)
+      try {
+        const res = await fetch('/api/pericias/analisar-autos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ periciaId }),
+        })
+        const data = await res.json()
+        setResult({ ok: data.ok, message: data.message })
+        if (data.ok) router.refresh()
+      } catch {
+        setResult({ ok: false, message: 'Erro ao analisar' })
+      }
+    })
+  }
+
+  const loading = syncLoading || dlLoading || iaLoading
 
   return (
     <section className="space-y-6">
@@ -184,6 +204,16 @@ export function ProcessDocuments({ periciaId, attachments }: Props) {
                 {attachments.filter((a) => a.downloadStatus === 'downloaded').length} baixado{attachments.filter((a) => a.downloadStatus === 'downloaded').length !== 1 ? 's' : ''}
               </span>
               <div className="flex items-center gap-3">
+                {hasDownloaded && (
+                  <button
+                    onClick={handleAnaliseIA}
+                    disabled={loading}
+                    className="flex items-center gap-1.5 bg-slate-900 text-white px-3 py-1.5 text-[9px] font-bold uppercase tracking-widest hover:bg-slate-800 transition-colors disabled:opacity-30"
+                  >
+                    {iaLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                    {iaLoading ? 'Analisando...' : 'Gerar resumo IA'}
+                  </button>
+                )}
                 {hasPending && (
                   <button
                     onClick={handleDownloadAll}
