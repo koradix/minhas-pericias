@@ -1,7 +1,7 @@
 /**
  * POST /api/integrations/judit/carregar-autos
  *
- * Fluxo completo: sync com attachments → download PDFs → analise IA → salvar.
+ * Baixa documentos do tribunal via Judit (sem análise IA).
  *
  * Body: { "periciaId": "..." }
  */
