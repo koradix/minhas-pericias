@@ -4,6 +4,8 @@ import Anthropic from '@anthropic-ai/sdk'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
+import { isJuditReady } from '@/lib/integrations/judit/config'
+import { judit } from '@/lib/integrations/judit/service'
 
 interface ExtractedCitacao {
   assunto: string
@@ -76,15 +78,39 @@ export async function criarPericiaDeCitacao(
   const count = await prisma.pericia.count({ where: { peritoId } })
   const numero = `PRC-${new Date().getFullYear()}-${String(count + 1).padStart(3, '0')}`
 
-  // Extrair CNJ: 1) campo da citação, 2) Claude, 3) regex no snippet (só CNJ válido)
-  let processoFinal = null as string | null
-  // Verificar se é CNJ válido (formato 0000000-00.0000.0.00.0000)
+  // Extrair CNJ: 1) campo da citação, 2) Claude, 3) regex no snippet
   const isCnj = (s: string | null) => s && /^\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}$/.test(s)
+  let processoFinal: string | null = null
   if (isCnj(citacao.numeroProcesso)) processoFinal = citacao.numeroProcesso
   if (!processoFinal && isCnj(dados.processo)) processoFinal = dados.processo
   if (!processoFinal && citacao.snippet) {
     const cnjMatch = citacao.snippet.match(/\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}/)
     if (cnjMatch) processoFinal = cnjMatch[0]
+  }
+
+  // 4) Sem CNJ? Busca na Judit pelo CPF — cruza partes com snippet para achar o processo
+  if (!processoFinal && isJuditReady()) {
+    try {
+      const perfil = await prisma.peritoPerfil.findUnique({ where: { userId: peritoId }, select: { cpf: true } })
+      const cpf = perfil?.cpf?.replace(/\D/g, '')
+      if (cpf && cpf.length === 11) {
+        const result = await judit.fetchProcessesByCpf(cpf)
+        if (result?.normalized?.length) {
+          // Encontrar o processo que bate com o snippet (mesmas partes ou vara)
+          const snippetLower = citacao.snippet.toLowerCase()
+          const match = result.normalized.find(n => {
+            // Compara partes do processo com o texto do snippet
+            return n.partes.some(p => snippetLower.includes(p.nome.toLowerCase().split(' ')[0]))
+          })
+          if (match?.cnj && isCnj(match.cnj)) {
+            processoFinal = match.cnj
+            console.log(`[criarPericia] CNJ encontrado via Judit CPF: ${processoFinal}`)
+          }
+        }
+      }
+    } catch (e) {
+      console.error('[criarPericia] Judit CPF lookup error:', e)
+    }
   }
 
   const pericia = await prisma.pericia.create({
