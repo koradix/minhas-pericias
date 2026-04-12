@@ -1,3 +1,5 @@
+export const maxDuration = 30
+
 import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
@@ -911,7 +913,18 @@ export default async function PericiaDetailPage({ params }: { params: Promise<{ 
   } catch {}
 
   if (pericia && pericia.peritoId === userId) {
-    return <RealPericiaView pericia={pericia} />
+    try {
+      return await RealPericiaView({ pericia })
+    } catch (err) {
+      console.error('[PericiaDetailPage] render error:', err)
+      return (
+        <div className="max-w-3xl mx-auto px-6 py-20 text-center space-y-4">
+          <h1 className="text-2xl font-black text-slate-900">Erro ao carregar perícia</h1>
+          <p className="text-sm text-slate-500">{pericia.numero} — {pericia.assunto}</p>
+          <p className="text-xs text-rose-500">{err instanceof Error ? err.message : 'Erro interno'}</p>
+        </div>
+      )
+    }
   }
 
   // ── RotaPericia fallback ────────────────────────────────────────────────────
