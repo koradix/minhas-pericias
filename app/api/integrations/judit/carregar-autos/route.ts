@@ -11,6 +11,8 @@ import { auth } from '@/auth'
 import { isJuditReady } from '@/lib/integrations/judit/config'
 import { carregarAutosJudit } from '@/lib/actions/carregar-autos-judit'
 
+export const maxDuration = 300
+
 export async function POST(req: Request) {
   if (!isJuditReady()) {
     return NextResponse.json(

@@ -14,6 +14,8 @@ import { auth } from '@/auth'
 import { isJuditReady } from '@/lib/integrations/judit/config'
 import { fetchAndSyncByCpf } from '@/lib/actions/judit-sync'
 
+export const maxDuration = 120
+
 export async function POST(req: Request) {
   if (!isJuditReady()) {
     return NextResponse.json(
