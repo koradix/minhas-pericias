@@ -26,6 +26,7 @@ interface Attachment {
 interface Props {
   periciaId: string
   attachments: Attachment[]
+  docsUsadosNaAnalise?: string[]
 }
 
 function formatDate(iso: string | null) {
@@ -42,7 +43,8 @@ const STATUS_CONFIG: Record<string, { icon: typeof Check; label: string; classNa
   unavailable:{ icon: X,     label: 'Indisponivel', className: 'text-slate-400 bg-slate-50 border-slate-200' },
 }
 
-export function ProcessDocuments({ periciaId, attachments }: Props) {
+export function ProcessDocuments({ periciaId, attachments, docsUsadosNaAnalise = [] }: Props) {
+  const usadosSet = new Set(docsUsadosNaAnalise)
   const [syncLoading, startSyncTransition] = useTransition()
   const [dlLoading, startDlTransition] = useTransition()
   const [iaLoading, startIaTransition] = useTransition()
@@ -162,6 +164,7 @@ export function ProcessDocuments({ periciaId, attachments }: Props) {
                 const fileUrl = (att.blobUrl || att.url) ? `/api/integrations/judit/attachment?id=${att.id}` : null
                 const canOpen = att.downloadStatus === 'downloaded' && fileUrl
                 const isSelected = selected.has(att.id)
+                const usadoNaIA = usadosSet.has(att.id)
 
                 return (
                   <div
@@ -189,6 +192,12 @@ export function ProcessDocuments({ periciaId, attachments }: Props) {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
+                      {usadoNaIA && (
+                        <span className="inline-flex items-center gap-1 text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 border bg-slate-900 text-white border-slate-900">
+                          <Sparkles className="h-2.5 w-2.5" />
+                          IA
+                        </span>
+                      )}
                       <span className={cn('inline-flex items-center gap-1 text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 border', statusCfg.className)}>
                         <StatusIcon className="h-2.5 w-2.5" />
                         {statusCfg.label}

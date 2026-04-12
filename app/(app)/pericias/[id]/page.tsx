@@ -617,7 +617,18 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
                   {/* 5. Documentos do Processo (prioridade) */}
                   {juditAttachments.length > 0 && (
                     <div className="pt-12 border-t border-slate-100">
-                      <ProcessDocuments periciaId={pericia.id} attachments={juditAttachments} />
+                      <ProcessDocuments
+                        periciaId={pericia.id}
+                        attachments={juditAttachments}
+                        docsUsadosNaAnalise={(() => {
+                          try {
+                            const ps = nomeacaoLink?.processSummary
+                            if (!ps) return []
+                            const parsed = JSON.parse(ps)
+                            return (parsed._docsUsados ?? []).map((d: { id: string }) => d.id)
+                          } catch { return [] }
+                        })()}
+                      />
                     </div>
                   )}
 

@@ -138,6 +138,12 @@ function CitacaoCard({ citacao }: { citacao: CitacaoSerializada }) {
                 {citacao.numeroProcesso}
               </span>
             )}
+            {citacao.numeroProcesso && /^\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}$/.test(citacao.numeroProcesso) && (
+              <span className="flex items-center gap-1 rounded-md bg-lime-50 px-2 py-0.5 text-[10px] text-[#4d7c0f] ring-1 ring-inset ring-lime-200">
+                <FileText className="h-2.5 w-2.5" />
+                Docs disponíveis
+              </span>
+            )}
 
             {citacao.linkCitacao && (
               <a

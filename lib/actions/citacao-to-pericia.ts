@@ -4,8 +4,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
-import { isJuditReady } from '@/lib/integrations/judit/config'
-import { judit } from '@/lib/integrations/judit/service'
+import { enriquecerCitacoesComCnj } from './enriquecer-cnj'
 
 interface ExtractedCitacao {
   assunto: string
@@ -88,28 +87,23 @@ export async function criarPericiaDeCitacao(
     if (cnjMatch) processoFinal = cnjMatch[0]
   }
 
-  // 4) Sem CNJ? Busca na Judit pelo CPF — cruza partes com snippet para achar o processo
-  if (!processoFinal && isJuditReady()) {
+  // 4) Sem CNJ? Tenta enriquecer via Judit (non-blocking, atualiza citação)
+  if (!processoFinal) {
     try {
-      const perfil = await prisma.peritoPerfil.findUnique({ where: { userId: peritoId }, select: { cpf: true } })
-      const cpf = perfil?.cpf?.replace(/\D/g, '')
-      if (cpf && cpf.length === 11) {
-        const result = await judit.fetchProcessesByCpf(cpf)
-        if (result?.normalized?.length) {
-          // Encontrar o processo que bate com o snippet (mesmas partes ou vara)
-          const snippetLower = citacao.snippet.toLowerCase()
-          const match = result.normalized.find(n => {
-            // Compara partes do processo com o texto do snippet
-            return n.partes.some(p => snippetLower.includes(p.nome.toLowerCase().split(' ')[0]))
-          })
-          if (match?.cnj && isCnj(match.cnj)) {
-            processoFinal = match.cnj
-            console.log(`[criarPericia] CNJ encontrado via Judit CPF: ${processoFinal}`)
-          }
+      const enrichResult = await enriquecerCitacoesComCnj()
+      if (enrichResult.enriquecidas > 0) {
+        // Re-ler a citação — pode ter sido atualizada
+        const updated = await prisma.nomeacaoCitacao.findUnique({
+          where: { id: citacaoId },
+          select: { numeroProcesso: true },
+        })
+        if (updated?.numeroProcesso && isCnj(updated.numeroProcesso)) {
+          processoFinal = updated.numeroProcesso
+          console.log(`[criarPericia] CNJ enriquecido via Judit: ${processoFinal}`)
         }
       }
     } catch (e) {
-      console.error('[criarPericia] Judit CPF lookup error:', e)
+      console.error('[criarPericia] enriquecer error:', e)
     }
   }
 

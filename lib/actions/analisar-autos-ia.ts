@@ -97,7 +97,7 @@ export async function analisarAutosIA(periciaId: string, attachmentIds?: string[
 
   // Baixar PDFs do servidor (proxy com api-key)
   juditLog(`[analisar-ia] Baixando ${pdfAtts.length} PDFs para analise...`)
-  const pdfs: { nome: string; buffer: Buffer }[] = []
+  const pdfs: { id: string; nome: string; buffer: Buffer }[] = []
   let totalBytes = 0
 
   for (const att of pdfAtts) {
@@ -106,7 +106,7 @@ export async function analisarAutosIA(periciaId: string, attachmentIds?: string[
     try {
       const result = await judit.downloadAttachment(url)
       if (!result || result.buffer.length === 0) continue
-      pdfs.push({ nome: att.name, buffer: result.buffer })
+      pdfs.push({ id: att.id, nome: att.name, buffer: result.buffer })
       totalBytes += result.buffer.length
     } catch {
       continue
@@ -156,6 +156,9 @@ export async function analisarAutosIA(periciaId: string, attachmentIds?: string[
       juditLog('[analisar-ia] JSON parse error:', raw.substring(0, 200))
       return { ...empty, message: 'IA retornou formato invalido' }
     }
+
+    // Metadados: quais docs foram usados na análise
+    analise._docsUsados = pdfs.map(p => ({ id: p.id, nome: p.nome }))
 
     // Salvar — upsert Processo + Nomeacao com processSummary
     const tribunal = (analise.operacional as Record<string, unknown>)?.tribunal as string
