@@ -10,10 +10,18 @@ import { getEnderecoTribunal } from '@/lib/data/varas-enderecos'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-/** Extrai número CNJ de texto (formato: 0000000-00.0000.0.00.0000) */
-function extrairCnj(texto: string): string | null {
-  const match = texto.match(/\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}/)
-  return match ? match[0] : null
+/** Extrai número de processo do texto — tenta CNJ primeiro, depois IE/ID do tribunal */
+function extrairNumeroProcesso(texto: string): string | null {
+  // 1. CNJ padrão: 0000000-00.0000.0.00.0000
+  const cnj = texto.match(/\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}/)
+  if (cnj) return cnj[0]
+  // 2. IE/ID do tribunal (TJRJ usa "IE 123456789")
+  const ie = texto.match(/\bIE\s+(\d{6,15})/i)
+  if (ie) return ie[1]
+  // 3. "id." seguido de dígitos
+  const idNum = texto.match(/\bid[.\s]+(\d{6,15})/i)
+  if (idNum) return idNum[1]
+  return null
 }
 
 // ─── Response shapes ──────────────────────────────────────────────────────────
@@ -487,7 +495,7 @@ export class EscavadorService implements RadarProvider {
         ? item.data_diario_formatada.split('/').reverse().join('-')
         : new Date().toISOString().split('T')[0],
       snippet: item.conteudo_snippet,
-      numeroProcesso: item.numero_processo ?? extrairCnj(item.conteudo_snippet ?? ''),
+      numeroProcesso: item.numero_processo ?? extrairNumeroProcesso(item.conteudo_snippet ?? ''),
       linkCitacao: item.movimentacao?.link ?? '',
     }))
   }
@@ -759,7 +767,7 @@ export class EscavadorService implements RadarProvider {
       diarioNome: item.diario_nome,
       diarioData: item.diario_data,
       snippet: item.texto,
-      numeroProcesso: extrairCnj(item.texto),
+      numeroProcesso: extrairNumeroProcesso(item.texto),
       linkCitacao: item.link,
     }))
   }
