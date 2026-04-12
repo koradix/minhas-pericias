@@ -146,6 +146,7 @@ export function PericiaEditCard(props: Props) {
   const { periciaId, analise } = props
 
   const [tags, setTags] = useState<string[]>(props.tags ?? [])
+  const [expanded, setExpanded] = useState(false)
   const [editing, setEditing] = useState(false)
   const [saved, setSaved] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -261,54 +262,72 @@ export function PericiaEditCard(props: Props) {
   )
 
   return (
-    <section className="rounded-none bg-white border border-slate-200">
-      {/* Header */}
-      <div className="flex items-center gap-4 px-8 py-6">
-        <div className="flex-1 min-w-0">
-          <h2 className="text-[12px] font-black text-slate-900 uppercase tracking-[0.3em]">Dados cadastrais e técnicos</h2>
-          {autoFilled && !editing && (
-            <p className="text-[10px] text-[#a3e635] mt-1 font-black uppercase tracking-widest bg-slate-900 inline-block px-2 py-0.5">Sugestão editorial IA disponível</p>
+    <section className="rounded-none bg-white">
+      {/* Header — sempre visível, toggle expand/edit */}
+      <div className="flex items-center gap-4 px-8 py-4">
+        <div className="flex-1 min-w-0 flex items-center gap-4">
+          <button
+            onClick={() => { setExpanded(!expanded); if (!expanded) setEditing(false) }}
+            className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] hover:text-slate-700 transition-colors"
+          >
+            {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+            Dados cadastrais
+          </button>
+          {autoFilled && !editing && !expanded && (
+            <span className="text-[9px] text-[#a3e635] font-black uppercase tracking-widest bg-slate-900 px-2 py-0.5">IA</span>
+          )}
+          {saved && (
+            <span className="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-[#4d7c0f]">
+              <Check className="h-3 w-3" /> Salvo
+            </span>
           )}
         </div>
 
-        <div className="flex items-center gap-3 flex-shrink-0 flex-wrap justify-end">
-          {saved && (
-            <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-[#a3e635]">
-              <Check className="h-4 w-4" /> SALVO
-            </span>
-          )}
-          {analise && !editing && (
+        <div className="flex items-center gap-3 flex-shrink-0">
+          {!expanded && (
             <button
-              onClick={preencherComIA}
-              className="flex items-center gap-2 rounded-none bg-slate-50 hover:bg-[#a3e635] hover:text-slate-900 border-2 border-slate-200 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-900 transition-all"
+              onClick={() => { setExpanded(true); setEditing(true) }}
+              className="flex items-center gap-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-700 transition-colors"
             >
-              PREENCHER VIA IA
+              <Pencil className="h-3 w-3" />
+              Editar
             </button>
           )}
-          {!editing ? (
-            <button
-              onClick={() => setEditing(true)}
-              className="flex items-center gap-2 rounded-none border-2 border-slate-900 bg-slate-900 text-white hover:bg-slate-800 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest transition-all"
-            >
-              EDITAR DADOS
-            </button>
-          ) : (
+          {expanded && !editing && (
+            <>
+              {analise && (
+                <button
+                  onClick={preencherComIA}
+                  className="flex items-center gap-2 rounded-none bg-slate-50 hover:bg-[#a3e635] hover:text-slate-900 border border-slate-200 px-3 py-2 text-[9px] font-black uppercase tracking-widest text-slate-900 transition-all"
+                >
+                  Preencher via IA
+                </button>
+              )}
+              <button
+                onClick={() => setEditing(true)}
+                className="flex items-center gap-2 rounded-none border border-slate-900 bg-slate-900 text-white hover:bg-slate-800 px-3 py-2 text-[9px] font-black uppercase tracking-widest transition-all"
+              >
+                Editar dados
+              </button>
+            </>
+          )}
+          {expanded && editing && (
             <>
               <button
-                onClick={handleCancel}
+                onClick={() => { handleCancel(); setEditing(false) }}
                 disabled={isPending}
-                className="flex items-center gap-2 rounded-none border-2 border-slate-200 bg-white hover:bg-slate-50 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-400 transition-all disabled:opacity-40"
+                className="flex items-center gap-2 rounded-none border border-slate-200 bg-white hover:bg-slate-50 px-3 py-2 text-[9px] font-black uppercase tracking-widest text-slate-400 transition-all disabled:opacity-40"
               >
-                CANCELAR
+                Cancelar
               </button>
               <button
                 onClick={handleSave}
                 disabled={isPending}
-                className="flex items-center gap-2 rounded-none bg-[#a3e635] hover:bg-[#bef264] px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-900 transition-all disabled:opacity-50"
+                className="flex items-center gap-2 rounded-none bg-[#a3e635] hover:bg-[#bef264] px-4 py-2 text-[9px] font-black uppercase tracking-widest text-slate-900 transition-all disabled:opacity-50"
               >
                 {isPending
-                  ? <><Loader2 className="h-4 w-4 animate-spin" /> SALVANDO…</>
-                  : 'SALVAR ALTERAÇÕES'
+                  ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Salvando…</>
+                  : 'Salvar'
                 }
               </button>
             </>
@@ -317,13 +336,13 @@ export function PericiaEditCard(props: Props) {
       </div>
 
       {saveError && (
-        <div className="mx-8 mt-2 mb-6 flex items-center gap-3 rounded-none bg-rose-50 border-2 border-rose-100 px-5 py-4">
-          <p className="text-[11px] font-black text-rose-700 uppercase tracking-widest">ERRO: {saveError}</p>
+        <div className="mx-8 mb-4 flex items-center gap-3 rounded-none bg-rose-50 border border-rose-100 px-4 py-3">
+          <p className="text-[10px] font-black text-rose-700 uppercase tracking-widest">{saveError}</p>
         </div>
       )}
 
-      {/* Editable fields */}
-      <div className="divide-y divide-[#f2f3f9] border-t border-[#f2f3f9]">
+      {/* Editable fields — só aparece quando expandido */}
+      <div className={cn('divide-y divide-[#f2f3f9] border-t border-[#f2f3f9]', !expanded && 'hidden')}>
 
         <Field label="Título / assunto" value={display.assunto ?? form.assunto} editing={editing}>
           <input
@@ -384,7 +403,7 @@ export function PericiaEditCard(props: Props) {
       </div>
 
       {/* ── Análise completa do processo (IA) ────────────────────────────────── */}
-      {analise && (
+      {analise && expanded && (
         <div className="border-t border-[#e2e8f0]">
 
           {/* Cabeçalho da seção de análise */}
@@ -659,7 +678,7 @@ export function PericiaEditCard(props: Props) {
 
 
       {/* Tags */}
-      <div className="px-8 py-4 border-t border-slate-100">
+      <div className={cn('px-8 py-4 border-t border-slate-100', !expanded && 'hidden')}>
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-[8px] font-bold text-slate-300 uppercase tracking-widest mr-2">TAGS</span>
           {(editing ? COMMON_TAGS : tags).map((tag) => {

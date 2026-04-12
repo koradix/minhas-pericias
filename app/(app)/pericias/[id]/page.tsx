@@ -484,6 +484,30 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
             </div>
           </div>
         )}
+
+        {/* Dados Cadastrais — editável no header */}
+        <div className="border-t border-slate-200">
+          <div className="max-w-7xl mx-auto">
+            {(() => {
+              const analiseIA = nomeacaoLink?.processSummary
+                ? (() => { try { return JSON.parse(nomeacaoLink!.processSummary!) } catch { return null } })()
+                : null
+              return (
+                <PericiaEditCard
+                  periciaId={pericia.id}
+                  assunto={pericia.assunto}
+                  vara={pericia.vara}
+                  partes={pericia.partes}
+                  endereco={pericia.endereco}
+                  prazo={pericia.prazo}
+                  valorHonorarios={pericia.valorHonorarios}
+                  analise={analiseIA}
+                  tags={(() => { try { return JSON.parse(pericia.tags ?? '[]') } catch { return [] } })()}
+                />
+              )
+            })()}
+          </div>
+        </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-6 pt-12 pb-20">
@@ -622,30 +646,7 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
                     </section>
                   )}
 
-                  {/* 4. Edit Card */}
-                  {(() => {
-                    const analiseIA = nomeacaoLink?.processSummary
-                      ? (() => { try { return JSON.parse(nomeacaoLink!.processSummary!) } catch { return null } })()
-                      : null
-                    return (
-                      <section className="space-y-6">
-                         <h2 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.3em]">Dados Cadastrais</h2>
-                         <div className="border border-slate-200">
-                           <PericiaEditCard
-                             periciaId={pericia.id}
-                             assunto={pericia.assunto}
-                             vara={pericia.vara}
-                             partes={pericia.partes}
-                             endereco={pericia.endereco}
-                             prazo={pericia.prazo}
-                             valorHonorarios={pericia.valorHonorarios}
-                             analise={analiseIA}
-                             tags={(() => { try { return JSON.parse(pericia.tags ?? '[]') } catch { return [] } })()}
-                           />
-                         </div>
-                      </section>
-                    )
-                  })()}
+                  {/* Dados Cadastrais — movido para o header */}
 
                   {/* 5. Judit — Movimentacoes do Processo (na frente) */}
                   {juditMovements.length > 0 && (
