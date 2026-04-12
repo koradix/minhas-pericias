@@ -41,34 +41,53 @@ export interface JuditSyncResult {
 }
 
 // ─── Filtro: só processos com nomeação de perito ────────────────────────────
-
-const PERITO_KEYWORDS = ['perit', 'expert', 'laudo', 'vistori', 'nomea', 'designa']
+// Roles que indicam que o perito foi NOMEADO (não que é parte no processo)
+const PERITO_ROLES = ['PERITO', 'PERITA', 'EXPERT', 'ASSISTENTE TÉCNICO', 'ASSISTENTE TECNICO']
+// Roles que DESCARTAM (perito é parte pessoal, não profissional)
+const PARTE_PESSOAL_ROLES = ['AUTOR', 'AUTORA', 'REQUERENTE', 'RÉU', 'REU', 'REQUERIDO', 'REQUERIDA']
+// Keywords em movimentações que indicam nomeação de perito
+const PERITO_STEP_KEYWORDS = ['perit', 'expert', 'nomea.*perit', 'designa.*perit', 'laudo pericial']
 
 function isNomeacaoRelevante(n: NormalizedLawsuit, peritoNome: string | null, peritoCpf: string | null): boolean {
-  // 1. Perito aparece como parte (PERITO, PERITA)
+  // 1. Perito aparece EXPLICITAMENTE como PERITO/PERITA nas partes
   const hasPeritoPart = n.partes.some((p) =>
-    p.tipo.toUpperCase().includes('PERITO') || p.tipo.toUpperCase().includes('PERITA')
+    PERITO_ROLES.some((r) => p.tipo.toUpperCase().includes(r))
   )
   if (hasPeritoPart) return true
 
-  // 2. Se temos nome/CPF do perito, verificar se aparece nas partes
-  if (peritoCpf) {
-    const cleanCpf = peritoCpf.replace(/\D/g, '')
-    const matchCpf = n.partes.some((p) => p.documento?.replace(/\D/g, '') === cleanCpf)
-    if (matchCpf) return true
-  }
-  if (peritoNome) {
-    const nomeUpper = peritoNome.toUpperCase()
-    const matchNome = n.partes.some((p) => p.nome.toUpperCase().includes(nomeUpper))
-    if (matchNome) return true
+  // 2. Se perito aparece como PARTE PESSOAL (autor, réu, requerente) → DESCARTAR
+  if (peritoNome || peritoCpf) {
+    const cleanCpf = peritoCpf?.replace(/\D/g, '') ?? ''
+    const nomeUpper = peritoNome?.toUpperCase() ?? ''
+
+    const isPartePessoal = n.partes.some((p) => {
+      const matchIdentity = (
+        (cleanCpf && p.documento?.replace(/\D/g, '') === cleanCpf) ||
+        (nomeUpper && p.nome.toUpperCase().includes(nomeUpper))
+      )
+      if (!matchIdentity) return false
+      // Se é parte pessoal (autor, réu), NÃO é nomeação
+      return PARTE_PESSOAL_ROLES.some((r) => p.tipo.toUpperCase().includes(r))
+    })
+    if (isPartePessoal) return false
   }
 
-  // 3. Movimentações mencionam perito/nomeação
-  const hasKeywordInSteps = n.movimentacoes.some((m) => {
+  // 3. Movimentações mencionam "perito" + nome do perito juntos
+  if (peritoNome) {
+    const nomeUpper = peritoNome.toUpperCase()
+    const hasNomeacaoInSteps = n.movimentacoes.some((m) => {
+      const text = (m.descricao + ' ' + (m.tipo ?? '')).toUpperCase()
+      return text.includes('PERIT') && text.includes(nomeUpper)
+    })
+    if (hasNomeacaoInSteps) return true
+  }
+
+  // 4. Movimentações mencionam nomeação de perito (genérico)
+  const hasPeritStep = n.movimentacoes.some((m) => {
     const text = (m.descricao + ' ' + (m.tipo ?? '')).toLowerCase()
-    return PERITO_KEYWORDS.some((kw) => text.includes(kw))
+    return PERITO_STEP_KEYWORDS.some((kw) => new RegExp(kw).test(text))
   })
-  if (hasKeywordInSteps) return true
+  if (hasPeritStep) return true
 
   return false
 }

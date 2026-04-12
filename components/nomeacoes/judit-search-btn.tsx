@@ -2,9 +2,7 @@
 
 /**
  * Busca nomeações via Judit (CPF do perito).
- *
  * Cria NomeacaoCitacao (NAO Pericia).
- * O perito cria a perícia manualmente pelo botão existente.
  */
 
 import { useState, useTransition } from 'react'
@@ -16,17 +14,9 @@ interface Props {
   cpf: string | null
 }
 
-interface SearchResult {
-  ok: boolean
-  message: string
-  totalProcessos?: number
-  periciasCriadas?: number
-  periciasAtualizadas?: number
-}
-
 export function JuditSearchBtn({ cpf }: Props) {
   const [loading, startTransition] = useTransition()
-  const [result, setResult] = useState<SearchResult | null>(null)
+  const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null)
   const router = useRouter()
 
   function handleSearch() {
@@ -39,8 +29,8 @@ export function JuditSearchBtn({ cpf }: Props) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ cpf }),
         })
-        const data: SearchResult = await res.json()
-        setResult(data)
+        const data = await res.json()
+        setResult({ ok: data.ok, message: data.message })
         if (data.ok) router.refresh()
       } catch {
         setResult({ ok: false, message: 'Erro de conexao' })
@@ -58,15 +48,9 @@ export function JuditSearchBtn({ cpf }: Props) {
         className="w-full flex items-center justify-center gap-3 bg-[#a3e635] text-slate-900 px-6 py-4 text-[11px] font-black uppercase tracking-[0.2em] hover:bg-[#bef264] transition-all disabled:opacity-40"
       >
         {loading ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Buscando nomeações na Judit...
-          </>
+          <><Loader2 className="h-4 w-4 animate-spin" /> Buscando nomeações...</>
         ) : (
-          <>
-            <Search className="h-4 w-4" />
-            Buscar nomeações por CPF (Judit)
-          </>
+          <><Search className="h-4 w-4" /> Buscar Nomeações</>
         )}
       </button>
 
@@ -76,14 +60,8 @@ export function JuditSearchBtn({ cpf }: Props) {
           result.ok ? 'border-lime-200 bg-lime-50' : 'border-rose-200 bg-rose-50',
         )}>
           <div className="flex items-center gap-2">
-            {result.ok
-              ? <CheckCircle className="h-4 w-4 text-[#4d7c0f]" />
-              : <AlertTriangle className="h-4 w-4 text-rose-600" />
-            }
-            <p className={cn(
-              'text-[11px] font-bold',
-              result.ok ? 'text-[#4d7c0f]' : 'text-rose-600',
-            )}>
+            {result.ok ? <CheckCircle className="h-4 w-4 text-[#4d7c0f]" /> : <AlertTriangle className="h-4 w-4 text-rose-600" />}
+            <p className={cn('text-[11px] font-bold', result.ok ? 'text-[#4d7c0f]' : 'text-rose-600')}>
               {result.message}
             </p>
           </div>

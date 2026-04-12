@@ -1,5 +1,6 @@
-import { Plug, CheckCircle, Clock, ArrowRight, KeyRound, ShieldCheck } from 'lucide-react'
+import { Plug, CheckCircle, Clock, ArrowRight, KeyRound, ShieldCheck, Zap } from 'lucide-react'
 import { PageHeader } from '@/components/shared/page-header'
+import { ApiProviderSelect } from '@/components/integracoes/api-provider-select'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { CredenciaisPjeSection } from '@/components/integracoes/credenciais-pje'
@@ -146,6 +147,24 @@ export default async function IntegracoesPage() {
         title="Integrações"
         description="Conecte o Minhas Perícias com tribunais e ferramentas externas"
       />
+
+      {/* ── Seção: Provedor de API ──────────────────────────────────────────── */}
+      <section className="space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f2f3f9]">
+            <Zap className="h-5 w-5 text-[#374151]" />
+          </div>
+          <div>
+            <h2 className="text-[15px] font-semibold text-[#1f2937] font-manrope">Provedor de busca</h2>
+            <p className="text-[13px] text-[#6b7280]">
+              Escolha qual serviço usar para buscar nomeações e processos.
+            </p>
+          </div>
+        </div>
+        <ApiProviderSelect />
+      </section>
+
+      <div className="border-t border-[#f2f3f9]" />
 
       {/* ── Seção: Certificado Digital A1 ────────────────────────────────────── */}
       <section className="space-y-4">
