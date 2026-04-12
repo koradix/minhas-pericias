@@ -188,6 +188,8 @@ export interface NormalizedAttachment {
   tamanhoBytes: number | null
   data: string | null
   source: 'judit'
+  /** Status no provedor: 'done' = capturado e pronto para download */
+  providerStatus: string | null
 }
 
 // ─── Result types ────────────────────────────────────────────────────────────

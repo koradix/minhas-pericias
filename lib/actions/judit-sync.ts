@@ -270,14 +270,19 @@ export async function fetchAndSyncByCpf(cpf: string): Promise<CpfSearchSyncResul
 
 // ─── Buscar por CNJ → sync pericias existente ──────────────────────────────
 
-export async function fetchAndSyncByCnj(cnj: string): Promise<JuditSyncResult> {
+export async function fetchAndSyncByCnj(
+  cnj: string,
+  options?: { withAttachments?: boolean },
+): Promise<JuditSyncResult> {
   if (!isJuditReady()) return { ok: false, message: 'Judit nao habilitada' }
 
   const session = await auth()
   if (!session?.user?.id) return { ok: false, message: 'Nao autenticado' }
 
   try {
-    const result = await judit.fetchProcessByCnj(cnj)
+    const result = await judit.fetchProcessByCnj(cnj, {
+      withAttachments: options?.withAttachments ?? false,
+    })
     if (!result) return { ok: false, message: 'Erro ao consultar Judit' }
     if (result.status === 'timeout') return { ok: false, message: 'Timeout', requestId: result.requestId }
     if (result.status === 'failed') return { ok: false, message: 'Falhou', requestId: result.requestId }
@@ -336,7 +341,7 @@ export async function syncPericia(periciaId: string): Promise<JuditSyncResult> {
   if (!pericia || pericia.peritoId !== session.user.id) return { ok: false, message: 'Pericia nao encontrada' }
   if (!pericia.processo) return { ok: false, message: 'Sem CNJ' }
 
-  return fetchAndSyncByCnj(pericia.processo)
+  return fetchAndSyncByCnj(pericia.processo, { withAttachments: false })
 }
 
 // ─── Download de anexos ─────────────────────────────────────────────────────
@@ -355,9 +360,23 @@ export async function downloadPericiaAttachments(periciaId: string): Promise<Att
 
   const pericia = await prisma.pericia.findUnique({ where: { id: periciaId } })
   if (!pericia || pericia.peritoId !== session.user.id) return { ...empty, message: 'Pericia nao encontrada' }
+  if (!pericia.processo) return { ...empty, message: 'Pericia sem CNJ — nao e possivel baixar anexos' }
 
+  // ─── Passo 1: Re-request com with_attachments para Judit capturar os arquivos
+  juditLog(`Download attachments: re-sync CNJ ${pericia.processo} com with_attachments=true`)
+  const syncResult = await fetchAndSyncByCnj(pericia.processo, { withAttachments: true })
+  if (!syncResult.ok) {
+    juditLog(`Re-sync falhou: ${syncResult.message}`)
+    // Continua mesmo se falhou — tenta baixar o que ja tem
+  }
+
+  // ─── Passo 2: Buscar anexos pendentes (inclui unavailable)
   const attachments = await prisma.processAttachment.findMany({
-    where: { periciaId, source: JUDIT_SOURCE, downloadStatus: { in: ['pending', 'failed'] } },
+    where: {
+      periciaId,
+      source: JUDIT_SOURCE,
+      downloadStatus: { in: ['pending', 'failed', 'unavailable'] },
+    },
   })
 
   if (attachments.length === 0) {
@@ -366,19 +385,24 @@ export async function downloadPericiaAttachments(periciaId: string): Promise<Att
     return { ...empty, ok: true, message: `Nenhum pendente (${downloaded}/${total} baixados)`, totalAnexos: total, jaExistiam: downloaded }
   }
 
+  // ─── Passo 3: Baixar cada anexo via endpoint lawsuits
   let baixados = 0, falharam = 0, apenasMetadata = 0
 
   for (const att of attachments) {
-    if (!att.url) {
-      await prisma.processAttachment.update({ where: { id: att.id }, data: { downloadStatus: 'unavailable', downloadError: 'Sem URL' } })
+    // Construir URL: /lawsuits/{cnj}/{instance}/attachments/{attachmentId}
+    const downloadUrl = att.url ?? judit.buildAttachmentUrl(pericia.processo, 1, att.externalId)
+
+    // Pular anexos marcados como nao disponiveis pelo provedor
+    if (!att.downloadAvailable) {
+      await prisma.processAttachment.update({ where: { id: att.id }, data: { downloadStatus: 'unavailable', downloadError: 'Nao disponivel no provedor', url: downloadUrl } })
       apenasMetadata++
       continue
     }
 
     try {
-      const result = await judit.downloadAttachment(att.url)
+      const result = await judit.downloadAttachment(downloadUrl)
       if (!result) {
-        await prisma.processAttachment.update({ where: { id: att.id }, data: { downloadStatus: 'failed', downloadError: 'Vazio' } })
+        await prisma.processAttachment.update({ where: { id: att.id }, data: { downloadStatus: 'failed', downloadError: 'Resposta vazia (arquivo nao capturado pela Judit)', url: downloadUrl } })
         falharam++
         continue
       }
@@ -391,12 +415,12 @@ export async function downloadPericiaAttachments(periciaId: string): Promise<Att
 
       await prisma.processAttachment.update({
         where: { id: att.id },
-        data: { blobUrl: blob.url, blobPathname: blob.pathname, mimeType: result.contentType, sizeBytes: result.buffer.length, downloadStatus: 'downloaded', downloadedAt: new Date(), downloadError: null },
+        data: { url: downloadUrl, blobUrl: blob.url, blobPathname: blob.pathname, mimeType: result.contentType, sizeBytes: result.buffer.length, downloadStatus: 'downloaded', downloadedAt: new Date(), downloadError: null },
       })
       baixados++
     } catch (e) {
       const errMsg = e instanceof Error ? e.message : String(e)
-      await prisma.processAttachment.update({ where: { id: att.id }, data: { downloadStatus: 'failed', downloadError: errMsg.slice(0, 500) } })
+      await prisma.processAttachment.update({ where: { id: att.id }, data: { downloadStatus: 'failed', downloadError: errMsg.slice(0, 500), url: downloadUrl } })
       falharam++
     }
   }
@@ -404,7 +428,7 @@ export async function downloadPericiaAttachments(periciaId: string): Promise<Att
   const totalAnexos = await prisma.processAttachment.count({ where: { periciaId, source: JUDIT_SOURCE } })
   const jaExistiam = await prisma.processAttachment.count({ where: { periciaId, source: JUDIT_SOURCE, downloadStatus: 'downloaded' } })
 
-  return { ok: true, message: `${baixados} baixados, ${falharam} falharam, ${apenasMetadata} sem URL`, periciaId, totalAnexos, jaExistiam, baixados, falharam, apenasMetadata }
+  return { ok: true, message: `${baixados} baixados, ${falharam} falharam, ${apenasMetadata} sem arquivo`, periciaId, totalAnexos, jaExistiam, baixados, falharam, apenasMetadata }
 }
 
 function mimeToExt(mime: string): string {

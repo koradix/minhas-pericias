@@ -76,13 +76,14 @@ export function normalizeLawsuit(j: JuditLawsuit): NormalizedLawsuit {
     externalId: a.attachment_id ?? '',
     nome: a.attachment_name ?? 'Documento sem nome',
     tipo: a.extension ?? 'unknown',
-    url: null, // Judit nao retorna URL direta no payload — download separado
+    url: null, // URL construida no download via /lawsuits/{cnj}/{instance}/attachments/{id}
     mimeType: a.extension === 'pdf' ? 'application/pdf' : null,
     isPublic: !(a.private ?? false),
-    downloadAvailable: a.status !== 'error',
+    downloadAvailable: a.status === 'done',
     tamanhoBytes: null,
     data: safeDate(a.attachment_date),
     source: 'judit' as const,
+    providerStatus: a.status ?? null,
   }))
 
   // Pegar vara do courts array

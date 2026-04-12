@@ -57,7 +57,7 @@ export function ProcessDocuments({ periciaId, attachments }: Props) {
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null)
   const router = useRouter()
 
-  const hasPending = attachments.some((a) => a.downloadStatus === 'pending' || a.downloadStatus === 'failed')
+  const hasPending = attachments.some((a) => a.downloadStatus !== 'downloaded')
 
   function handleSync() {
     startSyncTransition(async () => {

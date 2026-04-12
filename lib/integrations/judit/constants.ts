@@ -17,5 +17,8 @@ export const JUDIT_REQUEST_STATUSES = ['pending', 'processing', 'done', 'error']
 /** Headers padrao para API Judit */
 export const JUDIT_CONTENT_TYPE = 'application/json'
 
+/** Base URL do servico de lawsuits (download de anexos) */
+export const JUDIT_LAWSUITS_BASE_URL = 'https://lawsuits.production.judit.io'
+
 /** Versao da integracao (para logs e debug) */
 export const JUDIT_INTEGRATION_VERSION = '1.0.0'

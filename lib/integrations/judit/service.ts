@@ -10,7 +10,7 @@
 import { isJuditReady, juditLog } from './config'
 import { JuditClient } from './client'
 import { normalizeLawsuit } from './mappers'
-import { JUDIT_POLL_TIMEOUT_MS, JUDIT_POLL_INTERVAL_MS } from './constants'
+import { JUDIT_POLL_TIMEOUT_MS, JUDIT_POLL_INTERVAL_MS, JUDIT_LAWSUITS_BASE_URL } from './constants'
 import type {
   JuditCreateRequestResponse,
   JuditRequestStatus,
@@ -37,13 +37,18 @@ export class JuditService {
 
   // ─── Criar request ─────────────────────────────────────────────────────────
 
-  async createRequest(searchType: JuditSearchType, searchKey: string): Promise<JuditCreateRequestResponse> {
+  async createRequest(
+    searchType: JuditSearchType,
+    searchKey: string,
+    options?: { withAttachments?: boolean },
+  ): Promise<JuditCreateRequestResponse> {
     this.assertReady()
     return client.post<JuditCreateRequestResponse>('/requests', {
       search: {
         search_type: searchType,
         search_key: searchKey,
       },
+      ...(options?.withAttachments ? { with_attachments: true } : {}),
     })
   }
 
@@ -109,11 +114,13 @@ export class JuditService {
 
   // ─── Fluxo completo por CNJ ────────────────────────────────────────────────
 
-  async fetchProcessByCnj(cnj: string): Promise<JuditFetchResult | null> {
+  async fetchProcessByCnj(cnj: string, options?: { withAttachments?: boolean }): Promise<JuditFetchResult | null> {
     if (!isJuditReady()) return null
     try {
-      const req = await this.createRequest('lawsuit_cnj', cnj)
-      juditLog(`Request CNJ criado: ${req.request_id}`)
+      const req = await this.createRequest('lawsuit_cnj', cnj, {
+        withAttachments: options?.withAttachments ?? false,
+      })
+      juditLog(`Request CNJ criado: ${req.request_id} (with_attachments: ${options?.withAttachments ?? false})`)
       return this.pollAndFetch(req.request_id, req.status)
     } catch (e) {
       juditLog('fetchProcessByCnj error:', e)
@@ -136,7 +143,16 @@ export class JuditService {
     }
   }
 
-  // ─── Download de anexo (futuro — endpoint ainda nao confirmado) ────────────
+  // ─── Download de anexo ─────────────────────────────────────────────────────
+
+  /**
+   * Constroi a URL de download de um anexo no endpoint de lawsuits.
+   * Endpoint: GET /lawsuits/{cnj}/{instance}/attachments/{attachmentId}
+   */
+  buildAttachmentUrl(cnj: string, instance: number, attachmentId: string): string {
+    const cleanCnj = cnj.trim()
+    return `${JUDIT_LAWSUITS_BASE_URL}/lawsuits/${cleanCnj}/${instance}/attachments/${attachmentId}`
+  }
 
   async downloadAttachment(attachmentUrl: string): Promise<{
     buffer: Buffer
@@ -145,6 +161,20 @@ export class JuditService {
   } | null> {
     if (!isJuditReady()) return null
     return client.downloadBinary(attachmentUrl)
+  }
+
+  /**
+   * Download de anexo usando cnj + instance + attachmentId.
+   * Constroi a URL e delega para downloadAttachment.
+   */
+  async downloadAttachmentByParts(cnj: string, instance: number, attachmentId: string): Promise<{
+    buffer: Buffer
+    contentType: string
+    fileName: string | null
+  } | null> {
+    const url = this.buildAttachmentUrl(cnj, instance, attachmentId)
+    juditLog(`Download attachment: ${url}`)
+    return this.downloadAttachment(url)
   }
 
   // ─── Helpers ───────────────────────────────────────────────────────────────
