@@ -390,7 +390,7 @@ export function PericiaEditCard(props: Props) {
           />
         </Field>
 
-        <Field label="Honorários estimados (R$)" value={display.valorHonorarios ? `R$ ${display.valorHonorarios.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : null} editing={editing}>
+        <Field label="Honorários estimados (R$)" value={display.valorHonorarios ? `R$ ${display.valorHonorarios.toFixed(2).replace('.', ',')}` : null} editing={editing}>
           <input
             type="number" min="0" step="100"
             className={inputCls}

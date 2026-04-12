@@ -9,13 +9,8 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
-import { isJuditReady } from '@/lib/integrations/judit/config'
 
 export async function GET(req: Request) {
-  if (!isJuditReady()) {
-    return NextResponse.json({ error: 'Judit disabled' }, { status: 503 })
-  }
-
   const session = await auth()
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
