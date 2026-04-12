@@ -52,7 +52,7 @@ function extractJson(text: string): string {
 
 // ─── Action ─────────────────────────────────────────────────────────────────
 
-export async function analisarAutosIA(periciaId: string): Promise<AnalisarAutosResult> {
+export async function analisarAutosIA(periciaId: string, attachmentIds?: string[]): Promise<AnalisarAutosResult> {
   const empty: AnalisarAutosResult = { ok: false, message: '', docsAnalisados: 0 }
 
   const session = await auth()
@@ -65,17 +65,22 @@ export async function analisarAutosIA(periciaId: string): Promise<AnalisarAutosR
   if (!pericia || pericia.peritoId !== session.user.id) return { ...empty, message: 'Pericia nao encontrada' }
   if (!pericia.processo) return { ...empty, message: 'Pericia sem CNJ' }
 
-  // Buscar anexos downloaded (PDF)
+  // Buscar anexos — se IDs especificados, usar esses; senão, todos downloaded
   const attachments = await prisma.processAttachment.findMany({
     where: {
       periciaId,
       source: JUDIT_SOURCE,
-      downloadStatus: 'downloaded',
+      ...(attachmentIds && attachmentIds.length > 0
+        ? { id: { in: attachmentIds } }
+        : { downloadStatus: 'downloaded' }),
     },
   })
 
   const pdfAtts = attachments
-    .filter(a => (a.mimeType ?? a.type ?? '').includes('pdf'))
+    .filter(a => {
+      const mime = (a.mimeType ?? a.type ?? '').toLowerCase()
+      return mime.includes('pdf') || mime === '' // include unknown types too
+    })
     .sort((a, b) => prioridade(a.name) - prioridade(b.name))
     .slice(0, MAX_PDFS)
 

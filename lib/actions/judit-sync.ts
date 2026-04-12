@@ -16,7 +16,6 @@
 
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/auth'
-import { put } from '@vercel/blob'
 import { isJuditReady, juditLog, juditConfig } from '@/lib/integrations/judit/config'
 import { judit } from '@/lib/integrations/judit/service'
 import type { JuditFetchResult } from '@/lib/integrations/judit/service'
@@ -407,15 +406,9 @@ export async function downloadPericiaAttachments(periciaId: string): Promise<Att
         continue
       }
 
-      const ext = mimeToExt(result.contentType)
-      const safeName = (result.fileName ?? att.name ?? 'doc').replace(/[^a-zA-Z0-9._-]/g, '_')
-      const pathname = `judit-attachments/${periciaId}/${att.externalId}/${safeName}${ext ? `.${ext}` : ''}`
-
-      const blob = await put(pathname, result.buffer, { access: 'public', contentType: result.contentType, addRandomSuffix: false })
-
       await prisma.processAttachment.update({
         where: { id: att.id },
-        data: { url: downloadUrl, blobUrl: blob.url, blobPathname: blob.pathname, mimeType: result.contentType, sizeBytes: result.buffer.length, downloadStatus: 'downloaded', downloadedAt: new Date(), downloadError: null },
+        data: { url: downloadUrl, mimeType: result.contentType, sizeBytes: result.buffer.length, downloadStatus: 'downloaded', downloadedAt: new Date(), downloadError: null },
       })
       baixados++
     } catch (e) {
@@ -431,7 +424,3 @@ export async function downloadPericiaAttachments(periciaId: string): Promise<Att
   return { ok: true, message: `${baixados} baixados, ${falharam} falharam, ${apenasMetadata} sem arquivo`, periciaId, totalAnexos, jaExistiam, baixados, falharam, apenasMetadata }
 }
 
-function mimeToExt(mime: string): string {
-  const map: Record<string, string> = { 'application/pdf': 'pdf', 'application/msword': 'doc', 'image/jpeg': 'jpg', 'image/png': 'png', 'text/html': 'html' }
-  return map[mime.split(';')[0].trim()] ?? ''
-}

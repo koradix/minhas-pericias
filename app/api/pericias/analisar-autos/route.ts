@@ -17,7 +17,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, message: 'Not authenticated' }, { status: 403 })
   }
 
-  let body: { periciaId?: string }
+  let body: { periciaId?: string; attachmentIds?: string[] }
   try {
     body = await req.json()
   } catch {
@@ -29,6 +29,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, message: '"periciaId" required' }, { status: 400 })
   }
 
-  const result = await analisarAutosIA(periciaId)
+  const result = await analisarAutosIA(periciaId, body.attachmentIds)
   return NextResponse.json(result, { status: result.ok ? 200 : 422 })
 }
