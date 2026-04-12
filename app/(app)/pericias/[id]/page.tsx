@@ -350,40 +350,38 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
   // ─── Judit data (isolado, feature-flagged) ──────────────────────────────────
   let juditMovements: { id: string; eventDate: string; type: string | null; description: string }[] = []
   let juditAttachments: { id: string; name: string; type: string | null; mimeType: string | null; isPublic: boolean; downloadAvailable: boolean; url: string | null; blobUrl: string | null; downloadStatus: string; publishedAt: string | null }[] = []
-  if (isJuditReady()) {
-    try {
-      const [dbMov, dbAtt] = await Promise.all([
-        prisma.processMovement.findMany({
-          where: { periciaId: pericia.id, source: 'judit' },
-          orderBy: { eventDate: 'desc' },
-          select: { id: true, eventDate: true, type: true, description: true },
-        }),
-        prisma.processAttachment.findMany({
-          where: { periciaId: pericia.id, source: 'judit' },
-          orderBy: { capturedAt: 'desc' },
-          select: { id: true, name: true, type: true, mimeType: true, isPublic: true, downloadAvailable: true, url: true, blobUrl: true, downloadStatus: true, publishedAt: true },
-        }),
-      ])
-      juditMovements = dbMov.map((m: { id: string; eventDate: Date; type: string | null; description: string }) => ({
-        id: m.id,
-        eventDate: m.eventDate.toISOString(),
-        type: m.type,
-        description: m.description,
-      }))
-      juditAttachments = dbAtt.map((a: { id: string; name: string; type: string | null; mimeType: string | null; isPublic: boolean; downloadAvailable: boolean; url: string | null; blobUrl: string | null; downloadStatus: string; publishedAt: Date | null }) => ({
-        id: a.id,
-        name: a.name,
-        type: a.type,
-        mimeType: a.mimeType,
-        isPublic: a.isPublic,
-        downloadAvailable: a.downloadAvailable,
-        url: a.url,
-        blobUrl: a.blobUrl,
-        downloadStatus: a.downloadStatus,
-        publishedAt: a.publishedAt?.toISOString() ?? null,
-      }))
-    } catch {}
-  }
+  try {
+    const [dbMov, dbAtt] = await Promise.all([
+      prisma.processMovement.findMany({
+        where: { periciaId: pericia.id, source: 'judit' },
+        orderBy: { eventDate: 'desc' },
+        select: { id: true, eventDate: true, type: true, description: true },
+      }),
+      prisma.processAttachment.findMany({
+        where: { periciaId: pericia.id, source: 'judit' },
+        orderBy: { capturedAt: 'desc' },
+        select: { id: true, name: true, type: true, mimeType: true, isPublic: true, downloadAvailable: true, url: true, blobUrl: true, downloadStatus: true, publishedAt: true },
+      }),
+    ])
+    juditMovements = dbMov.map((m: { id: string; eventDate: Date; type: string | null; description: string }) => ({
+      id: m.id,
+      eventDate: m.eventDate.toISOString(),
+      type: m.type,
+      description: m.description,
+    }))
+    juditAttachments = dbAtt.map((a: { id: string; name: string; type: string | null; mimeType: string | null; isPublic: boolean; downloadAvailable: boolean; url: string | null; blobUrl: string | null; downloadStatus: string; publishedAt: Date | null }) => ({
+      id: a.id,
+      name: a.name,
+      type: a.type,
+      mimeType: a.mimeType,
+      isPublic: a.isPublic,
+      downloadAvailable: a.downloadAvailable,
+      url: a.url,
+      blobUrl: a.blobUrl,
+      downloadStatus: a.downloadStatus,
+      publishedAt: a.publishedAt?.toISOString() ?? null,
+    }))
+  } catch {}
 
   // Auto-populate agenda (idempotent, non-blocking)
   const hasAnalise2 = !!nomeacaoLink?.extractedData
