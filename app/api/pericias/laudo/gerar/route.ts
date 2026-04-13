@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
+import { SYSTEM_PROMPT_LAUDO, detectarTipoLaudo, getContextoRegulatorio, REGRAS_QUESITOS } from '@/lib/ai/prompts-laudo'
 
 export const maxDuration = 120
 
@@ -69,9 +70,11 @@ export interface GerarLaudoOutput {
   }
 }
 
-// ─── System prompt ────────────────────────────────────────────────────────────
+// ─── System prompt movido para lib/ai/prompts-laudo.ts ──────────────────────
+// SYSTEM_PROMPT_LAUDO é importado no topo do arquivo.
+// O antigo SYSTEM_PROMPT inline foi removido.
 
-const SYSTEM_PROMPT = `Você é um especialista em elaboração de laudos periciais técnicos para uso judicial, com foco em engenharia (energia, água, TOI e correlatos).
+const _LEGACY_PROMPT_REMOVED = `Removido — agora usa SYSTEM_PROMPT_LAUDO de lib/ai/prompts-laudo.ts.
 
 OBJETIVO:
 Gerar a PRIMEIRA VERSÃO de um laudo pericial com base no MODELO SELECIONADO, mantendo fielmente sua estrutura, linguagem e organização. O resultado será editado pelo perito no sistema e depois exportado em .DOCX.
@@ -214,7 +217,11 @@ ${(input.documentosProcesso ?? []).length > 0
   ? input.documentosProcesso.map((d, i) => `Doc ${i}: ${d.nome}${d.tipo ? ` (${d.tipo})` : ''}`).join('\n')
   : '[nenhum documento do processo disponível]'}
 
-Gere a PRIMEIRA VERSÃO do laudo seguindo todas as regras do system prompt. Retorne APENAS o JSON.`
+${getContextoRegulatorio(detectarTipoLaudo(input.templateCategoria))}
+
+${REGRAS_QUESITOS}
+
+Gere a PRIMEIRA VERSÃO do laudo seguindo todas as regras. Retorne APENAS o JSON.`
 }
 
 // ─── Validation ───────────────────────────────────────────────────────────────
@@ -252,7 +259,7 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 16000,
-        system: SYSTEM_PROMPT,
+        system: SYSTEM_PROMPT_LAUDO,
         messages: [{ role: 'user', content: buildUserPrompt(input) }],
       }),
     })
