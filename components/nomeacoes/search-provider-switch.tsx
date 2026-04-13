@@ -118,11 +118,20 @@ export function SearchProviderSwitch({ cpf, siglas, radarConfigurado }: Props) {
         </div>
       )}
 
-      <p className="text-[9px] text-slate-400 text-center uppercase tracking-widest">
-        {provider === 'both' ? 'Escavador + Judit' : provider === 'judit' ? 'Judit (CPF)' : 'Escavador (nome)'}
-        {' · '}
-        <a href="/integracoes" className="text-slate-500 hover:text-slate-700 underline">Alterar</a>
-      </p>
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => setShowManual(!showManual)}
+          className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-slate-700 transition-colors"
+        >
+          <Plus className="h-3 w-3" />
+          Registrar manualmente
+        </button>
+        <p className="text-[9px] text-slate-400 uppercase tracking-widest">
+          {provider === 'both' ? 'Escavador + Judit' : provider === 'judit' ? 'Judit' : 'Escavador'}
+          {' · '}
+          <a href="/integracoes" className="text-slate-500 hover:text-slate-700 underline">Alterar</a>
+        </p>
+      </div>
     </div>
   )
 }
