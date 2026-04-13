@@ -111,7 +111,7 @@ export async function getConsumoJudit(
   const ate = dataFim ?? agora.toISOString().split('T')[0]
 
   try {
-    const url = `${juditConfig.baseUrl}/requests?page_size=1000&created_at_gte=${de}&created_at_lte=${ate}`
+    const url = `${juditConfig.baseUrl}/requests?page_size=100&created_at_gte=${de}&created_at_lte=${ate}`
     const res = await fetch(url, {
       headers: { 'api-key': juditConfig.apiKey },
     })
