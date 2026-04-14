@@ -486,28 +486,8 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
           </div>
         )}
 
-        {/* Dados Cadastrais — editável no header */}
+        {/* Edição de dados — integrada na meta bar do cabeçalho */}
         <div className="border-t border-slate-200">
-          <div className="max-w-7xl mx-auto">
-            {(() => {
-              const analiseIA = nomeacaoLink?.processSummary
-                ? (() => { try { return JSON.parse(nomeacaoLink!.processSummary!) } catch { return null } })()
-                : null
-              return (
-                <PericiaEditCard
-                  periciaId={pericia.id}
-                  assunto={pericia.assunto}
-                  vara={pericia.vara}
-                  partes={pericia.partes}
-                  endereco={pericia.endereco}
-                  prazo={pericia.prazo}
-                  valorHonorarios={pericia.valorHonorarios}
-                  analise={analiseIA}
-                  tags={(() => { try { return JSON.parse(pericia.tags ?? '[]') } catch { return [] } })()}
-                />
-              )
-            })()}
-          </div>
         </div>
       </div>
 
