@@ -114,7 +114,7 @@ function CitacaoCard({ citacao }: { citacao: CitacaoSerializada }) {
               href={citacao.linkCitacao}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1 text-[9px] font-bold text-slate-400 hover:text-slate-700 transition-colors"
+              className="flex items-center gap-1 text-[9px] font-bold text-blue-500 hover:text-blue-700 transition-colors underline"
             >
               <ExternalLink className="h-2.5 w-2.5" />
               Diário
