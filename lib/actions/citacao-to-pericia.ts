@@ -73,15 +73,25 @@ export async function criarPericiaDeCitacao(
   // Extract data from snippet using Claude
   const dados = await extrairDadosDaSnippet(citacao.snippet, citacao.diarioSigla)
 
-  // Número sequencial: {Seq}-{Ano}-{UF}-{Cidade}-{Vara}
+  // ─── Gerar ID: {Seq}-{Ano}-{UF}-{Cidade}-{NºVara}{Tipo} ──────────────
   const count = await prisma.pericia.count({ where: { peritoId } })
   const seq = String(count + 1).padStart(3, '0')
-  const ano = new Date().getFullYear()
-  const ufCode = citacao.diarioSigla?.replace(/^DJ/, 'TJ').replace('TJ', '').slice(0, 2) || 'XX'
-  const varaClean = dados.vara
-    ? dados.vara.split(' ').slice(0, 2).join('_').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Z0-9_]/g, '')
+  const ano = citacao.diarioData ? citacao.diarioData.getFullYear() : new Date().getFullYear()
+  // UF do diário: DJRJ → RJ
+  const ufCode = citacao.diarioSigla?.replace(/^DJ/, '').replace(/^TJ/, '').slice(0, 2).toUpperCase() || 'XX'
+  // Cidade: extrair da vara (ex: "3ª Vara Cível de Cabo Frio" → CABO_FRIO)
+  const cidadeMatch = dados.vara?.match(/(?:de|da|do)\s+(.+?)$/i)
+  const cidade = cidadeMatch
+    ? cidadeMatch[1].toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '_').replace(/[^A-Z0-9_]/g, '').slice(0, 15)
     : 'SEM'
-  const numero = `${seq}-${ano}-${ufCode}-${varaClean}-CIV`
+  // Número da vara: "3ª Vara Cível" → 3
+  const varaNumMatch = dados.vara?.match(/^(\d+)[ªº]?\s/i)
+  const varaNum = varaNumMatch ? varaNumMatch[1] : ''
+  const varaTipo = dados.vara?.toLowerCase().includes('famil') ? 'FAM'
+    : dados.vara?.toLowerCase().includes('fazenda') ? 'FAZ'
+    : dados.vara?.toLowerCase().includes('única') ? 'VU'
+    : 'CIV'
+  const numero = `${seq}-${ano}-${ufCode}-${cidade}-${varaNum}${varaTipo}`
 
   // Extrair CNJ: 1) campo da citação, 2) Claude, 3) regex no snippet
   const isCnj = (s: string | null) => s && /^\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}$/.test(s)
@@ -131,6 +141,15 @@ export async function criarPericiaDeCitacao(
     }
   }
 
+  // Formatar partes como "AUTOR: xxx × RÉU: yyy"
+  let partesFormatadas = dados.partes ?? null
+  if (partesFormatadas && !partesFormatadas.includes('AUTOR:')) {
+    const parts = partesFormatadas.split('×').map(p => p.trim())
+    if (parts.length >= 2) {
+      partesFormatadas = `AUTOR: ${parts[0]} × RÉU: ${parts[1]}`
+    }
+  }
+
   const pericia = await prisma.pericia.create({
     data: {
       peritoId,
@@ -139,7 +158,7 @@ export async function criarPericiaDeCitacao(
       tipo: dados.tipo,
       vara: dados.vara ?? undefined,
       processo: processoFinal ?? undefined,
-      partes: dados.partes ?? undefined,
+      partes: partesFormatadas ?? undefined,
       status: 'planejada',
     },
   })
