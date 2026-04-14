@@ -78,31 +78,46 @@ export async function criarPericiaDeCitacao(
     return { ok: false, error: 'Citação não encontrada' }
   }
 
+  // UF do diário
+  const ufCode = citacao.diarioSigla?.replace(/^DJ/, '').replace(/^TJ/, '').slice(0, 2).toUpperCase() || 'XX'
+
   // Extract data — Claude com fallback regex
   let dados = await extrairDadosDaSnippet(citacao.snippet, citacao.diarioSigla)
 
-  // Fallback: extrair do snippet por regex se Claude não retornou partes
-  if (!dados.partes && citacao.snippet) {
-    const s = citacao.snippet
-    // Procurar padrões "AUTOR: xxx" e "RÉU: yyy" ou "Partes: xxx × yyy"
-    const autorMatch = s.match(/AUTOR[A]?:\s*([^×\n]+)/i)
-    const reuMatch = s.match(/R[ÉE]U:\s*([^×\n]+)/i)
+  // ─── Fallback: extrair o máximo do snippet ────────────────────────────
+  const s = citacao.snippet ?? ''
+
+  // Partes: AUTOR/RÉU explícito
+  if (!dados.partes) {
+    const autorMatch = s.match(/AUTOR[A]?:\s*([^×\n,]+)/i)
+    const reuMatch = s.match(/R[ÉE]U:\s*([^×\n,]+)/i)
     if (autorMatch || reuMatch) {
-      const autor = autorMatch?.[1]?.trim() ?? ''
-      const reu = reuMatch?.[1]?.trim() ?? ''
-      dados = { ...dados, partes: `${autor} × ${reu}` }
-    }
-    // Fallback: "Partes: XXX × YYY"
-    if (!dados.partes) {
-      const partesMatch = s.match(/Partes:\s*([^—\n]+)/i)
-      if (partesMatch) dados = { ...dados, partes: partesMatch[1].trim() }
+      dados = { ...dados, partes: [autorMatch?.[1]?.trim(), reuMatch?.[1]?.trim()].filter(Boolean).join(' × ') }
     }
   }
-  // Fallback vara: tentar extrair "Comarca" do snippet
-  if (!dados.vara && citacao.snippet) {
-    const comarcaMatch = citacao.snippet.match(/(?:Comarca|comarca)\s+(?:de\s+)?([^,.\n]+)/i)
+
+  // Partes: "Partes: XXX × YYY"
+  if (!dados.partes) {
+    const partesMatch = s.match(/Partes:\s*([^—\n]+)/i)
+    if (partesMatch) dados = { ...dados, partes: partesMatch[1].trim() }
+  }
+
+  // Vara: buscar no banco VaraPublica pela UF
+  if (!dados.vara) {
+    // Tentar encontrar comarca no snippet
+    const comarcaMatch = s.match(/(?:Comarca|comarca)\s+(?:de\s+|da\s+)?([^,.\n]+)/i)
     if (comarcaMatch) {
-      dados = { ...dados, vara: `Vara Cível — ${comarcaMatch[1].trim()}` }
+      const comarcaNome = comarcaMatch[1].trim().toUpperCase()
+      // Buscar no banco
+      const varaDB = await prisma.varaPublica.findFirst({
+        where: { uf: ufCode, comarca: { contains: comarcaNome } },
+        select: { varaNome: true, comarca: true },
+      })
+      if (varaDB) {
+        dados = { ...dados, vara: `${varaDB.varaNome} — ${varaDB.comarca}` }
+      } else {
+        dados = { ...dados, vara: `Vara Cível — ${comarcaMatch[1].trim()}` }
+      }
     }
   }
 
@@ -110,8 +125,6 @@ export async function criarPericiaDeCitacao(
   const count = await prisma.pericia.count({ where: { peritoId } })
   const seq = String(count + 1).padStart(3, '0')
   const ano = citacao.diarioData ? citacao.diarioData.getFullYear() : new Date().getFullYear()
-  // UF do diário: DJRJ → RJ
-  const ufCode = citacao.diarioSigla?.replace(/^DJ/, '').replace(/^TJ/, '').slice(0, 2).toUpperCase() || 'XX'
   // Cidade: extrair da vara (ex: "3ª Vara Cível de Cabo Frio" → CABO_FRIO)
   const cidadeMatch = dados.vara?.match(/(?:de|da|do)\s+(.+?)$/i)
   const cidade = cidadeMatch
