@@ -10,7 +10,7 @@ import { useRouter } from 'next/navigation'
 import { Search, Loader2, CheckCircle, AlertCircle, Upload } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { buscarNomeacoes, setupRadar } from '@/lib/actions/nomeacoes'
-import { NomeacaoDocumentosSection } from '@/components/nomeacoes/nomeacao-documentos'
+import { RegistroManualForm } from '@/components/nomeacoes/registro-manual-form'
 
 interface Props {
   cpf: string | null
@@ -78,14 +78,8 @@ export function SearchProviderSwitch({ radarConfigurado }: Props) {
       )}
 
       {showUpload && (
-        <div className="border border-slate-200 bg-white p-4">
-          <NomeacaoDocumentosSection
-            variant="minimal"
-            nomeacaoId=""
-            tribunal="TJRJ"
-            numeroProcesso=""
-            nomeArquivo={null}
-          />
+        <div className="border border-slate-200 bg-white p-6">
+          <RegistroManualForm />
         </div>
       )}
     </div>
