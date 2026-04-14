@@ -414,20 +414,24 @@ export async function buscarNomeacoes(): Promise<BuscarResult> {
       console.log(`[buscarNomeacoes] v2/envolvido erro:`, e)
     }
 
-    // ── V1: busca por nome no DJE (complementar, pega publicações recentes) ──
-    const variacoes = buildVariacoes(nomePeito, cpfPerfil)
-    const primeiroUltimo = variacoes[0]
-    try {
-      const fromNome = await radar.buscarPorNome(nomePeito, siglasFiltro).catch(() => [])
-      citacoes.push(...fromNome)
-      console.log(`[buscarNomeacoes] v1/busca: ${fromNome.length} publicações`)
-    } catch {}
-
-    if (primeiroUltimo && primeiroUltimo.toLowerCase() !== nomePeito.toLowerCase()) {
+    // ── V1: busca DJE (só se v2 não encontrou nada — evita duplicatas) ──
+    if (citacoes.length === 0) {
+      const variacoes = buildVariacoes(nomePeito, cpfPerfil)
+      const primeiroUltimo = variacoes[0]
       try {
-        const fromAbrev = await radar.buscarPorNome(primeiroUltimo, siglasFiltro).catch(() => [])
-        citacoes.push(...fromAbrev)
+        const fromNome = await radar.buscarPorNome(nomePeito, siglasFiltro).catch(() => [])
+        citacoes.push(...fromNome)
+        console.log(`[buscarNomeacoes] v1/busca: ${fromNome.length} publicações`)
       } catch {}
+
+      if (primeiroUltimo && primeiroUltimo.toLowerCase() !== nomePeito.toLowerCase()) {
+        try {
+          const fromAbrev = await radar.buscarPorNome(primeiroUltimo, siglasFiltro).catch(() => [])
+          citacoes.push(...fromAbrev)
+        } catch {}
+      }
+    } else {
+      console.log(`[buscarNomeacoes] v2 encontrou ${citacoes.length} — v1 DJE não necessário`)
     }
     // ── Dedup por externalId ─────────────────────────────────────────────────
     const seen = new Set<string>()
