@@ -129,12 +129,7 @@ export function SearchProviderSwitch({ cpf, radarConfigurado }: Props) {
         </div>
       )}
 
-      {/* Provedor ativo */}
-      <p className="text-[9px] text-slate-400 text-right uppercase tracking-widest">
-        {isManualOnly ? 'Manual' : provider === 'both' ? 'Escavador + Judit' : provider === 'judit' ? 'Judit' : 'Escavador'}
-        {' · '}
-        <a href="/integracoes" className="text-slate-500 hover:text-slate-700 underline">Alterar</a>
-      </p>
+      {/* Provedor oculto — config em /integracoes */}
     </div>
   )
 }

@@ -87,14 +87,18 @@ export async function criarPericiaDeCitacao(
     if (cnjMatch) processoFinal = cnjMatch[0]
   }
 
-  // Anti-duplicidade: se já existe perícia com mesmo CNJ para este perito, redireciona
+  // Anti-duplicidade: se citação já tem perícia vinculada
+  if (citacao.periciaId) {
+    return { ok: true, periciaId: citacao.periciaId }
+  }
+
+  // Anti-duplicidade: se já existe perícia com mesmo CNJ
   if (processoFinal) {
     const existente = await prisma.pericia.findFirst({
       where: { peritoId, processo: processoFinal },
       select: { id: true },
     })
     if (existente) {
-      // Vincular citação à perícia existente
       await prisma.nomeacaoCitacao.update({
         where: { id: citacaoId },
         data: { visualizado: true, status: 'aceita', periciaId: existente.id },
@@ -103,9 +107,22 @@ export async function criarPericiaDeCitacao(
     }
   }
 
-  // Anti-duplicidade: se citação já tem perícia vinculada
-  if (citacao.periciaId) {
-    return { ok: true, periciaId: citacao.periciaId }
+  // Anti-duplicidade: se já existe perícia com mesmo réu (Escavador pode duplicar datas)
+  if (dados.partes) {
+    const reu = dados.partes.split('×')[1]?.trim()
+    if (reu && reu.length > 5) {
+      const existente = await prisma.pericia.findFirst({
+        where: { peritoId, partes: { contains: reu } },
+        select: { id: true },
+      })
+      if (existente) {
+        await prisma.nomeacaoCitacao.update({
+          where: { id: citacaoId },
+          data: { visualizado: true, status: 'aceita', periciaId: existente.id },
+        })
+        return { ok: true, periciaId: existente.id }
+      }
+    }
   }
 
   const pericia = await prisma.pericia.create({
