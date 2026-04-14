@@ -435,20 +435,21 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
           </div>
         </div>
 
-        {/* ─── Meta Bar (Prominent Black Style) ────────────────────────────────── */}
+        {/* ─── Meta Bar ────────────────────────────────────────────────────────── */}
         <div className="border-t border-slate-200 bg-slate-900">
-           <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-px bg-slate-800">
+           <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-5 gap-px bg-slate-800">
             {[
-              { label: 'Processo', value: pericia.processo ?? 'N/A', highlight: true },
-              { label: 'Vara', value: pericia.vara ?? 'N/A' },
-              { label: 'Partes', value: pericia.partes ?? 'N/A' },
-              { label: 'Registros', value: `${midias.length} arquivos`, highlight: true, lime: true },
+              { label: 'Processo', value: pericia.processo ?? 'Não informado', highlight: true },
+              { label: 'Autor', value: pericia.partes?.split('×')[0]?.replace(/AUTOR:\s*/i, '').trim() || 'Não informado' },
+              { label: 'Réu', value: pericia.partes?.split('×')[1]?.replace(/R[ÉE]U:\s*/i, '').trim() || 'Não informado' },
+              { label: 'Vara', value: pericia.vara ?? 'Não informada' },
+              { label: 'Perito', value: session2?.user?.name ?? 'Perito', lime: true },
             ].map((m, i) => (
-              <div key={i} className="bg-slate-900 px-6 py-6 flex flex-col gap-2">
-                <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-500">{m.label}</p>
+              <div key={i} className="bg-slate-900 px-5 py-5 flex flex-col gap-1.5">
+                <p className="text-[8px] font-black uppercase tracking-[0.3em] text-slate-500">{m.label}</p>
                 <p className={cn(
-                  "text-[13px] font-bold tracking-tight uppercase truncate",
-                  m.lime ? "text-[#a3e635]" : "text-white",
+                  "text-[12px] font-bold tracking-tight uppercase truncate",
+                  (m as { lime?: boolean }).lime ? "text-[#a3e635]" : "text-white",
                   m.highlight ? "font-mono" : ""
                 )}>
                   {m.value}
