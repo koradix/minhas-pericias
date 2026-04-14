@@ -356,13 +356,60 @@ export async function buscarNomeacoes(): Promise<BuscarResult> {
       }
     }
 
-    // ── V2: busca processos do envolvido (retorna CNJ, autor, réu, vara) ──
-    // Fonte principal — dados completos, não snippet cortado
+    // ── V2: busca processos do envolvido — CPF primeiro, nome como fallback ──
     const svc = new EscavadorService()
     try {
-      const { citacoes: fromV2 } = await svc.buscarProcessosEnvolvido(nomePeito, cpfPerfil, 1)
-      citacoes.push(...fromV2)
-      console.log(`[buscarNomeacoes] v2/envolvido: ${fromV2.length} processos`)
+      // Tenta por CPF (mais preciso, sem ambiguidade)
+      const cpfDigits = cpfPerfil?.replace(/\D/g, '') ?? ''
+      const buscaParam = cpfDigits.length === 11 ? cpfDigits : nomePeito
+      const buscaTipo = cpfDigits.length === 11 ? 'cpf_cnpj' : 'nome'
+
+      const params = new URLSearchParams()
+      params.set(buscaTipo, buscaParam)
+      params.set('limit', '50')
+
+      const v2Res = await fetch(`https://api.escavador.com/api/v2/envolvido/processos?${params.toString()}`, {
+        headers: { 'Authorization': `Bearer ${process.env.ESCAVADOR_API_TOKEN}`, 'Accept': 'application/json' },
+      })
+
+      if (v2Res.ok) {
+        const v2Data = await v2Res.json()
+        const v2Items = v2Data?.items ?? []
+        console.log(`[buscarNomeacoes] v2/envolvido (${buscaTipo}): ${v2Items.length} processos`)
+
+        const norm = (ss: string) => ss.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
+        const nomeNorm = norm(nomePeito)
+
+        for (const item of v2Items) {
+          if (!item.numero_cnj) continue
+
+          // Filtrar: só perito, não parte
+          const envolvidos = item.fontes?.[0]?.envolvidos ?? []
+          const peritoEnv = envolvidos.find((e: { nome?: string }) => {
+            const n = norm(e.nome ?? '')
+            return n.includes(nomeNorm) || nomeNorm.includes(n)
+          })
+          const tipo = (peritoEnv?.tipo_normalizado ?? peritoEnv?.tipo ?? 'Envolvido').toUpperCase()
+          const ehParte = ['AUTOR', 'AUTORA', 'RÉU', 'REU', 'REQUERENTE', 'REQUERIDO'].some(t => tipo.includes(t))
+          const ehPerito = ['PERITO', 'PERITA', 'EXPERT', 'AUXILIAR', 'TÉCNICO'].some(t => tipo.includes(t))
+          if (ehParte && !ehPerito) continue
+
+          const vara = item.unidade_origem?.nome ?? ''
+          const partes = [item.titulo_polo_ativo, item.titulo_polo_passivo].filter(Boolean).join(' × ')
+          const snippet = `${peritoEnv?.tipo_normalizado ?? 'Perito'} no processo ${item.numero_cnj} | ${vara} | ${partes}`
+
+          citacoes.push({
+            externalId: `v2p-${item.numero_cnj}`,
+            diarioSigla: item.unidade_origem?.tribunal_sigla ?? 'OUTROS',
+            diarioNome: vara,
+            diarioData: (item.data_ultima_movimentacao ?? item.data_inicio ?? '').split('T')[0],
+            snippet,
+            numeroProcesso: item.numero_cnj,
+            linkCitacao: `https://www.escavador.com/processos/${item.id ?? ''}`,
+            fonte: 'v2_tribunal',
+          } as CitacaoResult & { fonte: string })
+        }
+      }
     } catch (e) {
       console.log(`[buscarNomeacoes] v2/envolvido erro:`, e)
     }
@@ -399,6 +446,9 @@ export async function buscarNomeacoes(): Promise<BuscarResult> {
       ? `${parts[0]} ${parts[parts.length - 1]}`.toLowerCase()
       : nomeLower
     const unique = deduped.filter((c) => {
+      // v2_tribunal: já filtrado pelo Escavador (perito confirmado) — não precisa filtrar snippet
+      if ((c as { fonte?: string }).fonte === 'v2_tribunal') return true
+      // v1 DJE: precisa confirmar que menciona perícia + nome do perito
       if (!isSnippetNomeacaoCivel(c.snippet)) return false
       const snipLower = c.snippet.toLowerCase()
       return snipLower.includes(nomeLower) || snipLower.includes(primeiroUltimoFiltro)
