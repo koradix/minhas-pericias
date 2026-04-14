@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 
 export interface DadosPericia {
+  processo?: string
   assunto?: string
   vara?: string
   partes?: string
@@ -32,6 +33,7 @@ export async function atualizarDadosPericia(
   await prisma.pericia.update({
     where: { id: periciaId },
     data: {
+      ...(dados.processo  !== undefined ? { processo: dados.processo.trim() || null } : {}),
       ...(dados.assunto   !== undefined ? { assunto:  dados.assunto.trim()  } : {}),
       ...(dados.vara      !== undefined ? { vara:     dados.vara.trim() || null   } : {}),
       ...(dados.partes    !== undefined ? { partes:   dados.partes.trim() || null } : {}),

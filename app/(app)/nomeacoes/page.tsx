@@ -79,39 +79,7 @@ export default async function NomeacoesPage() {
         </div>
       )}
 
-      {/* Lista de processos ativos */}
-      <div className="space-y-5 mt-2">
-        {ativos.length > 0 && (
-          <p className="text-[12px] font-bold uppercase tracking-widest text-slate-400">
-            {ativos.length} processo{ativos.length > 1 ? 's' : ''} registrado{ativos.length > 1 ? 's' : ''}
-          </p>
-        )}
-
-        {ativos.length > 0 ? (
-          <div className="grid grid-cols-1 gap-4">
-            {ativos.map((n) => (
-              <NomeacaoCard key={n.id} nomeacao={n} />
-            ))}
-          </div>
-        ) : citacoes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-slate-200 bg-slate-50 py-16">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white border border-slate-200">
-              <Plus className="h-5 w-5 text-slate-400" />
-            </div>
-            <div className="text-center">
-              <p className="text-sm font-semibold text-slate-600">Nenhum processo registrado</p>
-              <p className="text-xs text-slate-400 mt-1">
-                Clique em &ldquo;Registrar processo&rdquo; para adicionar o documento da nomeação
-              </p>
-            </div>
-          </div>
-        ) : null}
-      </div>
-
-      {/* Arquivados — colapsável */}
-      {arquivados.length > 0 && (
-        <ArquivadosCollapse nomeacoes={arquivados} />
-      )}
+      {/* Fluxo antigo (DataJud) — oculto no MVP */}
 
     </div>
   )

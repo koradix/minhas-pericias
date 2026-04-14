@@ -16,7 +16,7 @@ import { getMidiasByPericiaId, type MidiaDaPericia } from '@/lib/data/checkpoint
 import { pericias, statusMapPericias } from '@/lib/mocks/pericias'
 import { PericiaDetailTabs } from '@/components/pericias/pericia-detail-tabs'
 // import { PericiaWorkflow } from '@/components/pericias/pericia-workflow'
-// import { PericiaEditCard } from '@/components/pericias/pericia-edit-card'
+import { PericiaHeaderEdit } from '@/components/pericias/pericia-header-edit'
 import { getFeeProposal, getFeeProposalVersions } from '@/lib/actions/fee-proposal'
 import { getAgendaItems, autoPopulateAgenda } from '@/lib/actions/agenda'
 // AgendaPanel is rendered only inside the Agenda tab
@@ -436,29 +436,15 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
           </div>
         </div>
 
-        {/* ─── Meta Bar ────────────────────────────────────────────────────────── */}
-        <div className="border-t border-slate-200 bg-slate-900">
-           <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-5 gap-px bg-slate-800">
-            {[
-              { label: 'Processo', value: pericia.processo ?? 'Não informado', highlight: true },
-              { label: 'Autor', value: pericia.partes?.split('×')[0]?.replace(/AUTOR:\s*/i, '').trim() || 'Não informado' },
-              { label: 'Réu', value: pericia.partes?.split('×')[1]?.replace(/R[ÉE]U:\s*/i, '').trim() || 'Não informado' },
-              { label: 'Vara', value: pericia.vara ?? 'Não informada' },
-              { label: 'Perito', value: session2?.user?.name ?? 'Perito', lime: true },
-            ].map((m, i) => (
-              <div key={i} className="bg-slate-900 px-5 py-5 flex flex-col gap-1.5">
-                <p className="text-[8px] font-black uppercase tracking-[0.3em] text-slate-500">{m.label}</p>
-                <p className={cn(
-                  "text-[12px] font-bold tracking-tight uppercase truncate",
-                  (m as { lime?: boolean }).lime ? "text-[#a3e635]" : "text-white",
-                  m.highlight ? "font-mono" : ""
-                )}>
-                  {m.value}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
+        {/* ─── Meta Bar (editável) ─────────────────────────────────────────── */}
+        <PericiaHeaderEdit
+          periciaId={pericia.id}
+          processo={pericia.processo}
+          autor={pericia.partes?.split('×')[0]?.replace(/AUTOR:\s*/i, '').trim() || null}
+          reu={pericia.partes?.split('×')[1]?.replace(/R[ÉE]U:\s*/i, '').trim() || null}
+          vara={pericia.vara}
+          perito={session2?.user?.name ?? 'Perito'}
+        />
 
         {/* Quick links bar */}
         {citacaoLink?.linkCitacao && (
@@ -604,7 +590,7 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
                   {nomeacaoLink?.processSummary && (
                     <section>
                       <a
-                        href={`/pericias/${pericia.id}/proposta`}
+                        href={`/pericias/${pericia.id}?tab=proposta`}
                         className="w-full flex items-center justify-center gap-3 bg-[#a3e635] hover:bg-[#bef264] text-slate-900 px-6 py-5 text-[12px] font-black uppercase tracking-[0.2em] transition-all"
                       >
                         Seguir para proposta de honorários →
