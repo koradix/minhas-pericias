@@ -18,23 +18,28 @@ interface ExtractedCitacao {
 async function extrairDadosDaSnippet(snippet: string, diarioSigla: string): Promise<ExtractedCitacao> {
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
-  const prompt = `Analise este trecho do Diário Oficial Judicial (${diarioSigla}) e extraia as informações sobre a nomeação de perito.
+  const prompt = `Analise este trecho do Diário Oficial Judicial (${diarioSigla}) e extraia TODAS as informações disponíveis sobre a nomeação de perito.
 
 TRECHO:
 ${snippet}
 
-Retorne um JSON com os campos abaixo. Se não encontrar a informação, use null.
+INSTRUÇÕES:
+- Procure nomes de pessoas mencionadas como partes (autora/autor, ré/réu, requerente, requerido)
+- Se o texto menciona "pela autora" ou "requerida pela autora", tente inferir o tipo de ação
+- Se menciona "Comarca" ou vara, extraia
+- O número do processo pode estar em formato CNJ ou como "autos n." / "processo n."
+- Se não encontrar, use null — NUNCA invente
 
 {
-  "assunto": "título curto e descritivo para a perícia (ex: 'Perícia de Engenharia Civil — Apuração de Danos', máx 80 chars)",
-  "tipo": "tipo da perícia (ex: Engenharia Civil, Contabilidade, Medicina, Avaliação de Imóvel, etc.)",
-  "vara": "nome da vara ou juízo (ex: '3ª Vara Cível de São Paulo')",
-  "processo": "número do processo no formato CNJ (ex: '1234567-89.2024.8.26.0001') ou null",
-  "partes": "nomes das partes principais separados por × (ex: 'João Silva × Banco XYZ') ou null",
-  "endereco": "endereço do imóvel/local da perícia mencionado no texto, ou null"
+  "assunto": "título curto para a perícia baseado no contexto (ex: 'Perícia Elétrica — Aferição de Medidor'), máx 80 chars",
+  "tipo": "tipo da perícia (ex: Engenharia Elétrica, Saneamento, Avaliação de Imóvel)",
+  "vara": "nome da vara ou comarca mencionada no texto (ex: '2ª Vara Cível de São João de Meriti'), ou null",
+  "processo": "número do processo no formato CNJ se encontrado, ou null",
+  "partes": "nomes das partes separados por × (ex: 'Maria Silva × ENEL BRASIL S.A'), ou null",
+  "endereco": "endereço do imóvel/local da perícia, ou null"
 }
 
-Responda SOMENTE com o JSON, sem markdown.`
+Retorne SOMENTE o JSON, sem markdown.`
 
   try {
     const res = await anthropic.messages.create({
@@ -93,9 +98,12 @@ export async function criarPericiaDeCitacao(
       if (partesMatch) dados = { ...dados, partes: partesMatch[1].trim() }
     }
   }
-  // Fallback vara: extrair do diárioNome da citação
-  if (!dados.vara && citacao.diarioNome) {
-    dados = { ...dados, vara: citacao.diarioNome }
+  // Fallback vara: tentar extrair "Comarca" do snippet
+  if (!dados.vara && citacao.snippet) {
+    const comarcaMatch = citacao.snippet.match(/(?:Comarca|comarca)\s+(?:de\s+)?([^,.\n]+)/i)
+    if (comarcaMatch) {
+      dados = { ...dados, vara: `Vara Cível — ${comarcaMatch[1].trim()}` }
+    }
   }
 
   // ─── Gerar ID: {Seq}-{Ano}-{UF}-{Cidade}-{NºVara}{Tipo} ──────────────
