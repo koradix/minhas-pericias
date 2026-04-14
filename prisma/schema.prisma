@@ -371,6 +371,8 @@ model Pericia {
   status          String       @default("planejada")
   prazo           String?
   valorHonorarios Float?
+  juditRequestId  String?      // ID do request async na Judit
+  juditRequestAt  DateTime?    // quando o request foi criado
   criadoEm        DateTime     @default(now())
   atualizadoEm    DateTime     @updatedAt
   checkpoints     Checkpoint[] @relation("PericiaCheckpoints")

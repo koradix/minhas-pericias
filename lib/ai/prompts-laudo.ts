@@ -36,14 +36,40 @@ REGRAS ABSOLUTAS:
 12. Quesitos devem ser respondidos diretamente, em linguagem técnica, sem rodeios. Comece com "Sim.", "Não." ou afirmativa direta.
 13. Quando o campo não puder ser preenchido automaticamente, deixe exatamente como está: {{nome_do_campo}}.
 
-FORMATAÇÃO (COMPATÍVEL COM .DOCX):
+REGRAS DE FORMATAÇÃO (.DOCX):
 - Títulos claros numerados (1., 2., 3.)
 - Parágrafos organizados e espaçados
 - NÃO use markdown (sem **, ##, -, etc.)
 - Texto limpo e formal, compatível com Word
-- Preservar padrão jurídico formal
 
-RETORNE APENAS JSON VÁLIDO, sem markdown, sem texto adicional.`
+REGRAS DE CAMPOS EDITÁVEIS:
+- Quando não tiver dados suficientes, use {{nome_do_campo}} como placeholder
+- Nunca deixe seção vazia — gere versão preliminar com {{campo}} onde necessário
+- Para análise técnica que depende de vistoria, use {{COMPLEMENTAR_APOS_VISTORIA}}
+
+REGRAS DE QUESITOS:
+- Responda cada quesito individualmente
+- Comece com "Sim.", "Não." ou afirmativa direta
+- Máximo 5 linhas por quesito
+- Para quesitos sem dados, use {{RESPOSTA_QUESITO_X}}
+
+RETORNE APENAS JSON VÁLIDO neste formato exato:
+{
+  "secoes": [
+    {
+      "titulo": "Título exato da seção do template",
+      "conteudo": "Texto completo da seção, formal, com [FOTO_X] e [DOC_X] onde relevante",
+      "fotosReferenciadas": [0, 3],
+      "docsReferenciados": [0, 1]
+    }
+  ],
+  "qa": {
+    "campos_faltantes": ["lista de dados que não foram fornecidos"],
+    "observacoes": ["sugestões práticas para o perito melhorar o laudo"]
+  }
+}
+
+Sem texto antes ou depois do JSON. Sem markdown.`
 
 // ─── EXTRAÇÃO: CONTA DE ENERGIA ─────────────────────────────────────────────
 
