@@ -49,13 +49,19 @@ export function SearchProviderSwitch({ cpf, radarConfigurado }: Props) {
 
       if ((provider === 'judit' || provider === 'both') && cpf) {
         try {
+          const controller = new AbortController()
+          const timer = setTimeout(() => controller.abort(), 25000)
           const res = await fetch('/api/integrations/judit/fetch-by-cpf', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ cpf }),
+            signal: controller.signal,
           }).then(r => r.json()).catch(() => null)
+          clearTimeout(timer)
           if (res?.ok) { totalNovas += res.periciasCriadas ?? 0; msgs.push(`Judit: ${res.periciasCriadas ?? 0} nomeações`) }
           else if (res?.message) msgs.push(`Judit: ${res.message}`)
-        } catch {}
+        } catch {
+          msgs.push('Judit: processando...')
+        }
       }
 
       setResult({

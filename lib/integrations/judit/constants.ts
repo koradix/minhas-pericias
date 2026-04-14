@@ -2,11 +2,11 @@
  * Judit — Constantes da integracao.
  */
 
-/** Tempo maximo de polling para request assíncrona (ms) */
-export const JUDIT_POLL_TIMEOUT_MS = 120_000
+/** Tempo maximo de polling para request assíncrona (ms) — 25s para caber na Vercel */
+export const JUDIT_POLL_TIMEOUT_MS = 25_000
 
 /** Intervalo entre polls (ms) */
-export const JUDIT_POLL_INTERVAL_MS = 3_000
+export const JUDIT_POLL_INTERVAL_MS = 2_000
 
 /** Source tag para registros vindos da Judit */
 export const JUDIT_SOURCE = 'judit' as const
