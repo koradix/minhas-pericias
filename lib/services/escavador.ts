@@ -569,6 +569,40 @@ export class EscavadorService implements RadarProvider {
     return Buffer.from(ab)
   }
 
+  // ── ENDPOINT v2 — Busca processo por CNJ (dados completos) ─────────────────
+  //
+  // GET /api/v2/processos/numero_cnj/{cnj}
+  // Retorna: titulo_polo_ativo (autor), titulo_polo_passivo (réu),
+  // unidade_origem (vara, endereco, cidade, tribunal_sigla)
+
+  async buscarProcessoPorCnjV2(cnj: string): Promise<{
+    autor: string | null
+    reu: string | null
+    vara: string | null
+    endereco: string | null
+    cidade: string | null
+    tribunal: string | null
+  } | null> {
+    try {
+      const res = await fetch(`${this.baseUrlV2}/processos/numero_cnj/${encodeURIComponent(cnj)}`, {
+        headers: this.headers(),
+        cache: 'no-store',
+      })
+      if (!res.ok) return null
+      const data = await res.json()
+      return {
+        autor: data.titulo_polo_ativo ?? null,
+        reu: data.titulo_polo_passivo ?? null,
+        vara: data.unidade_origem?.nome ?? null,
+        endereco: data.unidade_origem?.endereco ?? null,
+        cidade: data.unidade_origem?.cidade ?? null,
+        tribunal: data.unidade_origem?.tribunal_sigla ?? null,
+      }
+    } catch {
+      return null
+    }
+  }
+
   // ── ENDPOINT v2 — Busca processos por envolvido (nome + CPF) ────────────────
   //
   // Escavador v2 /api/v2/envolvido/processos
@@ -617,10 +651,11 @@ export class EscavadorService implements RadarProvider {
       throw new EscavadorError(500, `v2/envolvido erro ${res.status}: ${body.slice(0, 200)}`)
     }
 
-    const data = await res.json() as EscavadorEnvolvidoResponse
-    const items = data?.resposta?.items ?? []
-    const total = data?.resposta?.paginator?.total ?? 0
-    const totalPages = data?.resposta?.paginator?.total_pages ?? 1
+    const data = await res.json()
+    // v2 retorna { items: [], paginator: {}, envolvido_encontrado: {} }
+    const items = data?.items ?? data?.resposta?.items ?? []
+    const total = data?.paginator?.total ?? data?.envolvido_encontrado?.quantidade_processos ?? 0
+    const totalPages = data?.paginator?.total_pages ?? 1
 
     console.log(
       `[Escavador v2] envolvido/processos: ${total} total, página ${page}/${totalPages}, ${items.length} itens`,
@@ -639,43 +674,47 @@ export class EscavadorService implements RadarProvider {
       // Verifica o papel da pessoa no processo (se CPF fornecido, confia no match do Escavador;
       // se só nome, confirma que o nome bate). Aceita qualquer tipo de envolvimento —
       // tribunais tagueiam como "PERITO", "AUXILIAR DA JUSTIÇA", "TÉCNICO", "EXPERT", etc.
-      const envolvidos = item.envolvidos ?? []
-      if (!cpf) {
-        // Sem CPF: confirma que o nome está de fato nos envolvidos
-        const nomePresente = envolvidos.some((e) => {
-          const nomeEnv = norm(e.nome ?? '')
-          return nomeEnv.includes(nomeNorm) || nomeNorm.includes(nomeEnv)
-        })
-        if (!nomePresente) continue
-      }
+      // Envolvidos podem estar em item.fontes[0].envolvidos ou item.envolvidos
+      const envolvidos: { nome?: string; tipo?: string; tipo_normalizado?: string; polo?: string }[] =
+        item.fontes?.[0]?.envolvidos ?? item.envolvidos ?? []
 
-      // Detecta o tipo para exibir no snippet
-      const tipoEnvolvido = envolvidos
-        .find((e) => {
-          const n = norm(e.nome ?? '')
-          return cpf || n.includes(nomeNorm) || nomeNorm.includes(n)
-        })
-        ?.tipo_normalizado ?? 'Envolvido'
+      // Detecta o tipo do perito nos envolvidos
+      const peritoEnv = envolvidos.find((e: { nome?: string }) => {
+        const n = norm(e.nome ?? '')
+        return n.includes(nomeNorm) || nomeNorm.includes(n)
+      })
+      const tipoEnvolvido = peritoEnv?.tipo_normalizado ?? peritoEnv?.tipo ?? 'Envolvido'
 
+      // Filtrar: só incluir se é PERITO/EXPERT/AUXILIAR (não AUTOR/RÉU/REQUERENTE)
+      const tipoUpper = tipoEnvolvido.toUpperCase()
+      const ehPerito = ['PERITO', 'PERITA', 'EXPERT', 'AUXILIAR', 'TÉCNICO', 'TECNICO'].some(t => tipoUpper.includes(t))
+      const ehParte = ['AUTOR', 'AUTORA', 'RÉU', 'REU', 'REQUERENTE', 'REQUERIDO'].some(t => tipoUpper.includes(t))
+      if (ehParte && !ehPerito) continue // pula processos onde é parte, não perito
+
+      const vara = item.unidade_origem?.nome ?? item.orgao_julgador ?? ''
+      const cidade = item.unidade_origem?.cidade ?? ''
+      const endereco = item.unidade_origem?.endereco ?? ''
       const partes = [item.titulo_polo_ativo, item.titulo_polo_passivo].filter(Boolean).join(' × ')
-      const orgao = item.orgao_julgador ?? item.tribunal ?? ''
+
+      // Snippet rico com dados completos
       const snippet = [
         `${tipoEnvolvido} no processo ${item.numero_cnj}`,
-        orgao ? `| ${orgao}` : '',
+        vara ? `| ${vara}` : '',
         partes ? `| ${partes}` : '',
       ].filter(Boolean).join(' ')
 
       const data_ref = item.data_ultima_movimentacao ?? item.data_inicio ?? new Date().toISOString().split('T')[0]
-      const dataFormatada = data_ref.split('T')[0] // garante YYYY-MM-DD
+      const dataFormatada = data_ref.split('T')[0]
 
       citacoes.push({
-        externalId: `v2p-${item.id}`,
-        diarioSigla: item.tribunal ?? 'OUTROS',
-        diarioNome: item.orgao_julgador ?? item.tribunal ?? 'Tribunal',
+        externalId: `v2p-${item.numero_cnj}`,
+        diarioSigla: item.unidade_origem?.tribunal_sigla ?? item.tribunal ?? 'OUTROS',
+        diarioNome: vara || item.tribunal || 'Tribunal',
         diarioData: dataFormatada,
         snippet,
         numeroProcesso: item.numero_cnj,
         linkCitacao: `https://www.escavador.com/processos/${item.id}`,
+        fonte: 'v2_tribunal',
       })
     }
 
