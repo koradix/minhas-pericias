@@ -11,11 +11,12 @@ import { cn } from '@/lib/utils'
 
 interface Props {
   citacoes: CitacaoSerializada[]
+  showCriarPericia?: boolean
 }
 
 // ─── Single card — design system PeriLaB ─────────────────────────────────────
 
-function CitacaoCard({ citacao }: { citacao: CitacaoSerializada }) {
+function CitacaoCard({ citacao, showCriarPericia = true }: { citacao: CitacaoSerializada; showCriarPericia?: boolean }) {
   const [expanded, setExpanded] = useState(false)
   const [lida, setLida] = useState(citacao.visualizado)
   const [isPending, startTransition] = useTransition()
@@ -139,16 +140,18 @@ function CitacaoCard({ citacao }: { citacao: CitacaoSerializada }) {
           </button>
         </div>
 
-        <button
-          onClick={handleCriarPericia}
-          disabled={isCriando || isPending || isRejeitando}
-          className="flex items-center gap-1.5 bg-[#a3e635] hover:bg-[#bef264] px-4 py-1.5 text-[9px] font-black text-slate-900 uppercase tracking-[0.15em] transition-all disabled:opacity-50"
-        >
-          {isCriando
-            ? <><Loader2 className="h-3 w-3 animate-spin" /> Criando...</>
-            : <><Plus className="h-3 w-3" /> Criar Perícia</>
-          }
-        </button>
+        {showCriarPericia && (
+          <button
+            onClick={handleCriarPericia}
+            disabled={isCriando || isPending || isRejeitando}
+            className="flex items-center gap-1.5 bg-[#a3e635] hover:bg-[#bef264] px-4 py-1.5 text-[9px] font-black text-slate-900 uppercase tracking-[0.15em] transition-all disabled:opacity-50"
+          >
+            {isCriando
+              ? <><Loader2 className="h-3 w-3 animate-spin" /> Criando...</>
+              : <><Plus className="h-3 w-3" /> Criar Perícia</>
+            }
+          </button>
+        )}
       </div>
 
       {criarErro && (
@@ -162,7 +165,7 @@ function CitacaoCard({ citacao }: { citacao: CitacaoSerializada }) {
 
 // ─── List ─────────────────────────────────────────────────────────────────────
 
-export function CitacoesList({ citacoes }: Props) {
+export function CitacoesList({ citacoes, showCriarPericia = true }: Props) {
   if (citacoes.length === 0) {
     return (
       <EmptyState
@@ -188,7 +191,7 @@ export function CitacoesList({ citacoes }: Props) {
         </div>
       )}
       {citacoes.map((c) => (
-        <CitacaoCard key={c.id} citacao={c} />
+        <CitacaoCard key={c.id} citacao={c} showCriarPericia={showCriarPericia} />
       ))}
     </div>
   )

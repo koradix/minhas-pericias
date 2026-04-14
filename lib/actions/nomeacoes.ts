@@ -338,10 +338,7 @@ export async function buscarNomeacoes(): Promise<BuscarResult> {
     if (todasSiglas.length === 0) {
       return { ok: false, novas: 0, error: 'Nenhum tribunal configurado no radar. Configure o radar primeiro.' }
     }
-    // Mantém TJ* para o filtro pós-busca (mais restrito), mas passa todos para a query
-    const siglasFiltro = todasSiglas // busca em todos os tribunais cadastrados
-
-    console.log(`[buscarNomeacoes] Tribunais monitorados: ${siglasFiltro.join(', ')}`)
+    console.log(`[buscarNomeacoes] Tribunais monitorados: ${todasSiglas.join(', ')}`)
 
     const citacoes: CitacaoResult[] = []
 
@@ -414,30 +411,22 @@ export async function buscarNomeacoes(): Promise<BuscarResult> {
       console.log(`[buscarNomeacoes] v2/envolvido erro:`, e)
     }
 
-    // ── V1: busca DJE (só se v2 não encontrou nada — evita duplicatas) ──
-    if (citacoes.length === 0) {
-      const variacoes = buildVariacoes(nomePeito, cpfPerfil)
-      const primeiroUltimo = variacoes[0]
-      try {
-        const fromNome = await radar.buscarPorNome(nomePeito, siglasFiltro).catch(() => [])
-        citacoes.push(...fromNome)
-        console.log(`[buscarNomeacoes] v1/busca: ${fromNome.length} publicações`)
-      } catch {}
+    // V1 DJE agora roda separado via buscarCitacoesV1()
 
-      if (primeiroUltimo && primeiroUltimo.toLowerCase() !== nomePeito.toLowerCase()) {
-        try {
-          const fromAbrev = await radar.buscarPorNome(primeiroUltimo, siglasFiltro).catch(() => [])
-          citacoes.push(...fromAbrev)
-        } catch {}
-      }
-    } else {
-      console.log(`[buscarNomeacoes] v2 encontrou ${citacoes.length} — v1 DJE não necessário`)
-    }
-    // ── Dedup por externalId ─────────────────────────────────────────────────
+    // ── Dedup por externalId + CNJ (v2 tem prioridade) ───────────────────────
     const seen = new Set<string>()
+    const seenCnj = new Set<string>()
+    // Primeiro registra CNJs do v2
+    for (const c of citacoes) {
+      if ((c as { fonte?: string }).fonte === 'v2_tribunal' && c.numeroProcesso) {
+        seenCnj.add(c.numeroProcesso)
+      }
+    }
     const deduped = citacoes.filter((c) => {
       if (seen.has(c.externalId)) return false
       seen.add(c.externalId)
+      // Se v1 e já tem v2 com mesmo CNJ → pula (dedup cross-fonte)
+      if ((c as { fonte?: string }).fonte !== 'v2_tribunal' && c.numeroProcesso && seenCnj.has(c.numeroProcesso)) return false
       return true
     })
 
@@ -544,6 +533,158 @@ export async function buscarNomeacoes(): Promise<BuscarResult> {
       return { ok: false, novas: 0, error: 'Erro ao buscar. Tente novamente.' }
     }
     return { ok: false, novas: 0, error: 'Erro ao buscar. Tente novamente.' }
+  }
+}
+
+// ─── Action — Buscar citações V1 (DJE) — separado do fluxo principal ────────
+
+export async function buscarCitacoesV1(): Promise<BuscarResult> {
+  const session = await auth()
+  const userId = session?.user?.id
+  if (!userId) return { ok: false, novas: 0, error: 'Não autenticado' }
+
+  try {
+    const config = await prisma.radarConfig.findUnique({ where: { peritoId: userId } })
+    if (!config) return { ok: false, novas: 0, error: 'Busque nomeações primeiro para configurar o radar.' }
+
+    const peritoPerfil = await prisma.peritoPerfil.findUnique({ where: { userId } })
+    const cpfPerfil = (peritoPerfil as { cpf?: string | null })?.cpf ?? null
+
+    const nomePeito = await getNomePeito(userId)
+    if (!nomePeito) return { ok: false, novas: 0, error: 'Nome não cadastrado no perfil' }
+
+    const saldoInfo = await radar.verificarSaldo()
+    if (saldoInfo.saldo === 0) {
+      return { ok: false, novas: 0, error: 'Saldo insuficiente na API Escavador' }
+    }
+
+    const todasSiglas: string[] = JSON.parse(config.tribunaisMonitorados || '[]')
+    if (todasSiglas.length === 0) {
+      return { ok: false, novas: 0, error: 'Nenhum tribunal configurado no radar.' }
+    }
+
+    console.log(`[buscarCitacoesV1] Buscando por: "${nomePeito}" em ${todasSiglas.join(', ')}`)
+
+    const citacoes: CitacaoResult[] = []
+
+    // ── V1: busca DJE por nome ──────────────────────────────────────────────
+    const variacoes = buildVariacoes(nomePeito, cpfPerfil)
+    const primeiroUltimo = variacoes[0]
+    try {
+      const fromNome = await radar.buscarPorNome(nomePeito, todasSiglas).catch(() => [])
+      citacoes.push(...fromNome)
+      console.log(`[buscarCitacoesV1] v1/busca: ${fromNome.length} publicações`)
+    } catch {}
+
+    if (primeiroUltimo && primeiroUltimo.toLowerCase() !== nomePeito.toLowerCase()) {
+      try {
+        const fromAbrev = await radar.buscarPorNome(primeiroUltimo, todasSiglas).catch(() => [])
+        citacoes.push(...fromAbrev)
+      } catch {}
+    }
+
+    // ── Dedup por externalId + exclui CNJs já no banco (vindos do v2) ────────
+    const existingV2 = await prisma.nomeacaoCitacao.findMany({
+      where: { peritoId: userId, fonte: 'v2_tribunal' },
+      select: { numeroProcesso: true },
+    })
+    const seenCnj = new Set(existingV2.map(e => e.numeroProcesso).filter(Boolean) as string[])
+
+    const seen = new Set<string>()
+    const deduped = citacoes.filter((c) => {
+      if (seen.has(c.externalId)) return false
+      seen.add(c.externalId)
+      if (c.numeroProcesso && seenCnj.has(c.numeroProcesso)) return false
+      return true
+    })
+
+    // ── Filtra: snippet deve mencionar perícia/perito E o nome completo ──────
+    const nomeLower = nomePeito.toLowerCase()
+    const parts = nomePeito.trim().split(/\s+/).filter(Boolean)
+    const primeiroUltimoFiltro = parts.length >= 3
+      ? `${parts[0]} ${parts[parts.length - 1]}`.toLowerCase()
+      : nomeLower
+    const unique = deduped.filter((c) => {
+      if (!isSnippetNomeacaoCivel(c.snippet)) return false
+      const snipLower = c.snippet.toLowerCase()
+      return snipLower.includes(nomeLower) || snipLower.includes(primeiroUltimoFiltro)
+    })
+
+    console.log(`[buscarCitacoesV1] Após filtro: ${unique.length} de ${deduped.length}`)
+
+    const saldoPos = await radar.verificarSaldo()
+
+    // ── Link com TribunalVara ───────────────────────────────────────────────
+    const varasBySigla = await prisma.tribunalVara.findMany({
+      where: { peritoId: userId, ativa: true },
+      select: { id: true, tribunalSigla: true },
+    })
+    const varaIdBySigla = new Map(varasBySigla.map((v) => [v.tribunalSigla.toUpperCase(), v.id]))
+
+    // ── Upsert citações ─────────────────────────────────────────────────────
+    let novas = 0
+    for (const c of unique) {
+      const existing = await prisma.nomeacaoCitacao.findUnique({
+        where: { peritoId_externalId: { peritoId: userId, externalId: c.externalId } },
+      })
+
+      if (!existing) {
+        const tribunalVaraId = varaIdBySigla.get(c.diarioSigla.toUpperCase()) ?? null
+        await prisma.nomeacaoCitacao.create({
+          data: {
+            peritoId: userId,
+            externalId: c.externalId,
+            diarioSigla: c.diarioSigla,
+            diarioNome: c.diarioNome,
+            diarioData: new Date(c.diarioData),
+            snippet: c.snippet,
+            numeroProcesso: c.numeroProcesso ?? null,
+            linkCitacao: c.linkCitacao,
+            fonte: 'escavador',
+            tribunalVaraId,
+          },
+        })
+
+        if (tribunalVaraId) {
+          await prisma.tribunalVara.update({
+            where: { id: tribunalVaraId },
+            data: { totalNomeacoes: { increment: 1 } },
+          })
+          const vara = varasBySigla.find((v) => v.id === tribunalVaraId)
+          if (vara) {
+            const varaRow = await prisma.tribunalVara.findUnique({
+              where: { id: tribunalVaraId },
+              select: { varaNome: true },
+            })
+            if (varaRow) {
+              await prisma.varaStats.upsert({
+                where: { tribunalSigla_varaNome: { tribunalSigla: vara.tribunalSigla, varaNome: varaRow.varaNome } },
+                create: { tribunalSigla: vara.tribunalSigla, varaNome: varaRow.varaNome, totalNomeacoes: 1 },
+                update: { totalNomeacoes: { increment: 1 } },
+              })
+            }
+          }
+        }
+
+        novas++
+      }
+    }
+
+    const totalCitacoes = await prisma.nomeacaoCitacao.count({ where: { peritoId: userId } })
+    await prisma.radarConfig.update({
+      where: { peritoId: userId },
+      data: { ultimaBusca: new Date(), totalCitacoes, saldoUltimaVerif: saldoPos.saldo },
+    })
+
+    revalidatePath('/nomeacoes')
+    return { ok: true, novas, saldoRestante: saldoPos.saldo, totalEncontrados: unique.length }
+  } catch (err) {
+    if (err instanceof EscavadorError) {
+      if (err.code === 402) return { ok: false, novas: 0, error: 'Saldo insuficiente na API Escavador' }
+      if (err.code === 401) return { ok: false, novas: 0, error: 'Token de API inválido' }
+      return { ok: false, novas: 0, error: 'Erro ao buscar citações. Tente novamente.' }
+    }
+    return { ok: false, novas: 0, error: 'Erro ao buscar citações. Tente novamente.' }
   }
 }
 

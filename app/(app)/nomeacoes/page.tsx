@@ -69,15 +69,31 @@ export default async function NomeacoesPage() {
         radarConfigurado={radarConfigurado}
       />
 
-      {/* Citações do Escavador */}
-      {citacoes.length > 0 && (
-        <div className="space-y-4">
-          <p className="text-[12px] font-inter font-semibold uppercase tracking-[0.08em] text-[#6b7280]">
-            {citacoes.length} citaç{citacoes.length > 1 ? 'ões' : 'ão'} nos diários
-          </p>
-          <CitacoesList citacoes={citacoes} />
-        </div>
-      )}
+      {/* Nomeações confirmadas (V2 — busca por CPF) */}
+      {(() => {
+        const nomeacoesList = citacoes.filter((c) => c.fonte === 'v2_tribunal')
+        return nomeacoesList.length > 0 ? (
+          <div className="space-y-4">
+            <p className="text-[12px] font-inter font-semibold uppercase tracking-[0.08em] text-[#6b7280]">
+              {nomeacoesList.length} nomeaç{nomeacoesList.length > 1 ? 'ões' : 'ão'} confirmada{nomeacoesList.length > 1 ? 's' : ''}
+            </p>
+            <CitacoesList citacoes={nomeacoesList} />
+          </div>
+        ) : null
+      })()}
+
+      {/* Citações nos diários (V1 DJE) */}
+      {(() => {
+        const citacoesDje = citacoes.filter((c) => c.fonte !== 'v2_tribunal')
+        return citacoesDje.length > 0 ? (
+          <div className="space-y-4">
+            <p className="text-[12px] font-inter font-semibold uppercase tracking-[0.08em] text-[#6b7280]">
+              {citacoesDje.length} citaç{citacoesDje.length > 1 ? 'ões' : 'ão'} nos diários
+            </p>
+            <CitacoesList citacoes={citacoesDje} showCriarPericia={false} />
+          </div>
+        ) : null
+      })()}
 
       {/* Fluxo antigo (DataJud) — oculto no MVP */}
 
