@@ -73,9 +73,15 @@ export async function criarPericiaDeCitacao(
   // Extract data from snippet using Claude
   const dados = await extrairDadosDaSnippet(citacao.snippet, citacao.diarioSigla)
 
-  // Generate sequential número PRC-YYYY-NNN
+  // Número sequencial: {Seq}-{Ano}-{UF}-{Cidade}-{Vara}
   const count = await prisma.pericia.count({ where: { peritoId } })
-  const numero = `PRC-${new Date().getFullYear()}-${String(count + 1).padStart(3, '0')}`
+  const seq = String(count + 1).padStart(3, '0')
+  const ano = new Date().getFullYear()
+  const ufCode = citacao.diarioSigla?.replace(/^DJ/, 'TJ').replace('TJ', '').slice(0, 2) || 'XX'
+  const varaClean = dados.vara
+    ? dados.vara.split(' ').slice(0, 2).join('_').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Z0-9_]/g, '')
+    : 'SEM'
+  const numero = `${seq}-${ano}-${ufCode}-${varaClean}-CIV`
 
   // Extrair CNJ: 1) campo da citação, 2) Claude, 3) regex no snippet
   const isCnj = (s: string | null) => s && /^\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}$/.test(s)

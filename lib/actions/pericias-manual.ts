@@ -49,9 +49,22 @@ export async function criarPericiaManual(
     if (existente) return { ok: true, periciaId: existente.id }
   }
 
-  // Número sequencial
+  // Número sequencial: {Seq}-{Ano}-{UF}-{Cidade}-{NºVara}-{Tipo}
   const count = await prisma.pericia.count({ where: { peritoId } })
-  const numero = `PRC-${new Date().getFullYear()}-${String(count + 1).padStart(3, '0')}`
+  const seq = String(count + 1).padStart(3, '0')
+  const ano = new Date().getFullYear()
+  const ufCode = input.uf || 'XX'
+  const cidade = input.comarca
+    ? input.comarca.split(' ').slice(0, 2).join('_').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Z0-9_]/g, '')
+    : 'SEM'
+  // Extrair número da vara: "1 VARA CIVEL" → "1VC", "Vara Única" → "VU"
+  const varaMatch = input.vara?.match(/^(\d+)[ªº]?\s*vara/i)
+  const varaTipo = input.vara?.toLowerCase().includes('famil') ? 'FAM'
+    : input.vara?.toLowerCase().includes('fazenda') ? 'FAZ'
+    : input.vara?.toLowerCase().includes('única') ? 'VU'
+    : 'CIV'
+  const varaNum = varaMatch ? `${varaMatch[1]}${varaTipo}` : varaTipo
+  const numero = `${seq}-${ano}-${ufCode}-${cidade}-${varaNum}`
 
   const partes = [autor && `AUTOR: ${autor}`, reu && `RÉU: ${reu}`].filter(Boolean).join(' × ')
   const varaFull = input.vara
