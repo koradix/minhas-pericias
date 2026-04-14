@@ -356,30 +356,31 @@ export async function buscarNomeacoes(): Promise<BuscarResult> {
       }
     }
 
-    // ── PAID: busca em paralelo — nome completo + primeiro+último (DJe abrevia nomes) ─
-    // Roda ambas as buscas simultaneamente. Dedup posterior remove sobreposições.
-    const variacoes = buildVariacoes(nomePeito, cpfPerfil)
-    const primeiroUltimo = variacoes[0] // "Primeiro Último"
-    const buscas: Promise<CitacaoResult[]>[] = [
-      radar.buscarPorNome(nomePeito, siglasFiltro).catch(() => []),
-    ]
-    if (primeiroUltimo && primeiroUltimo.toLowerCase() !== nomePeito.toLowerCase()) {
-      buscas.push(radar.buscarPorNome(primeiroUltimo, siglasFiltro).catch(() => []))
+    // ── V2: busca processos do envolvido (retorna CNJ, autor, réu, vara) ──
+    // Fonte principal — dados completos, não snippet cortado
+    const svc = new EscavadorService()
+    try {
+      const { citacoes: fromV2 } = await svc.buscarProcessosEnvolvido(nomePeito, cpfPerfil, 1)
+      citacoes.push(...fromV2)
+      console.log(`[buscarNomeacoes] v2/envolvido: ${fromV2.length} processos`)
+    } catch (e) {
+      console.log(`[buscarNomeacoes] v2/envolvido erro:`, e)
     }
-    const resultados = await Promise.all(buscas)
-    const fromNome = resultados[0]
-    const fromAbrev = resultados[1] ?? []
-    console.log(`[buscarNomeacoes] Busca nome completo: ${fromNome.length} | primeiro+último: ${fromAbrev.length}`)
-    citacoes.push(...fromNome, ...fromAbrev)
 
-    // ── PAID: busca por CPF (alguns diários listam CPF junto ao nome) ───────
-    if (cpfPerfil && cpfPerfil.replace(/\D/g, '').length === 11) {
+    // ── V1: busca por nome no DJE (complementar, pega publicações recentes) ──
+    const variacoes = buildVariacoes(nomePeito, cpfPerfil)
+    const primeiroUltimo = variacoes[0]
+    try {
+      const fromNome = await radar.buscarPorNome(nomePeito, siglasFiltro).catch(() => [])
+      citacoes.push(...fromNome)
+      console.log(`[buscarNomeacoes] v1/busca: ${fromNome.length} publicações`)
+    } catch {}
+
+    if (primeiroUltimo && primeiroUltimo.toLowerCase() !== nomePeito.toLowerCase()) {
       try {
-        const fromCpf = await radar.buscarPorNome(cpfPerfil, siglasFiltro)
-        citacoes.push(...fromCpf)
-      } catch {
-        // Non-blocking
-      }
+        const fromAbrev = await radar.buscarPorNome(primeiroUltimo, siglasFiltro).catch(() => [])
+        citacoes.push(...fromAbrev)
+      } catch {}
     }
     // ── Dedup por externalId ─────────────────────────────────────────────────
     const seen = new Set<string>()

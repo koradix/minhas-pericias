@@ -84,10 +84,35 @@ export async function criarPericiaDeCitacao(
   // Extract data — Claude com fallback regex
   let dados = await extrairDadosDaSnippet(citacao.snippet, citacao.diarioSigla)
 
-  // ─── Fallback: extrair o máximo do snippet ────────────────────────────
+  // ─── Fallback: extrair do snippet ──────────────────────────────────────
   const s = citacao.snippet ?? ''
 
-  // Partes: AUTOR/RÉU explícito
+  // v2 snippet format: "Perito no processo CNJ | Vara | Autor × Réu"
+  if (!dados.partes) {
+    const pipePartes = s.split('|').pop()?.trim()
+    if (pipePartes && pipePartes.includes('×')) {
+      dados = { ...dados, partes: pipePartes }
+    }
+  }
+
+  // CNJ do snippet v2
+  if (!dados.processo) {
+    const cnjInSnippet = s.match(/\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}/)
+    if (cnjInSnippet) dados = { ...dados, processo: cnjInSnippet[0] }
+  }
+
+  // Vara do snippet v2: "| Vara Cível de X |"
+  if (!dados.vara) {
+    const pipes = s.split('|').map(p => p.trim()).filter(Boolean)
+    if (pipes.length >= 2) {
+      const varaCandidate = pipes[1] // segundo segmento geralmente é a vara
+      if (varaCandidate && !varaCandidate.includes('×') && varaCandidate.length > 3) {
+        dados = { ...dados, vara: varaCandidate }
+      }
+    }
+  }
+
+  // Fallback partes: AUTOR/RÉU explícito
   if (!dados.partes) {
     const autorMatch = s.match(/AUTOR[A]?:\s*([^×\n,]+)/i)
     const reuMatch = s.match(/R[ÉE]U:\s*([^×\n,]+)/i)
@@ -96,7 +121,7 @@ export async function criarPericiaDeCitacao(
     }
   }
 
-  // Partes: "Partes: XXX × YYY"
+  // Fallback partes: "Partes: XXX × YYY"
   if (!dados.partes) {
     const partesMatch = s.match(/Partes:\s*([^—\n]+)/i)
     if (partesMatch) dados = { ...dados, partes: partesMatch[1].trim() }
