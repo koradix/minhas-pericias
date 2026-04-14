@@ -89,7 +89,7 @@ export function JuditAutosBtn({ periciaId, cnj }: Props) {
       }
 
       try {
-        const res = await fetch(`/api/integrations/judit/request-status?id=${reqId}`)
+        const res = await fetch(`/api/integrations/judit/request-status?requestId=${reqId}`)
         const data = await res.json()
 
         if (data.status === 'completed') {
