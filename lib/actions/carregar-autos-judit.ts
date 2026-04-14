@@ -1,12 +1,13 @@
 'use server'
 
 /**
- * Carregar Autos via Judit — só download.
+ * Carregar Autos via Judit — FLUXO ASYNC.
  *
- * 1. Sync pericia com with_attachments=true (Judit crawls os PDFs do tribunal)
- * 2. Baixa os PDFs prontos (status: done) e salva URL no banco
+ * Fase 1: Cria request na Judit (instantâneo, <2s)
+ * Fase 2: Cliente faz polling do status (GET /request-status)
+ * Fase 3: Quando completed, sync dados no banco
  *
- * A análise IA é uma etapa separada (plano pago).
+ * NÃO faz polling no servidor — evita timeout na Vercel.
  */
 
 import { auth } from '@/auth'
@@ -14,7 +15,8 @@ import { prisma } from '@/lib/prisma'
 import { isJuditReady, juditLog } from '@/lib/integrations/judit/config'
 import { judit } from '@/lib/integrations/judit/service'
 import { JUDIT_SOURCE } from '@/lib/integrations/judit/constants'
-import { fetchAndSyncByCnj } from './judit-sync'
+import { normalizeLawsuit } from '@/lib/integrations/judit/mappers'
+import type { JuditResponsesPage } from '@/lib/integrations/judit/types'
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -22,97 +24,146 @@ export interface CarregarAutosResult {
   ok: boolean
   message: string
   periciaId: string
-  fase: 'sync' | 'download' | 'concluido'
-  anexosBaixados: number
-  totalAnexos: number
+  fase: 'request_criado' | 'ja_pendente' | 'sync_ok' | 'erro'
+  requestId?: string
+  anexosBaixados?: number
+  totalAnexos?: number
 }
 
-// ─── Action principal ───────────────────────────────────────────────────────
+// ─── Fase 1: Criar request (instantâneo) ────────────────────────────────────
 
-export async function carregarAutosJudit(periciaId: string): Promise<CarregarAutosResult> {
-  const empty: CarregarAutosResult = {
-    ok: false, message: '', periciaId,
-    fase: 'sync', anexosBaixados: 0, totalAnexos: 0,
-  }
+export async function iniciarCarregamento(periciaId: string): Promise<CarregarAutosResult> {
+  const empty: CarregarAutosResult = { ok: false, message: '', periciaId, fase: 'erro' }
 
-  if (!isJuditReady()) return { ...empty, message: 'Judit nao habilitada' }
+  if (!isJuditReady()) return { ...empty, message: 'Judit não habilitada' }
 
   const session = await auth()
-  if (!session?.user?.id) return { ...empty, message: 'Nao autenticado' }
+  if (!session?.user?.id) return { ...empty, message: 'Não autenticado' }
 
   const pericia = await prisma.pericia.findUnique({ where: { id: periciaId } })
-  if (!pericia || pericia.peritoId !== session.user.id) return { ...empty, message: 'Pericia nao encontrada' }
-  if (!pericia.processo) return { ...empty, message: 'Pericia sem numero de processo (CNJ)' }
+  if (!pericia || pericia.peritoId !== session.user.id) return { ...empty, message: 'Perícia não encontrada' }
+  if (!pericia.processo) return { ...empty, message: 'Perícia sem número de processo (CNJ)' }
 
-  const cnj = pericia.processo
-
-  // ─── Fase 1: Sync com with_attachments ──────────────────────────────────
-
-  juditLog(`[carregar-autos] Fase 1: sync CNJ ${cnj} com with_attachments=true`)
-  const syncResult = await fetchAndSyncByCnj(cnj, { withAttachments: true })
-  if (!syncResult.ok) {
-    return { ...empty, fase: 'sync', message: `Sync falhou: ${syncResult.message}` }
-  }
-
-  // ─── Fase 2: Baixar PDFs que estao prontos ──────────────────────────────
-
-  juditLog('[carregar-autos] Fase 2: baixando documentos...')
-  const pendentes = await prisma.processAttachment.findMany({
-    where: {
-      periciaId,
-      source: JUDIT_SOURCE,
-      downloadStatus: { in: ['pending', 'failed', 'unavailable'] },
-    },
-  })
-
-  let baixados = 0
-  for (const att of pendentes) {
-    const downloadUrl = att.url ?? judit.buildAttachmentUrl(cnj, 1, att.externalId)
-    try {
-      const result = await judit.downloadAttachment(downloadUrl)
-      if (!result) {
-        await prisma.processAttachment.update({
-          where: { id: att.id },
-          data: { downloadStatus: 'failed', downloadError: 'Resposta vazia', url: downloadUrl },
-        })
-        continue
+  // Se já tem request pendente recente (<1h), retorna ele
+  if (pericia.juditRequestId && pericia.juditRequestAt) {
+    const age = Date.now() - pericia.juditRequestAt.getTime()
+    if (age < 60 * 60 * 1000) {
+      return {
+        ok: true, periciaId, fase: 'ja_pendente',
+        message: 'Request já em andamento',
+        requestId: pericia.juditRequestId,
       }
-      await prisma.processAttachment.update({
-        where: { id: att.id },
-        data: {
-          url: downloadUrl,
-          mimeType: result.contentType,
-          sizeBytes: result.buffer.length,
-          downloadStatus: 'downloaded',
-          downloadedAt: new Date(),
-          downloadError: null,
-        },
-      })
-      baixados++
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e)
-      await prisma.processAttachment.update({
-        where: { id: att.id },
-        data: { downloadStatus: 'failed', downloadError: msg.slice(0, 500), url: downloadUrl },
-      })
     }
   }
 
-  const totalAnexos = await prisma.processAttachment.count({
-    where: { periciaId, source: JUDIT_SOURCE },
-  })
-  const jaDownloaded = await prisma.processAttachment.count({
-    where: { periciaId, source: JUDIT_SOURCE, downloadStatus: 'downloaded' },
-  })
+  // Criar request na Judit (instantâneo — não faz polling)
+  try {
+    const req = await judit.createRequest('lawsuit_cnj', pericia.processo, { withAttachments: true })
+    juditLog(`[carregar-autos] Request criado: ${req.request_id}`)
 
-  juditLog(`[carregar-autos] Concluido: ${baixados} novos, ${jaDownloaded}/${totalAnexos} total`)
+    // Salvar request ID na perícia
+    await prisma.pericia.update({
+      where: { id: periciaId },
+      data: { juditRequestId: req.request_id, juditRequestAt: new Date() },
+    })
 
-  return {
-    ok: true,
-    fase: 'concluido',
-    message: `${jaDownloaded} de ${totalAnexos} documentos disponíveis`,
-    periciaId,
-    anexosBaixados: baixados,
-    totalAnexos,
+    return {
+      ok: true, periciaId, fase: 'request_criado',
+      message: 'Sincronizando com o tribunal...',
+      requestId: req.request_id,
+    }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    juditLog(`[carregar-autos] Erro: ${msg}`)
+    return { ...empty, message: `Erro: ${msg}` }
+  }
+}
+
+// ─── Fase 3: Sync dados após completed ──────────────────────────────────────
+
+export async function sincronizarDados(periciaId: string): Promise<CarregarAutosResult> {
+  const empty: CarregarAutosResult = { ok: false, message: '', periciaId, fase: 'erro' }
+
+  const session = await auth()
+  if (!session?.user?.id) return { ...empty, message: 'Não autenticado' }
+
+  const pericia = await prisma.pericia.findUnique({ where: { id: periciaId } })
+  if (!pericia || pericia.peritoId !== session.user.id) return { ...empty, message: 'Perícia não encontrada' }
+  if (!pericia.juditRequestId) return { ...empty, message: 'Nenhum request pendente' }
+
+  // Buscar responses da Judit
+  try {
+    let page = 1
+    let totalPages = 1
+    let totalAnexos = 0
+
+    do {
+      const resp: JuditResponsesPage = await judit.getResponses(pericia.juditRequestId, page)
+      totalPages = resp.all_pages_count ?? 1
+
+      for (const item of resp.page_data ?? []) {
+        if (!item.response_data?.code) continue
+        const normalized = normalizeLawsuit(item.response_data)
+
+        // Atualizar dados da perícia
+        if (page === 1) {
+          const partesStr = normalized.partes
+            .filter(p => !['ADVOGADO', 'ADVOGADA'].includes(p.tipo.toUpperCase()))
+            .map(p => `${p.tipo.toUpperCase()}: ${p.nome}`)
+            .join(' × ')
+
+          await prisma.pericia.update({
+            where: { id: periciaId },
+            data: {
+              assunto: normalized.assunto || pericia.assunto,
+              vara: normalized.vara || pericia.vara,
+              partes: partesStr || pericia.partes,
+            },
+          })
+        }
+
+        // Sync movimentações
+        for (const mov of normalized.movimentacoes) {
+          const externalId = mov.externalId ?? `${mov.data}_${mov.descricao.slice(0, 50)}`
+          await prisma.processMovement.upsert({
+            where: { periciaId_source_externalId: { periciaId, source: JUDIT_SOURCE, externalId } },
+            create: { periciaId, source: JUDIT_SOURCE, externalId, eventDate: new Date(mov.data), type: mov.tipo, description: mov.descricao },
+            update: { description: mov.descricao, type: mov.tipo },
+          }).catch(() => {})
+        }
+
+        // Sync anexos
+        for (const anexo of normalized.anexos) {
+          const url = pericia.processo
+            ? judit.buildAttachmentUrl(pericia.processo, 1, anexo.externalId)
+            : null
+          await prisma.processAttachment.upsert({
+            where: { periciaId_source_externalId: { periciaId, source: JUDIT_SOURCE, externalId: anexo.externalId } },
+            create: {
+              periciaId, source: JUDIT_SOURCE, externalId: anexo.externalId,
+              name: anexo.nome, type: anexo.tipo, mimeType: anexo.mimeType,
+              isPublic: anexo.isPublic, downloadAvailable: anexo.downloadAvailable,
+              url, downloadStatus: anexo.downloadAvailable ? 'downloaded' : 'pending',
+              publishedAt: anexo.data ? new Date(anexo.data) : null,
+            },
+            update: { name: anexo.nome, downloadAvailable: anexo.downloadAvailable, url },
+          }).catch(() => {})
+          totalAnexos++
+        }
+      }
+      page++
+    } while (page <= totalPages)
+
+    const totalDB = await prisma.processAttachment.count({ where: { periciaId, source: JUDIT_SOURCE } })
+
+    return {
+      ok: true, periciaId, fase: 'sync_ok',
+      message: `${totalDB} documentos sincronizados`,
+      totalAnexos: totalDB,
+      anexosBaixados: totalAnexos,
+    }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    return { ...empty, message: `Erro sync: ${msg}` }
   }
 }

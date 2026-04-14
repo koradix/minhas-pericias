@@ -1,24 +1,22 @@
 /**
  * POST /api/integrations/judit/carregar-autos
  *
- * Baixa documentos do tribunal via Judit (sem análise IA).
+ * Fase 1: Cria request na Judit (instantâneo).
+ * NÃO faz polling — o cliente faz polling do status.
  *
- * Body: { "periciaId": "..." }
+ * Body: { "periciaId": "...", "action": "iniciar" | "sync" }
  */
 
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { isJuditReady } from '@/lib/integrations/judit/config'
-import { carregarAutosJudit } from '@/lib/actions/carregar-autos-judit'
+import { iniciarCarregamento, sincronizarDados } from '@/lib/actions/carregar-autos-judit'
 
-export const maxDuration = 300
+export const maxDuration = 60
 
 export async function POST(req: Request) {
   if (!isJuditReady()) {
-    return NextResponse.json(
-      { ok: false, message: 'Judit integration is disabled' },
-      { status: 503 },
-    )
+    return NextResponse.json({ ok: false, message: 'Judit disabled' }, { status: 503 })
   }
 
   const session = await auth()
@@ -26,18 +24,23 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, message: 'Not authenticated' }, { status: 403 })
   }
 
-  let body: { periciaId?: string }
-  try {
-    body = await req.json()
-  } catch {
-    return NextResponse.json({ ok: false, message: 'Invalid JSON body' }, { status: 400 })
+  let body: { periciaId?: string; action?: string }
+  try { body = await req.json() } catch {
+    return NextResponse.json({ ok: false, message: 'Invalid JSON' }, { status: 400 })
   }
 
   const periciaId = body.periciaId?.trim()
   if (!periciaId) {
-    return NextResponse.json({ ok: false, message: 'Field "periciaId" is required' }, { status: 400 })
+    return NextResponse.json({ ok: false, message: '"periciaId" required' }, { status: 400 })
   }
 
-  const result = await carregarAutosJudit(periciaId)
+  const action = body.action ?? 'iniciar'
+
+  if (action === 'sync') {
+    const result = await sincronizarDados(periciaId)
+    return NextResponse.json(result, { status: result.ok ? 200 : 422 })
+  }
+
+  const result = await iniciarCarregamento(periciaId)
   return NextResponse.json(result, { status: result.ok ? 200 : 422 })
 }
