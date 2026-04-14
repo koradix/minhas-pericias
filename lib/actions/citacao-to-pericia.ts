@@ -12,6 +12,7 @@ interface ExtractedCitacao {
   vara: string | null
   processo: string | null
   partes: string | null
+  endereco: string | null
 }
 
 async function extrairDadosDaSnippet(snippet: string, diarioSigla: string): Promise<ExtractedCitacao> {
@@ -29,7 +30,8 @@ Retorne um JSON com os campos abaixo. Se não encontrar a informação, use null
   "tipo": "tipo da perícia (ex: Engenharia Civil, Contabilidade, Medicina, Avaliação de Imóvel, etc.)",
   "vara": "nome da vara ou juízo (ex: '3ª Vara Cível de São Paulo')",
   "processo": "número do processo no formato CNJ (ex: '1234567-89.2024.8.26.0001') ou null",
-  "partes": "nomes das partes principais separados por × (ex: 'João Silva × Banco XYZ') ou null"
+  "partes": "nomes das partes principais separados por × (ex: 'João Silva × Banco XYZ') ou null",
+  "endereco": "endereço do imóvel/local da perícia mencionado no texto, ou null"
 }
 
 Responda SOMENTE com o JSON, sem markdown.`
@@ -50,10 +52,11 @@ Responda SOMENTE com o JSON, sem markdown.`
       vara: parsed.vara ?? null,
       processo: parsed.processo ?? null,
       partes: parsed.partes ?? null,
+      endereco: parsed.endereco ?? null,
     }
   } catch (err) {
     console.error('[extrairDadosDaSnippet] erro:', err)
-    return { assunto: 'Perícia judicial', tipo: 'Judicial', vara: null, processo: null, partes: null }
+    return { assunto: 'Perícia judicial', tipo: 'Judicial', vara: null, processo: null, partes: null, endereco: null }
   }
 }
 
@@ -70,8 +73,30 @@ export async function criarPericiaDeCitacao(
     return { ok: false, error: 'Citação não encontrada' }
   }
 
-  // Extract data from snippet using Claude
-  const dados = await extrairDadosDaSnippet(citacao.snippet, citacao.diarioSigla)
+  // Extract data — Claude com fallback regex
+  let dados = await extrairDadosDaSnippet(citacao.snippet, citacao.diarioSigla)
+
+  // Fallback: extrair do snippet por regex se Claude não retornou partes
+  if (!dados.partes && citacao.snippet) {
+    const s = citacao.snippet
+    // Procurar padrões "AUTOR: xxx" e "RÉU: yyy" ou "Partes: xxx × yyy"
+    const autorMatch = s.match(/AUTOR[A]?:\s*([^×\n]+)/i)
+    const reuMatch = s.match(/R[ÉE]U:\s*([^×\n]+)/i)
+    if (autorMatch || reuMatch) {
+      const autor = autorMatch?.[1]?.trim() ?? ''
+      const reu = reuMatch?.[1]?.trim() ?? ''
+      dados = { ...dados, partes: `${autor} × ${reu}` }
+    }
+    // Fallback: "Partes: XXX × YYY"
+    if (!dados.partes) {
+      const partesMatch = s.match(/Partes:\s*([^—\n]+)/i)
+      if (partesMatch) dados = { ...dados, partes: partesMatch[1].trim() }
+    }
+  }
+  // Fallback vara: extrair do diárioNome da citação
+  if (!dados.vara && citacao.diarioNome) {
+    dados = { ...dados, vara: citacao.diarioNome }
+  }
 
   // ─── Gerar ID: {Seq}-{Ano}-{UF}-{Cidade}-{NºVara}{Tipo} ──────────────
   const count = await prisma.pericia.count({ where: { peritoId } })
@@ -159,6 +184,7 @@ export async function criarPericiaDeCitacao(
       vara: dados.vara ?? undefined,
       processo: processoFinal ?? undefined,
       partes: partesFormatadas ?? undefined,
+      endereco: dados.endereco ?? undefined,
       status: 'planejada',
     },
   })
