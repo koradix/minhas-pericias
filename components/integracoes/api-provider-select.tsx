@@ -28,7 +28,7 @@ const OPTIONS: { id: ApiProvider; label: string; desc: string; badge?: string }[
 ]
 
 export function getApiProvider(): ApiProvider {
-  if (typeof window === 'undefined') return 'both'
+  if (typeof window === 'undefined') return 'escavador'
   return (localStorage.getItem(STORAGE_KEY) as ApiProvider) ?? 'both'
 }
 

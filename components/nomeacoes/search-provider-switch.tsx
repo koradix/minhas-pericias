@@ -21,7 +21,7 @@ interface Props {
 }
 
 export function SearchProviderSwitch({ cpf, radarConfigurado }: Props) {
-  const [provider, setProvider] = useState<ApiProvider>('both')
+  const [provider, setProvider] = useState<ApiProvider>('escavador')
   const [loading, startTransition] = useTransition()
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null)
   const [showUpload, setShowUpload] = useState(false)

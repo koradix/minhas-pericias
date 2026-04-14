@@ -4,7 +4,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
-import { enriquecerCitacoesComCnj } from './enriquecer-cnj'
+// Judit standby — enriquecerCitacoesComCnj removido do fluxo principal
 
 interface ExtractedCitacao {
   assunto: string
@@ -87,24 +87,25 @@ export async function criarPericiaDeCitacao(
     if (cnjMatch) processoFinal = cnjMatch[0]
   }
 
-  // 4) Sem CNJ? Tenta enriquecer via Judit (non-blocking, atualiza citação)
-  if (!processoFinal) {
-    try {
-      const enrichResult = await enriquecerCitacoesComCnj()
-      if (enrichResult.enriquecidas > 0) {
-        // Re-ler a citação — pode ter sido atualizada
-        const updated = await prisma.nomeacaoCitacao.findUnique({
-          where: { id: citacaoId },
-          select: { numeroProcesso: true },
-        })
-        if (updated?.numeroProcesso && isCnj(updated.numeroProcesso)) {
-          processoFinal = updated.numeroProcesso
-          console.log(`[criarPericia] CNJ enriquecido via Judit: ${processoFinal}`)
-        }
-      }
-    } catch (e) {
-      console.error('[criarPericia] enriquecer error:', e)
+  // Anti-duplicidade: se já existe perícia com mesmo CNJ para este perito, redireciona
+  if (processoFinal) {
+    const existente = await prisma.pericia.findFirst({
+      where: { peritoId, processo: processoFinal },
+      select: { id: true },
+    })
+    if (existente) {
+      // Vincular citação à perícia existente
+      await prisma.nomeacaoCitacao.update({
+        where: { id: citacaoId },
+        data: { visualizado: true, status: 'aceita', periciaId: existente.id },
+      })
+      return { ok: true, periciaId: existente.id }
     }
+  }
+
+  // Anti-duplicidade: se citação já tem perícia vinculada
+  if (citacao.periciaId) {
+    return { ok: true, periciaId: citacao.periciaId }
   }
 
   const pericia = await prisma.pericia.create({

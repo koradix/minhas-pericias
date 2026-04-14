@@ -461,7 +461,7 @@ export function CheckpointMediaPanel({
 
           {/* Action grid */}
           <div className="grid grid-cols-2 gap-px bg-slate-100 border border-slate-100">
-            <input ref={fotoInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFotoChange} />
+            <input ref={fotoInputRef} type="file" accept="image/*" capture="environment" multiple className="hidden" onChange={handleFotoChange} />
             <input ref={arquivoInputRef} type="file" accept="image/*,application/pdf,.docx,.doc,.xlsx,.xls" multiple className="hidden" onChange={handleArquivoChange} />
 
             <button
