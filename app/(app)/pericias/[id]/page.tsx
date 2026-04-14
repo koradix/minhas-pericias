@@ -9,29 +9,30 @@ import {
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { PericiaMediaSection } from '@/components/pericias/pericia-media-section'
-import { ResumoBlock } from '@/components/processos/resumo-block'
+// import { ResumoBlock } from '@/components/processos/resumo-block'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { getMidiasByPericiaId, type MidiaDaPericia } from '@/lib/data/checkpoint-media'
 import { pericias, statusMapPericias } from '@/lib/mocks/pericias'
 import { PericiaDetailTabs } from '@/components/pericias/pericia-detail-tabs'
-import { PericiaWorkflow } from '@/components/pericias/pericia-workflow'
-import { PericiaEditCard } from '@/components/pericias/pericia-edit-card'
+// import { PericiaWorkflow } from '@/components/pericias/pericia-workflow'
+// import { PericiaEditCard } from '@/components/pericias/pericia-edit-card'
 import { getFeeProposal, getFeeProposalVersions } from '@/lib/actions/fee-proposal'
 import { getAgendaItems, autoPopulateAgenda } from '@/lib/actions/agenda'
 // AgendaPanel is rendered only inside the Agenda tab
 import { getProposalTemplates } from '@/lib/actions/proposal-template'
 import { getLaudoTemplates, getLaudoDraft } from '@/lib/actions/laudo'
 import type { ResumoData } from '@/lib/actions/processos-intake'
-import { isAnaliseProcessoV2, isAnaliseProcesso, toAnaliseCompativel } from '@/lib/ai/prompt-mestre-resumo'
+import { isAnaliseProcessoV2, toAnaliseCompativel } from '@/lib/ai/prompt-mestre-resumo'
 import { AnaliseProcessoV2Block } from '@/components/nomeacoes/analise-processo-v2-block'
 import { AnaliseProcessoBlock } from '@/components/nomeacoes/analise-processo-block'
 import { NomeacaoDocumentosSection } from '@/components/nomeacoes/nomeacao-documentos'
 
-import { JuditAutosBtn } from '@/components/pericias/judit-autos-btn'
-import { ProcessTimeline } from '@/components/pericias/process-timeline'
-import { ProcessDocuments } from '@/components/pericias/process-documents'
-import { isJuditReady } from '@/lib/integrations/judit/config'
+// Judit standby — imports mantidos para reativação
+// import { JuditAutosBtn } from '@/components/pericias/judit-autos-btn'
+// import { ProcessTimeline } from '@/components/pericias/process-timeline'
+// import { ProcessDocuments } from '@/components/pericias/process-documents'
+// import { isJuditReady } from '@/lib/integrations/judit/config'
 import type { Metadata } from 'next'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -540,9 +541,17 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
                 .map(a => ({ id: a.id, nome: a.name, tipo: a.type })),
             }}
             resumoContent={
-              <div className="space-y-16 pt-4 max-w-5xl mx-auto">
-                  {/* 1. Gatilho de Upload Único (Linear) */}
-                  <div className="pt-4">
+              <div className="space-y-10 pt-4 max-w-5xl mx-auto">
+
+                  {/* ── PASSO 1 — Carregar documento ─────────────────────────── */}
+                  <section>
+                    <div className="flex items-center gap-3 mb-4">
+                      <span className={cn(
+                        'flex items-center justify-center h-7 w-7 text-[11px] font-black',
+                        nomeacaoLink?.nomeArquivo ? 'bg-[#a3e635] text-slate-900' : 'bg-slate-900 text-white',
+                      )}>1</span>
+                      <h2 className="text-[12px] font-black text-slate-900 uppercase tracking-[0.3em]">Carregar documento do processo</h2>
+                    </div>
                     <NomeacaoDocumentosSection
                       variant="minimal"
                       nomeacaoId={nomeacaoLink?.id ?? ''}
@@ -551,85 +560,57 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
                       nomeArquivo={nomeacaoLink?.nomeArquivo ?? null}
                       periciaId={pericia.id}
                     />
-                    <div className="mt-4">
-                      <JuditAutosBtn periciaId={pericia.id} cnj={pericia.processo ?? null} />
-                    </div>
-                  </div>
+                  </section>
 
-                  {/* 2. Análise IA — RESULTADO SEQUENCIAL */}
-                  {nomeacaoLink?.processSummary && (() => {
-                    try {
-                      const parsed = JSON.parse(nomeacaoLink!.processSummary!)
-                      return (
-                        <section className="space-y-6">
-                          <div className="flex items-center gap-4">
-                             <h2 className="text-[12px] font-black text-slate-900 uppercase tracking-[0.4em]">Análise Profunda Editorial</h2>
-                             <div className="h-px flex-1 bg-slate-900/10" />
-                          </div>
+                  {/* ── PASSO 2 — Resumo IA ──────────────────────────────────── */}
+                  <section>
+                    <div className="flex items-center gap-3 mb-4">
+                      <span className={cn(
+                        'flex items-center justify-center h-7 w-7 text-[11px] font-black',
+                        nomeacaoLink?.processSummary ? 'bg-[#a3e635] text-slate-900' : 'bg-slate-200 text-slate-400',
+                      )}>2</span>
+                      <h2 className={cn(
+                        'text-[12px] font-black uppercase tracking-[0.3em]',
+                        nomeacaoLink?.processSummary ? 'text-slate-900' : 'text-slate-300',
+                      )}>Resumo do processo</h2>
+                    </div>
+
+                    {nomeacaoLink?.processSummary ? (() => {
+                      try {
+                        const parsed = JSON.parse(nomeacaoLink!.processSummary!)
+                        return (
                           <div className="border border-slate-900 p-8 bg-white">
-                             <div className="mb-6 flex items-center justify-between">
-                                <span className="bg-slate-900 text-white px-3 py-1 text-[9px] font-black uppercase tracking-widest">Protocolo IA Editorial</span>
-                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">#{pericia.id.slice(0,8)}</span>
-                             </div>
+                            <div className="mb-6 flex items-center justify-between">
+                              <span className="bg-slate-900 text-white px-3 py-1 text-[9px] font-black uppercase tracking-widest">Análise IA</span>
+                              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">#{pericia.id.slice(0,8)}</span>
+                            </div>
                             {isAnaliseProcessoV2(parsed)
                               ? <AnaliseProcessoV2Block analise={parsed} />
                               : <AnaliseProcessoBlock analise={parsed} />
                             }
                           </div>
-                        </section>
-                      )
-                    } catch { return null }
-                  })()}
-
-                  {/* cronologia movida para o final */}
-
-                  {resumo && intake && (
-                    <section className="space-y-6">
-                      <div className="flex items-center gap-3">
-                         <h2 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.3em]">Resumo Narrativo</h2>
-                         <div className="h-px flex-1 bg-slate-100" />
+                        )
+                      } catch { return null }
+                    })() : (
+                      <div className="border border-dashed border-slate-200 bg-slate-50 px-8 py-10 text-center">
+                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+                          Carregue o documento no passo 1 para gerar o resumo automaticamente
+                        </p>
                       </div>
-                      <div className="border border-slate-200">
-                        <ResumoBlock intakeId={intake.id} resumo={resumo} />
-                      </div>
+                    )}
+                  </section>
+
+                  {/* ── SEGUIR PARA PROPOSTA ──────────────────────────────────── */}
+                  {nomeacaoLink?.processSummary && (
+                    <section>
+                      <a
+                        href={`/pericias/${pericia.id}/proposta`}
+                        className="w-full flex items-center justify-center gap-3 bg-[#a3e635] hover:bg-[#bef264] text-slate-900 px-6 py-5 text-[12px] font-black uppercase tracking-[0.2em] transition-all"
+                      >
+                        Seguir para proposta de honorários →
+                      </a>
                     </section>
                   )}
-
-                  {/* Dados Cadastrais — movido para o header */}
-
-                  {/* 5. Documentos do Processo (prioridade) */}
-                  {juditAttachments.length > 0 && (
-                    <div className="pt-12 border-t border-slate-100">
-                      <ProcessDocuments
-                        periciaId={pericia.id}
-                        attachments={juditAttachments}
-                        docsUsadosNaAnalise={(() => {
-                          try {
-                            const ps = nomeacaoLink?.processSummary
-                            if (!ps) return []
-                            const parsed = JSON.parse(ps)
-                            return (parsed._docsUsados ?? []).map((d: { id: string }) => d.id)
-                          } catch { return [] }
-                        })()}
-                      />
-                    </div>
-                  )}
-
-                  {/* 5b. Movimentações (abaixo dos documentos) */}
-                  {juditMovements.length > 0 && (
-                    <div className="pt-12 border-t border-slate-100">
-                      <ProcessTimeline movements={juditMovements} />
-                    </div>
-                  )}
-
-                  {/* 6. Escavador — Histórico de Documentos */}
-                   <NomeacaoDocumentosSection
-                    nomeacaoId={nomeacaoLink?.id ?? ''}
-                    tribunal={citacaoLink?.diarioSigla ?? pericia.vara?.match(/TJ[A-Z]{2}|DJ[A-Z]{2}/)?.[0] ?? 'TJRJ'}
-                    numeroProcesso={pericia.processo ?? ''}
-                    nomeArquivo={nomeacaoLink?.nomeArquivo ?? null}
-                    periciaId={pericia.id}
-                  />
 
                   {/* 6. Últimos Registros (Mídias) */}
                   {midias.length > 0 && (
