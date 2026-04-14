@@ -29,8 +29,6 @@ function CitacaoCard({ citacao }: { citacao: CitacaoSerializada }) {
     day: '2-digit', month: '2-digit', year: 'numeric',
   })
 
-  const temCnj = citacao.numeroProcesso && /^\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}$/.test(citacao.numeroProcesso)
-
   function handleMarcarLida() {
     startTransition(async () => {
       await marcarVisualizado(citacao.id)
@@ -103,12 +101,7 @@ function CitacaoCard({ citacao }: { citacao: CitacaoSerializada }) {
               {citacao.numeroProcesso}
             </span>
           )}
-          {temCnj && (
-            <span className="flex items-center gap-1 text-[9px] font-bold text-[#4d7c0f] bg-lime-50 px-2 py-0.5 border border-lime-200">
-              <FileText className="h-2.5 w-2.5" />
-              Docs disponíveis
-            </span>
-          )}
+          {/* Tag docs disponíveis — reservada para quando Judit reativar */}
           {citacao.linkCitacao && (
             <a
               href={citacao.linkCitacao}
