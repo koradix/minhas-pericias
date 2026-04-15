@@ -17,6 +17,7 @@ import {
  FileDown,
  RotateCcw,
 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { uploadFile } from '@/lib/client/upload'
 import { upsertFeeProposal, aceitarProposta } from '@/lib/actions/fee-proposal'
 import { deleteProposalTemplate } from '@/lib/actions/proposal-template'
@@ -115,6 +116,39 @@ function today(): string {
  return new Date().toISOString().slice(0, 10)
 }
 
+// ─── Step badge ─────────────────────────────────────────────────────────────
+
+function StepBadge({ num, done, active }: { num: number; done?: boolean; active?: boolean }) {
+ return (
+ <span className={cn(
+ "inline-flex h-7 w-7 items-center justify-center rounded-lg text-[12px] font-black flex-shrink-0",
+ done ? "bg-[#a3e635] text-slate-900" : active ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-400"
+ )}>
+ {num}
+ </span>
+ )
+}
+
+// ─── Tribunal portal URLs (for step 5) ──────────────────────────────────────
+
+const TRIBUNAL_URLS: Record<string, { url: string; label: string }> = {
+ TJRJ: { url: 'https://www3.tjrj.jus.br/ejud/ConsultaProcesso.aspx', label: 'Portal TJRJ' },
+ TJSP: { url: 'https://esaj.tjsp.jus.br/cpopg/open.do', label: 'SAJ TJSP' },
+ TJMG: { url: 'https://www4.tjmg.jus.br/juridico/sf/proc_resultado.jsp', label: 'Portal TJMG' },
+ TJRS: { url: 'https://www.tjrs.jus.br/novo/', label: 'Portal TJRS' },
+ TJPR: { url: 'https://projudi.tjpr.jus.br/projudi/', label: 'Projudi TJPR' },
+ TJSC: { url: 'https://esaj.tjsc.jus.br/cpopg/open.do', label: 'SAJ TJSC' },
+ TJBA: { url: 'https://esaj.tjba.jus.br/cpopg/open.do', label: 'SAJ TJBA' },
+ TJPE: { url: 'https://srv01.tjpe.jus.br/consultaprocessual/', label: 'Portal TJPE' },
+ TJGO: { url: 'https://projudi.tjgo.jus.br/', label: 'Projudi TJGO' },
+ TJMT: { url: 'https://pje.tjmt.jus.br/', label: 'PJe TJMT' },
+ TJMS: { url: 'https://esaj.tjms.jus.br/cpopg5/open.do', label: 'SAJ TJMS' },
+ TJCE: { url: 'https://esaj.tjce.jus.br/cpopg/open.do', label: 'SAJ TJCE' },
+ TJES: { url: 'https://sistemas.tjes.jus.br/pes/', label: 'Portal TJES' },
+ DJRJ: { url: 'https://www3.tjrj.jus.br/ejud/ConsultaProcesso.aspx', label: 'Portal TJRJ' },
+ DJSP: { url: 'https://esaj.tjsp.jus.br/cpopg/open.do', label: 'SAJ TJSP' },
+}
+
 // ─── Sub-component: Blocked state ────────────────────────────────────────────
 
 function PropostaBloqueada() {
@@ -137,7 +171,7 @@ function PropostaBloqueada() {
  )
 }
 
-// ─── Sub-component: Template selector ────────────────────────────────────────
+// ─── Sub-component: Template selector (dropdown) ────────────────────────────
 
 function TemplateSelector({
  templates,
@@ -178,120 +212,76 @@ function TemplateSelector({
  setShowNomeInput(false)
  }
 
+ const selected = templates.find((t) => t.id === selectedId)
+
  return (
  <div className="space-y-3">
- {/* Padrão Perilab (sempre disponível) */}
- <label className="flex items-center gap-3 cursor-pointer rounded-lg border px-4 py-3 transition-all hover:bg-slate-50
- border-slate-200 has-[:checked]:border-lime-600 has-[:checked]:bg-lime-50">
- <input
- type="radio"
- name="template"
- value=""
- checked={selectedId === null}
- onChange={() => onSelect(null)}
- className="accent-lime-600"
- />
- <div className="min-w-0">
- <p className="text-[14px] font-semibold text-slate-800">Template padrão Perilab</p>
- <p className="text-xs text-slate-400">DOCX gerado automaticamente, sem timbrado</p>
- </div>
- </label>
-
- {/* Existing templates */}
+ {/* Dropdown selector */}
+ <div className="flex items-center gap-2">
+ <select
+ value={selectedId ?? ''}
+ onChange={(e) => onSelect(e.target.value || null)}
+ className="flex-1 rounded-lg border-2 border-slate-200 bg-white px-4 py-3 text-[14px] font-semibold text-slate-800 focus:outline-none focus:border-slate-900 transition-all appearance-none cursor-pointer"
+ >
+ <option value="">Template padrão Perilab — sem timbrado</option>
  {templates.map((t) => (
- <label key={t.id} className="flex items-center gap-3 cursor-pointer rounded-lg border px-4 py-3 transition-all hover:bg-slate-50
- border-slate-200 has-[:checked]:border-lime-600 has-[:checked]:bg-lime-50">
- <input
- type="radio"
- name="template"
- value={t.id}
- checked={selectedId === t.id}
- onChange={() => onSelect(t.id)}
- className="accent-lime-600"
- />
- <div className="flex-1 min-w-0">
- <p className="text-[14px] font-semibold text-slate-800 truncate">{t.nome}</p>
- <p className="text-xs text-slate-400 truncate">{t.nomeArquivo}</p>
- {t.tagsDetected.length > 0 && (
- <div className="flex flex-wrap gap-1 mt-1.5">
- {t.tagsDetected.slice(0, 4).map((tag) => (
- <span key={tag} className="text-[10px] bg-slate-100 text-slate-500 rounded px-1.5 py-0.5 font-mono">{tag}</span>
+  <option key={t.id} value={t.id}>{t.nome}{t.nomeArquivo ? ` (${t.nomeArquivo})` : ''}</option>
  ))}
- {t.tagsDetected.length > 4 && (
- <span className="text-[10px] text-slate-400">+{t.tagsDetected.length - 4}</span>
- )}
- </div>
- )}
- </div>
- <button
- type="button"
- onClick={(e) => { e.preventDefault(); onDelete(t.id) }}
- className="p-1 text-slate-300 hover:text-rose-500 transition-colors flex-shrink-0"
- >
- <Trash2 className="h-3.5 w-3.5" />
+ </select>
+ {selectedId && (
+ <button type="button" onClick={() => onDelete(selectedId)}
+ className="p-2.5 rounded-lg border border-slate-200 text-slate-300 hover:text-rose-500 hover:border-rose-200 transition-colors" title="Excluir template">
+ <Trash2 className="h-4 w-4" />
  </button>
- </label>
- ))}
+ )}
+ </div>
 
- {/* Upload new */}
+ {/* Tags do template selecionado */}
+ {selected && selected.tagsDetected.length > 0 && (
+ <div className="flex flex-wrap gap-1.5 px-1">
+ <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mr-1">Tags detectadas:</span>
+ {selected.tagsDetected.slice(0, 6).map((tag) => (
+  <span key={tag} className="text-[10px] bg-slate-100 text-slate-500 rounded px-1.5 py-0.5 font-mono">{`{{${tag}}}`}</span>
+ ))}
+ {selected.tagsDetected.length > 6 && (
+  <span className="text-[10px] text-slate-400">+{selected.tagsDetected.length - 6}</span>
+ )}
+ </div>
+ )}
+
+ {/* Upload new template */}
  {!showNomeInput && (
- <button
- type="button"
- onClick={() => fileRef.current?.click()}
- disabled={isUploading}
- className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-slate-200 hover:border-lime-700 hover:bg-lime-50 px-4 py-3 text-[13px] font-medium text-slate-500 hover:text-lime-700 transition-all disabled:opacity-50"
- >
+ <button type="button" onClick={() => fileRef.current?.click()} disabled={isUploading}
+ className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-slate-200 hover:border-lime-700 hover:bg-lime-50 px-4 py-3 text-[13px] font-medium text-slate-500 hover:text-lime-700 transition-all disabled:opacity-50">
  {isUploading
- ? <><Loader2 className="h-4 w-4 animate-spin" />{uploadProgress}</>
- : <><Upload className="h-4 w-4" />Subir meu modelo .docx</>
+  ? <><Loader2 className="h-4 w-4 animate-spin" />{uploadProgress}</>
+  : <><Upload className="h-4 w-4" />Subir meu modelo .docx com timbrado</>
  }
  </button>
  )}
 
  {showNomeInput && (
  <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-3">
- <p className="text-[13px] font-semibold text-slate-800 truncate">
- {pendingFile?.name}
- </p>
+ <p className="text-[13px] font-semibold text-slate-800 truncate">{pendingFile?.name}</p>
  <div>
- <label className={labelCls}>Nome do modelo</label>
- <input
- value={templateNome}
- onChange={(e) => setTemplateNome(e.target.value)}
- className={inputCls}
- placeholder="Ex: Modelo TJRJ Engenharia"
- autoFocus
- />
+  <label className={labelCls}>Nome do modelo</label>
+  <input value={templateNome} onChange={(e) => setTemplateNome(e.target.value)} className={inputCls} placeholder="Ex: Modelo TJRJ Engenharia" autoFocus />
  </div>
  <div className="flex gap-2">
- <button
- type="button"
- onClick={handleConfirm}
- disabled={!templateNome.trim() || isUploading}
- className="flex items-center gap-1.5 rounded-lg bg-lime-700 hover:bg-lime-500 hover:text-slate-900 px-3 py-2 text-[13px] font-semibold text-white transition-all disabled:opacity-50"
- >
- {isUploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
- Salvar template
- </button>
- <button
- type="button"
- onClick={() => { setPendingFile(null); setTemplateNome(''); setShowNomeInput(false) }}
- className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-[13px] font-medium text-slate-500 hover:bg-white transition-all"
- >
- <X className="h-3.5 w-3.5" />
- Cancelar
- </button>
+  <button type="button" onClick={handleConfirm} disabled={!templateNome.trim() || isUploading}
+  className="flex items-center gap-1.5 rounded-lg bg-lime-700 hover:bg-lime-500 hover:text-slate-900 px-3 py-2 text-[13px] font-semibold text-white transition-all disabled:opacity-50">
+  {isUploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+  Salvar template
+  </button>
+  <button type="button" onClick={() => { setPendingFile(null); setTemplateNome(''); setShowNomeInput(false) }}
+  className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-[13px] font-medium text-slate-500 hover:bg-white transition-all">
+  <X className="h-3.5 w-3.5" /> Cancelar
+  </button>
  </div>
  </div>
  )}
 
- <input
- ref={fileRef}
- type="file"
- accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
- className="hidden"
- onChange={handleFileChange}
- />
+ <input ref={fileRef} type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" className="hidden" onChange={handleFileChange} />
  </div>
  )
 }
@@ -458,6 +448,11 @@ export function PropostaTab({
  const [lastRawOutput, setLastRawOutput] = useState(rascunho?.iaRawOutput ?? '')
 
  // ── Derived ────────────────────────────────────────────────────────────────
+
+ // Phase flags (avoid TS narrowing issues inside conditional blocks)
+ const isTemplatePhase = phase === 'template'
+ const isFormPhase = phase === 'form'
+ const isResultPhase = phase === 'result'
 
  const a = analise ?? {} as AnaliseIA
 
@@ -880,14 +875,13 @@ export function PropostaTab({
  <>
  <section className="rounded-xl border border-slate-200 bg-white">
  <div className="flex items-center gap-3 px-6 py-5 border-b border-slate-100">
- <ClipboardList className="h-5 w-5 text-lime-700" />
- <h2 className="text-[15px] font-semibold text-slate-800">Modelo do documento</h2>
+ <StepBadge num={3} done={!isTemplatePhase} active={isTemplatePhase} />
+ <div>
+ <h2 className="text-[15px] font-semibold text-slate-800">Escolher template</h2>
+ <p className="text-[12px] text-slate-400 mt-0.5">Selecione um modelo ou suba seu .docx com timbrado</p>
+ </div>
  </div>
  <div className="px-6 py-5">
- <p className="text-[13px] text-slate-500 mb-4 ">
- Selecione um modelo existente ou suba seu próprio .docx com timbrado.
- A IA vai preencher as tags <code className="bg-slate-100 rounded px-1 text-[12px]">{'{{'}</code><code className="bg-slate-100 rounded px-1 text-[12px]">{'}}'}</code> automaticamente.
- </p>
  <TemplateSelector
  templates={templates}
  selectedId={selectedTemplateId}
@@ -998,16 +992,20 @@ export function PropostaTab({
  </div>
  )}
 
+ {/* ── Passo 4: Gerar proposta ──────────────────────────────────── */}
+ <div className="flex items-center gap-3">
+ <StepBadge num={4} done={isResultPhase} active={isTemplatePhase} />
  <button
  onClick={handleGenerate}
  disabled={isGenerating}
- className="w-full flex items-center justify-center gap-2 rounded-lg bg-lime-700 hover:bg-lime-500 hover:text-slate-900 px-4 py-3 text-[15px] font-semibold text-white transition-all disabled:opacity-50"
+ className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-lime-700 hover:bg-lime-500 hover:text-slate-900 px-4 py-3 text-[15px] font-semibold text-white transition-all disabled:opacity-50"
  >
  {isGenerating
  ? <><Loader2 className="h-5 w-5 animate-spin" /> Gerando proposta com IA…</>
- : <><Sparkles className="h-5 w-5" /> Gerar proposta com IA</>
+ : <><Sparkles className="h-5 w-5" /> Gerar rascunho da proposta</>
  }
  </button>
+ </div>
 
  {genError && (
  <div className="flex items-center gap-2 rounded-lg bg-rose-50 border border-rose-100 px-4 py-3">
@@ -1374,6 +1372,77 @@ export function PropostaTab({
  </section>
 
  <VersionHistory versoes={versoes} />
+
+ {/* ── Passo 5: Assinar e enviar ─────────────────────────────── */}
+ <section className="rounded-xl border border-slate-200 bg-white">
+ <div className="flex items-center gap-3 px-6 py-5 border-b border-slate-100">
+ <StepBadge num={5} done={aceita} active={!aceita && phase === 'result'} />
+ <div>
+  <h2 className="text-[15px] font-semibold text-slate-800">Assinar e enviar na plataforma</h2>
+  <p className="text-[12px] text-slate-400 mt-0.5">Baixe o documento, assine e faça o upload no portal do tribunal</p>
+ </div>
+ </div>
+ <div className="px-6 py-5 space-y-4">
+ {/* Lembrete */}
+ <div className="flex items-start gap-3 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3">
+ <AlertCircle className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
+ <div>
+  <p className="text-[13px] font-semibold text-amber-800">Lembre-se de assinar o documento antes de enviar</p>
+  <p className="text-[12px] text-amber-600 mt-0.5">
+  O documento deve ser assinado digitalmente (ICP-Brasil) ou fisicamente antes do peticionamento eletrônico.
+  </p>
+ </div>
+ </div>
+
+ {/* Link para o portal */}
+ {(() => {
+ const trib = TRIBUNAL_URLS[(pericia.tribunal || '').toUpperCase()]
+ return trib ? (
+  <a
+  href={trib.url}
+  target="_blank"
+  rel="noreferrer"
+  className="flex items-center justify-between gap-3 rounded-lg border-2 border-slate-200 hover:border-lime-600 bg-white hover:bg-lime-50 px-5 py-4 transition-all group"
+  >
+  <div>
+   <p className="text-[14px] font-semibold text-slate-800 group-hover:text-lime-800">
+   Acessar {trib.label}
+   </p>
+   <p className="text-[12px] text-slate-400 mt-0.5 truncate">{trib.url}</p>
+  </div>
+  <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400 group-hover:text-lime-700 flex-shrink-0">
+   Abrir →
+  </span>
+  </a>
+ ) : (
+  <div className="rounded-lg border border-slate-200 bg-slate-50 px-5 py-4">
+  <p className="text-[13px] text-slate-500">
+   Acesse o portal do tribunal <strong>{pericia.tribunal}</strong> para realizar o peticionamento eletrônico.
+  </p>
+  </div>
+ )
+ })()}
+
+ {/* Checklist */}
+ <div className="rounded-lg bg-slate-50 border border-slate-100 px-5 py-4">
+ <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-3">Checklist de envio</p>
+ <ul className="space-y-2">
+  <li className="flex items-center gap-2 text-[13px] text-slate-600">
+  <span className="h-4 w-4 rounded border border-slate-300 flex-shrink-0" />
+  Documento baixado (.docx)
+  </li>
+  <li className="flex items-center gap-2 text-[13px] text-slate-600">
+  <span className="h-4 w-4 rounded border border-slate-300 flex-shrink-0" />
+  Assinatura digital ou física aplicada
+  </li>
+  <li className="flex items-center gap-2 text-[13px] text-slate-600">
+  <span className="h-4 w-4 rounded border border-slate-300 flex-shrink-0" />
+  Upload realizado na plataforma do tribunal
+  </li>
+ </ul>
+ </div>
+ </div>
+ </section>
  </>
  )}
 

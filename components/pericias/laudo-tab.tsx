@@ -42,6 +42,19 @@ export interface LaudoTabProps {
 
 type Phase = 'setup' | 'editor'
 
+// ─── Step badge ─────────────────────────────────────────────────────────────
+
+function StepBadge({ num, done, active }: { num: number; done?: boolean; active?: boolean }) {
+  return (
+    <span className={cn(
+      "inline-flex h-7 w-7 items-center justify-center rounded-lg text-[12px] font-black flex-shrink-0",
+      done ? "bg-[#a3e635] text-slate-900" : active ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-400"
+    )}>
+      {num}
+    </span>
+  )
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function LaudoTab({
@@ -73,6 +86,10 @@ export function LaudoTab({
   const [criando, setCriando] = useState(false)
 
   const selectedTemplate = templates.find((t) => t.id === selectedTemplateId)
+
+  // Phase flags (avoid TS narrowing issues inside conditional blocks)
+  const isSetupPhase = phase === 'setup'
+  const isEditorPhase = phase === 'editor'
 
   // ── Derived ───────────────────────────────────────────────────────────────
   const fotoCount = midias.filter((m) => m.tipo === 'foto').length
@@ -290,10 +307,14 @@ export function LaudoTab({
       {phase === 'setup' && (
         <div className="space-y-6">
 
-          {/* 1. Model selector */}
+          {/* 1. Model selector (dropdown) */}
           <div className="border border-slate-200 bg-white">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-900">1. Modelo do laudo</h3>
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-3">
+              <StepBadge num={3} done={isEditorPhase} active={isSetupPhase} />
+              <div className="flex-1">
+                <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-900">Escolher modelo do laudo</h3>
+                <p className="text-[10px] text-slate-400 mt-0.5">Selecione um modelo existente ou crie um personalizado</p>
+              </div>
               <button
                 onClick={() => setShowCriar(!showCriar)}
                 className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors"
@@ -339,38 +360,40 @@ export function LaudoTab({
               </div>
             )}
 
-            <div className="p-4 space-y-1">
-              {templates.map((tpl) => (
-                <button
-                  key={tpl.id}
-                  onClick={() => setSelectedTemplateId(tpl.id)}
-                  className={cn(
-                    "w-full flex items-center justify-between px-4 py-3 text-left transition-all",
-                    selectedTemplateId === tpl.id
-                      ? "bg-slate-900 text-white"
-                      : "hover:bg-slate-50 text-slate-700"
-                  )}
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <span className={cn(
-                      "text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 flex-shrink-0",
-                      selectedTemplateId === tpl.id ? "bg-white/10 text-slate-300" : "bg-slate-100 text-slate-400"
-                    )}>
-                      {tpl.categoria}
-                    </span>
-                    <span className="text-[12px] font-bold truncate">{tpl.nome}</span>
+            <div className="p-4 space-y-3">
+              {/* Dropdown */}
+              <select
+                value={selectedTemplateId ?? ''}
+                onChange={(e) => setSelectedTemplateId(e.target.value || null)}
+                className="w-full border-2 border-slate-200 bg-white px-4 py-3 text-[12px] font-bold text-slate-800 uppercase tracking-wide focus:outline-none focus:border-slate-900 transition-all appearance-none cursor-pointer"
+              >
+                <option value="">— Selecione um modelo —</option>
+                {templates.map((tpl) => (
+                  <option key={tpl.id} value={tpl.id}>
+                    {tpl.categoria.toUpperCase()} — {tpl.nome} ({tpl.secoes.length} seções)
+                  </option>
+                ))}
+              </select>
+
+              {/* Preview do modelo selecionado */}
+              {selectedTemplate && (
+                <div className="bg-slate-50 px-4 py-3 space-y-2">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">
+                    Seções do modelo "{selectedTemplate.nome}"
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedTemplate.secoes.map((s, i) => (
+                      <span key={i} className="text-[10px] bg-white border border-slate-200 text-slate-600 px-2 py-0.5 font-medium">
+                        {s.titulo}
+                      </span>
+                    ))}
                   </div>
-                  <span className={cn(
-                    "text-[9px] font-bold uppercase tracking-widest flex-shrink-0",
-                    selectedTemplateId === tpl.id ? "text-[#a3e635]" : "text-slate-300"
-                  )}>
-                    {selectedTemplateId === tpl.id ? '✓' : `${tpl.secoes.length}s`}
-                  </span>
-                </button>
-              ))}
-              {templates.length === 0 && (
-                <p className="text-[11px] text-slate-300 font-bold uppercase tracking-widest py-6 text-center">
-                  Nenhum modelo disponível
+                </div>
+              )}
+
+              {templates.length === 0 && !showCriar && (
+                <p className="text-[11px] text-slate-300 font-bold uppercase tracking-widest py-4 text-center">
+                  Nenhum modelo disponível — clique em "Criar modelo" acima
                 </p>
               )}
             </div>
@@ -379,9 +402,12 @@ export function LaudoTab({
           {/* 2. Perito inputs */}
           {selectedTemplateId && (
             <div className="border border-slate-200 bg-white">
-              <div className="px-6 py-4 border-b border-slate-100">
-                <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-900">2. Entradas do perito</h3>
-                <p className="text-[11px] text-slate-400 mt-0.5">Preencha antes de gerar. Campos opcionais podem ser editados depois.</p>
+              <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-3">
+                <StepBadge num={4} done={isEditorPhase} active={isSetupPhase && !!selectedTemplateId} />
+                <div>
+                  <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-900">Entradas do perito e gerar rascunho</h3>
+                  <p className="text-[11px] text-slate-400 mt-0.5">Preencha antes de gerar. Campos opcionais podem ser editados depois.</p>
+                </div>
               </div>
 
               <div className="p-6 space-y-5">
