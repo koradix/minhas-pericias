@@ -1,5 +1,11 @@
-import type { ProcessoDataJud } from '@/lib/services/datajud'
-import { tribunalToUF } from '@/lib/constants/datajud-tribunais'
+// ─── Types ──────────────────────────────────────────────────────────────────
+
+export interface ProcessoMatch {
+  tribunal: string
+  assunto: string | null
+  classe: string | null
+  [key: string]: unknown  // permite campos extras (numeroProcesso, orgaoJulgador, etc.)
+}
 
 export interface PerfilMatch {
   especialidades: string[]   // JSON parse de PeritoPerfil.especialidades
@@ -11,9 +17,30 @@ export interface PerfilMatch {
   perfilCompleto: boolean
 }
 
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+/** Extrai UF da sigla do tribunal (ex: "TJRJ" → "RJ", "TRT1" → "RJ") */
+function tribunalToUF(sigla: string): string | null {
+  const s = sigla.toUpperCase()
+  const m = s.match(/TJ([A-Z]{2})/)
+  if (m) return m[1]
+  // TRTs por região
+  const trtMap: Record<string, string> = {
+    TRT1: 'RJ', TRT2: 'SP', TRT3: 'MG', TRT4: 'RS', TRT5: 'BA',
+    TRT6: 'PE', TRT7: 'CE', TRT8: 'PA', TRT9: 'PR', TRT10: 'DF',
+    TRT11: 'AM', TRT12: 'SC', TRT13: 'PB', TRT14: 'RO', TRT15: 'SP',
+    TRT16: 'MA', TRT17: 'ES', TRT18: 'GO', TRT19: 'AL', TRT20: 'SE',
+    TRT21: 'RN', TRT22: 'PI', TRT23: 'MT', TRT24: 'MS',
+  }
+  const trtKey = s.match(/TRT\d+/)?.[0]
+  return trtKey ? (trtMap[trtKey] ?? null) : null
+}
+
+// ─── Scoring ────────────────────────────────────────────────────────────────
+
 /** Calcula score de compatibilidade entre processo e perfil do perito (0–90) */
 export function calcularScore(
-  processo: ProcessoDataJud,
+  processo: ProcessoMatch,
   perfil: PerfilMatch,
 ): number {
   let score = 0

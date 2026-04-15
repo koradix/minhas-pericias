@@ -1,7 +1,7 @@
 /**
  * POST /api/integracoes/provider
  * Salva a preferência de provedor de API do usuário.
- * Body: { "provider": "escavador" | "judit" | "both" | "manual" }
+ * Body: { "provider": "escavador" | "manual" }
  */
 
 import { NextResponse } from 'next/server'
@@ -20,7 +20,7 @@ export async function POST(req: Request) {
   }
 
   const provider = body.provider?.trim()
-  if (!provider || !['escavador', 'judit', 'both', 'manual'].includes(provider)) {
+  if (!provider || !['escavador', 'manual'].includes(provider)) {
     return NextResponse.json({ ok: false, message: 'Provider inválido' }, { status: 400 })
   }
 

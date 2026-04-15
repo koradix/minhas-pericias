@@ -8,8 +8,6 @@ import { EscavadorService } from '@/lib/services/escavador'
 import { EscavadorError, type CitacaoResult } from '@/lib/services/radar-provider'
 import { calcularScore, type PerfilMatch } from '@/lib/utils/match-nomeacao'
 import { runInitialBackfill } from '@/lib/actions/radar-sync'
-// Judit standby — import mantido para reativação futura
-// import { enriquecerCitacoesComCnj } from '@/lib/actions/enriquecer-cnj'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -521,8 +519,6 @@ export async function buscarNomeacoes(): Promise<BuscarResult> {
         saldoUltimaVerif: saldoPos.saldo,
       },
     })
-
-    // Judit standby — enriquecimento removido do fluxo principal
 
     revalidatePath('/nomeacoes')
     return { ok: true, novas, saldoRestante: saldoPos.saldo, totalEncontrados: unique.length }

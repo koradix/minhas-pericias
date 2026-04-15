@@ -28,11 +28,6 @@ import { AnaliseProcessoV2Block } from '@/components/nomeacoes/analise-processo-
 import { AnaliseProcessoBlock } from '@/components/nomeacoes/analise-processo-block'
 import { NomeacaoDocumentosSection } from '@/components/nomeacoes/nomeacao-documentos'
 
-// Judit standby — imports mantidos para reativação
-// import { JuditAutosBtn } from '@/components/pericias/judit-autos-btn'
-// import { ProcessTimeline } from '@/components/pericias/process-timeline'
-// import { ProcessDocuments } from '@/components/pericias/process-documents'
-// import { isJuditReady } from '@/lib/integrations/judit/config'
 import type { Metadata } from 'next'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -267,7 +262,7 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
     try { resumo = JSON.parse(intake.resumo) as ResumoData } catch {}
   }
 
-  // Fetch linked Nomeacao (DataJud flow) for timeline
+  // Fetch linked Nomeacao for timeline
   let nomeacaoLink: NomeacaoLink | null = null
   try {
     nomeacaoLink = await prisma.nomeacao.findFirst({
@@ -349,42 +344,6 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
     getLaudoTemplates(),
     getLaudoDraft(pericia.id),
   ])
-
-  // ─── Judit data (isolado, feature-flagged) ──────────────────────────────────
-  let juditMovements: { id: string; eventDate: string; type: string | null; description: string }[] = []
-  let juditAttachments: { id: string; name: string; type: string | null; mimeType: string | null; isPublic: boolean; downloadAvailable: boolean; url: string | null; blobUrl: string | null; downloadStatus: string; publishedAt: string | null }[] = []
-  try {
-    const [dbMov, dbAtt] = await Promise.all([
-      prisma.processMovement.findMany({
-        where: { periciaId: pericia.id, source: 'judit' },
-        orderBy: { eventDate: 'desc' },
-        select: { id: true, eventDate: true, type: true, description: true },
-      }),
-      prisma.processAttachment.findMany({
-        where: { periciaId: pericia.id, source: 'judit' },
-        orderBy: { capturedAt: 'desc' },
-        select: { id: true, name: true, type: true, mimeType: true, isPublic: true, downloadAvailable: true, url: true, blobUrl: true, downloadStatus: true, publishedAt: true },
-      }),
-    ])
-    juditMovements = dbMov.map((m: { id: string; eventDate: Date; type: string | null; description: string }) => ({
-      id: m.id,
-      eventDate: m.eventDate.toISOString(),
-      type: m.type,
-      description: m.description,
-    }))
-    juditAttachments = dbAtt.map((a: { id: string; name: string; type: string | null; mimeType: string | null; isPublic: boolean; downloadAvailable: boolean; url: string | null; blobUrl: string | null; downloadStatus: string; publishedAt: Date | null }) => ({
-      id: a.id,
-      name: a.name,
-      type: a.type,
-      mimeType: a.mimeType,
-      isPublic: a.isPublic,
-      downloadAvailable: a.downloadAvailable,
-      url: a.url,
-      blobUrl: a.blobUrl,
-      downloadStatus: a.downloadStatus,
-      publishedAt: a.publishedAt?.toISOString() ?? null,
-    }))
-  } catch {}
 
   // Auto-populate agenda (idempotent, non-blocking)
   const hasAnalise2 = !!nomeacaoLink?.extractedData
@@ -522,9 +481,7 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
               rascunho:       laudoDraft,
               midias:         midias.map((m) => ({ tipo: m.tipo, url: m.url, texto: m.texto, descricao: m.descricao })),
               vistoriaData:   vistoriaInfo,
-              documentosProcesso: juditAttachments
-                .filter(a => a.downloadStatus === 'downloaded')
-                .map(a => ({ id: a.id, nome: a.name, tipo: a.type })),
+              documentosProcesso: [],
             }}
             resumoContent={
               <div className="space-y-10 pt-4 max-w-5xl mx-auto">

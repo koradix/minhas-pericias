@@ -2,11 +2,19 @@
 
 import { useState } from 'react'
 import { ChevronDown, Archive } from 'lucide-react'
-import { NomeacaoCard } from './nomeacao-card'
-import type { NomeacaoComProcesso } from '@/lib/data/nomeacoes-datajud'
+
+interface NomeacaoItem {
+  id: string
+  status: string
+  processo: {
+    numeroProcesso: string
+    tribunal: string
+    classe: string | null
+  }
+}
 
 interface Props {
-  nomeacoes: NomeacaoComProcesso[]
+  nomeacoes: NomeacaoItem[]
 }
 
 export function ArquivadosCollapse({ nomeacoes }: Props) {
@@ -26,7 +34,10 @@ export function ArquivadosCollapse({ nomeacoes }: Props) {
       {open && (
         <div className="mt-3 space-y-3">
           {nomeacoes.map((n) => (
-            <NomeacaoCard key={n.id} nomeacao={n} />
+            <div key={n.id} className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 opacity-60">
+              <p className="text-[13px] font-bold text-slate-500">{n.processo.classe ?? n.processo.numeroProcesso}</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">{n.processo.tribunal} · {n.processo.numeroProcesso}</p>
+            </div>
           ))}
         </div>
       )}

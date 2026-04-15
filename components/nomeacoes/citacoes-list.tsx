@@ -102,7 +102,7 @@ function CitacaoCard({ citacao, showCriarPericia = true }: { citacao: CitacaoSer
               {citacao.numeroProcesso}
             </span>
           )}
-          {/* Tag docs disponíveis — reservada para quando Judit reativar */}
+          {/* Link da citação */}
           {citacao.linkCitacao && (
             <a
               href={citacao.linkCitacao}

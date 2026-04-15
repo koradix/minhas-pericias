@@ -6,11 +6,8 @@ import { Plus } from 'lucide-react'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { PageHeader } from '@/components/shared/page-header'
-import { getNomeacoesByPerito } from '@/lib/data/nomeacoes-datajud'
 import { getCitacoes } from '@/lib/data/nomeacoes'
 import { SearchProviderSwitch } from '@/components/nomeacoes/search-provider-switch'
-import { NomeacaoCard } from '@/components/nomeacoes/nomeacao-card'
-import { ArquivadosCollapse } from '@/components/nomeacoes/arquivados-collapse'
 import { CitacoesList } from '@/components/nomeacoes/citacoes-list'
 import type { Metadata } from 'next'
 
@@ -28,30 +25,23 @@ export default async function NomeacoesPage() {
   if (!session?.user?.id) redirect('/login')
   const userId = session.user.id
 
-  const [peritoPerfil, radarConfig, citacoes, todas] = await Promise.all([
-    prisma.peritoPerfil.findUnique({ where: { userId } }).catch((e) => {
+  const [peritoPerfil, radarConfig, citacoes] = await Promise.all([
+    prisma.peritoPerfil.findUnique({ where: { userId } }).catch((e: Error) => {
       console.error('[Nomeacoes] peritoPerfil:', e?.message)
       return null
     }),
-    prisma.radarConfig.findUnique({ where: { peritoId: userId }, select: { monitoramentoExtId: true } }).catch((e) => {
+    prisma.radarConfig.findUnique({ where: { peritoId: userId }, select: { monitoramentoExtId: true } }).catch((e: Error) => {
       console.error('[Nomeacoes] radarConfig:', e?.message)
       return null
     }),
-    getCitacoes(userId).catch((e) => {
+    getCitacoes(userId).catch((e: Error) => {
       console.error('[Nomeacoes] getCitacoes:', e?.message)
-      return []
-    }),
-    getNomeacoesByPerito(userId).catch((e) => {
-      console.error('[Nomeacoes] getNomeacoesByPerito:', e?.message)
       return []
     }),
   ])
 
   const siglas: string[] = safeJsonParse(peritoPerfil?.tribunais, [])
   const radarConfigurado = !!radarConfig?.monitoramentoExtId
-
-  const ativos    = todas.filter((n) => n.status !== 'arquivado')
-  const arquivados = todas.filter((n) => n.status === 'arquivado')
 
   return (
     <div className="space-y-6">
@@ -94,8 +84,6 @@ export default async function NomeacoesPage() {
           </div>
         ) : null
       })()}
-
-      {/* Fluxo antigo (DataJud) — oculto no MVP */}
 
     </div>
   )

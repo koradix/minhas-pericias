@@ -4,7 +4,6 @@ import Anthropic from '@anthropic-ai/sdk'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
-// Judit standby — enriquecerCitacoesComCnj removido do fluxo principal
 
 interface ExtractedCitacao {
   assunto: string
