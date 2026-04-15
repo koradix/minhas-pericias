@@ -11,13 +11,19 @@ import { runInitialBackfill } from '@/lib/actions/radar-sync'
 import {
   buildVariacoes,
   isTribunalCivel,
-  normalizeName,
   dedupCitacoes,
   dedupCitacoesV1,
   filtrarCitacoesPorNome,
   filtrarCitacoesV1PorNome,
   humanReadableError,
 } from '@/lib/services/nomeacoes'
+import {
+  getVaraIdBySigla,
+  upsertCitacoesBatch,
+  updateRadarStats,
+  getCnjsV2Existentes,
+  type CitacaoInput,
+} from '@/lib/data/nomeacoes'
 
 // ─── Helpers (com Prisma — ficam aqui) ───────────────────────────────────────
 
@@ -314,59 +320,14 @@ export async function buscarNomeacoes(): Promise<BuscarResult> {
       }
     }
 
-    // ── V2: busca processos do envolvido — CPF primeiro, nome como fallback ──
+    // ── V2: busca processos do envolvido via EscavadorService ──────────────
     const svc = new EscavadorService()
     try {
-      // Tenta por CPF (mais preciso, sem ambiguidade)
       const cpfDigits = cpfPerfil?.replace(/\D/g, '') ?? ''
-      const buscaParam = cpfDigits.length === 11 ? cpfDigits : nomePeito
-      const buscaTipo = cpfDigits.length === 11 ? 'cpf_cnpj' : 'nome'
-
-      const params = new URLSearchParams()
-      params.set(buscaTipo, buscaParam)
-      params.set('limit', '50')
-
-      const v2Res = await fetch(`https://api.escavador.com/api/v2/envolvido/processos?${params.toString()}`, {
-        headers: { 'Authorization': `Bearer ${process.env.ESCAVADOR_API_TOKEN}`, 'Accept': 'application/json' },
-      })
-
-      if (v2Res.ok) {
-        const v2Data = await v2Res.json()
-        const v2Items = v2Data?.items ?? []
-        console.log(`[buscarNomeacoes] v2/envolvido (${buscaTipo}): ${v2Items.length} processos`)
-
-        const nomeNorm = normalizeName(nomePeito)
-
-        for (const item of v2Items) {
-          if (!item.numero_cnj) continue
-
-          // Filtrar: só perito, não parte
-          const envolvidos = item.fontes?.[0]?.envolvidos ?? []
-          const peritoEnv = envolvidos.find((e: { nome?: string }) => {
-            const n = normalizeName(e.nome ?? '')
-            return n.includes(nomeNorm) || nomeNorm.includes(n)
-          })
-          const tipo = (peritoEnv?.tipo_normalizado ?? peritoEnv?.tipo ?? 'Envolvido').toUpperCase()
-          const ehParte = ['AUTOR', 'AUTORA', 'RÉU', 'REU', 'REQUERENTE', 'REQUERIDO'].some(t => tipo.includes(t))
-          const ehPerito = ['PERITO', 'PERITA', 'EXPERT', 'AUXILIAR', 'TÉCNICO'].some(t => tipo.includes(t))
-          if (ehParte && !ehPerito) continue
-
-          const vara = item.unidade_origem?.nome ?? ''
-          const partes = [item.titulo_polo_ativo, item.titulo_polo_passivo].filter(Boolean).join(' × ')
-          const snippet = `${peritoEnv?.tipo_normalizado ?? 'Perito'} no processo ${item.numero_cnj} | ${vara} | ${partes}`
-
-          citacoes.push({
-            externalId: `v2p-${item.numero_cnj}`,
-            diarioSigla: item.unidade_origem?.tribunal_sigla ?? 'OUTROS',
-            diarioNome: vara,
-            diarioData: (item.data_ultima_movimentacao ?? item.data_inicio ?? '').split('T')[0],
-            snippet,
-            numeroProcesso: item.numero_cnj,
-            linkCitacao: `https://www.escavador.com/processos/${item.id ?? ''}`,
-            fonte: 'v2_tribunal',
-          } as CitacaoResult & { fonte: string })
-        }
-      }
+      const cpfParam = cpfDigits.length === 11 ? cpfDigits : null
+      const { citacoes: v2Citacoes } = await svc.buscarProcessosEnvolvido(nomePeito, cpfParam)
+      citacoes.push(...v2Citacoes)
+      console.log(`[buscarNomeacoes] v2/envolvido: ${v2Citacoes.length} processos`)
     } catch (e) {
       console.log(`[buscarNomeacoes] v2/envolvido erro:`, e)
     }
@@ -381,75 +342,21 @@ export async function buscarNomeacoes(): Promise<BuscarResult> {
     // ── Verify updated saldo after paid call ─────────────────────────────────
     const saldoPos = await radar.verificarSaldo()
 
-    // ── Build sigla → TribunalVara.id lookup for linking ─────────────────────
-    const varasBySigla = await prisma.tribunalVara.findMany({
-      where: { peritoId: userId, ativa: true },
-      select: { id: true, tribunalSigla: true },
-    })
-    const varaIdBySigla = new Map(varasBySigla.map((v) => [v.tribunalSigla.toUpperCase(), v.id]))
-
-    // ── Upsert citações (@@unique prevents duplicates) ───────────────────────
-    let novas = 0
-    for (const c of unique) {
-      const existing = await prisma.nomeacaoCitacao.findUnique({
-        where: { peritoId_externalId: { peritoId: userId, externalId: c.externalId } },
-      })
-
-      if (!existing) {
-        const tribunalVaraId = varaIdBySigla.get(c.diarioSigla.toUpperCase()) ?? null
-        await prisma.nomeacaoCitacao.create({
-          data: {
-            peritoId: userId,
-            externalId: c.externalId,
-            diarioSigla: c.diarioSigla,
-            diarioNome: c.diarioNome,
-            diarioData: new Date(c.diarioData),
-            snippet: c.snippet,
-            numeroProcesso: c.numeroProcesso ?? null,
-            linkCitacao: c.linkCitacao,
-            fonte: c.fonte || 'escavador',
-            tribunalVaraId,
-          },
-        })
-
-        // Increment TribunalVara.totalNomeacoes if linked
-        if (tribunalVaraId) {
-          await prisma.tribunalVara.update({
-            where: { id: tribunalVaraId },
-            data: { totalNomeacoes: { increment: 1 } },
-          })
-
-          // Upsert platform-wide VaraStats
-          const vara = varasBySigla.find((v) => v.id === tribunalVaraId)
-          if (vara) {
-            const varaRow = await prisma.tribunalVara.findUnique({
-              where: { id: tribunalVaraId },
-              select: { varaNome: true },
-            })
-            if (varaRow) {
-              await prisma.varaStats.upsert({
-                where: { tribunalSigla_varaNome: { tribunalSigla: vara.tribunalSigla, varaNome: varaRow.varaNome } },
-                create: { tribunalSigla: vara.tribunalSigla, varaNome: varaRow.varaNome, totalNomeacoes: 1 },
-                update: { totalNomeacoes: { increment: 1 } },
-              })
-            }
-          }
-        }
-
-        novas++
-      }
-    }
-
-    // ── Update config stats ──────────────────────────────────────────────────
-    const totalCitacoes = await prisma.nomeacaoCitacao.count({ where: { peritoId: userId } })
-    await prisma.radarConfig.update({
-      where: { peritoId: userId },
-      data: {
-        ultimaBusca: new Date(),
-        totalCitacoes,
-        saldoUltimaVerif: saldoPos.saldo,
-      },
-    })
+    // ── Persist via data layer ──────────────────────────────────────────────
+    const { map: varaIdMap } = await getVaraIdBySigla(userId)
+    const inputs: CitacaoInput[] = unique.map((c) => ({
+      peritoId: userId,
+      externalId: c.externalId,
+      diarioSigla: c.diarioSigla,
+      diarioNome: c.diarioNome,
+      diarioData: c.diarioData,
+      snippet: c.snippet,
+      numeroProcesso: c.numeroProcesso ?? null,
+      linkCitacao: c.linkCitacao,
+      fonte: (c as { fonte?: string }).fonte || 'escavador',
+    }))
+    const novas = await upsertCitacoesBatch(inputs, varaIdMap)
+    await updateRadarStats(userId, saldoPos.saldo)
 
     revalidatePath('/nomeacoes')
     return { ok: true, novas, saldoRestante: saldoPos.saldo, totalEncontrados: unique.length }
@@ -511,78 +418,28 @@ export async function buscarCitacoesV1(): Promise<BuscarResult> {
     }
 
     // ── Dedup + filtro (lógica pura em lib/services/nomeacoes) ──────────────
-    const existingV2 = await prisma.nomeacaoCitacao.findMany({
-      where: { peritoId: userId, fonte: 'v2_tribunal' },
-      select: { numeroProcesso: true },
-    })
-    const cnjsExistentes = new Set(existingV2.map(e => e.numeroProcesso).filter(Boolean) as string[])
+    const cnjsExistentes = await getCnjsV2Existentes(userId)
     const deduped = dedupCitacoesV1(citacoes, cnjsExistentes)
     const unique = filtrarCitacoesV1PorNome(deduped, nomePeito)
     console.log(`[buscarCitacoesV1] Após filtro: ${unique.length} de ${deduped.length}`)
 
     const saldoPos = await radar.verificarSaldo()
 
-    // ── Link com TribunalVara ───────────────────────────────────────────────
-    const varasBySigla = await prisma.tribunalVara.findMany({
-      where: { peritoId: userId, ativa: true },
-      select: { id: true, tribunalSigla: true },
-    })
-    const varaIdBySigla = new Map(varasBySigla.map((v) => [v.tribunalSigla.toUpperCase(), v.id]))
-
-    // ── Upsert citações ─────────────────────────────────────────────────────
-    let novas = 0
-    for (const c of unique) {
-      const existing = await prisma.nomeacaoCitacao.findUnique({
-        where: { peritoId_externalId: { peritoId: userId, externalId: c.externalId } },
-      })
-
-      if (!existing) {
-        const tribunalVaraId = varaIdBySigla.get(c.diarioSigla.toUpperCase()) ?? null
-        await prisma.nomeacaoCitacao.create({
-          data: {
-            peritoId: userId,
-            externalId: c.externalId,
-            diarioSigla: c.diarioSigla,
-            diarioNome: c.diarioNome,
-            diarioData: new Date(c.diarioData),
-            snippet: c.snippet,
-            numeroProcesso: c.numeroProcesso ?? null,
-            linkCitacao: c.linkCitacao,
-            fonte: 'escavador',
-            tribunalVaraId,
-          },
-        })
-
-        if (tribunalVaraId) {
-          await prisma.tribunalVara.update({
-            where: { id: tribunalVaraId },
-            data: { totalNomeacoes: { increment: 1 } },
-          })
-          const vara = varasBySigla.find((v) => v.id === tribunalVaraId)
-          if (vara) {
-            const varaRow = await prisma.tribunalVara.findUnique({
-              where: { id: tribunalVaraId },
-              select: { varaNome: true },
-            })
-            if (varaRow) {
-              await prisma.varaStats.upsert({
-                where: { tribunalSigla_varaNome: { tribunalSigla: vara.tribunalSigla, varaNome: varaRow.varaNome } },
-                create: { tribunalSigla: vara.tribunalSigla, varaNome: varaRow.varaNome, totalNomeacoes: 1 },
-                update: { totalNomeacoes: { increment: 1 } },
-              })
-            }
-          }
-        }
-
-        novas++
-      }
-    }
-
-    const totalCitacoes = await prisma.nomeacaoCitacao.count({ where: { peritoId: userId } })
-    await prisma.radarConfig.update({
-      where: { peritoId: userId },
-      data: { ultimaBusca: new Date(), totalCitacoes, saldoUltimaVerif: saldoPos.saldo },
-    })
+    // ── Persist via data layer ──────────────────────────────────────────────
+    const { map: varaIdMap } = await getVaraIdBySigla(userId)
+    const inputs: CitacaoInput[] = unique.map((c) => ({
+      peritoId: userId,
+      externalId: c.externalId,
+      diarioSigla: c.diarioSigla,
+      diarioNome: c.diarioNome,
+      diarioData: c.diarioData,
+      snippet: c.snippet,
+      numeroProcesso: c.numeroProcesso ?? null,
+      linkCitacao: c.linkCitacao,
+      fonte: 'escavador',
+    }))
+    const novas = await upsertCitacoesBatch(inputs, varaIdMap)
+    await updateRadarStats(userId, saldoPos.saldo)
 
     revalidatePath('/nomeacoes')
     return { ok: true, novas, saldoRestante: saldoPos.saldo, totalEncontrados: unique.length }
@@ -721,7 +578,7 @@ export async function buscarProcessosTribunais(): Promise<BuscarTribunaisResult>
     return { ok: false, novas: 0, error: msg }
   }
 
-  // Persiste — sem filtro isSnippetNomeacao pois o v2 já filtrou por tipo=PERITO
+  // Persiste via data layer — sem filtro isSnippetNomeacao pois o v2 já filtrou
   const seen = new Set<string>()
   const unicas = todasCitacoes.filter((c) => {
     if (seen.has(c.externalId)) return false
@@ -729,54 +586,22 @@ export async function buscarProcessosTribunais(): Promise<BuscarTribunaisResult>
     return true
   })
 
-  const varasBySigla = await prisma.tribunalVara.findMany({
-    where: { peritoId: userId, ativa: true },
-    select: { id: true, tribunalSigla: true, varaNome: true },
-  })
-  const varaIdMap = new Map(varasBySigla.map((v) => [v.tribunalSigla.toUpperCase(), v.id]))
-
-  let novas = 0
-  for (const c of unicas) {
-    const exists = await prisma.nomeacaoCitacao.findUnique({
-      where: { peritoId_externalId: { peritoId: userId, externalId: c.externalId } },
-      select: { id: true },
-    })
-    if (exists) continue
-
-    const tribunalVaraId = varaIdMap.get(c.diarioSigla.toUpperCase()) ?? null
-    try {
-      await prisma.nomeacaoCitacao.create({
-        data: {
-          peritoId:      userId,
-          externalId:    c.externalId,
-          diarioSigla:   c.diarioSigla,
-          diarioNome:    c.diarioNome,
-          diarioData:    new Date(c.diarioData),
-          snippet:       c.snippet,
-          numeroProcesso: c.numeroProcesso ?? null,
-          linkCitacao:   c.linkCitacao,
-          fonte:         'v2_tribunal',
-          tribunalVaraId,
-        },
-      })
-      if (tribunalVaraId) {
-        await prisma.tribunalVara.update({
-          where: { id: tribunalVaraId },
-          data: { totalNomeacoes: { increment: 1 } },
-        })
-      }
-      novas++
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : ''
-      if (!msg.includes('Unique constraint')) console.error('[buscarTribunais] erro create:', err)
-    }
-  }
+  const { map: varaIdMap } = await getVaraIdBySigla(userId)
+  const inputs: CitacaoInput[] = unicas.map((c) => ({
+    peritoId: userId,
+    externalId: c.externalId,
+    diarioSigla: c.diarioSigla,
+    diarioNome: c.diarioNome,
+    diarioData: c.diarioData,
+    snippet: c.snippet,
+    numeroProcesso: c.numeroProcesso ?? null,
+    linkCitacao: c.linkCitacao,
+    fonte: 'v2_tribunal',
+  }))
+  const novas = await upsertCitacoesBatch(inputs, varaIdMap)
 
   const saldoPos = await svc.verificarSaldo()
-  await prisma.radarConfig.updateMany({
-    where: { peritoId: userId },
-    data: { saldoUltimaVerif: saldoPos.saldo, ultimaBusca: new Date() },
-  })
+  await updateRadarStats(userId, saldoPos.saldo)
 
   revalidatePath('/nomeacoes')
   revalidatePath('/dashboard')
