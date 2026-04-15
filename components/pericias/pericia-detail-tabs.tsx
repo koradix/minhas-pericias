@@ -3,9 +3,11 @@
 import { useState, useTransition, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
-  Navigation,
   Loader2,
   ChevronRight,
+  ClipboardCheck,
+  MapPin,
+  FileDown,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { criarRotaDaPericia } from '@/lib/actions/pericias-rota'
@@ -49,6 +51,19 @@ const CP_STATUS_TEXT: Record<string, string> = {
   pendente:  'PENDENTE',
 }
 
+// ─── Step badge ─────────────────────────────────────────────────────────────
+
+function StepBadge({ num, done, active }: { num: number; done?: boolean; active?: boolean }) {
+  return (
+    <span className={cn(
+      "inline-flex h-7 w-7 items-center justify-center rounded-lg text-[12px] font-black flex-shrink-0",
+      done ? "bg-[#a3e635] text-slate-900" : active ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-400"
+    )}>
+      {num}
+    </span>
+  )
+}
+
 // ─── Rota tab ─────────────────────────────────────────────────────────────────
 
 function RotaContent({
@@ -77,96 +92,135 @@ function RotaContent({
     })
   }
 
-  return (
-    <div className="space-y-12">
-      {hasCheckpoints ? (
-        <section className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.3em]">Checkpoints da vistorias</h2>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-              {checkpoints.filter(c => c.status === 'concluido').length}/{checkpoints.length} CONCLUÍDOS
-            </span>
-          </div>
-          <div className="border border-slate-200">
-            <div className="divide-y divide-slate-100">
-              {checkpoints.map((cp) => (
-                <div key={cp.id} className="flex items-start gap-6 px-8 py-6 bg-white hover:bg-slate-50 transition-colors">
-                  <span className={cn(
-                    "text-[10px] font-black uppercase tracking-widest px-3 py-1 border-2",
-                    cp.status === 'concluido' ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-300 border-slate-100"
-                  )}>
-                    {CP_STATUS_TEXT[cp.status] ?? 'PENDENTE'}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className={cn(
-                      'text-[13px] font-black uppercase tracking-tight',
-                      cp.status === 'concluido' ? 'text-slate-400' : 'text-slate-900',
-                    )}>
-                      {cp.titulo}
-                    </p>
-                    {cp.endereco && (
-                      <p className="text-[11px] font-bold text-slate-400 mt-1 uppercase tracking-wider">{cp.endereco}</p>
-                    )}
-                  </div>
-                  {cp.midiaCount > 0 && (
-                    <span className="text-[9px] font-black text-[#a3e635] border border-[#a3e635] px-2 py-0.5 uppercase tracking-widest">
-                      {cp.midiaCount} EVIDENCE
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      ) : (
-        <section className="space-y-8 max-w-2xl">
-          <div className="space-y-3">
-            <h2 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.3em]">Agendar vistoria em campo</h2>
-            <p className="text-[13px] font-bold text-slate-400 uppercase tracking-tight leading-relaxed">
-              Informe o endereço principal para habilitar o módulo de vistorias, registro de evidências e tracking de deslocamento.
-            </p>
-          </div>
-          
-          <div className="space-y-6">
-            <div className="space-y-3">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
-                Endereço da vistoria
-              </label>
-              <input
-                type="text"
-                value={endereco}
-                onChange={(e) => setEndereco(e.target.value)}
-                placeholder="RUA, NÚMERO, BAIRRO, CIDADE"
-                className="w-full rounded-none border-2 border-slate-200 bg-white px-5 py-4 text-[13px] font-bold text-slate-900 focus:outline-none focus:border-slate-900 placeholder-slate-200 uppercase tracking-wide transition-all"
-              />
-            </div>
-            
-            {result && (
-              <p className={cn(
-                "text-[11px] font-black uppercase tracking-widest px-6 py-4 border-2",
-                result.ok ? "text-[#a3e635] bg-slate-900 border-slate-900" : "text-rose-500 bg-rose-50 border-rose-100"
-              )}>
-                {result.mensagem}
-              </p>
-            )}
+  const allDone = checkpoints.length > 0 && checkpoints.every(c => c.status === 'concluido')
+  const hasMidias = checkpoints.some(c => c.midiaCount > 0)
 
-            <button
-              onClick={handleCriarRota}
-              disabled={isPending || !endereco.trim()}
-              className="w-full bg-[#a3e635] text-slate-900 rounded-none px-8 py-5 text-[11px] font-black uppercase tracking-[0.3em] hover:bg-slate-900 hover:text-white transition-all disabled:opacity-30 shadow-none flex items-center justify-center gap-3"
-            >
-              {isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin text-slate-900" />
-                  AGUARDE...
-                </>
-              ) : (
-                'INICIAR MÓDULO DE VISTORIA'
-              )}
-            </button>
+  return (
+    <div className="space-y-8">
+
+      {/* ── Passo 6: Baixar checklist de vistoria ───────────────────── */}
+      <section className="rounded-xl border border-slate-200 bg-white">
+        <div className="flex items-center gap-3 px-6 py-5 border-b border-slate-100">
+          <StepBadge num={6} done={hasCheckpoints} active={!hasCheckpoints} />
+          <div>
+            <h2 className="text-[15px] font-semibold text-slate-800">Baixar checklist de vistoria</h2>
+            <p className="text-[12px] text-slate-400 mt-0.5">Prepare-se para a vistoria com o checklist adequado ao tipo de perícia</p>
           </div>
-        </section>
-      )}
+        </div>
+        <div className="px-6 py-5 space-y-4">
+          {!hasCheckpoints ? (
+            <>
+              <div className="space-y-3">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                  Endereço da vistoria
+                </label>
+                <input
+                  type="text"
+                  value={endereco}
+                  onChange={(e) => setEndereco(e.target.value)}
+                  placeholder="RUA, NÚMERO, BAIRRO, CIDADE"
+                  className="w-full rounded-none border-2 border-slate-200 bg-white px-5 py-4 text-[13px] font-bold text-slate-900 focus:outline-none focus:border-slate-900 placeholder-slate-200 uppercase tracking-wide transition-all"
+                />
+              </div>
+
+              {result && (
+                <p className={cn(
+                  "text-[11px] font-black uppercase tracking-widest px-6 py-4 border-2",
+                  result.ok ? "text-[#a3e635] bg-slate-900 border-slate-900" : "text-rose-500 bg-rose-50 border-rose-100"
+                )}>
+                  {result.mensagem}
+                </p>
+              )}
+
+              <button
+                onClick={handleCriarRota}
+                disabled={isPending || !endereco.trim()}
+                className="w-full bg-[#a3e635] text-slate-900 rounded-none px-8 py-5 text-[11px] font-black uppercase tracking-[0.3em] hover:bg-slate-900 hover:text-white transition-all disabled:opacity-30 shadow-none flex items-center justify-center gap-3"
+              >
+                {isPending ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" /> AGUARDE...</>
+                ) : (
+                  <><ClipboardCheck className="h-4 w-4" /> CRIAR CHECKLIST E INICIAR VISTORIA</>
+                )}
+              </button>
+            </>
+          ) : (
+            <div className="flex items-center gap-3 rounded-lg bg-[#a3e635]/10 border border-[#a3e635]/30 px-5 py-3">
+              <ClipboardCheck className="h-5 w-5 text-[#4d7c0f]" />
+              <div>
+                <p className="text-[13px] font-semibold text-slate-800">Checklist criado com {checkpoints.length} checkpoint{checkpoints.length > 1 ? 's' : ''}</p>
+                <p className="text-[12px] text-slate-400 mt-0.5">
+                  {checkpoints.filter(c => c.status === 'concluido').length}/{checkpoints.length} concluídos
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ── Passo 7: Realizar vistoria ──────────────────────────────── */}
+      <section className="rounded-xl border border-slate-200 bg-white">
+        <div className="flex items-center gap-3 px-6 py-5 border-b border-slate-100">
+          <StepBadge num={7} done={allDone && hasMidias} active={hasCheckpoints && !allDone} />
+          <div>
+            <h2 className="text-[15px] font-semibold text-slate-800">Realizar vistoria</h2>
+            <p className="text-[12px] text-slate-400 mt-0.5">Vá a campo, registre evidências e complete os checkpoints</p>
+          </div>
+        </div>
+        <div className="px-6 py-5">
+          {hasCheckpoints ? (
+            <div className="space-y-4">
+              <div className="border border-slate-200 rounded-lg overflow-hidden">
+                <div className="divide-y divide-slate-100">
+                  {checkpoints.map((cp) => (
+                    <div key={cp.id} className="flex items-start gap-4 px-5 py-4 bg-white hover:bg-slate-50 transition-colors">
+                      <span className={cn(
+                        "text-[10px] font-black uppercase tracking-widest px-3 py-1 border-2 rounded flex-shrink-0 mt-0.5",
+                        cp.status === 'concluido' ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-300 border-slate-100"
+                      )}>
+                        {CP_STATUS_TEXT[cp.status] ?? 'PENDENTE'}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className={cn(
+                          'text-[13px] font-bold',
+                          cp.status === 'concluido' ? 'text-slate-400' : 'text-slate-900',
+                        )}>
+                          {cp.titulo}
+                        </p>
+                        {cp.endereco && (
+                          <p className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1">
+                            <MapPin className="h-3 w-3" /> {cp.endereco}
+                          </p>
+                        )}
+                      </div>
+                      {cp.midiaCount > 0 && (
+                        <span className="text-[9px] font-black text-[#a3e635] border border-[#a3e635] px-2 py-0.5 uppercase tracking-widest rounded flex-shrink-0">
+                          {cp.midiaCount} evidência{cp.midiaCount > 1 ? 's' : ''}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {!allDone && (
+                <div className="flex items-start gap-3 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3">
+                  <span className="text-amber-500 mt-0.5 text-[14px]">⚠</span>
+                  <p className="text-[13px] text-amber-700">
+                    Complete todos os checkpoints e registre evidências (fotos, áudios, notas) antes de prosseguir para o laudo.
+                  </p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-[13px] text-slate-400">
+                Crie o checklist no passo anterior para habilitar a vistoria.
+              </p>
+            </div>
+          )}
+        </div>
+      </section>
     </div>
   )
 }

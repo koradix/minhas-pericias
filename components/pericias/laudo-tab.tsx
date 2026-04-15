@@ -310,9 +310,9 @@ export function LaudoTab({
           {/* 1. Model selector (dropdown) */}
           <div className="border border-slate-200 bg-white">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-3">
-              <StepBadge num={3} done={isEditorPhase} active={isSetupPhase} />
+              <StepBadge num={8} done={isEditorPhase} active={isSetupPhase} />
               <div className="flex-1">
-                <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-900">Escolher modelo do laudo</h3>
+                <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-900">Escolher modelo de laudo</h3>
                 <p className="text-[10px] text-slate-400 mt-0.5">Selecione um modelo existente ou crie um personalizado</p>
               </div>
               <button
@@ -403,9 +403,9 @@ export function LaudoTab({
           {selectedTemplateId && (
             <div className="border border-slate-200 bg-white">
               <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-3">
-                <StepBadge num={4} done={isEditorPhase} active={isSetupPhase && !!selectedTemplateId} />
+                <StepBadge num={9} done={isEditorPhase} active={isSetupPhase && !!selectedTemplateId} />
                 <div>
-                  <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-900">Entradas do perito e gerar rascunho</h3>
+                  <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-900">Preencher pontos críticos</h3>
                   <p className="text-[11px] text-slate-400 mt-0.5">Preencha antes de gerar. Campos opcionais podem ser editados depois.</p>
                 </div>
               </div>
@@ -555,27 +555,42 @@ export function LaudoTab({
             ))}
           </div>
 
-          {/* Footer actions */}
-          <div className="flex items-center justify-between pt-4 border-t border-slate-100">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-300">
-              {secoes.length} seções · Versão {rascunho?.versao ?? 1}
-            </p>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={handleExportDocx}
-                disabled={isExporting || secoes.every((s) => !s.conteudo.trim())}
-                className="flex items-center gap-2 border border-slate-200 bg-white hover:bg-slate-50 px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-600 transition-all disabled:opacity-30"
-              >
-                {isExporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileDown className="h-3.5 w-3.5" />}
-                Exportar DOCX
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={isSaving || isPending}
-                className="bg-[#a3e635] text-slate-900 px-6 py-3 text-[10px] font-bold uppercase tracking-widest hover:bg-[#bef264] transition-all disabled:opacity-50"
-              >
-                {isSaving ? 'Salvando...' : 'Salvar rascunho'}
-              </button>
+          {/* ── Passo 10: Baixar minuta de laudo ──────────────────────── */}
+          <div className="border border-slate-200 bg-white rounded-xl">
+            <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-100">
+              <StepBadge num={10} done={false} active={secoes.some(s => s.conteudo.trim())} />
+              <div>
+                <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-900">Baixar minuta de laudo</h3>
+                <p className="text-[10px] text-slate-400 mt-0.5">Salve o rascunho e exporte o documento final em DOCX</p>
+              </div>
+            </div>
+            <div className="px-6 py-5">
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-300">
+                  {secoes.length} seções · Versão {rascunho?.versao ?? 1}
+                </p>
+                {saved && (
+                  <span className="text-[10px] font-bold text-[#a3e635] uppercase tracking-widest">✓ SALVO</span>
+                )}
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleSave}
+                  disabled={isSaving || isPending}
+                  className="flex items-center gap-2 border border-slate-200 bg-white hover:bg-slate-50 px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-600 transition-all disabled:opacity-50"
+                >
+                  {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                  Salvar rascunho
+                </button>
+                <button
+                  onClick={handleExportDocx}
+                  disabled={isExporting || secoes.every((s) => !s.conteudo.trim())}
+                  className="flex-1 flex items-center justify-center gap-2 bg-[#a3e635] text-slate-900 px-6 py-3 text-[10px] font-bold uppercase tracking-widest hover:bg-[#bef264] transition-all disabled:opacity-30"
+                >
+                  {isExporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileDown className="h-3.5 w-3.5" />}
+                  Baixar minuta do laudo (.docx)
+                </button>
+              </div>
             </div>
           </div>
         </div>
