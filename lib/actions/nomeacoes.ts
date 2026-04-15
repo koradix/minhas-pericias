@@ -8,38 +8,18 @@ import { EscavadorService } from '@/lib/services/escavador'
 import { EscavadorError, type CitacaoResult } from '@/lib/services/radar-provider'
 import { calcularScore, type PerfilMatch } from '@/lib/utils/match-nomeacao'
 import { runInitialBackfill } from '@/lib/actions/radar-sync'
+import {
+  buildVariacoes,
+  isTribunalCivel,
+  normalizeName,
+  dedupCitacoes,
+  dedupCitacoesV1,
+  filtrarCitacoesPorNome,
+  filtrarCitacoesV1PorNome,
+  humanReadableError,
+} from '@/lib/services/nomeacoes'
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function buildVariacoes(nome: string, cpf?: string | null): string[] {
-  const parts = nome.trim().split(/\s+/).filter(Boolean)
-  const vars: string[] = []
-  if (parts.length >= 2) vars.push(`${parts[0]} ${parts[parts.length - 1]}`) // first + last
-  if (parts.length >= 1) vars.push(parts[0]) // first name
-  const cpfDigits = cpf?.replace(/\D/g, '') ?? ''
-  if (cpfDigits.length === 11) {
-    vars.push(cpf!.trim())
-  } else if (parts.length >= 2) {
-    vars.push(parts[parts.length - 1])
-  }
-  return vars.slice(0, 3)
-}
-
-/** Retorna true se o sigla pertence a um tribunal estadual cível (TJ*). */
-function isTribunalCivel(sigla: string): boolean {
-  return sigla.toUpperCase().startsWith('TJ')
-}
-
-/**
- * Retorna true se o snippet provavelmente menciona nomeação de perito.
- * Intencionalmente permissivo — melhor salvar um falso positivo do que perder
- * uma nomeação real. O usuário pode arquivar o que não for relevante.
- */
-function isSnippetNomeacaoCivel(snippet: string): boolean {
-  const lower = snippet.toLowerCase()
-  // Qualquer menção a perícia, perito, vistoria, nomeação ou designação
-  return /per[íi]c|perito|vistori|nomea|designa|expert|laudo/.test(lower)
-}
+// ─── Helpers (com Prisma — ficam aqui) ───────────────────────────────────────
 
 /** Busca o nome completo do usuário diretamente do banco (fonte mais confiável). */
 async function getNomePeito(userId: string): Promise<string> {
@@ -54,23 +34,6 @@ export type SetupRadarResult =
   | { status: 'created' }
   | { status: 'recovered' }
   | { status: 'error'; message: string }
-
-function humanReadableError(e: unknown): string {
-  if (e instanceof EscavadorError) {
-    if (e.code === 401) return 'Token de API inválido. Verifique as configurações.'
-    if (e.code === 402) return 'Saldo insuficiente na API Escavador.'
-    if (e.code === 404) return 'Recurso não encontrado na API.'
-    if (e.message.includes('422')) return 'Configuração já existe. Tente recarregar a página.'
-    return 'Erro temporário. Tente novamente.'
-  }
-  if (e instanceof Error) {
-    if (e.message.includes('422')) return 'Configuração já existe. Tente recarregar a página.'
-    if (e.message.toLowerCase().includes('tribunal')) return e.message
-    if (e.message.toLowerCase().includes('perfil')) return e.message
-    return 'Erro inesperado. Tente novamente.'
-  }
-  return 'Erro inesperado. Tente novamente.'
-}
 
 export async function setupRadar(): Promise<SetupRadarResult> {
   const session = await auth()
@@ -372,8 +335,7 @@ export async function buscarNomeacoes(): Promise<BuscarResult> {
         const v2Items = v2Data?.items ?? []
         console.log(`[buscarNomeacoes] v2/envolvido (${buscaTipo}): ${v2Items.length} processos`)
 
-        const norm = (ss: string) => ss.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
-        const nomeNorm = norm(nomePeito)
+        const nomeNorm = normalizeName(nomePeito)
 
         for (const item of v2Items) {
           if (!item.numero_cnj) continue
@@ -381,7 +343,7 @@ export async function buscarNomeacoes(): Promise<BuscarResult> {
           // Filtrar: só perito, não parte
           const envolvidos = item.fontes?.[0]?.envolvidos ?? []
           const peritoEnv = envolvidos.find((e: { nome?: string }) => {
-            const n = norm(e.nome ?? '')
+            const n = normalizeName(e.nome ?? '')
             return n.includes(nomeNorm) || nomeNorm.includes(n)
           })
           const tipo = (peritoEnv?.tipo_normalizado ?? peritoEnv?.tipo ?? 'Envolvido').toUpperCase()
@@ -411,40 +373,9 @@ export async function buscarNomeacoes(): Promise<BuscarResult> {
 
     // V1 DJE agora roda separado via buscarCitacoesV1()
 
-    // ── Dedup por externalId + CNJ (v2 tem prioridade) ───────────────────────
-    const seen = new Set<string>()
-    const seenCnj = new Set<string>()
-    // Primeiro registra CNJs do v2
-    for (const c of citacoes) {
-      if ((c as { fonte?: string }).fonte === 'v2_tribunal' && c.numeroProcesso) {
-        seenCnj.add(c.numeroProcesso)
-      }
-    }
-    const deduped = citacoes.filter((c) => {
-      if (seen.has(c.externalId)) return false
-      seen.add(c.externalId)
-      // Se v1 e já tem v2 com mesmo CNJ → pula (dedup cross-fonte)
-      if ((c as { fonte?: string }).fonte !== 'v2_tribunal' && c.numeroProcesso && seenCnj.has(c.numeroProcesso)) return false
-      return true
-    })
-
-    // ── Filtra: snippet deve mencionar perícia/perito E o nome completo ─────────
-    // Usa o nome completo do cadastro (User.name) para eliminar falsos positivos.
-    const nomeLower = nomePeito.toLowerCase()
-    // Também aceita primeiro+último (sem nome do meio) para tolerância ao DJe
-    const parts = nomePeito.trim().split(/\s+/).filter(Boolean)
-    const primeiroUltimoFiltro = parts.length >= 3
-      ? `${parts[0]} ${parts[parts.length - 1]}`.toLowerCase()
-      : nomeLower
-    const unique = deduped.filter((c) => {
-      // v2_tribunal: já filtrado pelo Escavador (perito confirmado) — não precisa filtrar snippet
-      if ((c as { fonte?: string }).fonte === 'v2_tribunal') return true
-      // v1 DJE: precisa confirmar que menciona perícia + nome do perito
-      if (!isSnippetNomeacaoCivel(c.snippet)) return false
-      const snipLower = c.snippet.toLowerCase()
-      return snipLower.includes(nomeLower) || snipLower.includes(primeiroUltimoFiltro)
-    })
-
+    // ── Dedup + filtro (lógica pura em lib/services/nomeacoes) ──────────────
+    const deduped = dedupCitacoes(citacoes as (CitacaoResult & { fonte?: string })[])
+    const unique = filtrarCitacoesPorNome(deduped, nomePeito)
     console.log(`[buscarNomeacoes] Após filtro de snippet: ${unique.length} de ${deduped.length}`)
 
     // ── Verify updated saldo after paid call ─────────────────────────────────
@@ -579,33 +510,14 @@ export async function buscarCitacoesV1(): Promise<BuscarResult> {
       } catch {}
     }
 
-    // ── Dedup por externalId + exclui CNJs já no banco (vindos do v2) ────────
+    // ── Dedup + filtro (lógica pura em lib/services/nomeacoes) ──────────────
     const existingV2 = await prisma.nomeacaoCitacao.findMany({
       where: { peritoId: userId, fonte: 'v2_tribunal' },
       select: { numeroProcesso: true },
     })
-    const seenCnj = new Set(existingV2.map(e => e.numeroProcesso).filter(Boolean) as string[])
-
-    const seen = new Set<string>()
-    const deduped = citacoes.filter((c) => {
-      if (seen.has(c.externalId)) return false
-      seen.add(c.externalId)
-      if (c.numeroProcesso && seenCnj.has(c.numeroProcesso)) return false
-      return true
-    })
-
-    // ── Filtra: snippet deve mencionar perícia/perito E o nome completo ──────
-    const nomeLower = nomePeito.toLowerCase()
-    const parts = nomePeito.trim().split(/\s+/).filter(Boolean)
-    const primeiroUltimoFiltro = parts.length >= 3
-      ? `${parts[0]} ${parts[parts.length - 1]}`.toLowerCase()
-      : nomeLower
-    const unique = deduped.filter((c) => {
-      if (!isSnippetNomeacaoCivel(c.snippet)) return false
-      const snipLower = c.snippet.toLowerCase()
-      return snipLower.includes(nomeLower) || snipLower.includes(primeiroUltimoFiltro)
-    })
-
+    const cnjsExistentes = new Set(existingV2.map(e => e.numeroProcesso).filter(Boolean) as string[])
+    const deduped = dedupCitacoesV1(citacoes, cnjsExistentes)
+    const unique = filtrarCitacoesV1PorNome(deduped, nomePeito)
     console.log(`[buscarCitacoesV1] Após filtro: ${unique.length} de ${deduped.length}`)
 
     const saldoPos = await radar.verificarSaldo()
