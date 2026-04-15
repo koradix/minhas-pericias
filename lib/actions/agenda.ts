@@ -120,62 +120,79 @@ export async function deletarAgendaItem(
 
 // ─── AUTO-POPULATE (idempotent — uses sourceKey for dedup) ────────────────────
 
+interface PericiaContext {
+  hasAnalise: boolean
+  hasProposta: boolean
+  hasVistoria: boolean
+  hasMidias: boolean
+  periciaStatus: string
+}
+
+interface AgendaItemSpec {
+  titulo: string
+  tipo: string
+  prioridade: string
+  sourceKey: string
+}
+
+/** Regras puras: quais items devem existir dado o estado atual da perícia */
+function calcularItemsEsperados(ctx: PericiaContext): AgendaItemSpec[] {
+  const items: AgendaItemSpec[] = []
+
+  if (!ctx.hasAnalise) {
+    items.push({ titulo: 'Fazer upload do documento de nomeação', tipo: 'action', prioridade: 'alta', sourceKey: 'sys_upload_nomeacao' })
+  }
+  if (!ctx.hasProposta && ctx.hasAnalise) {
+    items.push({ titulo: 'Gerar proposta de honorários', tipo: 'action', prioridade: 'alta', sourceKey: 'sys_gerar_proposta' })
+  }
+  if (!ctx.hasVistoria) {
+    items.push({ titulo: 'Agendar vistoria', tipo: 'action', prioridade: 'normal', sourceKey: 'sys_agendar_vistoria' })
+  }
+  if (!ctx.hasMidias && ctx.hasVistoria) {
+    items.push({ titulo: 'Registrar evidências da vistoria', tipo: 'action', prioridade: 'normal', sourceKey: 'sys_registrar_midias' })
+  }
+  if (ctx.hasProposta && !ctx.hasVistoria) {
+    items.push({ titulo: 'Cobrar resposta da Vara sobre honorários', tipo: 'action', prioridade: 'normal', sourceKey: 'sys_cobrar_vara' })
+  }
+  if (ctx.periciaStatus !== 'concluida' && ctx.hasMidias) {
+    items.push({ titulo: 'Elaborar laudo pericial', tipo: 'action', prioridade: 'normal', sourceKey: 'sys_elaborar_laudo' })
+  }
+
+  return items
+}
+
+/** Quais sourceKeys devem ser removidos quando o passo correspondente foi concluído */
+function calcularKeysObsoletos(ctx: PericiaContext): string[] {
+  const keys: string[] = []
+  if (ctx.hasAnalise)  keys.push('sys_upload_nomeacao')
+  if (ctx.hasProposta) keys.push('sys_gerar_proposta')
+  if (ctx.hasVistoria) keys.push('sys_agendar_vistoria', 'sys_cobrar_vara')
+  if (ctx.hasMidias)   keys.push('sys_registrar_midias')
+  return keys
+}
+
 export async function autoPopulateAgenda(
   periciaId: string,
-  context: {
-    hasAnalise: boolean
-    hasProposta: boolean
-    hasVistoria: boolean
-    hasMidias: boolean
-    periciaStatus: string
-  },
+  context: PericiaContext,
 ): Promise<void> {
   const session = await auth()
   if (!session?.user?.id) return
 
   const peritoId = session.user.id
-  const items: { titulo: string; tipo: string; prioridade: string; sourceKey: string }[] = []
-
-  if (!context.hasAnalise) {
-    items.push({ titulo: 'Fazer upload do documento de nomeação', tipo: 'action', prioridade: 'alta', sourceKey: 'sys_upload_nomeacao' })
-  }
-  if (!context.hasProposta && context.hasAnalise) {
-    items.push({ titulo: 'Gerar proposta de honorários', tipo: 'action', prioridade: 'alta', sourceKey: 'sys_gerar_proposta' })
-  }
-  if (!context.hasVistoria) {
-    items.push({ titulo: 'Agendar vistoria', tipo: 'action', prioridade: 'normal', sourceKey: 'sys_agendar_vistoria' })
-  }
-  if (!context.hasMidias && context.hasVistoria) {
-    items.push({ titulo: 'Registrar evidências da vistoria', tipo: 'action', prioridade: 'normal', sourceKey: 'sys_registrar_midias' })
-  }
-  if (context.hasProposta && !context.hasVistoria) {
-    items.push({ titulo: 'Cobrar resposta da Vara sobre honorários', tipo: 'action', prioridade: 'normal', sourceKey: 'sys_cobrar_vara' })
-  }
-  if (context.periciaStatus !== 'concluida' && context.hasMidias) {
-    items.push({ titulo: 'Elaborar laudo pericial', tipo: 'action', prioridade: 'normal', sourceKey: 'sys_elaborar_laudo' })
-  }
+  const items = calcularItemsEsperados(context)
 
   for (const item of items) {
     await prisma.agendaItem.upsert({
       where: { periciaId_sourceKey: { periciaId, sourceKey: item.sourceKey } },
       create: { periciaId, peritoId, titulo: item.titulo, tipo: item.tipo, prioridade: item.prioridade, origem: 'system', sourceKey: item.sourceKey },
-      update: {}, // no-op if exists
-    }).catch(() => {}) // ignore duplicates
+      update: {},
+    }).catch(() => {})
   }
 
-  // Remove items that are no longer relevant (step was completed)
-  if (context.hasAnalise) {
-    await prisma.agendaItem.deleteMany({ where: { periciaId, sourceKey: 'sys_upload_nomeacao', status: 'pending' } }).catch(() => {})
-  }
-  if (context.hasProposta) {
-    await prisma.agendaItem.deleteMany({ where: { periciaId, sourceKey: 'sys_gerar_proposta', status: 'pending' } }).catch(() => {})
-  }
-  if (context.hasVistoria) {
-    await prisma.agendaItem.deleteMany({ where: { periciaId, sourceKey: 'sys_agendar_vistoria', status: 'pending' } }).catch(() => {})
-    await prisma.agendaItem.deleteMany({ where: { periciaId, sourceKey: 'sys_cobrar_vara', status: 'pending' } }).catch(() => {})
-  }
-  if (context.hasMidias) {
-    await prisma.agendaItem.deleteMany({ where: { periciaId, sourceKey: 'sys_registrar_midias', status: 'pending' } }).catch(() => {})
+  // Remove items que não são mais relevantes (passo concluído)
+  const obsoletos = calcularKeysObsoletos(context)
+  for (const sourceKey of obsoletos) {
+    await prisma.agendaItem.deleteMany({ where: { periciaId, sourceKey, status: 'pending' } }).catch(() => {})
   }
 }
 
