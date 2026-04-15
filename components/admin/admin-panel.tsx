@@ -3,7 +3,6 @@
 import { useState, useTransition } from 'react'
 import {
   Users,
-  Database,
   CheckCircle2,
   XCircle,
   Loader2,
@@ -15,7 +14,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { changeUserPassword, executeTursoSql, createDemoRotas } from '@/lib/actions/admin'
+import { changeUserPassword, createDemoRotas } from '@/lib/actions/admin'
 
 interface UserRow {
   id: string
@@ -66,20 +65,6 @@ export function AdminPanel({ users }: { users: UserRow[] }) {
     startDemoTransition(async () => {
       const res = await createDemoRotas(userId)
       setDemoResult({ ok: res.ok, msg: res.message, userId })
-    })
-  }
-
-  // ── SQL runner ─────────────────────────────────────────────────────────────
-  const [sql, setSql] = useState('')
-  const [sqlResult, setSqlResult] = useState<{ ok: boolean; msg: string } | null>(null)
-  const [isPendingSql, startSqlTransition] = useTransition()
-
-  function handleRunSql() {
-    if (!sql.trim()) return
-    setSqlResult(null)
-    startSqlTransition(async () => {
-      const res = await executeTursoSql(sql)
-      setSqlResult({ ok: res.ok, msg: res.message })
     })
   }
 
@@ -203,67 +188,6 @@ export function AdminPanel({ users }: { users: UserRow[] }) {
         </CardContent>
       </Card>
 
-      {/* SQL Runner */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-sm">
-            <Database className="h-4 w-4" />
-            SQL Runner
-            <span className="ml-1 text-xs font-normal text-slate-400">Turso / SQLite</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-xs text-slate-500">
-            Execute SQL direto no banco de produção. Statements ignoram erros de coluna/tabela
-            já existente.
-          </p>
-          <textarea
-            value={sql}
-            onChange={(e) => setSql(e.target.value)}
-            placeholder={`ALTER TABLE "Checkpoint" ADD COLUMN "pericoId" TEXT;\nCREATE TABLE IF NOT EXISTS "VaraContato" (...);\nUPDATE "User" SET "passwordHash" = '...' WHERE "email" = '...';`}
-            rows={10}
-            className="w-full resize-y rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 font-mono text-xs text-slate-800 placeholder:text-slate-400 focus:border-lime-400 focus:outline-none focus:ring-1 focus:ring-lime-400"
-          />
-          <div className="flex gap-2 justify-end">
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => { setSql(''); setSqlResult(null) }}
-            >
-              Limpar
-            </Button>
-            <Button
-              size="sm"
-              className="bg-lime-500 hover:bg-lime-600 text-slate-900 font-semibold"
-              onClick={handleRunSql}
-              disabled={!sql.trim() || isPendingSql}
-            >
-              {isPendingSql ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                'Executar SQL'
-              )}
-            </Button>
-          </div>
-
-          {sqlResult && (
-            <div
-              className={`flex items-start gap-2 rounded-lg px-4 py-3 ${
-                sqlResult.ok
-                  ? 'bg-emerald-50 text-emerald-800'
-                  : 'bg-red-50 text-red-800'
-              }`}
-            >
-              {sqlResult.ok ? (
-                <CheckCircle2 className="h-4 w-4 flex-shrink-0 mt-0.5" />
-              ) : (
-                <XCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-              )}
-              <pre className="text-xs whitespace-pre-wrap break-words">{sqlResult.msg}</pre>
-            </div>
-          )}
-        </CardContent>
-      </Card>
     </div>
   )
 }

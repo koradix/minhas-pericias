@@ -28,8 +28,8 @@ export interface CheckpointMeta {
 // ─── Helper ───────────────────────────────────────────────────────────────────
 
 /**
- * Safe ISO conversion — handles cases where @prisma/adapter-libsql returns
- * DATETIME columns as strings instead of Date objects (known libsql quirk).
+ * Safe ISO conversion — handles cases where Prisma returns
+ * DATETIME columns as strings instead of Date objects.
  */
 function toISO(d: Date | string | null | undefined): string {
   if (!d) return new Date().toISOString()
