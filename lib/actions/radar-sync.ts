@@ -70,44 +70,35 @@ export async function persistirCitacoes(
     const tribunalVaraId = varaIdMap.get(c.diarioSigla.toUpperCase()) ?? null
 
     try {
-      await prisma.nomeacaoCitacao.create({
-        data: {
-          peritoId,
-          externalId: c.externalId,
-          diarioSigla: c.diarioSigla,
-          diarioNome: c.diarioNome,
-          diarioData: new Date(c.diarioData),
-          snippet: c.snippet,
-          numeroProcesso: c.numeroProcesso ?? null,
-          linkCitacao: c.linkCitacao,
-          fonte,
-          tribunalVaraId,
-        },
-      })
-
-      if (tribunalVaraId) {
-        await prisma.tribunalVara.update({
-          where: { id: tribunalVaraId },
-          data: { totalNomeacoes: { increment: 1 } },
+      await prisma.$transaction(async (tx) => {
+        await tx.nomeacaoCitacao.create({
+          data: {
+            peritoId,
+            externalId: c.externalId,
+            diarioSigla: c.diarioSigla,
+            diarioNome: c.diarioNome,
+            diarioData: new Date(c.diarioData),
+            snippet: c.snippet,
+            numeroProcesso: c.numeroProcesso ?? null,
+            linkCitacao: c.linkCitacao,
+            fonte,
+            tribunalVaraId,
+          },
         })
-        const vara = varasBySigla.find((v) => v.id === tribunalVaraId)
-        if (vara) {
-          await prisma.varaStats.upsert({
-            where: {
-              tribunalSigla_varaNome: {
-                tribunalSigla: vara.tribunalSigla,
-                varaNome: vara.varaNome,
-              },
-            },
-            create: {
-              tribunalSigla: vara.tribunalSigla,
-              varaNome: vara.varaNome,
-              totalNomeacoes: 1,
-            },
+
+        if (tribunalVaraId) {
+          const vara = await tx.tribunalVara.update({
+            where: { id: tribunalVaraId },
+            data: { totalNomeacoes: { increment: 1 } },
+            select: { tribunalSigla: true, varaNome: true },
+          })
+          await tx.varaStats.upsert({
+            where: { tribunalSigla_varaNome: { tribunalSigla: vara.tribunalSigla, varaNome: vara.varaNome } },
+            create: { tribunalSigla: vara.tribunalSigla, varaNome: vara.varaNome, totalNomeacoes: 1 },
             update: { totalNomeacoes: { increment: 1 } },
           })
         }
-      }
+      })
 
       novas++
     } catch (err) {

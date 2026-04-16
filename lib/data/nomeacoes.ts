@@ -132,19 +132,34 @@ export async function upsertCitacao(
   const tribunalVaraId = varaIdMap.get(input.diarioSigla.toUpperCase()) ?? null
 
   try {
-    await prisma.nomeacaoCitacao.create({
-      data: {
-        peritoId: input.peritoId,
-        externalId: input.externalId,
-        diarioSigla: input.diarioSigla,
-        diarioNome: input.diarioNome,
-        diarioData: new Date(input.diarioData),
-        snippet: input.snippet,
-        numeroProcesso: input.numeroProcesso,
-        linkCitacao: input.linkCitacao,
-        fonte: input.fonte,
-        tribunalVaraId,
-      },
+    await prisma.$transaction(async (tx) => {
+      await tx.nomeacaoCitacao.create({
+        data: {
+          peritoId: input.peritoId,
+          externalId: input.externalId,
+          diarioSigla: input.diarioSigla,
+          diarioNome: input.diarioNome,
+          diarioData: new Date(input.diarioData),
+          snippet: input.snippet,
+          numeroProcesso: input.numeroProcesso,
+          linkCitacao: input.linkCitacao,
+          fonte: input.fonte,
+          tribunalVaraId,
+        },
+      })
+
+      if (tribunalVaraId) {
+        const vara = await tx.tribunalVara.update({
+          where: { id: tribunalVaraId },
+          data: { totalNomeacoes: { increment: 1 } },
+          select: { tribunalSigla: true, varaNome: true },
+        })
+        await tx.varaStats.upsert({
+          where: { tribunalSigla_varaNome: { tribunalSigla: vara.tribunalSigla, varaNome: vara.varaNome } },
+          create: { tribunalSigla: vara.tribunalSigla, varaNome: vara.varaNome, totalNomeacoes: 1 },
+          update: { totalNomeacoes: { increment: 1 } },
+        })
+      }
     })
   } catch (err) {
     const msg = err instanceof Error ? err.message : ''
@@ -152,27 +167,7 @@ export async function upsertCitacao(
     return false
   }
 
-  // Link com TribunalVara + VaraStats
-  if (tribunalVaraId) {
-    await linkTribunalVara(tribunalVaraId)
-  }
-
   return true
-}
-
-/** Incrementa totalNomeacoes no TribunalVara e upsert VaraStats */
-async function linkTribunalVara(tribunalVaraId: string): Promise<void> {
-  const vara = await prisma.tribunalVara.update({
-    where: { id: tribunalVaraId },
-    data: { totalNomeacoes: { increment: 1 } },
-    select: { tribunalSigla: true, varaNome: true },
-  })
-
-  await prisma.varaStats.upsert({
-    where: { tribunalSigla_varaNome: { tribunalSigla: vara.tribunalSigla, varaNome: vara.varaNome } },
-    create: { tribunalSigla: vara.tribunalSigla, varaNome: vara.varaNome, totalNomeacoes: 1 },
-    update: { totalNomeacoes: { increment: 1 } },
-  })
 }
 
 /** Bulk upsert de citações. Retorna quantas foram novas. */
