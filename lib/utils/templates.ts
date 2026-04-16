@@ -9,62 +9,52 @@ function dataHoje() {
 }
 
 export function gerarPropostaHonorarios(pericia: Pericia): string {
-  return `PROPOSTA DE HONORARIOS PERICIAIS
+  return `PROPOSTA DE HONORÁRIOS PERICIAIS
 
-Ref.: Processo n. ${pericia.processo}
+Ref.: Processo nº ${pericia.processo}
       ${pericia.vara}
 
-Sao Paulo, ${dataHoje()}
+Rio de Janeiro, ${dataHoje()}
 
 Exmo(a). Sr(a). Dr(a). Juiz(a) da ${pericia.vara},
 
-Cumprimentando-o(a) respeitosamente, venho, por meio desta, apresentar
-proposta de honorarios periciais para execucao da pericia judicial determinada
-nos autos do processo n. ${pericia.processo}, tramitando perante a ${pericia.vara},
-cuja materia envolve ${pericia.assunto}.
+Cumprimentando Vossa Excelência respeitosamente, venho, por meio desta, apresentar proposta de honorários periciais para execução da perícia judicial determinada nos autos do processo nº ${pericia.processo}, tramitando perante a ${pericia.vara}, cuja matéria envolve ${pericia.assunto}.
 
-──────────────────────────────────────────────────────────────────
 
-1. IDENTIFICACAO DAS PARTES
+1. IDENTIFICAÇÃO DAS PARTES
 
-   Autor/Requerente : ${pericia.cliente}
-   Numero do Processo: ${pericia.processo}
-   Vara              : ${pericia.vara}
-   Referencia Interna: ${pericia.numero}
+   Autor/Requerente   : ${pericia.cliente}
+   Número do Processo : ${pericia.processo}
+   Vara               : ${pericia.vara}
+   Referência Interna : ${pericia.numero}
 
-2. OBJETO DA PERICIA
+2. OBJETO DA PERÍCIA
 
    ${pericia.assunto}.
 
 3. METODOLOGIA
 
-   A pericia sera conduzida segundo as normas tecnicas vigentes e boas
-   praticas da area pericial, incluindo vistorias, analise documental e
-   levantamento de dados necessarios a elucidacao dos fatos.
+   A perícia será conduzida segundo as normas técnicas vigentes e boas práticas da área pericial, incluindo vistorias, análise documental e levantamento de dados necessários à elucidação dos fatos.
 
-4. HONORARIOS PROPOSTOS
+4. HONORÁRIOS PROPOSTOS
 
-   Valor total proposto : ${pericia.valor}
-   Forma de pagamento   : 50% no inicio dos trabalhos e 50% na entrega
-                          do laudo.
-   Adiantamento         : A ser definido conforme determinacao judicial.
+   Valor total proposto  : ${pericia.valor}
+   Forma de pagamento    : 50% no início dos trabalhos e 50% na entrega do laudo.
+   Adiantamento          : A ser definido conforme determinação judicial.
 
 5. PRAZO DE ENTREGA
 
-   Prazo estimado de entrega do laudo: 30 dias corridos apos o inicio
-   dos trabalhos, podendo ser prorrogado mediante justificativa tecnica
-   fundamentada e comunicacao previa ao Juizo.
+   Prazo estimado de entrega do laudo: 30 dias corridos após o início dos trabalhos, podendo ser prorrogado mediante justificativa técnica fundamentada e comunicação prévia ao Juízo.
 
-6. CONSIDERACOES FINAIS
+6. CONSIDERAÇÕES FINAIS
 
-   Coloco-me a disposicao para esclarecimentos adicionais que se fizerem
-   necessarios.
+   Coloco-me à disposição para esclarecimentos adicionais que se fizerem necessários.
 
    Respeitosamente,
 
    ____________________________________
    Dr(a). Perito(a) Judicial
-   Cadastro Tecnico n. XXXXX
+   Cadastro Técnico nº XXXXX
    contato@perito.com.br
 `
 }
@@ -72,139 +62,123 @@ cuja materia envolve ${pericia.assunto}.
 export function gerarLaudo(pericia: Pericia, nomeModelo: string): string {
   return `LAUDO PERICIAL
 
-Processo n. : ${pericia.processo}
-Vara        : ${pericia.vara}
-Requerente  : ${pericia.cliente}
-Assunto     : ${pericia.assunto}
-Referencia  : ${pericia.numero}
-Data        : ${dataHoje()}
-Perito      : Dr(a). Perito(a) Judicial
+Processo nº  : ${pericia.processo}
+Vara         : ${pericia.vara}
+Requerente   : ${pericia.cliente}
+Assunto      : ${pericia.assunto}
+Referência   : ${pericia.numero}
+Data         : ${dataHoje()}
+Perito       : Dr(a). Perito(a) Judicial
 
-──────────────────────────────────────────────────────────────────
 
-I. SINTESE DO OBJETO
+I. SÍNTESE DO OBJETO
 
-A presente pericia tem por objeto ${pericia.assunto.toLowerCase()}, nos autos do
-processo n. ${pericia.processo}, tramitando perante a ${pericia.vara}.
+A presente perícia tem por objeto ${pericia.assunto.toLowerCase()}, nos autos do processo nº ${pericia.processo}, tramitando perante a ${pericia.vara}.
 
-II. DILIGENCIAS REALIZADAS
+II. DILIGÊNCIAS REALIZADAS
 
-   1. Analise de documentos constantes nos autos;
-   2. Vistoria ao local / objeto da pericia;
-   3. Levantamento de dados e informacoes tecnicas;
-   4. Analise comparativa com referenciais normativos e tecnicos.
+   1. Análise de documentos constantes nos autos;
+   2. Vistoria ao local / objeto da perícia;
+   3. Levantamento de dados e informações técnicas;
+   4. Análise comparativa com referenciais normativos e técnicos.
 
-III. QUESITOS DO JUIZO
+III. QUESITOS DO JUÍZO
 
-[A serem preenchidos conforme designacao judicial]
+[A serem preenchidos conforme designação judicial]
 
 IV. QUESITOS DAS PARTES
 
-[A serem respondidos conforme apresentacao pelas partes]
+[A serem respondidos conforme apresentação pelas partes]
 
-V. ANALISE TECNICA
+V. ANÁLISE TÉCNICA
 
-Os trabalhos periciais foram conduzidos de acordo com as normas tecnicas
-aplicaveis a materia em analise. Apos as diligencias realizadas, foram
-apurados os seguintes elementos:
+Os trabalhos periciais foram conduzidos de acordo com as normas técnicas aplicáveis à matéria em análise. Após as diligências realizadas, foram apurados os seguintes elementos:
 
-   [Complementar com os resultados especificos da vistoria e analise
-   documental realizada em campo]
+   [Complementar com os resultados específicos da vistoria e análise documental realizada em campo]
 
-VI. CONCLUSAO
+VI. CONCLUSÃO
 
-Com base nas diligencias realizadas e na analise tecnica empreendida,
-conclui-se que:
+Com base nas diligências realizadas e na análise técnica empreendida, conclui-se que:
 
-   [Inserir conclusoes tecnicas especificas, fundamentadas nos fatos
-   e normas apurados durante a instrucao pericial]
+   [Inserir conclusões técnicas específicas, fundamentadas nos fatos e normas apurados durante a instrução pericial]
 
-Nestes termos, apresento o presente Laudo Pericial, declarando que o mesmo
-exprime a verdade dos fatos examinados.
+Nestes termos, apresento o presente Laudo Pericial, declarando que o mesmo exprime a verdade dos fatos examinados.
 
 Local, ${dataHoje()}.
 
    ____________________________________
    Dr(a). Perito(a) Judicial
-   Cadastro Tecnico n. XXXXX
-   Modelo de referencia: ${nomeModelo}
+   Cadastro Técnico nº XXXXX
+   Modelo de referência: ${nomeModelo}
 `
 }
 
 export function gerarParecerTecnico(pericia: Pericia): string {
-  return `PARECER TECNICO
+  return `PARECER TÉCNICO
 
-Processo n. : ${pericia.processo}
-Vara        : ${pericia.vara}
-Assunto     : ${pericia.assunto}
-Data        : ${dataHoje()}
+Processo nº  : ${pericia.processo}
+Vara         : ${pericia.vara}
+Assunto      : ${pericia.assunto}
+Data         : ${dataHoje()}
 
-──────────────────────────────────────────────────────────────────
 
 1. OBJETO
 
-   O presente parecer tecnico tem por objeto manifestacao fundamentada
-   sobre ${pericia.assunto.toLowerCase()}, referente ao processo n. ${pericia.processo},
-   tramitando perante a ${pericia.vara}.
+   O presente parecer técnico tem por objeto manifestação fundamentada sobre ${pericia.assunto.toLowerCase()}, referente ao processo nº ${pericia.processo}, tramitando perante a ${pericia.vara}.
 
-2. ANALISE
+2. ANÁLISE
 
-   [Inserir analise tecnica objetiva e fundamentada]
+   [Inserir análise técnica objetiva e fundamentada]
 
-3. CONCLUSAO
+3. CONCLUSÃO
 
-   [Inserir conclusao clara e direta]
+   [Inserir conclusão clara e direta]
 
 Local, ${dataHoje()}.
 
    ____________________________________
    Dr(a). Perito(a) Judicial
-   Cadastro Tecnico n. XXXXX
+   Cadastro Técnico nº XXXXX
 `
 }
 
 export function gerarRespostaQuesitos(pericia: Pericia): string {
   return `RESPOSTA A QUESITOS
 
-Processo n. : ${pericia.processo}
-Vara        : ${pericia.vara}
-Assunto     : ${pericia.assunto}
-Data        : ${dataHoje()}
+Processo nº  : ${pericia.processo}
+Vara         : ${pericia.vara}
+Assunto      : ${pericia.assunto}
+Data         : ${dataHoje()}
 
-──────────────────────────────────────────────────────────────────
 
-Nos autos do processo n. ${pericia.processo}, tramitando perante a ${pericia.vara},
-em atencao aos quesitos formulados pelas partes, apresento as seguintes
-respostas tecnicas:
+Nos autos do processo nº ${pericia.processo}, tramitando perante a ${pericia.vara}, em atenção aos quesitos formulados pelas partes, apresento as seguintes respostas técnicas:
 
-──────────────────────────────────────────────────────────────────
-QUESITOS DO JUIZO
-──────────────────────────────────────────────────────────────────
+
+QUESITOS DO JUÍZO
 
 Quesito 1: [Enunciado do quesito]
 
-   Resposta: [Resposta tecnica fundamentada]
+   Resposta: [Resposta técnica fundamentada]
 
-──────────────────────────────────────────────────────────────────
+
 QUESITOS DO AUTOR
-──────────────────────────────────────────────────────────────────
 
 Quesito 1: [Enunciado do quesito]
 
-   Resposta: [Resposta tecnica fundamentada]
+   Resposta: [Resposta técnica fundamentada]
 
-──────────────────────────────────────────────────────────────────
-QUESITOS DO REU
-──────────────────────────────────────────────────────────────────
+
+QUESITOS DO RÉU
 
 Quesito 1: [Enunciado do quesito]
 
-   Resposta: [Resposta tecnica fundamentada]
+   Resposta: [Resposta técnica fundamentada]
+
 
 Local, ${dataHoje()}.
 
    ____________________________________
    Dr(a). Perito(a) Judicial
-   Cadastro Tecnico n. XXXXX
+   Cadastro Técnico nº XXXXX
 `
 }
