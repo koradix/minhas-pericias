@@ -1,6 +1,7 @@
 'use server'
 
 import Anthropic from '@anthropic-ai/sdk'
+import { z } from 'zod'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
@@ -64,9 +65,14 @@ Retorne SOMENTE o JSON, sem markdown.`
   }
 }
 
+const CitacaoIdSchema = z.string().cuid('ID da citação inválido')
+
 export async function criarPericiaDeCitacao(
   citacaoId: string,
 ): Promise<{ ok: true; periciaId: string } | { ok: false; error: string }> {
+  const parsed = CitacaoIdSchema.safeParse(citacaoId)
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message }
+
   const session = await auth()
   if (!session?.user?.id) return { ok: false, error: 'Não autorizado' }
 
@@ -249,6 +255,9 @@ export async function criarPericiaDeCitacao(
 export async function rejeitarCitacao(
   citacaoId: string,
 ): Promise<{ ok: boolean; error?: string }> {
+  const parsed = CitacaoIdSchema.safeParse(citacaoId)
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message }
+
   const session = await auth()
   if (!session?.user?.id) return { ok: false, error: 'Não autorizado' }
 

@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { z } from 'zod'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { radar } from '@/lib/services/radar'
@@ -485,18 +486,25 @@ export async function marcarTodasVisualizadas(): Promise<void> {
 
 // ─── Action 5 — Manual citacao (fallback when API unavailable) ───────────────
 
-export type ManualCitacaoInput = {
-  diarioSigla: string
-  diarioData: string // YYYY-MM-DD
-  snippetTexto: string
-  numeroProcesso?: string
-  varaNome?: string   // nome da vara/fórum do catálogo
-}
+const ManualCitacaoSchema = z.object({
+  diarioSigla: z.string().min(1, 'Tribunal é obrigatório'),
+  diarioData: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data deve estar no formato AAAA-MM-DD'),
+  snippetTexto: z.string().min(1, 'Texto da citação é obrigatório'),
+  numeroProcesso: z.string().regex(/^\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}$/, 'Número CNJ inválido').optional().or(z.literal('')),
+  varaNome: z.string().optional(),
+})
+
+export type ManualCitacaoInput = z.infer<typeof ManualCitacaoSchema>
 
 export async function criarCitacaoManual(data: ManualCitacaoInput): Promise<{ ok: boolean; error?: string }> {
+  const parsed = ManualCitacaoSchema.safeParse(data)
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message }
+
   const session = await auth()
   const userId = session?.user?.id
   if (!userId) return { ok: false, error: 'Não autenticado' }
+
+  const { diarioSigla, diarioData, snippetTexto, numeroProcesso, varaNome } = parsed.data
 
   try {
     const externalId = `manual-${crypto.randomUUID()}`
@@ -504,11 +512,11 @@ export async function criarCitacaoManual(data: ManualCitacaoInput): Promise<{ ok
       data: {
         peritoId: userId,
         externalId,
-        diarioSigla: data.diarioSigla,
-        diarioNome: data.varaNome ?? data.diarioSigla,
-        diarioData: new Date(data.diarioData),
-        snippet: data.snippetTexto,
-        numeroProcesso: data.numeroProcesso ?? null,
+        diarioSigla,
+        diarioNome: varaNome ?? diarioSigla,
+        diarioData: new Date(diarioData),
+        snippet: snippetTexto,
+        numeroProcesso: numeroProcesso || null,
         linkCitacao: '',
         fonte: 'manual',
       },

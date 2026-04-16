@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { z } from 'zod'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { VARAS_CATALOG } from '@/lib/data/varas-catalog'
@@ -234,21 +235,25 @@ export async function previewVarasCount(
 
 // ─── Action — Atualizar dados cadastrais (nome + CPF) ─────────────────────────
 
+const DadosCadastraisSchema = z.object({
+  nome: z.string().min(1, 'Nome é obrigatório').transform((s) => s.trim()),
+  cpf: z.string().transform((s) => s.replace(/\D/g, '')).pipe(
+    z.string().refine((d) => d.length === 0 || d.length === 11, 'CPF inválido — informe 11 dígitos'),
+  ),
+})
+
 export async function updateDadosCadastrais(data: {
   nome: string
   cpf: string
 }): Promise<{ ok: true } | { ok: false; error: string }> {
+  const parsed = DadosCadastraisSchema.safeParse(data)
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message }
+
   const session = await auth()
   if (!session?.user?.id) return { ok: false, error: 'Não autenticado' }
   const userId = session.user.id
 
-  const nome = data.nome.trim()
-  if (!nome) return { ok: false, error: 'Nome é obrigatório' }
-
-  const cpfDigits = data.cpf.replace(/\D/g, '')
-  if (cpfDigits && cpfDigits.length !== 11) {
-    return { ok: false, error: 'CPF inválido — informe 11 dígitos' }
-  }
+  const { nome, cpf: cpfDigits } = parsed.data
 
   try {
     await prisma.user.update({

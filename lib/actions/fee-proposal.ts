@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { z } from 'zod'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 
@@ -142,10 +143,23 @@ export type UpsertFeeProposalResult =
   | { ok: true; proposalId: string; versao: number }
   | { ok: false; error: string }
 
+const UpsertProposalInputSchema = z.object({
+  periciaId: z.string().cuid('ID da perícia inválido'),
+  data: z.object({
+    peritoNome: z.string().min(1, 'Nome do perito é obrigatório'),
+    valorHonorarios: z.number().positive('Valor deve ser positivo').nullable(),
+    descricaoServicos: z.string().max(5000, 'Descrição excede limite de caracteres'),
+    status: z.enum(['rascunho', 'gerada', 'enviada', 'aceita']),
+  }).passthrough(),
+})
+
 export async function upsertFeeProposal(
   periciaId: string,
   data: FeeProposalData,
 ): Promise<UpsertFeeProposalResult> {
+  const parsed = UpsertProposalInputSchema.safeParse({ periciaId, data })
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message }
+
   const session = await auth()
   const userId  = session?.user?.id
   if (!userId) return { ok: false, error: 'Não autenticado' }
