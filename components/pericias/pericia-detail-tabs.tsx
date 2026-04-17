@@ -7,14 +7,13 @@ import {
   ChevronRight,
   ClipboardCheck,
   MapPin,
-  FileDown,
   CheckCircle2,
   Camera,
-  ExternalLink,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { criarRotaDaPericia } from '@/lib/actions/pericias-rota'
 import { updateCheckpointStatus } from '@/lib/actions/checkpoint-media'
+import { CheckpointMediaPanel } from '@/components/rotas/checkpoint-media-panel'
 import { PropostaTab } from '@/components/pericias/proposta-tab'
 import type { PropostaTabProps } from '@/components/pericias/proposta-tab'
 import { LaudoTab } from '@/components/pericias/laudo-tab'
@@ -85,6 +84,7 @@ function RotaContent({
   const [result,   setResult]   = useState<{ ok: boolean; mensagem: string } | null>(null)
   const [isPending, startTransition] = useTransition()
   const [concluding, setConcluding] = useState<string | null>(null)
+  const [activePanel, setActivePanel] = useState<string | null>(null)
   const router = useRouter()
 
   function handleCriarVistoria() {
@@ -183,7 +183,7 @@ function RotaContent({
           <StepBadge num={7} done={allDone && hasMidias} active={hasCheckpoints && !allDone} />
           <div>
             <h2 className="text-[15px] font-semibold text-slate-800">Realizar vistoria</h2>
-            <p className="text-[12px] text-slate-400 mt-0.5">Complete os checkpoints e registre evidências (fotos, áudios, notas)</p>
+            <p className="text-[12px] text-slate-400 mt-0.5">Clique no checkpoint para registrar evidências e concluir</p>
           </div>
         </div>
         <div className="px-6 py-5">
@@ -192,16 +192,20 @@ function RotaContent({
               <div className="border border-slate-200 rounded-lg overflow-hidden">
                 <div className="divide-y divide-slate-100">
                   {checkpoints.map((cp) => (
-                    <div key={cp.id} className="flex items-center gap-4 px-5 py-4 bg-white hover:bg-slate-50 transition-colors">
-                      {/* Status + info */}
-                      <div className="flex-1 min-w-0 flex items-start gap-4">
+                    <div key={cp.id}>
+                      {/* Checkpoint row */}
+                      <button
+                        type="button"
+                        onClick={() => setActivePanel(activePanel === cp.id ? null : cp.id)}
+                        className="w-full flex items-center gap-4 px-5 py-4 bg-white hover:bg-slate-50 transition-colors text-left"
+                      >
                         <span className={cn(
-                          "text-[10px] font-black uppercase tracking-widest px-3 py-1 border-2 rounded flex-shrink-0 mt-0.5",
+                          "text-[10px] font-black uppercase tracking-widest px-3 py-1 border-2 rounded flex-shrink-0",
                           cp.status === 'concluido' ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-300 border-slate-100"
                         )}>
                           {CP_STATUS_TEXT[cp.status] ?? 'PENDENTE'}
                         </span>
-                        <div className="min-w-0">
+                        <div className="flex-1 min-w-0">
                           <p className={cn(
                             'text-[13px] font-bold',
                             cp.status === 'concluido' ? 'text-slate-400' : 'text-slate-900',
@@ -214,44 +218,43 @@ function RotaContent({
                             </p>
                           )}
                         </div>
-                      </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {cp.midiaCount > 0 && (
+                            <span className="text-[9px] font-black text-[#a3e635] border border-[#a3e635] px-2 py-0.5 uppercase tracking-widest rounded">
+                              {cp.midiaCount} evidência{cp.midiaCount > 1 ? 's' : ''}
+                            </span>
+                          )}
+                          {cp.status !== 'concluido' && (
+                            <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
+                              <Camera className="h-3.5 w-3.5" />
+                              {activePanel === cp.id ? 'Fechar' : 'Abrir'}
+                            </span>
+                          )}
+                        </div>
+                      </button>
 
-                      {/* Actions */}
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        {cp.midiaCount > 0 && (
-                          <span className="text-[9px] font-black text-[#a3e635] border border-[#a3e635] px-2 py-0.5 uppercase tracking-widest rounded">
-                            {cp.midiaCount} evidência{cp.midiaCount > 1 ? 's' : ''}
-                          </span>
-                        )}
-                        {cp.status !== 'concluido' && (
-                          <button
-                            onClick={() => handleConcluirCheckpoint(cp.id)}
-                            disabled={concluding === cp.id}
-                            className="flex items-center gap-1.5 rounded-lg border border-slate-200 hover:border-[#a3e635] hover:bg-[#a3e635]/5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:text-slate-900 transition-all disabled:opacity-50"
-                          >
-                            {concluding === cp.id
-                              ? <Loader2 className="h-3 w-3 animate-spin" />
-                              : <CheckCircle2 className="h-3 w-3" />
-                            }
-                            Concluir
-                          </button>
-                        )}
-                      </div>
+                      {/* Painel de evidências inline */}
+                      {activePanel === cp.id && (
+                        <div className="border-t border-slate-100 bg-slate-50">
+                          <CheckpointMediaPanel
+                            checkpointId={cp.id}
+                            checkpointTitulo={cp.titulo}
+                            endereco={cp.endereco ?? undefined}
+                            tipo="PERICIA"
+                            onClose={() => setActivePanel(null)}
+                            onConcluido={() => {
+                              setCheckpoints(prev => prev.map(c =>
+                                c.id === cp.id ? { ...c, status: 'concluido' } : c
+                              ))
+                              setActivePanel(null)
+                              router.refresh()
+                            }}
+                          />
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
-              </div>
-
-              {/* Link para módulo de rotas (registro de evidências completo) */}
-              <div className="flex items-center justify-between gap-4 pt-2">
-                <a
-                  href="/rotas/pericias"
-                  className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors"
-                >
-                  <Camera className="h-3.5 w-3.5" />
-                  Registrar evidências (fotos, áudio, notas)
-                  <ExternalLink className="h-3 w-3" />
-                </a>
               </div>
 
               {allDone && (
@@ -263,11 +266,11 @@ function RotaContent({
                 </div>
               )}
 
-              {!allDone && (
+              {!allDone && !activePanel && (
                 <div className="flex items-start gap-3 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3">
                   <span className="text-amber-500 mt-0.5 text-[14px]">⚠</span>
                   <p className="text-[13px] text-amber-700">
-                    Complete todos os checkpoints antes de prosseguir para o laudo.
+                    Clique no checkpoint acima para registrar fotos, áudios e notas, e depois concluir.
                   </p>
                 </div>
               )}
