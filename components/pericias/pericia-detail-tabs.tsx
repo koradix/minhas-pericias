@@ -257,6 +257,17 @@ function RotaContent({
                 </div>
               </div>
 
+              {/* Iniciar rota completa (GPS, mapa, múltiplos pontos) */}
+              {!allDone && !activePanel && (
+                <a
+                  href="/rotas/pericias"
+                  className="flex items-center justify-center gap-2 rounded-lg border-2 border-slate-200 hover:border-slate-900 bg-white hover:bg-slate-50 px-5 py-4 text-[11px] font-bold uppercase tracking-widest text-slate-600 hover:text-slate-900 transition-all"
+                >
+                  <MapPin className="h-4 w-4" />
+                  Iniciar rota de vistoria completa (GPS + mapa)
+                </a>
+              )}
+
               {allDone && (
                 <div className="flex items-center gap-3 rounded-lg bg-[#a3e635]/10 border border-[#a3e635]/30 px-4 py-3">
                   <CheckCircle2 className="h-5 w-5 text-[#4d7c0f]" />
@@ -267,12 +278,9 @@ function RotaContent({
               )}
 
               {!allDone && !activePanel && (
-                <div className="flex items-start gap-3 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3">
-                  <span className="text-amber-500 mt-0.5 text-[14px]">⚠</span>
-                  <p className="text-[13px] text-amber-700">
-                    Clique no checkpoint acima para registrar fotos, áudios e notas, e depois concluir.
-                  </p>
-                </div>
+                <p className="text-[12px] text-slate-400 text-center">
+                  Clique no checkpoint para registrar evidências e concluir, ou inicie a rota completa acima.
+                </p>
               )}
             </div>
           ) : (
