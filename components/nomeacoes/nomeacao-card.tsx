@@ -2,12 +2,29 @@
 
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
-import { atualizarStatusNomeacao } from '@/lib/actions/datajud'
 import { cn } from '@/lib/utils'
-import type { NomeacaoComProcesso } from '@/lib/data/nomeacoes-datajud'
+
+interface NomeacaoProcesso {
+  numeroProcesso: string
+  tribunal: string
+  classe: string | null
+  assunto: string | null
+  orgaoJulgador: string | null
+  dataDistribuicao: string | null
+  dataUltimaAtu: string | null
+  partes: { nome: string; tipo: string | null }[]
+}
+
+interface NomeacaoComProcesso {
+  id: string
+  status: string
+  scoreMatch: number
+  processo: NomeacaoProcesso
+}
 
 interface Props {
   nomeacao: NomeacaoComProcesso
+  onStatusChange?: (id: string, novoStatus: string) => Promise<{ ok: boolean }>
 }
 
 function formatDate(iso: string | null): string {
@@ -34,14 +51,15 @@ const STATUS_LABELS: Record<string, string> = {
   arquivado:            'Arquivado',
 }
 
-export function NomeacaoCard({ nomeacao }: Props) {
+export function NomeacaoCard({ nomeacao, onStatusChange }: Props) {
   const [status, setStatus] = useState(nomeacao.status)
   const [expanded, setExpanded] = useState(false)
   const [isPending, startTransition] = useTransition()
 
   function handleStatus(novoStatus: string) {
+    if (!onStatusChange) return
     startTransition(async () => {
-      const res = await atualizarStatusNomeacao(nomeacao.id, novoStatus)
+      const res = await onStatusChange(nomeacao.id, novoStatus)
       if (res.ok) setStatus(novoStatus)
     })
   }
@@ -134,7 +152,7 @@ export function NomeacaoCard({ nomeacao }: Props) {
                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-4">
                   Partes envolvidas
                 </p>
-                {partes.map((parte, i) => (
+                {partes.map((parte: { nome: string; tipo: string | null }, i: number) => (
                   <div key={i} className="flex items-start gap-4 text-[13px]">
                     <span className="text-[11px] font-bold text-slate-400 w-16 flex-shrink-0 uppercase">
                       {parte.tipo || 'Parte'}

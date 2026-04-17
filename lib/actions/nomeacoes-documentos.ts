@@ -93,14 +93,15 @@ export async function buscarDocumentosNomeacao(
     let novos = 0
 
     if (docsV2.length > 0) {
-      // Persistir documentos v2
-      for (const doc of docsV2) {
-        try {
-          const existing = await prisma.processoDocumento.findFirst({
+      // Persistir documentos v2 — batch atômico
+      novos = await prisma.$transaction(async (tx) => {
+        let count = 0
+        for (const doc of docsV2) {
+          const existing = await tx.processoDocumento.findFirst({
             where: { processoId: nomeacao.processoId, chaveV2: doc.key },
           })
           if (!existing) {
-            await prisma.processoDocumento.create({
+            await tx.processoDocumento.create({
               data: {
                 processoId:     nomeacao.processoId,
                 chaveV2:        doc.key,
@@ -111,10 +112,11 @@ export async function buscarDocumentosNomeacao(
                 paginas:        doc.paginas ?? null,
               },
             })
-            novos++
+            count++
           }
-        } catch { /* skip duplicates */ }
-      }
+        }
+        return count
+      })
     } else {
       // ── Fallback v1 ─────────────────────────────────────────────────────────
       let escavadorId = nomeacao.processo.escavadorId
@@ -127,13 +129,14 @@ export async function buscarDocumentosNomeacao(
       }
       if (escavadorId) {
         const docsV1 = await escavador.listarDocumentos(escavadorId)
-        for (const doc of docsV1) {
-          try {
-            const existing = await prisma.processoDocumento.findUnique({
+        novos = await prisma.$transaction(async (tx) => {
+          let count = 0
+          for (const doc of docsV1) {
+            const existing = await tx.processoDocumento.findUnique({
               where: { processoId_escavadorDocId: { processoId: nomeacao.processoId, escavadorDocId: doc.id } },
             })
             if (!existing) {
-              await prisma.processoDocumento.create({
+              await tx.processoDocumento.create({
                 data: {
                   processoId:     nomeacao.processoId,
                   escavadorDocId: doc.id,
@@ -144,10 +147,11 @@ export async function buscarDocumentosNomeacao(
                   paginas:        doc.paginas ?? null,
                 },
               })
-              novos++
+              count++
             }
-          } catch { /* skip */ }
-        }
+          }
+          return count
+        })
       }
     }
 
@@ -268,19 +272,19 @@ export async function buscarDocumentosPorPericia(
     let novos = 0
 
     if (docsV2.length > 0) {
-      for (const doc of docsV2) {
-        try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const existing = await (prisma.processoDocumento as any).findFirst({ where: { processoId: proc.id, chaveV2: doc.key } })
+      novos = await prisma.$transaction(async (tx) => {
+        let count = 0
+        for (const doc of docsV2) {
+          const existing = await tx.processoDocumento.findFirst({ where: { processoId: proc.id, chaveV2: doc.key } })
           if (!existing) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            await (prisma.processoDocumento as any).create({
+            await tx.processoDocumento.create({
               data: { processoId: proc.id, chaveV2: doc.key, nome: doc.nome, tipo: doc.tipo ?? null, dataPublicacao: doc.data ? new Date(doc.data) : null, urlPublica: doc.url ?? null, paginas: doc.paginas ?? null },
             })
-            novos++
+            count++
           }
-        } catch { /* skip */ }
-      }
+        }
+        return count
+      })
     } else {
       // ── Fallback v1 ──────────────────────────────────────────────────────────
       let escavadorId = proc.escavadorId
@@ -293,17 +297,19 @@ export async function buscarDocumentosPorPericia(
       }
       if (escavadorId) {
         const docsV1 = await escavador.listarDocumentos(escavadorId)
-        for (const doc of docsV1) {
-          try {
-            const existing = await prisma.processoDocumento.findUnique({ where: { processoId_escavadorDocId: { processoId: proc.id, escavadorDocId: doc.id } } })
+        novos = await prisma.$transaction(async (tx) => {
+          let count = 0
+          for (const doc of docsV1) {
+            const existing = await tx.processoDocumento.findUnique({ where: { processoId_escavadorDocId: { processoId: proc.id, escavadorDocId: doc.id } } })
             if (!existing) {
-              await prisma.processoDocumento.create({
+              await tx.processoDocumento.create({
                 data: { processoId: proc.id, escavadorDocId: doc.id, nome: doc.nome, tipo: doc.tipo ?? null, dataPublicacao: doc.data ? new Date(doc.data) : null, urlPublica: doc.url ?? null, paginas: doc.paginas ?? null },
               })
-              novos++
+              count++
             }
-          } catch { /* skip */ }
-        }
+          }
+          return count
+        })
       }
     }
 

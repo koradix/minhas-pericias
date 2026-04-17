@@ -1,7 +1,7 @@
 /**
  * POST /api/pericias/analisar-autos
  *
- * Analisa PDFs já baixados (via Judit) com IA.
+ * Analisa PDFs carregados com IA.
  * Body: { "periciaId": "..." }
  */
 

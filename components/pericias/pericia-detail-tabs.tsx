@@ -7,10 +7,13 @@ import {
   ChevronRight,
   ClipboardCheck,
   MapPin,
-  FileDown,
+  CheckCircle2,
+  Camera,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { criarRotaDaPericia } from '@/lib/actions/pericias-rota'
+import { updateCheckpointStatus } from '@/lib/actions/checkpoint-media'
+import { CheckpointMediaPanel } from '@/components/rotas/checkpoint-media-panel'
 import { PropostaTab } from '@/components/pericias/proposta-tab'
 import type { PropostaTabProps } from '@/components/pericias/proposta-tab'
 import { LaudoTab } from '@/components/pericias/laudo-tab'
@@ -69,26 +72,40 @@ function StepBadge({ num, done, active }: { num: number; done?: boolean; active?
 function RotaContent({
   periciaId,
   enderecoPericia,
-  checkpoints,
+  checkpoints: initialCheckpoints,
 }: {
   periciaId: string
   enderecoPericia: string | null
   checkpoints: CheckpointItem[]
 }) {
+  const [checkpoints, setCheckpoints] = useState(initialCheckpoints)
   const hasCheckpoints = checkpoints.length > 0
   const [endereco, setEndereco] = useState(enderecoPericia ?? '')
   const [result,   setResult]   = useState<{ ok: boolean; mensagem: string } | null>(null)
   const [isPending, startTransition] = useTransition()
+  const [concluding, setConcluding] = useState<string | null>(null)
+  const [activePanel, setActivePanel] = useState<string | null>(null)
   const router = useRouter()
 
-  function handleCriarRota() {
+  function handleCriarVistoria() {
     startTransition(async () => {
       const res = await criarRotaDaPericia(periciaId, endereco)
-      if (res.ok && res.rotaId) {
-        router.push(`/pericias/${res.rotaId}`)
+      if (res.ok) {
+        router.refresh()  // Fica na mesma página, recarrega dados
       } else {
         setResult({ ok: res.ok, mensagem: res.message })
       }
+    })
+  }
+
+  function handleConcluirCheckpoint(cpId: string) {
+    setConcluding(cpId)
+    startTransition(async () => {
+      await updateCheckpointStatus(cpId, 'concluido', { pericoId: periciaId })
+      setCheckpoints(prev => prev.map(cp =>
+        cp.id === cpId ? { ...cp, status: 'concluido' } : cp
+      ))
+      setConcluding(null)
     })
   }
 
@@ -98,13 +115,13 @@ function RotaContent({
   return (
     <div className="space-y-8">
 
-      {/* ── Passo 6: Baixar checklist de vistoria ───────────────────── */}
+      {/* ── Passo 6: Agendar vistoria ───────────────────────────────── */}
       <section className="rounded-xl border border-slate-200 bg-white">
         <div className="flex items-center gap-3 px-6 py-5 border-b border-slate-100">
           <StepBadge num={6} done={hasCheckpoints} active={!hasCheckpoints} />
           <div>
-            <h2 className="text-[15px] font-semibold text-slate-800">Baixar checklist de vistoria</h2>
-            <p className="text-[12px] text-slate-400 mt-0.5">Prepare-se para a vistoria com o checklist adequado ao tipo de perícia</p>
+            <h2 className="text-[15px] font-semibold text-slate-800">Agendar vistoria</h2>
+            <p className="text-[12px] text-slate-400 mt-0.5">Informe o endereço e crie o checkpoint de vistoria</p>
           </div>
         </div>
         <div className="px-6 py-5 space-y-4">
@@ -133,14 +150,14 @@ function RotaContent({
               )}
 
               <button
-                onClick={handleCriarRota}
+                onClick={handleCriarVistoria}
                 disabled={isPending || !endereco.trim()}
                 className="w-full bg-[#a3e635] text-slate-900 rounded-none px-8 py-5 text-[11px] font-black uppercase tracking-[0.3em] hover:bg-slate-900 hover:text-white transition-all disabled:opacity-30 shadow-none flex items-center justify-center gap-3"
               >
                 {isPending ? (
                   <><Loader2 className="h-4 w-4 animate-spin" /> AGUARDE...</>
                 ) : (
-                  <><ClipboardCheck className="h-4 w-4" /> CRIAR CHECKLIST E INICIAR VISTORIA</>
+                  <><MapPin className="h-4 w-4" /> CRIAR VISTORIA</>
                 )}
               </button>
             </>
@@ -148,7 +165,9 @@ function RotaContent({
             <div className="flex items-center gap-3 rounded-lg bg-[#a3e635]/10 border border-[#a3e635]/30 px-5 py-3">
               <ClipboardCheck className="h-5 w-5 text-[#4d7c0f]" />
               <div>
-                <p className="text-[13px] font-semibold text-slate-800">Checklist criado com {checkpoints.length} checkpoint{checkpoints.length > 1 ? 's' : ''}</p>
+                <p className="text-[13px] font-semibold text-slate-800">
+                  Vistoria agendada — {checkpoints.length} checkpoint{checkpoints.length > 1 ? 's' : ''}
+                </p>
                 <p className="text-[12px] text-slate-400 mt-0.5">
                   {checkpoints.filter(c => c.status === 'concluido').length}/{checkpoints.length} concluídos
                 </p>
@@ -164,7 +183,7 @@ function RotaContent({
           <StepBadge num={7} done={allDone && hasMidias} active={hasCheckpoints && !allDone} />
           <div>
             <h2 className="text-[15px] font-semibold text-slate-800">Realizar vistoria</h2>
-            <p className="text-[12px] text-slate-400 mt-0.5">Vá a campo, registre evidências e complete os checkpoints</p>
+            <p className="text-[12px] text-slate-400 mt-0.5">Clique no checkpoint para registrar evidências e concluir</p>
           </div>
         </div>
         <div className="px-6 py-5">
@@ -173,49 +192,101 @@ function RotaContent({
               <div className="border border-slate-200 rounded-lg overflow-hidden">
                 <div className="divide-y divide-slate-100">
                   {checkpoints.map((cp) => (
-                    <div key={cp.id} className="flex items-start gap-4 px-5 py-4 bg-white hover:bg-slate-50 transition-colors">
-                      <span className={cn(
-                        "text-[10px] font-black uppercase tracking-widest px-3 py-1 border-2 rounded flex-shrink-0 mt-0.5",
-                        cp.status === 'concluido' ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-300 border-slate-100"
-                      )}>
-                        {CP_STATUS_TEXT[cp.status] ?? 'PENDENTE'}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className={cn(
-                          'text-[13px] font-bold',
-                          cp.status === 'concluido' ? 'text-slate-400' : 'text-slate-900',
+                    <div key={cp.id}>
+                      {/* Checkpoint row */}
+                      <button
+                        type="button"
+                        onClick={() => setActivePanel(activePanel === cp.id ? null : cp.id)}
+                        className="w-full flex items-center gap-4 px-5 py-4 bg-white hover:bg-slate-50 transition-colors text-left"
+                      >
+                        <span className={cn(
+                          "text-[10px] font-black uppercase tracking-widest px-3 py-1 border-2 rounded flex-shrink-0",
+                          cp.status === 'concluido' ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-300 border-slate-100"
                         )}>
-                          {cp.titulo}
-                        </p>
-                        {cp.endereco && (
-                          <p className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1">
-                            <MapPin className="h-3 w-3" /> {cp.endereco}
-                          </p>
-                        )}
-                      </div>
-                      {cp.midiaCount > 0 && (
-                        <span className="text-[9px] font-black text-[#a3e635] border border-[#a3e635] px-2 py-0.5 uppercase tracking-widest rounded flex-shrink-0">
-                          {cp.midiaCount} evidência{cp.midiaCount > 1 ? 's' : ''}
+                          {CP_STATUS_TEXT[cp.status] ?? 'PENDENTE'}
                         </span>
+                        <div className="flex-1 min-w-0">
+                          <p className={cn(
+                            'text-[13px] font-bold',
+                            cp.status === 'concluido' ? 'text-slate-400' : 'text-slate-900',
+                          )}>
+                            {cp.titulo}
+                          </p>
+                          {cp.endereco && (
+                            <p className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1">
+                              <MapPin className="h-3 w-3" /> {cp.endereco}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {cp.midiaCount > 0 && (
+                            <span className="text-[9px] font-black text-[#a3e635] border border-[#a3e635] px-2 py-0.5 uppercase tracking-widest rounded">
+                              {cp.midiaCount} evidência{cp.midiaCount > 1 ? 's' : ''}
+                            </span>
+                          )}
+                          {cp.status !== 'concluido' && (
+                            <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
+                              <Camera className="h-3.5 w-3.5" />
+                              {activePanel === cp.id ? 'Fechar' : 'Abrir'}
+                            </span>
+                          )}
+                        </div>
+                      </button>
+
+                      {/* Painel de evidências inline */}
+                      {activePanel === cp.id && (
+                        <div className="border-t border-slate-100 bg-slate-50">
+                          <CheckpointMediaPanel
+                            checkpointId={cp.id}
+                            checkpointTitulo={cp.titulo}
+                            endereco={cp.endereco ?? undefined}
+                            tipo="PERICIA"
+                            onClose={() => setActivePanel(null)}
+                            onConcluido={() => {
+                              setCheckpoints(prev => prev.map(c =>
+                                c.id === cp.id ? { ...c, status: 'concluido' } : c
+                              ))
+                              setActivePanel(null)
+                              router.refresh()
+                            }}
+                          />
+                        </div>
                       )}
                     </div>
                   ))}
                 </div>
               </div>
 
-              {!allDone && (
-                <div className="flex items-start gap-3 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3">
-                  <span className="text-amber-500 mt-0.5 text-[14px]">⚠</span>
-                  <p className="text-[13px] text-amber-700">
-                    Complete todos os checkpoints e registre evidências (fotos, áudios, notas) antes de prosseguir para o laudo.
+              {/* Iniciar rota completa (GPS, mapa, múltiplos pontos) */}
+              {!allDone && !activePanel && (
+                <a
+                  href="/rotas/pericias"
+                  className="flex items-center justify-center gap-2 rounded-lg border-2 border-slate-200 hover:border-slate-900 bg-white hover:bg-slate-50 px-5 py-4 text-[11px] font-bold uppercase tracking-widest text-slate-600 hover:text-slate-900 transition-all"
+                >
+                  <MapPin className="h-4 w-4" />
+                  Iniciar rota de vistoria completa (GPS + mapa)
+                </a>
+              )}
+
+              {allDone && (
+                <div className="flex items-center gap-3 rounded-lg bg-[#a3e635]/10 border border-[#a3e635]/30 px-4 py-3">
+                  <CheckCircle2 className="h-5 w-5 text-[#4d7c0f]" />
+                  <p className="text-[13px] font-semibold text-slate-800">
+                    Vistoria concluída — prossiga para o laudo pericial.
                   </p>
                 </div>
+              )}
+
+              {!allDone && !activePanel && (
+                <p className="text-[12px] text-slate-400 text-center">
+                  Clique no checkpoint para registrar evidências e concluir, ou inicie a rota completa acima.
+                </p>
               )}
             </div>
           ) : (
             <div className="text-center py-8">
               <p className="text-[13px] text-slate-400">
-                Crie o checklist no passo anterior para habilitar a vistoria.
+                Agende a vistoria no passo anterior para começar.
               </p>
             </div>
           )}

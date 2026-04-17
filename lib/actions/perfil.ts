@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { z } from 'zod'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { VARAS_CATALOG } from '@/lib/data/varas-catalog'
@@ -65,14 +66,26 @@ export async function updatePerfilProfissional(
 
 // ─── Shared helper: upsert catalog varas for given tribunal siglas ─────────────
 
-async function upsertCatalogVaras(
+interface UpsertVarasResult {
+  varasCount: number
+  tribunaisVistos: Set<string>
+}
+
+/**
+ * Lógica unificada de upsert de varas do catálogo.
+ * @param withStats  se true, faz upsert em VaraStats (usado no signup)
+ */
+async function upsertCatalogVarasCore(
   userId: string,
   siglas: string[],
-): Promise<number> {
+  opts: { withStats?: boolean } = {},
+): Promise<UpsertVarasResult> {
   const siglaSet = new Set(siglas.map((s) => s.toUpperCase()))
   const varasDosCatalogo = VARAS_CATALOG.filter((v) => siglaSet.has(v.tribunal.toUpperCase()))
 
-  let count = 0
+  const tribunaisVistos = new Set<string>()
+  let varasCount = 0
+
   for (const v of varasDosCatalogo) {
     try {
       await prisma.tribunalVara.upsert({
@@ -103,12 +116,23 @@ async function upsertCatalogVaras(
           ativa: true,
         },
       })
-      count++
+
+      if (opts.withStats) {
+        await prisma.varaStats.upsert({
+          where: { tribunalSigla_varaNome: { tribunalSigla: v.tribunal, varaNome: v.nome } },
+          create: { tribunalSigla: v.tribunal, varaNome: v.nome, totalPeritosSugeridos: 1 },
+          update: { totalPeritosSugeridos: { increment: 1 } },
+        })
+      }
+
+      varasCount++
+      tribunaisVistos.add(v.tribunal)
     } catch {
       // Ignore individual upsert errors
     }
   }
-  return count
+
+  return { varasCount, tribunaisVistos }
 }
 
 // ─── Action 2 — Sincronizar varas (from local catalog) ───────────────────────
@@ -131,7 +155,7 @@ export async function syncTribunaisReais(): Promise<
   if (siglas.length === 0) return { ok: true, varasSalvas: 0 }
 
   try {
-    const varasSalvas = await upsertCatalogVaras(userId, siglas)
+    const { varasCount: varasSalvas } = await upsertCatalogVarasCore(userId, siglas)
 
     await prisma.peritoPerfil.update({
       where: { userId },
@@ -158,55 +182,7 @@ export async function syncVarasFromSignup(
   if (siglas.length === 0) return { ok: true, varasCount: 0, tribunaisCount: 0 }
 
   try {
-    const siglaSet = new Set(siglas.map((s) => s.toUpperCase()))
-    const varasDosCatalogo = VARAS_CATALOG.filter((v) => siglaSet.has(v.tribunal.toUpperCase()))
-    const tribunaisVistos = new Set<string>()
-    let varasCount = 0
-
-    for (const v of varasDosCatalogo) {
-      try {
-        await prisma.tribunalVara.upsert({
-          where: {
-            peritoId_tribunalSigla_varaNome: {
-              peritoId: userId,
-              tribunalSigla: v.tribunal,
-              varaNome: v.nome,
-            },
-          },
-          create: {
-            peritoId: userId,
-            tribunalSigla: v.tribunal,
-            tribunalNome: v.tribunal,
-            varaNome: v.nome,
-            varaId: v.id,
-            uf: v.uf,
-            enderecoTexto: `${v.endereco} — ${v.cidade}`,
-            latitude: v.latitude,
-            longitude: v.longitude,
-          },
-          update: {
-            varaId: v.id,
-            uf: v.uf,
-            enderecoTexto: `${v.endereco} — ${v.cidade}`,
-            latitude: v.latitude,
-            longitude: v.longitude,
-            ativa: true,
-          },
-        })
-
-        // Platform-wide stats
-        await prisma.varaStats.upsert({
-          where: { tribunalSigla_varaNome: { tribunalSigla: v.tribunal, varaNome: v.nome } },
-          create: { tribunalSigla: v.tribunal, varaNome: v.nome, totalPeritosSugeridos: 1 },
-          update: { totalPeritosSugeridos: { increment: 1 } },
-        })
-
-        varasCount++
-        tribunaisVistos.add(v.tribunal)
-      } catch {
-        // Ignore individual upsert errors
-      }
-    }
+    const { varasCount, tribunaisVistos } = await upsertCatalogVarasCore(userId, siglas, { withStats: true })
 
     await prisma.peritoPerfil.update({
       where: { userId },
@@ -259,21 +235,25 @@ export async function previewVarasCount(
 
 // ─── Action — Atualizar dados cadastrais (nome + CPF) ─────────────────────────
 
+const DadosCadastraisSchema = z.object({
+  nome: z.string().min(1, 'Nome é obrigatório').transform((s) => s.trim()),
+  cpf: z.string().transform((s) => s.replace(/\D/g, '')).pipe(
+    z.string().refine((d) => d.length === 0 || d.length === 11, 'CPF inválido — informe 11 dígitos'),
+  ),
+})
+
 export async function updateDadosCadastrais(data: {
   nome: string
   cpf: string
 }): Promise<{ ok: true } | { ok: false; error: string }> {
+  const parsed = DadosCadastraisSchema.safeParse(data)
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message }
+
   const session = await auth()
   if (!session?.user?.id) return { ok: false, error: 'Não autenticado' }
   const userId = session.user.id
 
-  const nome = data.nome.trim()
-  if (!nome) return { ok: false, error: 'Nome é obrigatório' }
-
-  const cpfDigits = data.cpf.replace(/\D/g, '')
-  if (cpfDigits && cpfDigits.length !== 11) {
-    return { ok: false, error: 'CPF inválido — informe 11 dígitos' }
-  }
+  const { nome, cpf: cpfDigits } = parsed.data
 
   try {
     await prisma.user.update({

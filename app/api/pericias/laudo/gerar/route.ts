@@ -47,7 +47,7 @@ export interface GerarLaudoInput {
   // Observações gerais da vistoria
   observacoesVistoria: string | null
 
-  // Documentos do processo (baixados via Judit)
+  // Documentos do processo
   documentosProcesso: {
     id: string
     nome: string

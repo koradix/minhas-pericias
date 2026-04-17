@@ -1,7 +1,11 @@
 {
   "permissions": {
+    "defaultMode": "acceptEdits",
     "allow": [
-      "Bash(npx prisma:*)"
+      "Bash",
+      "Read",
+      "Edit",
+      "Write"
     ]
   }
 }

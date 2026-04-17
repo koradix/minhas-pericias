@@ -7,7 +7,6 @@ import {
   ChevronRight,
 } from 'lucide-react'
 import { auth } from '@/auth'
-import { prisma } from '@/lib/prisma'
 import { PericiaMediaSection } from '@/components/pericias/pericia-media-section'
 // import { ResumoBlock } from '@/components/processos/resumo-block'
 import { Badge } from '@/components/ui/badge'
@@ -27,12 +26,14 @@ import { isAnaliseProcessoV2, toAnaliseCompativel } from '@/lib/ai/prompt-mestre
 import { AnaliseProcessoV2Block } from '@/components/nomeacoes/analise-processo-v2-block'
 import { AnaliseProcessoBlock } from '@/components/nomeacoes/analise-processo-block'
 import { NomeacaoDocumentosSection } from '@/components/nomeacoes/nomeacao-documentos'
+import {
+  getPericiaAssunto, getRotaTitulo, getPericiaById, getRotaById,
+  getIntakeByPericiaId, getNomeacaoByPericiaId, getCitacaoByPericiaId,
+  getCheckpointsComMidias, getVistoriaInfo, getPeritoPerfil,
+  type PericiaRow, type NomeacaoLink, type CpRow,
+} from '@/lib/data/pericias'
+import type { MidiaRow } from '@/lib/data/pericias'
 
-// Judit standby — imports mantidos para reativação
-// import { JuditAutosBtn } from '@/components/pericias/judit-autos-btn'
-// import { ProcessTimeline } from '@/components/pericias/process-timeline'
-// import { ProcessDocuments } from '@/components/pericias/process-documents'
-// import { isJuditReady } from '@/lib/integrations/judit/config'
 import type { Metadata } from 'next'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -53,16 +54,7 @@ function isMockId(id: string): boolean {
   return /^\d+$/.test(id)
 }
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-interface CpRow {
-  id: string
-  ordem: number
-  titulo: string
-  endereco: string | null
-  status: string
-  midiaCount: number
-}
+// ─── Types (importados de @/lib/data/pericias) ──────────────────────────────
 
 // ─── Status maps ──────────────────────────────────────────────────────────────
 
@@ -96,10 +88,10 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   }
   let title = 'Perícia'
   try {
-    const pericia = await prisma.pericia.findUnique({ where: { id }, select: { assunto: true } })
-    if (pericia) return { title: pericia.assunto }
-    const rota = await prisma.rotaPericia.findUnique({ where: { id }, select: { titulo: true } })
-    if (rota) title = rota.titulo
+    const assunto = await getPericiaAssunto(id)
+    if (assunto) return { title: assunto }
+    const titulo = await getRotaTitulo(id)
+    if (titulo) title = titulo
   } catch {}
   return { title }
 }
@@ -234,96 +226,23 @@ async function MockPericiaView({ id, userId }: { id: string; userId: string }) {
 
 // ─── Real Pericia view ────────────────────────────────────────────────────────
 
-type PericiaRow = {
-  id: string; peritoId: string; numero: string; assunto: string; tipo: string
-  tags: string
-  processo: string | null; vara: string | null; partes: string | null
-  endereco: string | null; status: string; prazo: string | null
-  valorHonorarios: number | null; criadoEm: Date; atualizadoEm: Date
-}
-
-type NomeacaoLink = {
-  id: string
-  criadoEm: Date
-  nomeArquivo: string | null
-  extractedData: string | null
-  processSummary: string | null
-  status: string
-}
-
 async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
-  // Fetch linked intake (for process summary — legacy processoIntake)
-  let intake: { id: string; resumo: string | null } | null = null
-  try {
-    intake = await prisma.processoIntake.findFirst({
-      where: { periciaId: pericia.id },
-      select: { id: true, resumo: true },
-    })
-  } catch {}
+  // Fetch all related data via data layer
+  const [intake, nomeacaoLink, citacaoLink, cpData, vistoriaInfo] = await Promise.all([
+    getIntakeByPericiaId(pericia.id).catch(() => null),
+    getNomeacaoByPericiaId(pericia.id).catch(() => null),
+    getCitacaoByPericiaId(pericia.id).catch(() => null),
+    getCheckpointsComMidias('periciaId', pericia.id),
+    getVistoriaInfo(pericia.id),
+  ])
+
+  const { checkpoints, midias } = cpData
 
   // Parse resumo JSON
   let resumo: ResumoData | null = null
   if (intake?.resumo) {
     try { resumo = JSON.parse(intake.resumo) as ResumoData } catch {}
   }
-
-  // Fetch linked Nomeacao (DataJud flow) for timeline
-  let nomeacaoLink: NomeacaoLink | null = null
-  try {
-    nomeacaoLink = await prisma.nomeacao.findFirst({
-      where: { periciaId: pericia.id },
-      select: { id: true, criadoEm: true, nomeArquivo: true, extractedData: true, processSummary: true, status: true },
-    })
-  } catch {}
-
-  // Fetch linked NomeacaoCitacao (Radar flow) for tribunal info
-  let citacaoLink: { diarioSigla: string; linkCitacao: string } | null = null
-  try {
-    citacaoLink = await prisma.nomeacaoCitacao.findFirst({
-      where: { periciaId: pericia.id },
-      select: { diarioSigla: true, linkCitacao: true },
-    })
-  } catch {}
-
-  // Fetch checkpoints linked to this pericia
-  let checkpoints: CpRow[] = []
-  let midias: MidiaDaPericia[] = []
-  try {
-    const dbCps = await prisma.checkpoint.findMany({
-      where: { periciaId: pericia.id },
-      orderBy: { ordem: 'asc' },
-    })
-    if (dbCps.length > 0) {
-      const cpIds = dbCps.map((c) => c.id)
-      const dbMidias = await prisma.checkpointMidia.findMany({
-        where: { checkpointId: { in: cpIds } },
-        orderBy: { criadoEm: 'desc' },
-      })
-      midias = dbMidias.map((m) => ({
-        id: m.id, tipo: m.tipo, url: m.url, texto: m.texto,
-        descricao: m.descricao, criadoEm: toISO(m.criadoEm),
-      }))
-      checkpoints = dbCps.map((cp) => ({
-        id: cp.id, ordem: cp.ordem, titulo: cp.titulo, endereco: cp.endereco,
-        status: cp.status,
-        midiaCount: dbMidias.filter((m) => m.checkpointId === cp.id).length,
-      }))
-    }
-  } catch {}
-
-  // Extract vistoria date/address from first completed checkpoint
-  const vistoriaInfo: { data: string | null; endereco: string | null } = { data: null, endereco: null }
-  try {
-    const cpVistoria = await prisma.checkpoint.findFirst({
-      where: { periciaId: pericia.id, status: 'concluido' },
-      orderBy: { ordem: 'asc' },
-      select: { chegadaEm: true, endereco: true },
-    })
-    if (cpVistoria) {
-      vistoriaInfo.data = cpVistoria.chegadaEm ? toISO(cpVistoria.chegadaEm) : null
-      vistoriaInfo.endereco = cpVistoria.endereco
-    }
-  } catch {}
 
   // Fetch proposal data
   const session2 = await import('@/auth').then((m) => m.auth())
@@ -344,47 +263,11 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
     getFeeProposal(pericia.id, userId2),
     getFeeProposalVersions(pericia.id, userId2),
     getProposalTemplates(userId2),
-    prisma.peritoPerfil.findUnique({ where: { userId: userId2 }, select: { formacao: true, registro: true, telefone: true } }).catch(() => null),
+    getPeritoPerfil(userId2),
     getAgendaItems(pericia.id),
     getLaudoTemplates(),
     getLaudoDraft(pericia.id),
   ])
-
-  // ─── Judit data (isolado, feature-flagged) ──────────────────────────────────
-  let juditMovements: { id: string; eventDate: string; type: string | null; description: string }[] = []
-  let juditAttachments: { id: string; name: string; type: string | null; mimeType: string | null; isPublic: boolean; downloadAvailable: boolean; url: string | null; blobUrl: string | null; downloadStatus: string; publishedAt: string | null }[] = []
-  try {
-    const [dbMov, dbAtt] = await Promise.all([
-      prisma.processMovement.findMany({
-        where: { periciaId: pericia.id, source: 'judit' },
-        orderBy: { eventDate: 'desc' },
-        select: { id: true, eventDate: true, type: true, description: true },
-      }),
-      prisma.processAttachment.findMany({
-        where: { periciaId: pericia.id, source: 'judit' },
-        orderBy: { capturedAt: 'desc' },
-        select: { id: true, name: true, type: true, mimeType: true, isPublic: true, downloadAvailable: true, url: true, blobUrl: true, downloadStatus: true, publishedAt: true },
-      }),
-    ])
-    juditMovements = dbMov.map((m: { id: string; eventDate: Date; type: string | null; description: string }) => ({
-      id: m.id,
-      eventDate: m.eventDate.toISOString(),
-      type: m.type,
-      description: m.description,
-    }))
-    juditAttachments = dbAtt.map((a: { id: string; name: string; type: string | null; mimeType: string | null; isPublic: boolean; downloadAvailable: boolean; url: string | null; blobUrl: string | null; downloadStatus: string; publishedAt: Date | null }) => ({
-      id: a.id,
-      name: a.name,
-      type: a.type,
-      mimeType: a.mimeType,
-      isPublic: a.isPublic,
-      downloadAvailable: a.downloadAvailable,
-      url: a.url,
-      blobUrl: a.blobUrl,
-      downloadStatus: a.downloadStatus,
-      publishedAt: a.publishedAt?.toISOString() ?? null,
-    }))
-  } catch {}
 
   // Auto-populate agenda (idempotent, non-blocking)
   const hasAnalise2 = !!nomeacaoLink?.extractedData
@@ -522,9 +405,7 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
               rascunho:       laudoDraft,
               midias:         midias.map((m) => ({ tipo: m.tipo, url: m.url, texto: m.texto, descricao: m.descricao })),
               vistoriaData:   vistoriaInfo,
-              documentosProcesso: juditAttachments
-                .filter(a => a.downloadStatus === 'downloaded')
-                .map(a => ({ id: a.id, nome: a.name, tipo: a.type })),
+              documentosProcesso: [],
             }}
             resumoContent={
               <div className="space-y-10 pt-4 max-w-5xl mx-auto">
@@ -644,47 +525,10 @@ async function RealPericiaView({ pericia }: { pericia: PericiaRow }) {
 // ─── RotaPericia view ─────────────────────────────────────────────────────────
 
 async function RotaPericiaView({ id, userId }: { id: string; userId: string }) {
-  let rota: { id: string; peritoId: string; titulo: string; status: string; criadoEm: Date | string; atualizadoEm: Date | string } | null = null
-  try {
-    rota = await prisma.rotaPericia.findUnique({ where: { id } })
-  } catch {}
+  const rota = await getRotaById(id)
   if (!rota || rota.peritoId !== userId) notFound()
 
-  let checkpoints: CpRow[] = []
-  let midias: MidiaDaPericia[] = []
-
-  try {
-    const dbCps = await prisma.checkpoint.findMany({
-      where: { rotaId: id },
-      orderBy: { ordem: 'asc' },
-    })
-
-    if (dbCps.length > 0) {
-      const cpIds = dbCps.map((c) => c.id)
-      const dbMidias = await prisma.checkpointMidia.findMany({
-        where: { checkpointId: { in: cpIds } },
-        orderBy: { criadoEm: 'desc' },
-      })
-
-      midias = dbMidias.map((m) => ({
-        id: m.id,
-        tipo: m.tipo,
-        url: m.url,
-        texto: m.texto,
-        descricao: m.descricao,
-        criadoEm: toISO(m.criadoEm),
-      }))
-
-      checkpoints = dbCps.map((cp) => ({
-        id: cp.id,
-        ordem: cp.ordem,
-        titulo: cp.titulo,
-        endereco: cp.endereco,
-        status: cp.status,
-        midiaCount: dbMidias.filter((m) => m.checkpointId === cp.id).length,
-      }))
-    }
-  } catch {}
+  const { checkpoints, midias } = await getCheckpointsComMidias('rotaId', id)
 
   const rotaStatus = ROTA_STATUS[rota.status] ?? { label: rota.status, variant: 'secondary' as const }
   const concluidos = checkpoints.filter((c) => c.status === 'concluido').length
@@ -857,7 +701,7 @@ export default async function PericiaDetailPage({ params }: { params: Promise<{ 
   // ── Real Pericia (from intake flow) ────────────────────────────────────────
   let pericia: PericiaRow | null = null
   try {
-    pericia = await prisma.pericia.findUnique({ where: { id } })
+    pericia = await getPericiaById(id)
   } catch {}
 
   if (pericia && pericia.peritoId === userId) {

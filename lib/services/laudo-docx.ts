@@ -1,7 +1,12 @@
 /**
  * laudo-docx.ts — Gera DOCX de laudo pericial a partir das seções editadas.
  * Usa a lib `docx` (já instalada) para criar o documento do zero,
- * seguindo formatação formal/jurídica compatível com tribunais.
+ * seguindo formatação formal/jurídica elegante compatível com tribunais.
+ *
+ * Design System:
+ *   Font:    Garamond (elegante serif, padrão em documentos jurídicos premium)
+ *   Cores:   paleta quente sem azul — charcoal, taupe, âmbar
+ *   Layout:  texto justificado, recuo de primeira linha, espaçamento 1.5
  */
 
 import {
@@ -14,12 +19,32 @@ import {
   Header,
   Footer,
   PageNumber,
-  NumberFormat,
-  TabStopPosition,
-  TabStopType,
   BorderStyle,
   Packer,
 } from 'docx'
+
+// ─── Design Tokens ────────────────────────────────────────────────────────────
+
+const FONT = 'Garamond'
+
+const COLOR = {
+  CHARCOAL:  '2D2D2D',
+  ONYX:      '1A1A1A',
+  WARM_GRAY: '7A7066',
+  TAUPE:     'C4B9A8',
+  AMBER:     '96723C',
+  DARK_WARM: '5C5347',
+} as const
+
+const SIZE = {
+  TITLE:   36,  // 18pt
+  H2:      28,  // 14pt
+  BODY:    24,  // 12pt
+  SMALL:   22,  // 11pt
+  CAPTION: 20,  // 10pt
+  HEADER:  18,  //  9pt
+  TINY:    16,  //  8pt
+} as const
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -50,6 +75,18 @@ export interface LaudoDocxInput {
   documentosProcesso?: { nome: string; tipo: string | null }[]
 }
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function elegantRule(): Paragraph {
+  return new Paragraph({
+    spacing: { before: 100, after: 100 },
+    border: {
+      bottom: { style: BorderStyle.SINGLE, size: 1, color: COLOR.TAUPE },
+    },
+    children: [],
+  })
+}
+
 // ─── Build ────────────────────────────────────────────────────────────────────
 
 export async function gerarLaudoDocx(input: LaudoDocxInput): Promise<Buffer> {
@@ -57,19 +94,32 @@ export async function gerarLaudoDocx(input: LaudoDocxInput): Promise<Buffer> {
 
   // ── Capa / Título ──────────────────────────────────────────────────────
   children.push(
-    new Paragraph({ spacing: { after: 400 } }), // espaço
+    new Paragraph({ spacing: { after: 600 } }),
     new Paragraph({
       alignment: AlignmentType.CENTER,
-      spacing: { after: 200 },
+      spacing: { after: 160 },
       children: [
-        new TextRun({ text: input.titulo.toUpperCase(), bold: true, size: 28, font: 'Arial' }),
+        new TextRun({
+          text: input.titulo.toUpperCase(),
+          bold: true,
+          size: SIZE.TITLE,
+          font: FONT,
+          color: COLOR.CHARCOAL,
+        }),
       ],
     }),
+    elegantRule(),
     new Paragraph({
       alignment: AlignmentType.CENTER,
-      spacing: { after: 100 },
+      spacing: { after: 80 },
       children: [
-        new TextRun({ text: 'Template PeriLaB — Modelo Padrão', italics: true, size: 20, font: 'Arial', color: '666666' }),
+        new TextRun({
+          text: 'Template PeriLaB — Modelo Padrão',
+          italics: true,
+          size: SIZE.CAPTION,
+          font: FONT,
+          color: COLOR.WARM_GRAY,
+        }),
       ],
     }),
     new Paragraph({ spacing: { after: 400 } }),
@@ -80,54 +130,54 @@ export async function gerarLaudoDocx(input: LaudoDocxInput): Promise<Buffer> {
     children.push(
       new Paragraph({
         alignment: AlignmentType.CENTER,
-        spacing: { after: 100 },
+        spacing: { after: 80 },
         children: [
-          new TextRun({ text: 'EXCELENTÍSSIMO SENHOR DOUTOR JUIZ DE DIREITO DA', bold: true, size: 22, font: 'Arial' }),
+          new TextRun({
+            text: 'EXCELENTÍSSIMO SENHOR DOUTOR JUIZ DE DIREITO DA',
+            bold: true,
+            size: SIZE.SMALL,
+            font: FONT,
+            color: COLOR.CHARCOAL,
+          }),
         ],
       }),
       new Paragraph({
         alignment: AlignmentType.CENTER,
         spacing: { after: 300 },
         children: [
-          new TextRun({ text: `${input.vara ?? '[VARA]'} DA COMARCA DE ${input.comarca ?? '[COMARCA]'}`, size: 22, font: 'Arial' }),
+          new TextRun({
+            text: `${input.vara ?? '[VARA]'} DA COMARCA DE ${input.comarca ?? '[COMARCA]'}`,
+            size: SIZE.SMALL,
+            font: FONT,
+            color: COLOR.CHARCOAL,
+          }),
         ],
       }),
     )
   }
 
-  // Dados do processo
-  if (input.processo) {
+  // Dados do processo — bloco compacto e elegante
+  const processLines: { label: string; value: string }[] = []
+  if (input.processo) processLines.push({ label: 'Processo', value: input.processo })
+  if (input.autor) processLines.push({ label: 'Autor', value: input.autor })
+  if (input.reu) processLines.push({ label: 'Ré', value: input.reu })
+
+  for (const { label, value } of processLines) {
     children.push(new Paragraph({
       alignment: AlignmentType.CENTER,
       spacing: { after: 60 },
       children: [
-        new TextRun({ text: 'Processo: ', bold: true, size: 22, font: 'Arial' }),
-        new TextRun({ text: input.processo, size: 22, font: 'Arial' }),
-      ],
-    }))
-  }
-  if (input.autor) {
-    children.push(new Paragraph({
-      alignment: AlignmentType.CENTER,
-      spacing: { after: 60 },
-      children: [
-        new TextRun({ text: 'Autor: ', bold: true, size: 22, font: 'Arial' }),
-        new TextRun({ text: input.autor, size: 22, font: 'Arial' }),
-      ],
-    }))
-  }
-  if (input.reu) {
-    children.push(new Paragraph({
-      alignment: AlignmentType.CENTER,
-      spacing: { after: 200 },
-      children: [
-        new TextRun({ text: 'Ré: ', bold: true, size: 22, font: 'Arial' }),
-        new TextRun({ text: input.reu, size: 22, font: 'Arial' }),
+        new TextRun({ text: `${label}: `, bold: true, size: SIZE.SMALL, font: FONT, color: COLOR.CHARCOAL }),
+        new TextRun({ text: value, size: SIZE.SMALL, font: FONT, color: COLOR.ONYX }),
       ],
     }))
   }
 
-  children.push(new Paragraph({ spacing: { after: 400 } }))
+  children.push(
+    new Paragraph({ spacing: { after: 200 } }),
+    elegantRule(),
+    new Paragraph({ spacing: { after: 400 } }),
+  )
 
   // ── Seções ─────────────────────────────────────────────────────────────
   for (const secao of input.secoes) {
@@ -135,12 +185,18 @@ export async function gerarLaudoDocx(input: LaudoDocxInput): Promise<Buffer> {
     children.push(
       new Paragraph({
         heading: HeadingLevel.HEADING_2,
-        spacing: { before: 400, after: 200 },
+        spacing: { before: 480, after: 240 },
         children: [
-          new TextRun({ text: secao.titulo.toUpperCase(), bold: true, size: 24, font: 'Arial' }),
+          new TextRun({
+            text: secao.titulo.toUpperCase(),
+            bold: true,
+            size: SIZE.H2,
+            font: FONT,
+            color: COLOR.CHARCOAL,
+          }),
         ],
         border: {
-          bottom: { style: BorderStyle.SINGLE, size: 1, color: '999999' },
+          bottom: { style: BorderStyle.SINGLE, size: 1, color: COLOR.TAUPE },
         },
       }),
     )
@@ -155,9 +211,15 @@ export async function gerarLaudoDocx(input: LaudoDocxInput): Promise<Buffer> {
 
       if (isSubheading) {
         children.push(new Paragraph({
-          spacing: { before: 200, after: 100 },
+          spacing: { before: 280, after: 120 },
           children: [
-            new TextRun({ text: p.trim(), bold: true, size: 22, font: 'Arial' }),
+            new TextRun({
+              text: p.trim(),
+              bold: true,
+              size: SIZE.BODY,
+              font: FONT,
+              color: COLOR.CHARCOAL,
+            }),
           ],
         }))
       } else {
@@ -169,16 +231,33 @@ export async function gerarLaudoDocx(input: LaudoDocxInput): Promise<Buffer> {
 
           const line = lines[i]
 
-          // Highlight [EDITAR PELO PERITO] e [COMPLEMENTAR]
-          if (line.includes('[EDITAR PELO PERITO]') || line.includes('[COMPLEMENTAR]') || line.includes('[VALIDAR DADO]')) {
-            runs.push(new TextRun({ text: line, size: 22, font: 'Arial', color: '0066CC', italics: true }))
+          // Campos editáveis em âmbar quente (não azul)
+          if (
+            line.includes('[EDITAR PELO PERITO]') ||
+            line.includes('[COMPLEMENTAR]') ||
+            line.includes('[VALIDAR DADO]')
+          ) {
+            runs.push(new TextRun({
+              text: line,
+              size: SIZE.BODY,
+              font: FONT,
+              color: COLOR.AMBER,
+              italics: true,
+            }))
           } else {
-            runs.push(new TextRun({ text: line, size: 22, font: 'Arial' }))
+            runs.push(new TextRun({
+              text: line,
+              size: SIZE.BODY,
+              font: FONT,
+              color: COLOR.ONYX,
+            }))
           }
         }
 
         children.push(new Paragraph({
-          spacing: { after: 120 },
+          alignment: AlignmentType.JUSTIFIED,
+          spacing: { after: 160 },
+          indent: { firstLine: 720 },
           children: runs,
         }))
       }
@@ -190,18 +269,31 @@ export async function gerarLaudoDocx(input: LaudoDocxInput): Promise<Buffer> {
     children.push(
       new Paragraph({
         heading: HeadingLevel.HEADING_2,
-        spacing: { before: 400, after: 200 },
+        spacing: { before: 480, after: 240 },
         children: [
-          new TextRun({ text: 'DOCUMENTAÇÃO DO PROCESSO', bold: true, size: 24, font: 'Arial' }),
+          new TextRun({
+            text: 'DOCUMENTAÇÃO DO PROCESSO',
+            bold: true,
+            size: SIZE.H2,
+            font: FONT,
+            color: COLOR.CHARCOAL,
+          }),
         ],
         border: {
-          bottom: { style: BorderStyle.SINGLE, size: 1, color: '999999' },
+          bottom: { style: BorderStyle.SINGLE, size: 1, color: COLOR.TAUPE },
         },
       }),
       new Paragraph({
+        alignment: AlignmentType.JUSTIFIED,
         spacing: { after: 200 },
+        indent: { firstLine: 720 },
         children: [
-          new TextRun({ text: 'Os seguintes documentos do processo foram utilizados como base para elaboração deste laudo:', size: 22, font: 'Arial' }),
+          new TextRun({
+            text: 'Os seguintes documentos do processo foram utilizados como base para elaboração deste laudo:',
+            size: SIZE.BODY,
+            font: FONT,
+            color: COLOR.ONYX,
+          }),
         ],
       }),
     )
@@ -211,10 +303,11 @@ export async function gerarLaudoDocx(input: LaudoDocxInput): Promise<Buffer> {
       children.push(
         new Paragraph({
           spacing: { after: 80 },
+          indent: { left: 720 },
           children: [
-            new TextRun({ text: `Doc. ${i + 1} — `, bold: true, size: 22, font: 'Arial' }),
-            new TextRun({ text: doc.nome, size: 22, font: 'Arial' }),
-            ...(doc.tipo ? [new TextRun({ text: ` (${doc.tipo.toUpperCase()})`, size: 20, font: 'Arial', color: '666666' })] : []),
+            new TextRun({ text: `Doc. ${i + 1} — `, bold: true, size: SIZE.BODY, font: FONT, color: COLOR.CHARCOAL }),
+            new TextRun({ text: doc.nome, size: SIZE.BODY, font: FONT, color: COLOR.ONYX }),
+            ...(doc.tipo ? [new TextRun({ text: ` (${doc.tipo.toUpperCase()})`, size: SIZE.CAPTION, font: FONT, color: COLOR.WARM_GRAY })] : []),
           ],
         }),
       )
@@ -226,12 +319,18 @@ export async function gerarLaudoDocx(input: LaudoDocxInput): Promise<Buffer> {
     children.push(
       new Paragraph({
         heading: HeadingLevel.HEADING_2,
-        spacing: { before: 400, after: 200 },
+        spacing: { before: 480, after: 240 },
         children: [
-          new TextRun({ text: 'REGISTRO FOTOGRÁFICO', bold: true, size: 24, font: 'Arial' }),
+          new TextRun({
+            text: 'REGISTRO FOTOGRÁFICO',
+            bold: true,
+            size: SIZE.H2,
+            font: FONT,
+            color: COLOR.CHARCOAL,
+          }),
         ],
         border: {
-          bottom: { style: BorderStyle.SINGLE, size: 1, color: '999999' },
+          bottom: { style: BorderStyle.SINGLE, size: 1, color: COLOR.TAUPE },
         },
       }),
     )
@@ -247,14 +346,28 @@ export async function gerarLaudoDocx(input: LaudoDocxInput): Promise<Buffer> {
 
         children.push(
           new Paragraph({
-            spacing: { before: 200, after: 80 },
+            alignment: AlignmentType.CENTER,
+            spacing: { before: 280, after: 80 },
             children: [
-              new TextRun({ text: `Foto ${i + 1}`, bold: true, size: 20, font: 'Arial', color: '333333' }),
-              ...(foto.descricao ? [new TextRun({ text: ` — ${foto.descricao}`, size: 20, font: 'Arial', color: '666666' })] : []),
+              new TextRun({
+                text: `Foto ${i + 1}`,
+                bold: true,
+                size: SIZE.CAPTION,
+                font: FONT,
+                color: COLOR.CHARCOAL,
+              }),
+              ...(foto.descricao ? [new TextRun({
+                text: ` — ${foto.descricao}`,
+                size: SIZE.CAPTION,
+                font: FONT,
+                color: COLOR.DARK_WARM,
+                italics: true,
+              })] : []),
             ],
           }),
           new Paragraph({
-            spacing: { after: 200 },
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 240 },
             children: [
               new ImageRun({
                 data: buffer,
@@ -270,7 +383,13 @@ export async function gerarLaudoDocx(input: LaudoDocxInput): Promise<Buffer> {
           new Paragraph({
             spacing: { after: 100 },
             children: [
-              new TextRun({ text: `Foto ${i + 1}: ${foto.descricao || '[sem descrição]'} — imagem indisponível`, italics: true, size: 20, font: 'Arial', color: '999999' }),
+              new TextRun({
+                text: `Foto ${i + 1}: ${foto.descricao || '[sem descrição]'} — imagem indisponível`,
+                italics: true,
+                size: SIZE.CAPTION,
+                font: FONT,
+                color: COLOR.WARM_GRAY,
+              }),
             ],
           }),
         )
@@ -278,14 +397,13 @@ export async function gerarLaudoDocx(input: LaudoDocxInput): Promise<Buffer> {
     }
   }
 
-  // ── Documento ──────────────────────────────────────────────────────────
+  // ── Montagem do Documento ─────────────────────────────────────────────
 
-  const headerText = `${input.peritoNome} • ${input.peritoQualificacao}`
   const footerParts: string[] = []
   if (input.peritoTelefone) footerParts.push(`Tel: ${input.peritoTelefone}`)
-  if (input.peritoEmail) footerParts.push(`E-mail: ${input.peritoEmail}`)
+  if (input.peritoEmail) footerParts.push(input.peritoEmail)
   if (input.peritoSite) footerParts.push(input.peritoSite)
-  const footerText = footerParts.join('  |  ')
+  const footerText = footerParts.join('  ·  ')
 
   const doc = new Document({
     creator: input.peritoNome,
@@ -293,7 +411,7 @@ export async function gerarLaudoDocx(input: LaudoDocxInput): Promise<Buffer> {
     styles: {
       default: {
         document: {
-          run: { font: 'Arial', size: 22 },
+          run: { font: FONT, size: SIZE.BODY, color: COLOR.ONYX },
           paragraph: { spacing: { line: 360 } },
         },
       },
@@ -301,7 +419,7 @@ export async function gerarLaudoDocx(input: LaudoDocxInput): Promise<Buffer> {
     sections: [{
       properties: {
         page: {
-          margin: { top: 1440, bottom: 1440, left: 1440, right: 1440 },
+          margin: { top: 1440, bottom: 1440, left: 1580, right: 1300 },
           pageNumbers: { start: 1 },
         },
       },
@@ -309,14 +427,32 @@ export async function gerarLaudoDocx(input: LaudoDocxInput): Promise<Buffer> {
         default: new Header({
           children: [
             new Paragraph({
-              alignment: AlignmentType.CENTER,
+              alignment: AlignmentType.RIGHT,
+              spacing: { after: 60 },
+              children: [
+                new TextRun({
+                  text: input.peritoNome.toUpperCase(),
+                  bold: true,
+                  size: SIZE.HEADER,
+                  font: FONT,
+                  color: COLOR.WARM_GRAY,
+                }),
+              ],
+            }),
+            new Paragraph({
+              alignment: AlignmentType.RIGHT,
               spacing: { after: 100 },
               children: [
-                new TextRun({ text: input.peritoNome, bold: true, size: 20, font: 'Arial' }),
-                new TextRun({ text: ` • ${input.peritoQualificacao}`, size: 18, font: 'Arial', color: '888888' }),
+                new TextRun({
+                  text: input.peritoQualificacao,
+                  size: SIZE.TINY,
+                  font: FONT,
+                  color: COLOR.WARM_GRAY,
+                  italics: true,
+                }),
               ],
               border: {
-                bottom: { style: BorderStyle.SINGLE, size: 1, color: 'CCCCCC' },
+                bottom: { style: BorderStyle.SINGLE, size: 1, color: COLOR.TAUPE },
               },
             }),
           ],
@@ -328,12 +464,28 @@ export async function gerarLaudoDocx(input: LaudoDocxInput): Promise<Buffer> {
             new Paragraph({
               alignment: AlignmentType.CENTER,
               border: {
-                top: { style: BorderStyle.SINGLE, size: 1, color: 'CCCCCC' },
+                top: { style: BorderStyle.SINGLE, size: 1, color: COLOR.TAUPE },
               },
+              spacing: { before: 80 },
               children: [
-                new TextRun({ text: footerText ? `${footerText}  |  ` : '', size: 16, font: 'Arial', color: '888888' }),
-                new TextRun({ text: 'Pág. ', size: 16, font: 'Arial', color: '888888' }),
-                new TextRun({ children: [PageNumber.CURRENT], size: 16, font: 'Arial', color: '888888' }),
+                ...(footerText ? [new TextRun({
+                  text: `${footerText}  ·  `,
+                  size: SIZE.TINY,
+                  font: FONT,
+                  color: COLOR.WARM_GRAY,
+                })] : []),
+                new TextRun({
+                  text: 'Página ',
+                  size: SIZE.TINY,
+                  font: FONT,
+                  color: COLOR.WARM_GRAY,
+                }),
+                new TextRun({
+                  children: [PageNumber.CURRENT],
+                  size: SIZE.TINY,
+                  font: FONT,
+                  color: COLOR.WARM_GRAY,
+                }),
               ],
             }),
           ],

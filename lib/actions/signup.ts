@@ -2,39 +2,40 @@
 
 import bcrypt from 'bcryptjs'
 import { randomBytes } from 'crypto'
+import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { sendVerificationEmail } from '@/lib/email'
 
-export interface SignupData {
-  nome: string
-  email: string
-  senha: string
-  cpf?: string
-  telefone?: string
-  formacao?: string
-  formacaoCustom?: string
-  registro?: string
-  especialidades?: string[]
-  cursos?: string[]
-  estados?: string[]
-  tribunais?: string[]
-  cidade?: string
-  areaAtuacao?: string
-}
+const SignupSchema = z.object({
+  nome: z.string().min(1, 'Nome é obrigatório'),
+  email: z.string().email('E-mail inválido'),
+  senha: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres'),
+  cpf: z.string().optional(),
+  telefone: z.string().optional(),
+  formacao: z.string().optional(),
+  formacaoCustom: z.string().optional(),
+  registro: z.string().optional(),
+  especialidades: z.array(z.string()).optional(),
+  cursos: z.array(z.string()).optional(),
+  estados: z.array(z.string()).optional(),
+  tribunais: z.array(z.string()).optional(),
+  cidade: z.string().optional(),
+  areaAtuacao: z.string().optional(),
+})
+
+export type SignupData = z.infer<typeof SignupSchema>
 
 export async function signup(data: SignupData): Promise<{ success: true } | { error: string }> {
+  const parsed = SignupSchema.safeParse(data)
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message }
+  }
+
   const {
     nome, email, senha, cpf, telefone,
     formacao, formacaoCustom, registro, especialidades, cursos,
     estados, tribunais, cidade, areaAtuacao,
-  } = data
-
-  if (!nome?.trim() || !email?.trim() || !senha?.trim()) {
-    return { error: 'Nome, e-mail e senha são obrigatórios.' }
-  }
-  if (senha.length < 6) {
-    return { error: 'A senha deve ter pelo menos 6 caracteres.' }
-  }
+  } = parsed.data
 
   const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase() } })
   if (existing) {

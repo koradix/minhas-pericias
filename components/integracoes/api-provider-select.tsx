@@ -4,9 +4,7 @@
  * Seletor de provedor de API para busca de nomeações e documentos.
  *
  * Opções:
- * - Judit: busca por CPF, baixa documentos do tribunal
- * - Escavador: busca por nome nos diários oficiais
- * - Ambos: Escavador acha, Judit enriquece com CNJ + docs
+ * - Escavador: busca por nome e CPF nos diários oficiais e tribunais
  * - Manual: sem API, perito sobe documentos manualmente
  *
  * Persiste no banco (admin) via server action.
@@ -16,24 +14,22 @@ import { useState, useEffect, useTransition } from 'react'
 import { Check, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-export type ApiProvider = 'escavador' | 'judit' | 'both' | 'manual'
+export type ApiProvider = 'escavador' | 'manual'
 
 const STORAGE_KEY = 'perilab_api_provider'
 
 const OPTIONS: { id: ApiProvider; label: string; desc: string; badge?: string }[] = [
-  { id: 'both',      label: 'Ambos (recomendado)', desc: 'Escavador busca por nome + Judit enriquece com CNJ e baixa documentos', badge: 'Completo' },
-  { id: 'judit',     label: 'Apenas Judit',        desc: 'Busca por CPF, baixa documentos do tribunal, análise IA' },
-  { id: 'escavador', label: 'Apenas Escavador',    desc: 'Busca por nome nos diários oficiais (sem download de docs)' },
-  { id: 'manual',    label: 'Manual',               desc: 'Sem API — perito sobe documentos manualmente para análise IA' },
+  { id: 'escavador', label: 'Escavador (recomendado)', desc: 'Busca por nome e CPF nos diários oficiais e tribunais', badge: 'Padrão' },
+  { id: 'manual',    label: 'Manual',                   desc: 'Sem API — perito sobe documentos manualmente para análise IA' },
 ]
 
 export function getApiProvider(): ApiProvider {
   if (typeof window === 'undefined') return 'escavador'
-  return (localStorage.getItem(STORAGE_KEY) as ApiProvider) ?? 'both'
+  return (localStorage.getItem(STORAGE_KEY) as ApiProvider) ?? 'escavador'
 }
 
 export function ApiProviderSelect() {
-  const [provider, setProvider] = useState<ApiProvider>('both')
+  const [provider, setProvider] = useState<ApiProvider>('escavador')
   const [saved, setSaved] = useState(false)
   const [isPending, startTransition] = useTransition()
 
