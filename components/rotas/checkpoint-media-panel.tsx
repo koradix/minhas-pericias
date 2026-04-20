@@ -12,6 +12,7 @@ import {
   updateMidiaTexto,
 } from '@/lib/actions/checkpoint-media'
 import { getVaraContato, upsertVaraContato, type VaraContatoData } from '@/lib/actions/vara-contato'
+import { CheckpointMapHeader } from '@/components/rotas/checkpoint-map-header'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -28,11 +29,15 @@ interface Props {
   checkpointId: string
   checkpointTitulo: string
   endereco?: string
+  lat?: number | null
+  lng?: number | null
+  statusCheckpoint?: 'pendente' | 'chegou' | 'concluido'
   tipo?: 'FORUM' | 'VARA_CIVEL' | 'ESCRITORIO' | 'PERICIA'
   tribunalSigla?: string
   varaNome?: string
   onClose: () => void
   onConcluido: () => void
+  onChegou?: () => void
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -61,11 +66,15 @@ export function CheckpointMediaPanel({
   checkpointId,
   checkpointTitulo,
   endereco,
+  lat,
+  lng,
+  statusCheckpoint = 'pendente',
   tipo,
   tribunalSigla,
   varaNome,
   onClose,
   onConcluido,
+  onChegou,
 }: Props) {
   const isVara = tipo === 'FORUM' || tipo === 'VARA_CIVEL'
 
@@ -436,15 +445,19 @@ export function CheckpointMediaPanel({
       <div className="fixed inset-y-0 right-0 z-[1001] flex w-full max-w-md flex-col bg-white shadow-2xl sm:border-l sm:border-slate-100">
 
         {/* Header */}
-        <div className="flex items-start gap-4 border-b border-slate-100 bg-white px-8 py-8">
+        <div className="flex items-start gap-4 border-b border-slate-100 bg-white px-8 py-6">
           <div className="flex-1 min-w-0">
             <h2 className="text-xl font-bold text-slate-900 tracking-tight leading-tight uppercase">{checkpointTitulo}</h2>
-            {endereco && (
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2 truncate">{endereco}</p>
-            )}
-            <div className="mt-4">
-              <span className="inline-block bg-[#a3e635] text-slate-900 text-[10px] font-bold uppercase tracking-[0.2em] px-2 py-1 select-none">
-                VOCÊ CHEGOU
+            <div className="mt-3">
+              <span className={cn(
+                "inline-block text-[10px] font-bold uppercase tracking-[0.2em] px-2 py-1 select-none",
+                statusCheckpoint === 'concluido' ? "bg-slate-900 text-white" :
+                statusCheckpoint === 'chegou' ? "bg-[#a3e635] text-slate-900" :
+                "bg-slate-100 text-slate-500"
+              )}>
+                {statusCheckpoint === 'concluido' ? 'CONCLUÍDO' :
+                 statusCheckpoint === 'chegou' ? 'VOCÊ CHEGOU' :
+                 'A CAMINHO'}
               </span>
             </div>
           </div>
@@ -459,7 +472,35 @@ export function CheckpointMediaPanel({
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-8 space-y-8">
 
-          {/* Action grid */}
+          {/* Mapa + navegação */}
+          <CheckpointMapHeader
+            titulo={checkpointTitulo}
+            endereco={endereco ?? null}
+            lat={lat ?? null}
+            lng={lng ?? null}
+          />
+
+          {/* Botão "Cheguei" (só quando pendente) */}
+          {statusCheckpoint === 'pendente' && onChegou && (
+            <div className="space-y-3 rounded-lg border-2 border-dashed border-[#a3e635] bg-[#a3e635]/5 p-5">
+              <p className="text-[13px] font-semibold text-slate-800">
+                Já chegou ao local?
+              </p>
+              <p className="text-[12px] text-slate-500">
+                Confirme sua presença para liberar o registro de evidências.
+              </p>
+              <button
+                onClick={onChegou}
+                className="w-full flex items-center justify-center gap-2 bg-[#a3e635] hover:bg-[#bef264] text-slate-900 px-5 py-3 text-[11px] font-bold uppercase tracking-widest transition-all"
+              >
+                Cheguei ao local →
+              </button>
+            </div>
+          )}
+
+          {/* Action grid (só libera após cheguei/concluido) */}
+          {statusCheckpoint !== 'pendente' && (
+          <>
           <div className="grid grid-cols-2 gap-px bg-slate-100 border border-slate-100">
             <input ref={fotoInputRef} type="file" accept="image/*" capture="environment" multiple className="hidden" onChange={handleFotoChange} />
             <input ref={arquivoInputRef} type="file" accept="image/*,application/pdf,.docx,.doc,.xlsx,.xls" multiple className="hidden" onChange={handleArquivoChange} />
@@ -742,21 +783,25 @@ export function CheckpointMediaPanel({
               </div>
             )}
           </div>
+          </>
+          )}
         </div>
 
-        {/* Footer */}
-        <div className="p-8 border-t border-slate-100">
-          <button
-            onClick={handleFinalizar}
-            disabled={finalizando || isPending}
-            className="w-full h-16 bg-[#a3e635] hover:brightness-105 transition-all text-slate-900 text-[11px] font-bold uppercase tracking-[0.3em] disabled:opacity-50"
-          >
-            {finalizando ? 'FINALIZANDO...' : 'FINALIZAR CHECKPOINT'}
-          </button>
-          <p className="mt-4 text-center text-[9px] font-bold text-slate-300 uppercase tracking-widest">
-            SALVA EVIDÊNCIAS E FINALIZA O PONTO
-          </p>
-        </div>
+        {/* Footer (só quando chegou/concluido) */}
+        {statusCheckpoint !== 'pendente' && (
+          <div className="p-8 border-t border-slate-100">
+            <button
+              onClick={handleFinalizar}
+              disabled={finalizando || isPending}
+              className="w-full h-16 bg-[#a3e635] hover:brightness-105 transition-all text-slate-900 text-[11px] font-bold uppercase tracking-[0.3em] disabled:opacity-50"
+            >
+              {finalizando ? 'FINALIZANDO...' : 'FINALIZAR CHECKPOINT'}
+            </button>
+            <p className="mt-4 text-center text-[9px] font-bold text-slate-300 uppercase tracking-widest">
+              SALVA EVIDÊNCIAS E FINALIZA O PONTO
+            </p>
+          </div>
+        )}
       </div>
     </>
   )

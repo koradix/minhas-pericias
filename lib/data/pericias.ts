@@ -37,6 +37,8 @@ export interface CpRow {
   ordem: number
   titulo: string
   endereco: string | null
+  lat: number | null
+  lng: number | null
   status: string
   midiaCount: number
 }
@@ -133,6 +135,7 @@ export async function getCheckpointsComMidias(
 
   const checkpoints: CpRow[] = dbCps.map((cp) => ({
     id: cp.id, ordem: cp.ordem, titulo: cp.titulo, endereco: cp.endereco,
+    lat: cp.lat, lng: cp.lng,
     status: cp.status,
     midiaCount: dbMidias.filter((m) => m.checkpointId === cp.id).length,
   }))

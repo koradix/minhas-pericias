@@ -26,6 +26,8 @@ interface CheckpointItem {
   ordem: number
   titulo: string
   endereco: string | null
+  lat?: number | null
+  lng?: number | null
   status: string
   midiaCount: number
 }
@@ -89,11 +91,20 @@ function RotaContent({
 
   function handleCriarVistoria() {
     startTransition(async () => {
-      const res = await criarRotaDaPericia(periciaId, endereco)
-      if (res.ok) {
-        router.refresh()  // Fica na mesma página, recarrega dados
-      } else {
-        setResult({ ok: res.ok, mensagem: res.message })
+      try {
+        const res = await criarRotaDaPericia(periciaId, endereco)
+        if (res.ok) {
+          router.refresh()
+        } else {
+          setResult({ ok: false, mensagem: res.message })
+        }
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : ''
+        if (msg.includes('503') || msg.toLowerCase().includes('unavailable')) {
+          setResult({ ok: false, mensagem: 'Servidor lento. Aguarde 10 segundos e tente novamente.' })
+        } else {
+          setResult({ ok: false, mensagem: 'Erro de conexão. Tente novamente.' })
+        }
       }
     })
   }
@@ -240,8 +251,17 @@ function RotaContent({
                             checkpointId={cp.id}
                             checkpointTitulo={cp.titulo}
                             endereco={cp.endereco ?? undefined}
+                            lat={cp.lat ?? null}
+                            lng={cp.lng ?? null}
+                            statusCheckpoint={cp.status as 'pendente' | 'chegou' | 'concluido'}
                             tipo="PERICIA"
                             onClose={() => setActivePanel(null)}
+                            onChegou={async () => {
+                              await updateCheckpointStatus(cp.id, 'chegou', { pericoId: periciaId })
+                              setCheckpoints(prev => prev.map(c =>
+                                c.id === cp.id ? { ...c, status: 'chegou' } : c
+                              ))
+                            }}
                             onConcluido={() => {
                               setCheckpoints(prev => prev.map(c =>
                                 c.id === cp.id ? { ...c, status: 'concluido' } : c
