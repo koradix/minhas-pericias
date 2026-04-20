@@ -11,7 +11,7 @@ import {
   Camera,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { criarRotaDaPericia } from '@/lib/actions/pericias-rota'
+import { criarRotaDaPericia, limparCheckpointsDuplicados } from '@/lib/actions/pericias-rota'
 import { updateCheckpointStatus } from '@/lib/actions/checkpoint-media'
 import { CheckpointMediaPanel } from '@/components/rotas/checkpoint-media-panel'
 import { PropostaTab } from '@/components/pericias/proposta-tab'
@@ -82,12 +82,28 @@ function RotaContent({
 }) {
   const [checkpoints, setCheckpoints] = useState(initialCheckpoints)
   const hasCheckpoints = checkpoints.length > 0
+  // Só 1 vistoria por perícia — se houver duplicatas, usa a primeira
+  const vistoriaCheckpoint = checkpoints[0]
+  const temDuplicatas = checkpoints.length > 1
   const [endereco, setEndereco] = useState(enderecoPericia ?? '')
   const [result,   setResult]   = useState<{ ok: boolean; mensagem: string } | null>(null)
   const [isPending, startTransition] = useTransition()
   const [concluding, setConcluding] = useState<string | null>(null)
   const [activePanel, setActivePanel] = useState<string | null>(null)
+  const [cleaning, setCleaning] = useState(false)
   const router = useRouter()
+
+  function handleLimparDuplicatas() {
+    setCleaning(true)
+    startTransition(async () => {
+      const res = await limparCheckpointsDuplicados(periciaId)
+      setCleaning(false)
+      if (res.ok) {
+        setCheckpoints(prev => prev.slice(0, 1))
+        router.refresh()
+      }
+    })
+  }
 
   function handleCriarVistoria() {
     startTransition(async () => {
@@ -120,8 +136,9 @@ function RotaContent({
     })
   }
 
-  const allDone = checkpoints.length > 0 && checkpoints.every(c => c.status === 'concluido')
-  const hasMidias = checkpoints.some(c => c.midiaCount > 0)
+  // Progresso baseado na vistoria principal (não nas duplicatas)
+  const allDone = !!vistoriaCheckpoint && vistoriaCheckpoint.status === 'concluido'
+  const hasMidias = !!vistoriaCheckpoint && vistoriaCheckpoint.midiaCount > 0
 
   return (
     <div className="space-y-8">
@@ -177,10 +194,11 @@ function RotaContent({
               <ClipboardCheck className="h-5 w-5 text-[#4d7c0f]" />
               <div>
                 <p className="text-[13px] font-semibold text-slate-800">
-                  Vistoria agendada — {checkpoints.length} checkpoint{checkpoints.length > 1 ? 's' : ''}
+                  Vistoria agendada
                 </p>
                 <p className="text-[12px] text-slate-400 mt-0.5">
-                  {checkpoints.filter(c => c.status === 'concluido').length}/{checkpoints.length} concluídos
+                  {allDone ? '1/1 concluída' : '0/1 concluída'}
+                  {temDuplicatas && ` · ${checkpoints.length - 1} duplicata${checkpoints.length - 1 > 1 ? 's' : ''} detectada${checkpoints.length - 1 > 1 ? 's' : ''}`}
                 </p>
               </div>
             </div>
@@ -198,11 +216,34 @@ function RotaContent({
           </div>
         </div>
         <div className="px-6 py-5">
-          {hasCheckpoints ? (
+          {vistoriaCheckpoint ? (
             <div className="space-y-4">
+              {/* Aviso de duplicatas */}
+              {temDuplicatas && (
+                <div className="flex items-start gap-3 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3">
+                  <span className="text-amber-500 mt-0.5 text-[14px]">⚠</span>
+                  <div className="flex-1">
+                    <p className="text-[13px] font-semibold text-amber-800">
+                      Foram detectadas {checkpoints.length - 1} vistoria{checkpoints.length - 1 > 1 ? 's' : ''} duplicada{checkpoints.length - 1 > 1 ? 's' : ''}
+                    </p>
+                    <p className="text-[12px] text-amber-700 mt-0.5">
+                      Criadas por cliques repetidos. Limpe para manter apenas a vistoria principal.
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleLimparDuplicatas}
+                    disabled={cleaning}
+                    className="flex-shrink-0 flex items-center gap-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest transition-all disabled:opacity-50"
+                  >
+                    {cleaning ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+                    Limpar
+                  </button>
+                </div>
+              )}
+
               <div className="border border-slate-200 rounded-lg overflow-hidden">
                 <div className="divide-y divide-slate-100">
-                  {checkpoints.map((cp) => (
+                  {[vistoriaCheckpoint].map((cp) => (
                     <div key={cp.id}>
                       {/* Checkpoint row */}
                       <button
@@ -276,17 +317,6 @@ function RotaContent({
                   ))}
                 </div>
               </div>
-
-              {/* Iniciar rota completa (GPS, mapa, múltiplos pontos) */}
-              {!allDone && !activePanel && (
-                <a
-                  href="/rotas/pericias"
-                  className="flex items-center justify-center gap-2 rounded-lg border-2 border-slate-200 hover:border-slate-900 bg-white hover:bg-slate-50 px-5 py-4 text-[11px] font-bold uppercase tracking-widest text-slate-600 hover:text-slate-900 transition-all"
-                >
-                  <MapPin className="h-4 w-4" />
-                  Iniciar rota de vistoria completa (GPS + mapa)
-                </a>
-              )}
 
               {allDone && (
                 <div className="flex items-center gap-3 rounded-lg bg-[#a3e635]/10 border border-[#a3e635]/30 px-4 py-3">
