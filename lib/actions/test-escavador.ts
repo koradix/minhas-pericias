@@ -540,6 +540,247 @@ export async function testBuscarProcessoPorCnj(
   }
 }
 
+// ─── BUSCA COMPLETA — 1 botão que combina tudo ────────────────────────────────
+
+export interface TestBuscaCompletaResult {
+  ok: boolean
+  error?: string
+  saldoAntes?: number
+  saldoDepois?: number
+  durationMs?: number
+
+  // Resumo
+  totalUnicos?: number        // total de processos únicos após dedup
+  totalAceitos?: number       // passaram no filtro (não são AUTOR/RÉU)
+  totalRejeitados?: number
+  creditosConsumidos?: number
+
+  // Todos os processos únicos consolidados
+  processos?: Array<{
+    cnj: string
+    tribunal: string
+    unidade: string
+    tipoEnvolvido: string
+    decisao: 'aceito' | 'rejeitado_parte'
+    motivo: string
+    dataUltimaMov: string | null
+    dataInicio: string | null
+    status: string | null           // ATIVO / INATIVO
+    poloAtivo: string | null
+    poloPassivo: string | null
+    achadoEm: string[]              // Quais estratégias trouxeram (com_cpf, sem_cpf, inativos, homonimos)
+    cpfCadastradoNoProcesso: string | null
+    linkEscavador: string
+  }>
+
+  // Query feita
+  nome?: string
+  cpf?: string | null
+
+  // Estatísticas por estratégia
+  porEstrategia?: Record<string, number>
+}
+
+async function fetchV2(
+  params: URLSearchParams,
+  token: string,
+): Promise<{ items: Array<Record<string, unknown>>; total: number } | null> {
+  try {
+    const res = await fetch(`https://api.escavador.com/api/v2/envolvido/processos?${params.toString()}`, {
+      headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' },
+      cache: 'no-store',
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    return {
+      items: data?.items ?? data?.resposta?.items ?? [],
+      total: data?.paginator?.total ?? 0,
+    }
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Um botão só — combina TODAS as estratégias de busca V2 em paralelo,
+ * deduplica por CNJ e devolve a união completa.
+ *
+ * Estratégias executadas em paralelo:
+ * 1. V2 com CPF + nome (status padrão)
+ * 2. V2 SEM CPF (só nome) — caso tribunal não tenha CPF cadastrado
+ * 3. V2 com incluir_homonimos (match mais permissivo)
+ * 4. V2 com status=INATIVO (processos arquivados)
+ *
+ * Cada processo ganha tag "achadoEm" mostrando qual(is) estratégia(s) o trouxe(ram).
+ */
+export async function testBuscaCompleta(
+  nome: string,
+  cpf: string,
+): Promise<TestBuscaCompletaResult> {
+  const session = await auth()
+  if (!session?.user?.id) return { ok: false, error: 'Não autenticado' }
+
+  const nomeTrim = nome.trim()
+  if (!nomeTrim) return { ok: false, error: 'Nome é obrigatório' }
+
+  const cpfDigits = cpf.replace(/\D/g, '')
+  const cpfParam = cpfDigits.length === 11 ? cpfDigits : null
+
+  const token = process.env.ESCAVADOR_API_TOKEN
+  if (!token) return { ok: false, error: 'ESCAVADOR_API_TOKEN não configurado' }
+
+  const svc = new EscavadorService()
+  const t0 = Date.now()
+
+  try {
+    const saldoAntes = await svc.verificarSaldo()
+
+    // Monta as estratégias
+    const estrategias: Array<{ nome: string; params: URLSearchParams }> = []
+
+    // Sempre faz a básica (sem CPF — mais inclusiva)
+    const p1 = new URLSearchParams()
+    p1.set('nome', nomeTrim)
+    p1.set('limit', '100')
+    estrategias.push({ nome: 'sem_cpf', params: p1 })
+
+    // Se tem CPF, também tenta com CPF
+    if (cpfParam) {
+      const p2 = new URLSearchParams()
+      p2.set('nome', nomeTrim)
+      p2.set('cpf', cpfParam)
+      p2.set('limit', '100')
+      estrategias.push({ nome: 'com_cpf', params: p2 })
+    }
+
+    // Com homônimos (pode trazer matches parciais adicionais)
+    const p3 = new URLSearchParams()
+    p3.set('nome', nomeTrim)
+    if (cpfParam) p3.set('cpf', cpfParam)
+    p3.set('incluir_homonimos', 'true')
+    p3.set('limit', '100')
+    estrategias.push({ nome: 'homonimos', params: p3 })
+
+    // Só INATIVOS (processos antigos/arquivados)
+    const p4 = new URLSearchParams()
+    p4.set('nome', nomeTrim)
+    if (cpfParam) p4.set('cpf', cpfParam)
+    p4.set('status', 'INATIVO')
+    p4.set('limit', '100')
+    estrategias.push({ nome: 'inativos', params: p4 })
+
+    // Executa todas em paralelo
+    const resultados = await Promise.all(
+      estrategias.map(async (e) => ({ nome: e.nome, dados: await fetchV2(e.params, token) })),
+    )
+
+    // Estatísticas por estratégia
+    const porEstrategia: Record<string, number> = {}
+    for (const r of resultados) {
+      porEstrategia[r.nome] = r.dados?.items.length ?? 0
+    }
+
+    // Consolida e dedup por CNJ
+    const norm = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
+    const nomeNorm = norm(nomeTrim)
+
+    type ProcessoConsolidado = NonNullable<TestBuscaCompletaResult['processos']>[number]
+    const mapaProcessos = new Map<string, ProcessoConsolidado>()
+
+    for (const { nome: estrategia, dados } of resultados) {
+      if (!dados) continue
+      for (const item of dados.items) {
+        const cnj = (item.numero_cnj as string) ?? ''
+        if (!cnj) continue
+
+        const fontes = (item.fontes as Array<Record<string, unknown>>) ?? []
+        const envolvidos = (fontes[0]?.envolvidos as Array<Record<string, unknown>>) ?? (item.envolvidos as Array<Record<string, unknown>>) ?? []
+
+        const meEnv = envolvidos.find((e) => {
+          const n = norm((e.nome as string) ?? '')
+          return n.includes(nomeNorm) || nomeNorm.includes(n)
+        })
+
+        const tipoEnvolvido = ((meEnv?.tipo_normalizado as string) ?? (meEnv?.tipo as string) ?? 'Envolvido')
+        const tipoUpper = tipoEnvolvido.toUpperCase()
+        const ehPerito = ['PERITO', 'PERITA', 'EXPERT', 'AUXILIAR', 'TÉCNICO', 'TECNICO'].some(t => tipoUpper.includes(t))
+        const ehParte = ['AUTOR', 'AUTORA', 'RÉU', 'REU', 'REQUERENTE', 'REQUERIDO'].some(t => tipoUpper.includes(t))
+
+        const decisao: 'aceito' | 'rejeitado_parte' = (ehParte && !ehPerito) ? 'rejeitado_parte' : 'aceito'
+        const motivo = decisao === 'rejeitado_parte'
+          ? `Tipo "${tipoEnvolvido}" indica que você é parte, não perito`
+          : `OK: tipo "${tipoEnvolvido}"`
+
+        const unidade = item.unidade_origem as Record<string, unknown> | undefined
+        const tribunal = (unidade?.tribunal_sigla as string) ?? (item.tribunal as string) ?? 'OUTROS'
+        const nomeUnidade = (unidade?.nome as string) ?? (item.tribunal as string) ?? 'Tribunal'
+
+        const cpfCadastrado = ((meEnv?.cpf as string) ?? '').replace(/\D/g, '') || null
+
+        // Se já existe no mapa, só adiciona a estratégia à tag
+        const existente = mapaProcessos.get(cnj)
+        if (existente) {
+          if (!existente.achadoEm.includes(estrategia)) existente.achadoEm.push(estrategia)
+          continue
+        }
+
+        mapaProcessos.set(cnj, {
+          cnj,
+          tribunal,
+          unidade: nomeUnidade,
+          tipoEnvolvido,
+          decisao,
+          motivo,
+          dataUltimaMov: (item.data_ultima_movimentacao as string) ?? null,
+          dataInicio: (item.data_inicio as string) ?? null,
+          status: (item.status as string) ?? null,
+          poloAtivo: (item.titulo_polo_ativo as string) ?? null,
+          poloPassivo: (item.titulo_polo_passivo as string) ?? null,
+          achadoEm: [estrategia],
+          cpfCadastradoNoProcesso: cpfCadastrado,
+          linkEscavador: item.id
+            ? `https://www.escavador.com/processos/${item.id}`
+            : `https://www.escavador.com/processos/${cnj}`,
+        })
+      }
+    }
+
+    const processos = Array.from(mapaProcessos.values())
+    const aceitos = processos.filter(p => p.decisao === 'aceito')
+    const rejeitados = processos.filter(p => p.decisao === 'rejeitado_parte')
+
+    const saldoDepois = await svc.verificarSaldo()
+
+    return {
+      ok: true,
+      saldoAntes: saldoAntes.saldo,
+      saldoDepois: saldoDepois.saldo,
+      durationMs: Date.now() - t0,
+      totalUnicos: processos.length,
+      totalAceitos: aceitos.length,
+      totalRejeitados: rejeitados.length,
+      creditosConsumidos: saldoAntes.saldo - saldoDepois.saldo,
+      processos,
+      nome: nomeTrim,
+      cpf: cpfParam,
+      porEstrategia,
+    }
+  } catch (err) {
+    if (err instanceof EscavadorError) {
+      return {
+        ok: false,
+        error: `EscavadorError ${err.code}: ${err.message}`,
+        durationMs: Date.now() - t0,
+      }
+    }
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : String(err),
+      durationMs: Date.now() - t0,
+    }
+  }
+}
+
 // ─── Só saldo (rápido, grátis) ────────────────────────────────────────────────
 
 export async function testVerificarSaldo(): Promise<{ ok: boolean; saldo?: number; descricao?: string; error?: string }> {

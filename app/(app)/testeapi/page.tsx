@@ -1,17 +1,19 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Loader2, Search, Wallet, FileSearch, Bug, Target } from 'lucide-react'
+import { Loader2, Search, Wallet, FileSearch, Bug, Target, Zap } from 'lucide-react'
 import {
   testBuscarProcessosEnvolvido,
   testVerificarSaldo,
   testBuscarV1,
   testBuscarV2Raw,
   testBuscarProcessoPorCnj,
+  testBuscaCompleta,
   type TestEscavadorResult,
   type TestV1BuscaResult,
   type TestV2RawResult,
   type TestCnjResult,
+  type TestBuscaCompletaResult,
 } from '@/lib/actions/test-escavador'
 
 export default function TesteApiPage() {
@@ -21,13 +23,16 @@ export default function TesteApiPage() {
   const [resultV1, setResultV1] = useState<TestV1BuscaResult | null>(null)
   const [resultV2Raw, setResultV2Raw] = useState<TestV2RawResult | null>(null)
   const [resultCnj, setResultCnj] = useState<TestCnjResult | null>(null)
+  const [resultCompleta, setResultCompleta] = useState<TestBuscaCompletaResult | null>(null)
   const [termoV1, setTermoV1] = useState('')
   const [cnjBusca, setCnjBusca] = useState('')
+  const [mostrarAvancado, setMostrarAvancado] = useState(false)
   const [saldoInfo, setSaldoInfo] = useState<{ saldo?: number; descricao?: string; error?: string } | null>(null)
   const [isPending, startTransition] = useTransition()
   const [isV1Pending, startV1Transition] = useTransition()
   const [isV2RawPending, startV2RawTransition] = useTransition()
   const [isCnjPending, startCnjTransition] = useTransition()
+  const [isCompletaPending, startCompletaTransition] = useTransition()
   const [isSaldoPending, startSaldoTransition] = useTransition()
 
   function handleBuscar() {
@@ -59,6 +64,14 @@ export default function TesteApiPage() {
     startCnjTransition(async () => {
       const res = await testBuscarProcessoPorCnj(cnjBusca, nome, cpf)
       setResultCnj(res)
+    })
+  }
+
+  function handleBuscaCompleta() {
+    setResultCompleta(null)
+    startCompletaTransition(async () => {
+      const res = await testBuscaCompleta(nome, cpf)
+      setResultCompleta(res)
     })
   }
 
@@ -110,6 +123,209 @@ export default function TesteApiPage() {
           </div>
         )}
       </div>
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━ BUSCA COMPLETA — 1 BOTÃO QUE FAZ TUDO ━━━━━━━━━━━━━━━━━━━━━ */}
+      <div className="rounded-xl border-4 border-lime-500 bg-gradient-to-br from-lime-50 to-emerald-50 p-6 space-y-4 shadow-lg">
+        <div className="flex items-center gap-2">
+          <Zap className="h-5 w-5 text-lime-700" />
+          <h2 className="text-[16px] font-black text-slate-900 uppercase tracking-tight">
+            BUSCA COMPLETA — 1 clique
+          </h2>
+        </div>
+        <p className="text-[13px] text-slate-700">
+          Roda <strong>4 estratégias em paralelo</strong> (com CPF, sem CPF, com homônimos, inativos),
+          deduplica por CNJ e mostra <strong>todos os processos únicos</strong> em uma lista só.
+          Marca de onde cada processo veio.
+        </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">
+              Nome completo *
+            </label>
+            <input
+              type="text"
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              placeholder="Seu nome completo"
+              className="w-full rounded-lg border-2 border-slate-200 bg-white px-4 py-3 text-[14px] text-slate-800 focus:outline-none focus:border-lime-600 transition-all"
+            />
+          </div>
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">
+              CPF (opcional)
+            </label>
+            <input
+              type="text"
+              value={cpf}
+              onChange={(e) => setCpf(e.target.value)}
+              placeholder="123.456.789-00"
+              className="w-full rounded-lg border-2 border-slate-200 bg-white px-4 py-3 text-[14px] text-slate-800 focus:outline-none focus:border-lime-600 transition-all"
+            />
+          </div>
+        </div>
+
+        <button
+          onClick={handleBuscaCompleta}
+          disabled={isCompletaPending || !nome.trim()}
+          className="w-full flex items-center justify-center gap-3 rounded-lg bg-lime-600 hover:bg-lime-700 text-white px-4 py-5 text-[14px] font-black uppercase tracking-widest transition-all disabled:opacity-50 shadow-md"
+        >
+          {isCompletaPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Zap className="h-5 w-5" />}
+          {isCompletaPending ? 'Rodando 4 buscas em paralelo...' : 'BUSCAR TUDO'}
+        </button>
+
+        {resultCompleta && (
+          <div className="space-y-4 pt-3">
+            {!resultCompleta.ok ? (
+              <div className="rounded-lg bg-rose-50 border border-rose-200 px-4 py-3">
+                <p className="text-[13px] text-rose-800">❌ {resultCompleta.error}</p>
+              </div>
+            ) : (
+              <>
+                {/* Resumo */}
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                  <div className="rounded-lg bg-white border-2 border-lime-400 px-4 py-3">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Únicos</p>
+                    <p className="text-[24px] font-black text-slate-900">{resultCompleta.totalUnicos ?? 0}</p>
+                  </div>
+                  <div className="rounded-lg bg-emerald-50 border border-emerald-300 px-4 py-3">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-700">Aceitos</p>
+                    <p className="text-[24px] font-black text-emerald-900">{resultCompleta.totalAceitos ?? 0}</p>
+                  </div>
+                  <div className="rounded-lg bg-rose-50 border border-rose-300 px-4 py-3">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-rose-700">Rejeitados</p>
+                    <p className="text-[24px] font-black text-rose-900">{resultCompleta.totalRejeitados ?? 0}</p>
+                  </div>
+                  <div className="rounded-lg bg-amber-50 border border-amber-300 px-4 py-3">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-amber-700">Créditos</p>
+                    <p className="text-[24px] font-black text-amber-900">{resultCompleta.creditosConsumidos ?? 0}</p>
+                  </div>
+                  <div className="rounded-lg bg-white border border-slate-200 px-4 py-3">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Tempo</p>
+                    <p className="text-[24px] font-black text-slate-900">{resultCompleta.durationMs}ms</p>
+                  </div>
+                </div>
+
+                {/* Por estratégia */}
+                {resultCompleta.porEstrategia && (
+                  <div className="rounded-lg bg-white border border-slate-200 p-4">
+                    <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-2">
+                      Processos por estratégia (antes do dedup)
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {Object.entries(resultCompleta.porEstrategia).map(([est, count]) => (
+                        <span key={est} className="text-[11px] font-mono bg-slate-100 text-slate-700 px-2 py-1 rounded">
+                          {est}: <strong>{count}</strong>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Lista de processos */}
+                <div className="rounded-lg border-2 border-lime-400 bg-white overflow-hidden">
+                  <div className="bg-lime-100 px-4 py-3">
+                    <p className="text-[13px] font-black text-lime-900 uppercase tracking-widest">
+                      📋 Todos os {resultCompleta.processos?.length ?? 0} processos únicos encontrados
+                    </p>
+                  </div>
+                  <div className="max-h-[600px] overflow-auto">
+                    <table className="w-full text-[11px]">
+                      <thead className="bg-slate-100 sticky top-0">
+                        <tr>
+                          <th className="text-left px-3 py-2 font-bold">CNJ</th>
+                          <th className="text-left px-3 py-2 font-bold">Tribunal / Unidade</th>
+                          <th className="text-left px-3 py-2 font-bold">Polos</th>
+                          <th className="text-left px-3 py-2 font-bold">Tipo</th>
+                          <th className="text-left px-3 py-2 font-bold">Decisão</th>
+                          <th className="text-left px-3 py-2 font-bold">Status</th>
+                          <th className="text-left px-3 py-2 font-bold">CPF cad.</th>
+                          <th className="text-left px-3 py-2 font-bold">Achado em</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(resultCompleta.processos ?? []).map((p) => (
+                          <tr
+                            key={p.cnj}
+                            className={p.decisao === 'aceito' ? 'bg-emerald-50 hover:bg-emerald-100' : 'bg-rose-50 hover:bg-rose-100'}
+                          >
+                            <td className="px-3 py-2 font-mono text-[10px]">
+                              <a href={p.linkEscavador} target="_blank" rel="noreferrer" className="text-indigo-700 hover:underline">
+                                {p.cnj}
+                              </a>
+                            </td>
+                            <td className="px-3 py-2">
+                              <div className="font-bold">{p.tribunal}</div>
+                              <div className="text-slate-500 text-[10px]">{p.unidade}</div>
+                            </td>
+                            <td className="px-3 py-2 text-[10px]">
+                              {p.poloAtivo && <div>↑ {p.poloAtivo}</div>}
+                              {p.poloPassivo && <div>↓ {p.poloPassivo}</div>}
+                            </td>
+                            <td className="px-3 py-2 font-bold">{p.tipoEnvolvido}</td>
+                            <td className="px-3 py-2">
+                              <span className={`inline-block rounded px-2 py-0.5 text-[10px] font-bold ${
+                                p.decisao === 'aceito' ? 'bg-emerald-200 text-emerald-900' : 'bg-rose-200 text-rose-900'
+                              }`}>
+                                {p.decisao}
+                              </span>
+                            </td>
+                            <td className="px-3 py-2">
+                              <span className={`inline-block rounded px-2 py-0.5 text-[10px] font-mono ${
+                                p.status === 'INATIVO' ? 'bg-amber-200 text-amber-900' : 'bg-slate-200 text-slate-700'
+                              }`}>
+                                {p.status ?? '—'}
+                              </span>
+                            </td>
+                            <td className="px-3 py-2">
+                              {p.cpfCadastradoNoProcesso ? (
+                                <span className="text-emerald-700 font-bold">✓</span>
+                              ) : (
+                                <span className="text-rose-700 font-bold">✗</span>
+                              )}
+                            </td>
+                            <td className="px-3 py-2">
+                              <div className="flex flex-wrap gap-1">
+                                {p.achadoEm.map((est) => (
+                                  <span key={est} className="text-[9px] font-mono bg-indigo-100 text-indigo-900 px-1.5 py-0.5 rounded">
+                                    {est}
+                                  </span>
+                                ))}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* JSON bruto */}
+                <details className="rounded-lg border border-slate-200 bg-white">
+                  <summary className="cursor-pointer px-4 py-3 bg-slate-50 text-[13px] font-semibold text-slate-800 hover:bg-slate-100">
+                    JSON completo dos processos consolidados
+                  </summary>
+                  <pre className="overflow-auto max-h-[500px] p-4 text-[11px] font-mono text-slate-700">
+                    {JSON.stringify(resultCompleta.processos, null, 2)}
+                  </pre>
+                </details>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Toggle para modo avançado */}
+      <div className="flex items-center justify-center py-4">
+        <button
+          onClick={() => setMostrarAvancado(!mostrarAvancado)}
+          className="text-[12px] font-bold uppercase tracking-widest text-slate-400 hover:text-slate-700 transition-colors"
+        >
+          {mostrarAvancado ? '▼ Ocultar' : '▶ Mostrar'} testes avançados individuais (debug)
+        </button>
+      </div>
+
+      {!mostrarAvancado ? null : <>
 
       {/* Busca por nome + CPF */}
       <div className="rounded-xl border border-slate-200 bg-white p-6 space-y-4">
@@ -650,6 +866,8 @@ export default function TesteApiPage() {
           )}
         </div>
       )}
+
+      </>}
     </div>
   )
 }
