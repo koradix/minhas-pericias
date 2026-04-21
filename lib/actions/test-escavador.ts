@@ -853,6 +853,183 @@ export async function testBuscaCompleta(
   }
 }
 
+// ─── BUSCA ASSÍNCRONA POR CPF (V1) — vai direto no PJe ───────────────────────
+
+export interface TestAssincronaDispararResult {
+  ok: boolean
+  error?: string
+  httpStatus?: number
+  requestId?: string | number
+  rawResponse?: unknown
+  endpoint?: string
+}
+
+/**
+ * Dispara busca assíncrona por CPF. A API escaneia TODOS os tribunais
+ * (PJe, eProc, Projudi) em tempo real — não depende do índice do Escavador.
+ * Retorna um request_id para consultar depois.
+ */
+export async function testDispararBuscaAssincronaCpf(
+  cpf: string,
+): Promise<TestAssincronaDispararResult> {
+  const session = await auth()
+  if (!session?.user?.id) return { ok: false, error: 'Não autenticado' }
+
+  const cpfDigits = cpf.replace(/\D/g, '')
+  if (cpfDigits.length !== 11) {
+    return { ok: false, error: 'CPF inválido — informe 11 dígitos' }
+  }
+
+  const token = process.env.ESCAVADOR_API_TOKEN
+  if (!token) return { ok: false, error: 'ESCAVADOR_API_TOKEN não configurado' }
+
+  // Tentar endpoints conhecidos (a API tem padrão /api/v1/processos/assincrono/{tipo})
+  const tentativas = [
+    { url: 'https://api.escavador.com/api/v1/processos/assincrono/cpf', body: { cpf: cpfDigits } },
+    { url: 'https://api.escavador.com/api/v1/processos/por-cpf', body: { cpf: cpfDigits } },
+    { url: 'https://api.escavador.com/api/v1/busca-assincrona', body: { cpf: cpfDigits, tipo: 'cpf' } },
+  ]
+
+  for (const t of tentativas) {
+    try {
+      const res = await fetch(t.url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify(t.body),
+        cache: 'no-store',
+      })
+
+      const data = await res.json().catch(() => ({}))
+
+      if (res.ok) {
+        const requestId =
+          (data.id as string | number) ??
+          (data.request_id as string | number) ??
+          (data.busca_id as string | number) ??
+          undefined
+        return {
+          ok: true,
+          requestId,
+          rawResponse: data,
+          endpoint: t.url,
+          httpStatus: res.status,
+        }
+      }
+
+      // Se não for 404, é erro real — retorna
+      if (res.status !== 404) {
+        return {
+          ok: false,
+          error: `HTTP ${res.status}: ${JSON.stringify(data).slice(0, 500)}`,
+          httpStatus: res.status,
+          rawResponse: data,
+          endpoint: t.url,
+        }
+      }
+      // Se 404, tenta próximo endpoint
+    } catch (err) {
+      // Segue pra próxima tentativa
+      console.error(`[assincronaCpf] Erro em ${t.url}:`, err)
+    }
+  }
+
+  return {
+    ok: false,
+    error: 'Nenhum endpoint de busca assíncrona por CPF funcionou. A API pode ter mudado.',
+  }
+}
+
+export interface TestAssincronaStatusResult {
+  ok: boolean
+  error?: string
+  status?: string
+  rawStatus?: unknown
+  rawResultados?: unknown
+  endpoint?: string
+  durationMs?: number
+  // Quando concluído
+  processos?: Array<Record<string, unknown>>
+  totalEncontrados?: number
+}
+
+/**
+ * Consulta status + resultados de uma busca assíncrona pelo request_id.
+ * Retorna status: pendente | processando | concluido | erro
+ */
+export async function testConsultarBuscaAssincrona(
+  requestId: string | number,
+): Promise<TestAssincronaStatusResult> {
+  const session = await auth()
+  if (!session?.user?.id) return { ok: false, error: 'Não autenticado' }
+
+  const token = process.env.ESCAVADOR_API_TOKEN
+  if (!token) return { ok: false, error: 'ESCAVADOR_API_TOKEN não configurado' }
+
+  const t0 = Date.now()
+
+  try {
+    // Status
+    const statusRes = await fetch(`https://api.escavador.com/api/v1/buscas-assincronas/${encodeURIComponent(String(requestId))}`, {
+      headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' },
+      cache: 'no-store',
+    })
+
+    if (!statusRes.ok) {
+      const body = await statusRes.text().catch(() => '')
+      return {
+        ok: false,
+        error: `Status HTTP ${statusRes.status}: ${body.slice(0, 300)}`,
+        durationMs: Date.now() - t0,
+      }
+    }
+
+    const statusData = await statusRes.json()
+    const status = (statusData.status as string) ?? (statusData.situacao as string) ?? 'desconhecido'
+
+    const result: TestAssincronaStatusResult = {
+      ok: true,
+      status,
+      rawStatus: statusData,
+      durationMs: Date.now() - t0,
+    }
+
+    // Se concluído, busca resultados
+    if (['concluido', 'concluído', 'finalizado', 'sucesso', 'done', 'complete'].some(s => status.toLowerCase().includes(s))) {
+      try {
+        const resultadosRes = await fetch(`https://api.escavador.com/api/v1/buscas-assincronas/${encodeURIComponent(String(requestId))}/resultados`, {
+          headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' },
+          cache: 'no-store',
+        })
+
+        if (resultadosRes.ok) {
+          const resultadosData = await resultadosRes.json()
+          result.rawResultados = resultadosData
+          const processos = (resultadosData.items as Array<Record<string, unknown>>)
+            ?? (resultadosData.processos as Array<Record<string, unknown>>)
+            ?? (resultadosData.resultados as Array<Record<string, unknown>>)
+            ?? []
+          result.processos = processos
+          result.totalEncontrados = resultadosData.total ?? processos.length
+        }
+      } catch (err) {
+        console.error('[consultarAssincrona] Erro ao buscar resultados:', err)
+      }
+    }
+
+    return result
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : String(err),
+      durationMs: Date.now() - t0,
+    }
+  }
+}
+
 // ─── Só saldo (rápido, grátis) ────────────────────────────────────────────────
 
 export async function testVerificarSaldo(): Promise<{ ok: boolean; saldo?: number; descricao?: string; error?: string }> {

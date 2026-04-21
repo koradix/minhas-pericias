@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Loader2, Search, Wallet, FileSearch, Bug, Target, Zap } from 'lucide-react'
+import { useEffect } from 'react'
+import { Loader2, Search, Wallet, FileSearch, Bug, Target, Zap, Rocket } from 'lucide-react'
 import {
   testBuscarProcessosEnvolvido,
   testVerificarSaldo,
@@ -9,11 +10,15 @@ import {
   testBuscarV2Raw,
   testBuscarProcessoPorCnj,
   testBuscaCompleta,
+  testDispararBuscaAssincronaCpf,
+  testConsultarBuscaAssincrona,
   type TestEscavadorResult,
   type TestV1BuscaResult,
   type TestV2RawResult,
   type TestCnjResult,
   type TestBuscaCompletaResult,
+  type TestAssincronaDispararResult,
+  type TestAssincronaStatusResult,
 } from '@/lib/actions/test-escavador'
 
 export default function TesteApiPage() {
@@ -35,6 +40,13 @@ export default function TesteApiPage() {
   const [isCnjPending, startCnjTransition] = useTransition()
   const [isCompletaPending, startCompletaTransition] = useTransition()
   const [isSaldoPending, startSaldoTransition] = useTransition()
+
+  // Busca assíncrona (V1 vai direto no PJe)
+  const [asyncDispara, setAsyncDispara] = useState<TestAssincronaDispararResult | null>(null)
+  const [asyncStatus, setAsyncStatus] = useState<TestAssincronaStatusResult | null>(null)
+  const [isAsyncDispararPending, startAsyncDispararTransition] = useTransition()
+  const [isAsyncPolling, setIsAsyncPolling] = useState(false)
+  const [asyncPollCount, setAsyncPollCount] = useState(0)
 
   function handleBuscar() {
     setResult(null)
@@ -75,6 +87,37 @@ export default function TesteApiPage() {
       setResultCompleta(res)
     })
   }
+
+  function handleDispararAsync() {
+    setAsyncDispara(null)
+    setAsyncStatus(null)
+    setAsyncPollCount(0)
+    startAsyncDispararTransition(async () => {
+      const res = await testDispararBuscaAssincronaCpf(cpf)
+      setAsyncDispara(res)
+      if (res.ok && res.requestId) {
+        setIsAsyncPolling(true)
+      }
+    })
+  }
+
+  // Polling automático a cada 5s enquanto status = pendente/processando
+  useEffect(() => {
+    if (!isAsyncPolling || !asyncDispara?.requestId) return
+
+    const interval = setInterval(async () => {
+      const res = await testConsultarBuscaAssincrona(asyncDispara.requestId!)
+      setAsyncStatus(res)
+      setAsyncPollCount((n) => n + 1)
+
+      const finalizado = res.status && ['concluido', 'concluído', 'finalizado', 'sucesso', 'done', 'erro', 'error', 'falhou'].some(s => res.status!.toLowerCase().includes(s))
+      if (finalizado || !res.ok) {
+        setIsAsyncPolling(false)
+      }
+    }, 5000)
+
+    return () => clearInterval(interval)
+  }, [isAsyncPolling, asyncDispara?.requestId])
 
   function handleSaldo() {
     setSaldoInfo(null)
@@ -328,6 +371,144 @@ export default function TesteApiPage() {
                     {JSON.stringify(resultCompleta.processos, null, 2)}
                   </pre>
                 </details>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━ BUSCA ASSÍNCRONA V1 — DIRETO NO PJe ━━━━━━━━━━━━━━━━━━━━━ */}
+      <div className="rounded-xl border-4 border-orange-500 bg-gradient-to-br from-orange-50 to-red-50 p-6 space-y-4 shadow-lg">
+        <div className="flex items-center gap-2">
+          <Rocket className="h-5 w-5 text-orange-700" />
+          <h2 className="text-[16px] font-black text-slate-900 uppercase tracking-tight">
+            🚀 BUSCA NO PJe EM TEMPO REAL (R$ 1,50)
+          </h2>
+        </div>
+        <p className="text-[13px] text-slate-700">
+          <strong>Vai direto nos tribunais (PJe, eProc, Projudi)</strong> pelo CPF.
+          Não depende do índice do Escavador. É a forma mais completa de descobrir TODOS os
+          processos onde você está cadastrado. Assíncrono — leva de minutos a algumas horas.
+        </p>
+
+        <div className="rounded-lg bg-white/60 border border-orange-200 px-4 py-3">
+          <p className="text-[12px] text-slate-600">
+            ⚠️ Usa o CPF do formulário acima: <strong className="font-mono">{cpf || '(vazio)'}</strong>
+          </p>
+        </div>
+
+        <button
+          onClick={handleDispararAsync}
+          disabled={isAsyncDispararPending || isAsyncPolling || !cpf.trim()}
+          className="w-full flex items-center justify-center gap-3 rounded-lg bg-orange-600 hover:bg-orange-700 text-white px-4 py-5 text-[14px] font-black uppercase tracking-widest transition-all disabled:opacity-50 shadow-md"
+        >
+          {isAsyncDispararPending
+            ? <><Loader2 className="h-5 w-5 animate-spin" /> Disparando busca...</>
+            : isAsyncPolling
+              ? <><Loader2 className="h-5 w-5 animate-spin" /> Buscando nos tribunais... (poll {asyncPollCount})</>
+              : <><Rocket className="h-5 w-5" /> DISPARAR BUSCA NO PJe (R$ 1,50)</>
+          }
+        </button>
+
+        {/* Resposta do dispara */}
+        {asyncDispara && (
+          <div className="space-y-3 pt-2">
+            {!asyncDispara.ok ? (
+              <div className="rounded-lg bg-rose-50 border-2 border-rose-300 px-4 py-3">
+                <p className="text-[13px] font-bold text-rose-900">❌ Erro ao disparar</p>
+                <p className="text-[12px] text-rose-700 mt-1">{asyncDispara.error}</p>
+                {asyncDispara.endpoint && (
+                  <p className="text-[10px] text-rose-600 mt-1 font-mono">Último endpoint tentado: {asyncDispara.endpoint}</p>
+                )}
+                {asyncDispara.rawResponse != null && (
+                  <details className="mt-2">
+                    <summary className="cursor-pointer text-[11px] text-rose-700">Resposta bruta</summary>
+                    <pre className="text-[10px] font-mono bg-white p-2 mt-1 overflow-auto max-h-40">
+                      {JSON.stringify(asyncDispara.rawResponse, null, 2)}
+                    </pre>
+                  </details>
+                )}
+              </div>
+            ) : (
+              <>
+                <div className="rounded-lg bg-emerald-50 border-2 border-emerald-300 px-4 py-3">
+                  <p className="text-[13px] font-bold text-emerald-900">✅ Busca disparada com sucesso!</p>
+                  <p className="text-[12px] text-emerald-700 mt-1">
+                    Request ID: <span className="font-mono font-bold">{asyncDispara.requestId}</span>
+                  </p>
+                  <p className="text-[10px] text-emerald-600 mt-1 font-mono">
+                    Endpoint: {asyncDispara.endpoint}
+                  </p>
+                  <p className="text-[11px] text-emerald-800 mt-2">
+                    💡 Polling automático a cada 5s até concluir ou dar erro.
+                  </p>
+                </div>
+
+                {/* Status do polling */}
+                {asyncStatus && (
+                  <div className={`rounded-lg border-2 px-4 py-3 ${
+                    asyncStatus.status?.toLowerCase().includes('concluido') || asyncStatus.status?.toLowerCase().includes('sucesso')
+                      ? 'bg-emerald-50 border-emerald-400'
+                      : asyncStatus.status?.toLowerCase().includes('erro') || asyncStatus.status?.toLowerCase().includes('falhou')
+                      ? 'bg-rose-50 border-rose-400'
+                      : 'bg-amber-50 border-amber-400'
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500">Status</p>
+                        <p className="text-[18px] font-black text-slate-900 mt-0.5">{asyncStatus.status ?? '—'}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[10px] text-slate-500">Consultas: {asyncPollCount}</p>
+                        <p className="text-[10px] text-slate-500">Última resp: {asyncStatus.durationMs}ms</p>
+                      </div>
+                    </div>
+
+                    {asyncStatus.processos && asyncStatus.processos.length > 0 && (
+                      <div className="mt-4 pt-4 border-t border-slate-200">
+                        <p className="text-[13px] font-bold text-slate-800">
+                          🎉 {asyncStatus.totalEncontrados ?? asyncStatus.processos.length} processos encontrados direto no PJe
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Resultados */}
+                {asyncStatus?.processos && asyncStatus.processos.length > 0 && (
+                  <details open className="rounded-lg border-2 border-emerald-400 bg-white">
+                    <summary className="cursor-pointer px-4 py-3 bg-emerald-100 text-[13px] font-bold text-emerald-900 hover:bg-emerald-200">
+                      📋 {asyncStatus.processos.length} Processos Retornados Direto do PJe
+                    </summary>
+                    <pre className="overflow-auto max-h-[600px] p-4 text-[11px] font-mono text-slate-700">
+                      {JSON.stringify(asyncStatus.processos, null, 2)}
+                    </pre>
+                  </details>
+                )}
+
+                {/* Raw status completo */}
+                {asyncStatus?.rawStatus != null && (
+                  <details className="rounded-lg border border-slate-200 bg-white">
+                    <summary className="cursor-pointer px-4 py-3 bg-slate-50 text-[13px] font-semibold text-slate-800 hover:bg-slate-100">
+                      Status bruto da API
+                    </summary>
+                    <pre className="overflow-auto max-h-[300px] p-4 text-[11px] font-mono text-slate-700">
+                      {JSON.stringify(asyncStatus.rawStatus, null, 2)}
+                    </pre>
+                  </details>
+                )}
+
+                {/* Resultados brutos */}
+                {asyncStatus?.rawResultados != null && (
+                  <details className="rounded-lg border border-slate-200 bg-white">
+                    <summary className="cursor-pointer px-4 py-3 bg-slate-50 text-[13px] font-semibold text-slate-800 hover:bg-slate-100">
+                      Resultados brutos (JSON completo)
+                    </summary>
+                    <pre className="overflow-auto max-h-[500px] p-4 text-[11px] font-mono text-slate-700">
+                      {JSON.stringify(asyncStatus.rawResultados, null, 2)}
+                    </pre>
+                  </details>
+                )}
               </>
             )}
           </div>
