@@ -147,7 +147,7 @@ export interface TestV2RawResult {
 export async function testBuscarV2Raw(
   nome: string,
   cpf: string,
-  opts: { semCpf?: boolean; comHomonimos?: boolean } = {},
+  opts: { semCpf?: boolean; comHomonimos?: boolean; status?: 'ATIVO' | 'INATIVO' } = {},
 ): Promise<TestV2RawResult> {
   const session = await auth()
   if (!session?.user?.id) return { ok: false, error: 'Não autenticado' }
@@ -172,6 +172,7 @@ export async function testBuscarV2Raw(
     params.set('nome', nomeTrim)
     if (cpfParam) params.set('cpf', cpfParam)
     if (opts.comHomonimos) params.set('incluir_homonimos', 'true')
+    if (opts.status) params.set('status', opts.status)
     params.set('limit', '100')
 
     const res = await fetch(`https://api.escavador.com/api/v2/envolvido/processos?${params.toString()}`, {
@@ -417,6 +418,120 @@ export async function testBuscarV1(
         durationMs: Date.now() - t0,
       }
     }
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : String(err),
+      durationMs: Date.now() - t0,
+    }
+  }
+}
+
+// ─── Busca processo direto por CNJ (valida se Escavador tem) ────────────────
+
+export interface TestCnjResult {
+  ok: boolean
+  error?: string
+  httpStatus?: number
+  cnj?: string
+  rawResponse?: unknown
+  // Extraído do response para facilitar análise
+  envolvidos?: unknown[]
+  tribunal?: string
+  unidade?: string
+  status?: string
+  dataUltimaMov?: string | null
+  dataInicio?: string | null
+  // Se seu nome/CPF está nos envolvidos
+  matchEncontrado?: {
+    nome: string | null
+    tipo: string | null
+    tipo_normalizado: string | null
+    cpf: string | null
+  } | null
+  durationMs?: number
+}
+
+export async function testBuscarProcessoPorCnj(
+  cnj: string,
+  nomePerito: string,
+  cpfPerito: string,
+): Promise<TestCnjResult> {
+  const session = await auth()
+  if (!session?.user?.id) return { ok: false, error: 'Não autenticado' }
+
+  const cnjTrim = cnj.trim()
+  if (!cnjTrim) return { ok: false, error: 'Informe o CNJ' }
+
+  const token = process.env.ESCAVADOR_API_TOKEN
+  if (!token) return { ok: false, error: 'ESCAVADOR_API_TOKEN não configurado' }
+
+  const t0 = Date.now()
+
+  try {
+    const res = await fetch(`https://api.escavador.com/api/v2/processos/numero_cnj/${encodeURIComponent(cnjTrim)}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+      },
+      cache: 'no-store',
+    })
+
+    if (!res.ok) {
+      const body = await res.text().catch(() => '')
+      return {
+        ok: false,
+        error: `HTTP ${res.status}: ${body.slice(0, 500)}`,
+        httpStatus: res.status,
+        cnj: cnjTrim,
+        durationMs: Date.now() - t0,
+      }
+    }
+
+    const data = await res.json()
+
+    // Extrair info útil
+    const proc = data as Record<string, unknown>
+    const fontes = (proc.fontes as Array<Record<string, unknown>>) ?? []
+    const envolvidos = (fontes[0]?.envolvidos as Array<Record<string, unknown>>) ?? (proc.envolvidos as Array<Record<string, unknown>>) ?? []
+
+    const tribunal = ((proc.unidade_origem as Record<string, unknown>)?.tribunal_sigla as string) ?? (proc.tribunal as string) ?? null
+    const unidade = ((proc.unidade_origem as Record<string, unknown>)?.nome as string) ?? null
+    const status = (proc.status as string) ?? null
+    const dataUltimaMov = (proc.data_ultima_movimentacao as string) ?? null
+    const dataInicio = (proc.data_inicio as string) ?? null
+
+    // Tentar match com nome/cpf do perito
+    const norm = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
+    const nomeNorm = norm(nomePerito.trim())
+    const cpfDigits = cpfPerito.replace(/\D/g, '')
+
+    const matched = envolvidos.find((e) => {
+      const n = norm((e.nome as string) ?? '')
+      const c = ((e.cpf as string) ?? '').replace(/\D/g, '')
+      if (nomeNorm && (n.includes(nomeNorm) || nomeNorm.includes(n))) return true
+      if (cpfDigits.length === 11 && c === cpfDigits) return true
+      return false
+    })
+
+    return {
+      ok: true,
+      cnj: cnjTrim,
+      rawResponse: data,
+      envolvidos,
+      tribunal: tribunal ?? undefined,
+      unidade: unidade ?? undefined,
+      status: status ?? undefined,
+      dataUltimaMov,
+      dataInicio,
+      matchEncontrado: matched ? {
+        nome: (matched.nome as string) ?? null,
+        tipo: (matched.tipo as string) ?? null,
+        tipo_normalizado: (matched.tipo_normalizado as string) ?? null,
+        cpf: (matched.cpf as string) ?? null,
+      } : null,
+      durationMs: Date.now() - t0,
+    }
+  } catch (err) {
     return {
       ok: false,
       error: err instanceof Error ? err.message : String(err),

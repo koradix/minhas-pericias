@@ -1,15 +1,17 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Loader2, Search, Wallet, FileSearch, Bug } from 'lucide-react'
+import { Loader2, Search, Wallet, FileSearch, Bug, Target } from 'lucide-react'
 import {
   testBuscarProcessosEnvolvido,
   testVerificarSaldo,
   testBuscarV1,
   testBuscarV2Raw,
+  testBuscarProcessoPorCnj,
   type TestEscavadorResult,
   type TestV1BuscaResult,
   type TestV2RawResult,
+  type TestCnjResult,
 } from '@/lib/actions/test-escavador'
 
 export default function TesteApiPage() {
@@ -18,11 +20,14 @@ export default function TesteApiPage() {
   const [result, setResult] = useState<TestEscavadorResult | null>(null)
   const [resultV1, setResultV1] = useState<TestV1BuscaResult | null>(null)
   const [resultV2Raw, setResultV2Raw] = useState<TestV2RawResult | null>(null)
+  const [resultCnj, setResultCnj] = useState<TestCnjResult | null>(null)
   const [termoV1, setTermoV1] = useState('')
+  const [cnjBusca, setCnjBusca] = useState('')
   const [saldoInfo, setSaldoInfo] = useState<{ saldo?: number; descricao?: string; error?: string } | null>(null)
   const [isPending, startTransition] = useTransition()
   const [isV1Pending, startV1Transition] = useTransition()
   const [isV2RawPending, startV2RawTransition] = useTransition()
+  const [isCnjPending, startCnjTransition] = useTransition()
   const [isSaldoPending, startSaldoTransition] = useTransition()
 
   function handleBuscar() {
@@ -41,11 +46,19 @@ export default function TesteApiPage() {
     })
   }
 
-  function handleBuscarV2Raw(opts?: { semCpf?: boolean; comHomonimos?: boolean }) {
+  function handleBuscarV2Raw(opts?: { semCpf?: boolean; comHomonimos?: boolean; status?: 'ATIVO' | 'INATIVO' }) {
     setResultV2Raw(null)
     startV2RawTransition(async () => {
       const res = await testBuscarV2Raw(nome, cpf, opts)
       setResultV2Raw(res)
+    })
+  }
+
+  function handleBuscarCnj() {
+    setResultCnj(null)
+    startCnjTransition(async () => {
+      const res = await testBuscarProcessoPorCnj(cnjBusca, nome, cpf)
+      setResultCnj(res)
     })
   }
 
@@ -140,6 +153,130 @@ export default function TesteApiPage() {
         </button>
       </div>
 
+      {/* ───────── Busca direta por CNJ (valida se Escavador tem o processo) ───────── */}
+      <div className="rounded-xl border-2 border-indigo-300 bg-indigo-50/30 p-6 space-y-4">
+        <div className="flex items-center gap-2">
+          <Target className="h-4 w-4 text-indigo-700" />
+          <h2 className="text-[14px] font-semibold text-slate-800">
+            🎯 Busca direta por CNJ (R$ 0,10 — prova definitiva)
+          </h2>
+        </div>
+        <p className="text-[12px] text-slate-600">
+          Se você tem um CNJ que <strong>deveria aparecer mas não apareceu</strong>, cole aqui.
+          Esse endpoint vai dizer se o Escavador tem o processo e como você está cadastrado nele
+          (como "Perito", "Requerente", sem seu CPF, etc).
+        </p>
+        <div>
+          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">
+            Número CNJ do processo
+          </label>
+          <input
+            type="text"
+            value={cnjBusca}
+            onChange={(e) => setCnjBusca(e.target.value)}
+            placeholder="Ex: 0814811-56.2023.8.19.0054"
+            className="w-full rounded-lg border-2 border-slate-200 bg-white px-4 py-3 text-[14px] font-mono text-slate-800 focus:outline-none focus:border-indigo-600 transition-all"
+          />
+        </div>
+        <button
+          onClick={handleBuscarCnj}
+          disabled={isCnjPending || !cnjBusca.trim()}
+          className="w-full flex items-center justify-center gap-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 text-[12px] font-bold uppercase tracking-widest transition-all disabled:opacity-50"
+        >
+          {isCnjPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Target className="h-4 w-4" />}
+          Consultar processo por CNJ
+        </button>
+
+        {resultCnj && (
+          <div className="space-y-3 pt-2">
+            {!resultCnj.ok ? (
+              <div className="rounded-lg bg-rose-50 border border-rose-200 px-4 py-3">
+                <p className="text-[13px] text-rose-800 font-semibold">
+                  ❌ {resultCnj.httpStatus === 404 ? 'Escavador NÃO tem esse processo (404)' : resultCnj.error}
+                </p>
+                {resultCnj.httpStatus === 404 && (
+                  <p className="text-[12px] text-rose-600 mt-1">
+                    Significa que o Escavador ainda não indexou esse CNJ. Talvez a publicação tenha sido muito recente ou o tribunal não sincronizou ainda.
+                  </p>
+                )}
+              </div>
+            ) : (
+              <>
+                {/* Match info */}
+                <div className={`rounded-lg px-4 py-3 border-2 ${resultCnj.matchEncontrado ? 'bg-emerald-50 border-emerald-300' : 'bg-amber-50 border-amber-300'}`}>
+                  {resultCnj.matchEncontrado ? (
+                    <>
+                      <p className="text-[13px] font-bold text-emerald-900">
+                        ✅ Você ESTÁ cadastrado neste processo!
+                      </p>
+                      <div className="mt-2 space-y-1 text-[12px] text-emerald-800">
+                        <p><strong>Nome cadastrado:</strong> {resultCnj.matchEncontrado.nome ?? '—'}</p>
+                        <p><strong>Tipo:</strong> <span className="font-mono bg-emerald-100 px-1">{resultCnj.matchEncontrado.tipo_normalizado ?? resultCnj.matchEncontrado.tipo ?? '—'}</span></p>
+                        <p><strong>CPF cadastrado no processo:</strong> {resultCnj.matchEncontrado.cpf ?? <span className="text-rose-700 font-bold">NÃO</span>}</p>
+                      </div>
+                      {!resultCnj.matchEncontrado.cpf && (
+                        <p className="mt-2 text-[12px] font-semibold text-amber-800 bg-amber-100 px-3 py-2 rounded">
+                          🎯 <strong>PROBLEMA ENCONTRADO:</strong> Seu CPF NÃO está cadastrado neste processo no Escavador.
+                          Por isso a busca com CPF não o traz. Solução: usar busca por nome (sem CPF).
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-[13px] font-bold text-amber-900">
+                      ⚠️ Processo existe no Escavador, mas <strong>seu nome/CPF não foi encontrado nos envolvidos</strong>.
+                    </p>
+                  )}
+                </div>
+
+                {/* Meta info */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="rounded-lg bg-white border border-indigo-200 px-4 py-3">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Tribunal</p>
+                    <p className="text-[14px] font-bold text-slate-900">{resultCnj.tribunal ?? '—'}</p>
+                  </div>
+                  <div className="rounded-lg bg-white border border-indigo-200 px-4 py-3">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Status Escavador</p>
+                    <p className={`text-[14px] font-bold ${resultCnj.status === 'INATIVO' ? 'text-rose-700' : 'text-emerald-700'}`}>
+                      {resultCnj.status ?? '—'}
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-white border border-indigo-200 px-4 py-3">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Envolvidos</p>
+                    <p className="text-[14px] font-bold text-slate-900">{resultCnj.envolvidos?.length ?? 0}</p>
+                  </div>
+                  <div className="rounded-lg bg-white border border-indigo-200 px-4 py-3">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Última mov.</p>
+                    <p className="text-[12px] font-bold text-slate-900">{resultCnj.dataUltimaMov ?? '—'}</p>
+                  </div>
+                </div>
+
+                {/* Lista de envolvidos */}
+                <details open className="rounded-lg border border-indigo-200 bg-white">
+                  <summary className="cursor-pointer px-4 py-3 bg-indigo-50 text-[13px] font-semibold text-indigo-900 hover:bg-indigo-100">
+                    👥 Envolvidos ({resultCnj.envolvidos?.length ?? 0}) — como cada um está cadastrado
+                  </summary>
+                  <div className="max-h-[400px] overflow-auto">
+                    <pre className="p-4 text-[11px] font-mono text-slate-700">
+                      {JSON.stringify(resultCnj.envolvidos, null, 2)}
+                    </pre>
+                  </div>
+                </details>
+
+                {/* JSON bruto completo */}
+                <details className="rounded-lg border border-slate-200 bg-white">
+                  <summary className="cursor-pointer px-4 py-3 bg-slate-50 text-[13px] font-semibold text-slate-800 hover:bg-slate-100">
+                    JSON bruto completo do processo
+                  </summary>
+                  <pre className="overflow-auto max-h-[500px] p-4 text-[11px] font-mono text-slate-700">
+                    {JSON.stringify(resultCnj.rawResponse, null, 2)}
+                  </pre>
+                </details>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* ───────── V2 RAW — SEM FILTROS (debug: ver o que está sendo rejeitado) ───────── */}
       <div className="rounded-xl border-2 border-rose-300 bg-rose-50/30 p-6 space-y-4">
         <div className="flex items-center gap-2">
@@ -179,8 +316,26 @@ export default function TesteApiPage() {
             V2 COM HOMÔNIMOS
           </button>
         </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <button
+            onClick={() => handleBuscarV2Raw({ status: 'INATIVO' })}
+            disabled={isV2RawPending || !nome.trim()}
+            className="flex items-center justify-center gap-2 rounded-lg bg-slate-700 hover:bg-slate-800 text-white px-3 py-3 text-[11px] font-bold uppercase tracking-widest transition-all disabled:opacity-50"
+          >
+            {isV2RawPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bug className="h-4 w-4" />}
+            V2 só INATIVOS (processos antigos)
+          </button>
+          <button
+            onClick={() => handleBuscarV2Raw({ semCpf: true, comHomonimos: true, status: 'INATIVO' })}
+            disabled={isV2RawPending || !nome.trim()}
+            className="flex items-center justify-center gap-2 rounded-lg bg-slate-900 hover:bg-black text-white px-3 py-3 text-[11px] font-bold uppercase tracking-widest transition-all disabled:opacity-50"
+          >
+            {isV2RawPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bug className="h-4 w-4" />}
+            V2 MÁXIMO (sem CPF + homônimos + INATIVO)
+          </button>
+        </div>
         <p className="text-[11px] text-slate-500 mt-1">
-          💡 Se o "V2 Normal" não achou, tente "SEM CPF" (tribunal pode não ter seu CPF cadastrado no processo) ou "COM HOMÔNIMOS" (busca mais permissiva).
+          💡 Se não achou no "V2 Normal": tente SEM CPF (tribunal pode não ter seu CPF no processo), COM HOMÔNIMOS (match parcial), INATIVOS (processos antigos arquivados), ou MÁXIMO (tudo combinado).
         </p>
 
         {resultV2Raw && (
