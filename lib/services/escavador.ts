@@ -807,6 +807,116 @@ export class EscavadorService implements RadarProvider {
     }))
   }
 
+  // ── ENDPOINT 10 — Busca por EMAIL em diários (PAGO — R$ 0,03) ──────────────
+  //
+  // Email é string única — match exato nos DJs. Muitos tribunais publicam
+  // a nomeação com email do perito no texto:
+  //   "NOMEIO o perito, FULANO (fulano@email.com)..."
+  //
+  // Se o snippet não tiver o CNJ, segue link_api pra pegar a página completa
+  // do diário e extrair o CNJ do cabeçalho.
+  async buscarPorEmail(email: string): Promise<CitacaoResult[]> {
+    const emailTrim = email.trim().toLowerCase()
+    if (!emailTrim || !emailTrim.includes('@')) return []
+
+    const q = encodeURIComponent(`"${emailTrim}"`)
+
+    // Data mínima: 2 anos atrás pra pegar nomeações recentes
+    const dataMinima = new Date()
+    dataMinima.setFullYear(dataMinima.getFullYear() - 2)
+    const dataDe = dataMinima.toISOString().split('T')[0]
+
+    let data: { paginator: { total: number }; items: EscavadorBuscaItem[] }
+    try {
+      data = await this.request<{ paginator: { total: number }; items: EscavadorBuscaItem[] }>(
+        `/busca?q=${q}&qo=d&qs=d&limit=50&page=1&data_de=${dataDe}`,
+      )
+    } catch {
+      data = await this.request<{ paginator: { total: number }; items: EscavadorBuscaItem[] }>(
+        `/busca?q=${q}&qo=d&qs=d&limit=50&page=1`,
+      )
+    }
+
+    console.log(`[Escavador] buscarPorEmail: "${emailTrim}" → ${data.paginator.total} total, ${data.items.length} nesta página`)
+
+    if (data.items.length === 0) return []
+
+    const results: CitacaoResult[] = []
+
+    for (const item of data.items) {
+      // 1) Tenta extrair CNJ do snippet
+      let cnj = extrairNumeroProcesso(item.texto)
+
+      // 2) Se falhar, segue link_api pra pegar a página completa
+      if (!cnj && (item as { link_api?: string }).link_api) {
+        const pageText = await this.fetchDiarioPageText((item as { link_api?: string }).link_api!)
+        if (pageText) {
+          cnj = this.findCnjNearSnippet(pageText, item.texto)
+        }
+      }
+
+      results.push({
+        externalId: `v1email-${item.id}`,
+        diarioSigla: item.diario_sigla,
+        diarioNome: item.diario_nome,
+        diarioData: item.diario_data,
+        snippet: item.texto,
+        numeroProcesso: cnj,
+        linkCitacao: item.link,
+        fonte: 'v1_email_dj',
+      })
+    }
+
+    console.log(`[Escavador] buscarPorEmail: ${results.length} items, ${results.filter(r => r.numeroProcesso).length} com CNJ extraído`)
+    return results
+  }
+
+  /** Segue link_api do item V1 para pegar o texto completo da página do diário */
+  private async fetchDiarioPageText(linkApi: string): Promise<string | null> {
+    try {
+      const res = await fetch(linkApi, {
+        headers: this.headers(),
+        cache: 'no-store',
+      })
+      if (!res.ok) return null
+      const data = await res.json() as Record<string, unknown>
+      const texto =
+        (data.conteudo as string) ??
+        (data.texto as string) ??
+        ((data.pagina as Record<string, unknown>)?.conteudo as string) ??
+        ((data.pagina as Record<string, unknown>)?.texto as string) ??
+        JSON.stringify(data)
+      return typeof texto === 'string' ? texto : null
+    } catch {
+      return null
+    }
+  }
+
+  /** Encontra o CNJ mais próximo do snippet no texto completo da página */
+  private findCnjNearSnippet(pageText: string, snippet: string): string | null {
+    const cnjRegex = /\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}/g
+    const cnjs = Array.from(new Set(pageText.match(cnjRegex) ?? []))
+    if (cnjs.length === 0) return null
+    if (cnjs.length === 1) return cnjs[0]
+
+    const anchor = snippet.substring(0, 80).trim()
+    const anchorIdx = pageText.indexOf(anchor)
+    if (anchorIdx < 0) return cnjs[0]
+
+    let closestCnj = cnjs[0]
+    let closestDist = Infinity
+    for (const cnj of cnjs) {
+      const cnjIdx = pageText.indexOf(cnj)
+      if (cnjIdx < 0) continue
+      const dist = Math.abs(cnjIdx - anchorIdx)
+      if (dist < closestDist) {
+        closestDist = dist
+        closestCnj = cnj
+      }
+    }
+    return closestCnj
+  }
+
   // ── V2 ENDPOINT A — Solicitar atualização de processo (aciona robôs) ─────────
   //
   // POST api/v2/processos/numero_cnj/{cnj}/solicitar-atualizacao

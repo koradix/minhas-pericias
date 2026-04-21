@@ -59,28 +59,60 @@ export default async function NomeacoesPage() {
         radarConfigurado={radarConfigurado}
       />
 
-      {/* Nomeações confirmadas (V2 — busca por CPF) */}
+      {/* ━━━━━━━━━━━━━━━━━━━━━━ NOMEAÇÕES CONFIRMADAS (V2) ━━━━━━━━━━━━━━━━━━━━━━
+          Processo já cadastrado no tribunal. Documentos disponíveis para download. */}
       {(() => {
         const nomeacoesList = citacoes.filter((c) => c.fonte === 'v2_tribunal')
         return nomeacoesList.length > 0 ? (
           <div className="space-y-4">
-            <p className="text-[12px] font-inter font-semibold uppercase tracking-[0.08em] text-[#6b7280]">
-              {nomeacoesList.length} nomeaç{nomeacoesList.length > 1 ? 'ões' : 'ão'} confirmada{nomeacoesList.length > 1 ? 's' : ''}
-            </p>
+            <div className="flex items-center gap-3 border-l-4 border-[#a3e635] pl-4 py-2">
+              <div>
+                <p className="text-[14px] font-inter font-black uppercase tracking-[0.08em] text-slate-900">
+                  ✅ {nomeacoesList.length} nomeaç{nomeacoesList.length > 1 ? 'ões' : 'ão'} confirmada{nomeacoesList.length > 1 ? 's' : ''}
+                </p>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Processo cadastrado no tribunal · documentos disponíveis para download
+                </p>
+              </div>
+            </div>
             <CitacoesList citacoes={nomeacoesList} />
           </div>
         ) : null
       })()}
 
-      {/* Citações nos diários (V1 DJE) */}
+      {/* ━━━━━━━━━━━━━━━━━━━━━━ PUBLICAÇÕES NO DIÁRIO OFICIAL ━━━━━━━━━━━━━━━━━━━━
+          Achado no DJ mas processo não cadastrado ainda.
+          Pode criar perícia manualmente, mas documentos NÃO estão disponíveis ainda. */}
       {(() => {
-        const citacoesDje = citacoes.filter((c) => c.fonte !== 'v2_tribunal')
-        return citacoesDje.length > 0 ? (
+        const djList = citacoes.filter((c) => c.fonte === 'v1_email_dj' || c.fonte === 'escavador')
+        return djList.length > 0 ? (
           <div className="space-y-4">
-            <p className="text-[12px] font-inter font-semibold uppercase tracking-[0.08em] text-[#6b7280]">
-              {citacoesDje.length} citaç{citacoesDje.length > 1 ? 'ões' : 'ão'} nos diários
+            <div className="flex items-center gap-3 border-l-4 border-amber-400 pl-4 py-2">
+              <div>
+                <p className="text-[14px] font-inter font-black uppercase tracking-[0.08em] text-slate-900">
+                  📰 {djList.length} publicaç{djList.length > 1 ? 'ões' : 'ão'} no Diário Oficial
+                </p>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Nomeação publicada · <span className="text-amber-700 font-semibold">documentos ainda não disponíveis</span> — tribunal não atualizou o processo
+                </p>
+              </div>
+            </div>
+            <CitacoesList citacoes={djList} showCriarPericia={true} />
+          </div>
+        ) : null
+      })()}
+
+      {/* Outras fontes (manual etc) */}
+      {(() => {
+        const outros = citacoes.filter((c) =>
+          c.fonte !== 'v2_tribunal' && c.fonte !== 'v1_email_dj' && c.fonte !== 'escavador'
+        )
+        return outros.length > 0 ? (
+          <div className="space-y-4">
+            <p className="text-[12px] font-inter font-semibold uppercase tracking-[0.08em] text-slate-500">
+              {outros.length} outra{outros.length > 1 ? 's' : ''} citaç{outros.length > 1 ? 'ões' : 'ão'}
             </p>
-            <CitacoesList citacoes={citacoesDje} showCriarPericia={false} />
+            <CitacoesList citacoes={outros} showCriarPericia={false} />
           </div>
         ) : null
       })()}

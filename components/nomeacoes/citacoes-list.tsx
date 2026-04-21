@@ -70,7 +70,7 @@ function CitacaoCard({ citacao, showCriarPericia = true }: { citacao: CitacaoSer
       {/* Content */}
       <div className="px-6 py-4">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-2">
+        <div className="flex items-center gap-3 mb-2 flex-wrap">
           {!lida && <span className="h-2 w-2 bg-[#a3e635] flex-shrink-0" />}
           <span className="text-[9px] font-black text-white bg-slate-900 px-2 py-0.5 uppercase tracking-widest">
             {citacao.diarioSigla}
@@ -79,6 +79,22 @@ function CitacaoCard({ citacao, showCriarPericia = true }: { citacao: CitacaoSer
           {citacao.fonte === 'manual' && (
             <span className="text-[8px] font-black text-amber-600 bg-amber-50 px-1.5 py-0.5 uppercase tracking-widest border border-amber-200">
               Manual
+            </span>
+          )}
+          {/* Indicador de origem + capacidade de baixar docs */}
+          {citacao.fonte === 'v2_tribunal' && (
+            <span className="text-[8px] font-black text-emerald-700 bg-emerald-50 px-1.5 py-0.5 uppercase tracking-widest border border-emerald-200">
+              ✓ Docs disponíveis
+            </span>
+          )}
+          {citacao.fonte === 'v1_email_dj' && (
+            <span className="text-[8px] font-black text-amber-700 bg-amber-50 px-1.5 py-0.5 uppercase tracking-widest border border-amber-200">
+              ⏳ Achado no DJ · aguardando docs
+            </span>
+          )}
+          {citacao.fonte === 'escavador' && (
+            <span className="text-[8px] font-black text-slate-600 bg-slate-50 px-1.5 py-0.5 uppercase tracking-widest border border-slate-200">
+              Diário Oficial
             </span>
           )}
         </div>

@@ -557,8 +557,9 @@ export async function buscarProcessosTribunais(): Promise<BuscarTribunaisResult>
   const cpfDigits = peritoPerfil?.cpf?.replace(/\D/g, '') ?? ''
   const cpf = cpfDigits.length === 11 ? cpfDigits : null
 
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: { name: true } })
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { name: true, email: true } })
   const nome = user?.name?.trim() ?? ''
+  const email = user?.email?.trim() ?? ''
   if (!nome) return { ok: false, novas: 0, error: 'Nome não cadastrado' }
 
   const svc = new EscavadorService()
@@ -568,17 +569,28 @@ export async function buscarProcessosTribunais(): Promise<BuscarTribunaisResult>
   if (saldoInfo.saldo === 0) return { ok: false, novas: 0, error: 'Saldo insuficiente na API Escavador' }
 
   const todasCitacoes: import('@/lib/services/radar-provider').CitacaoResult[] = []
+  const citacoesV1Email: import('@/lib/services/radar-provider').CitacaoResult[] = []
 
   try {
-    // Página 1
+    // V2 por CPF+nome — nomeações já confirmadas no cadastro do processo
     const { citacoes: pg1, totalPages } = await svc.buscarProcessosEnvolvido(nome, cpf, 1)
     todasCitacoes.push(...pg1)
 
-    // Páginas adicionais (max 5 para não gastar créditos demais)
     const maxPaginas = Math.min(totalPages, 5)
     for (let pg = 2; pg <= maxPaginas; pg++) {
       const { citacoes } = await svc.buscarProcessosEnvolvido(nome, cpf, pg)
       todasCitacoes.push(...citacoes)
+    }
+
+    // V1 por EMAIL — pega nomeações no Diário Oficial que ainda não foram
+    // cadastradas na V2 (ex: tribunal publicou no DJ mas não atualizou envolvidos)
+    if (email && email.includes('@')) {
+      try {
+        const v1Items = await svc.buscarPorEmail(email)
+        citacoesV1Email.push(...v1Items)
+      } catch (err) {
+        console.error('[buscarProcessosTribunais] v1 email falhou (não-crítico):', err)
+      }
     }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
@@ -586,13 +598,16 @@ export async function buscarProcessosTribunais(): Promise<BuscarTribunaisResult>
     return { ok: false, novas: 0, error: msg }
   }
 
-  // Persiste via data layer — sem filtro isSnippetNomeacao pois o v2 já filtrou
+  // Dedup V2 por externalId
   const seen = new Set<string>()
   const unicas = todasCitacoes.filter((c) => {
     if (seen.has(c.externalId)) return false
     seen.add(c.externalId)
     return true
   })
+
+  // CNJs já em V2 (pra evitar duplicar no V1 email)
+  const cnjsV2 = new Set(unicas.map(u => u.numeroProcesso).filter(Boolean) as string[])
 
   const { map: varaIdMap } = await getVaraIdBySigla(userId)
   const inputs: CitacaoInput[] = unicas.map((c) => ({
@@ -606,6 +621,27 @@ export async function buscarProcessosTribunais(): Promise<BuscarTribunaisResult>
     linkCitacao: c.linkCitacao,
     fonte: 'v2_tribunal',
   }))
+
+  // Adiciona V1 email: só CNJs que ainda NÃO estão na V2 e tem CNJ válido
+  const seenV1: Set<string> = new Set()
+  for (const c of citacoesV1Email) {
+    if (!c.numeroProcesso) continue           // sem CNJ, não dá pra identificar
+    if (cnjsV2.has(c.numeroProcesso)) continue // V2 tem prioridade
+    if (seenV1.has(c.externalId)) continue
+    seenV1.add(c.externalId)
+    inputs.push({
+      peritoId: userId,
+      externalId: c.externalId,
+      diarioSigla: c.diarioSigla,
+      diarioNome: c.diarioNome,
+      diarioData: c.diarioData,
+      snippet: c.snippet,
+      numeroProcesso: c.numeroProcesso,
+      linkCitacao: c.linkCitacao,
+      fonte: 'v1_email_dj',
+    })
+  }
+
   const novas = await upsertCitacoesBatch(inputs, varaIdMap)
 
   const saldoPos = await svc.verificarSaldo()
