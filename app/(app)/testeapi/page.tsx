@@ -362,6 +362,60 @@ export default function TesteApiPage() {
                   </div>
                 </div>
 
+                {/* Debug V1 - items retornados pela busca por email */}
+                {resultCompleta.v1ItemsDebug && resultCompleta.v1ItemsDebug.length > 0 && (
+                  <details open className="rounded-lg border-2 border-orange-400 bg-white">
+                    <summary className="cursor-pointer px-4 py-3 bg-orange-100 text-[13px] font-bold text-orange-900 hover:bg-orange-200">
+                      🔍 DEBUG V1 Email — items retornados pela busca no Diário Oficial ({resultCompleta.v1ItemsDebug.length})
+                    </summary>
+                    <div className="p-4 space-y-4">
+                      {resultCompleta.v1ItemsDebug.map((item, i) => (
+                        <div key={i} className="border border-slate-200 rounded-lg p-4 space-y-2 text-[11px]">
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <span className="font-bold text-slate-600">Diário:</span> {item.diario_sigla} — {item.diario_data}
+                            </div>
+                            <div>
+                              <span className="font-bold text-slate-600">CNJ do snippet:</span>{' '}
+                              {item.cnj_extraido_do_snippet
+                                ? <span className="text-emerald-700 font-mono">✓ {item.cnj_extraido_do_snippet}</span>
+                                : <span className="text-rose-700">✗ não encontrado</span>
+                              }
+                            </div>
+                          </div>
+                          <div>
+                            <span className="font-bold text-slate-600">CNJ via link_api:</span>{' '}
+                            {item.cnj_extraido_do_link_api
+                              ? <span className="text-emerald-700 font-mono">✓ {item.cnj_extraido_do_link_api}</span>
+                              : <span className="text-rose-700">✗ não encontrado</span>
+                            }
+                          </div>
+                          {item.link_api && (
+                            <div>
+                              <span className="font-bold text-slate-600">link_api:</span>{' '}
+                              <a href={item.link_api} target="_blank" rel="noreferrer" className="text-indigo-700 hover:underline font-mono text-[10px] break-all">
+                                {item.link_api}
+                              </a>
+                            </div>
+                          )}
+                          {item.link && (
+                            <div>
+                              <span className="font-bold text-slate-600">link:</span>{' '}
+                              <a href={item.link} target="_blank" rel="noreferrer" className="text-indigo-700 hover:underline font-mono text-[10px] break-all">
+                                {item.link}
+                              </a>
+                            </div>
+                          )}
+                          <div>
+                            <span className="font-bold text-slate-600">Preview do texto:</span>
+                            <p className="bg-slate-50 p-2 rounded mt-1 font-mono text-[10px] text-slate-700 whitespace-pre-wrap">{item.texto_preview}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                )}
+
                 {/* JSON bruto */}
                 <details className="rounded-lg border border-slate-200 bg-white">
                   <summary className="cursor-pointer px-4 py-3 bg-slate-50 text-[13px] font-semibold text-slate-800 hover:bg-slate-100">

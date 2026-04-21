@@ -579,6 +579,17 @@ export interface TestBuscaCompletaResult {
 
   // Estatísticas por estratégia
   porEstrategia?: Record<string, number>
+
+  // Debug: items V1 brutos (pra ver se link_api veio correto)
+  v1ItemsDebug?: Array<{
+    diario_sigla: string | null
+    diario_data: string | null
+    texto_preview: string
+    link: string | null
+    link_api: string | null
+    cnj_extraido_do_snippet: string | null
+    cnj_extraido_do_link_api: string | null
+  }>
 }
 
 async function fetchV2(
@@ -626,6 +637,63 @@ async function fetchV1Busca(
 function extractCnj(texto: string): string | null {
   const m = texto.match(/\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}/)
   return m ? m[0] : null
+}
+
+/** Extrai todos os CNJs de um texto (pode ter múltiplos no mesmo diário) */
+function extractAllCnjs(texto: string): string[] {
+  const matches = texto.match(/\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}/g)
+  return matches ? Array.from(new Set(matches)) : []
+}
+
+/** Segue o link_api do item V1 e retorna o texto completo da página do diário */
+async function fetchV1DiarioPage(linkApi: string, token: string): Promise<string | null> {
+  try {
+    const res = await fetch(linkApi, {
+      headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' },
+      cache: 'no-store',
+    })
+    if (!res.ok) return null
+    const data = await res.json() as Record<string, unknown>
+
+    // A página do diário pode ter diferentes shapes dependendo da API
+    const texto =
+      (data.conteudo as string) ??
+      (data.texto as string) ??
+      (data.pagina as Record<string, unknown>)?.conteudo as string ??
+      (data.pagina as Record<string, unknown>)?.texto as string ??
+      JSON.stringify(data)
+
+    return typeof texto === 'string' ? texto : null
+  } catch {
+    return null
+  }
+}
+
+/** Tenta encontrar o CNJ mais próximo do snippet no texto completo da página */
+function findCnjNearSnippet(pageText: string, snippet: string): string | null {
+  // Pega as primeiras 80 chars do snippet como âncora
+  const anchor = snippet.substring(0, 80).trim()
+  const cnjs = extractAllCnjs(pageText)
+  if (cnjs.length === 0) return null
+  if (cnjs.length === 1) return cnjs[0]
+
+  // Tenta localizar o anchor no texto e pegar o CNJ mais próximo
+  const anchorIdx = pageText.indexOf(anchor)
+  if (anchorIdx < 0) return cnjs[0] // Fallback: primeiro CNJ
+
+  // Encontra o CNJ com menor distância do anchor
+  let closestCnj = cnjs[0]
+  let closestDist = Infinity
+  for (const cnj of cnjs) {
+    const cnjIdx = pageText.indexOf(cnj)
+    if (cnjIdx < 0) continue
+    const dist = Math.abs(cnjIdx - anchorIdx)
+    if (dist < closestDist) {
+      closestDist = dist
+      closestCnj = cnj
+    }
+  }
+  return closestCnj
 }
 
 /**
@@ -781,11 +849,43 @@ export async function testBuscaCompleta(
     }
 
     // Adiciona processos vindos de V1 /busca (por email) que não estão na V2
+    // (declarado fora do if pra retornar no response)
+    // eslint-disable-next-line prefer-const
+    var v1ItemsDebug: NonNullable<TestBuscaCompletaResult['v1ItemsDebug']> = []
+
     if (v1Email && emailTrim) {
       for (const item of v1Email.items) {
         const texto = (item.texto as string) ?? ''
-        const cnj = extractCnj(texto)
-        if (!cnj) continue
+        const snippetCnj = extractCnj(texto)
+        let cnj = snippetCnj
+        let origemCnj: 'snippet' | 'link_api' = 'snippet'
+        let linkApiCnj: string | null = null
+
+        // Se não achou CNJ no snippet, segue o link_api do diário
+        const linkApi = (item.link_api as string) ?? null
+        if (!cnj && linkApi) {
+          const pageText = await fetchV1DiarioPage(linkApi, token)
+          if (pageText) {
+            linkApiCnj = findCnjNearSnippet(pageText, texto)
+            if (linkApiCnj) {
+              cnj = linkApiCnj
+              origemCnj = 'link_api'
+            }
+          }
+        }
+
+        // Adiciona no debug
+        v1ItemsDebug.push({
+          diario_sigla: (item.diario_sigla as string) ?? null,
+          diario_data: (item.diario_data as string) ?? null,
+          texto_preview: texto.substring(0, 300),
+          link: (item.link as string) ?? null,
+          link_api: linkApi,
+          cnj_extraido_do_snippet: snippetCnj,
+          cnj_extraido_do_link_api: linkApiCnj,
+        })
+
+        if (!cnj) continue // Ainda não achou → descarta
 
         const existente = mapaProcessos.get(cnj)
         if (existente) {
@@ -804,7 +904,7 @@ export async function testBuscaCompleta(
           unidade: diarioNome,
           tipoEnvolvido: 'Perito (do Diário Oficial)',
           decisao: 'aceito',
-          motivo: 'Encontrado no Diário Oficial V1 pelo email — ainda não cadastrado na V2',
+          motivo: `Encontrado no Diário Oficial V1 pelo email (CNJ via ${origemCnj}) — V2 ainda não indexou`,
           dataUltimaMov: diarioData,
           dataInicio: null,
           status: null,
@@ -836,6 +936,7 @@ export async function testBuscaCompleta(
       nome: nomeTrim,
       cpf: cpfParam,
       porEstrategia,
+      v1ItemsDebug: v1ItemsDebug.length > 0 ? v1ItemsDebug : undefined,
     }
   } catch (err) {
     if (err instanceof EscavadorError) {
