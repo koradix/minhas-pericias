@@ -601,6 +601,33 @@ async function fetchV2(
   }
 }
 
+async function fetchV1Busca(
+  termo: string,
+  token: string,
+): Promise<{ items: Array<Record<string, unknown>>; total: number } | null> {
+  try {
+    const q = encodeURIComponent(`"${termo}"`)
+    const res = await fetch(`https://api.escavador.com/api/v1/busca?q=${q}&qo=d&qs=d&limit=50&page=1`, {
+      headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' },
+      cache: 'no-store',
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    return {
+      items: data?.items ?? [],
+      total: data?.paginator?.total ?? 0,
+    }
+  } catch {
+    return null
+  }
+}
+
+/** Extrai número CNJ de um texto */
+function extractCnj(texto: string): string | null {
+  const m = texto.match(/\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}/)
+  return m ? m[0] : null
+}
+
 /**
  * Um botão só — combina TODAS as estratégias de busca V2 em paralelo,
  * deduplica por CNJ e devolve a união completa.
@@ -616,6 +643,7 @@ async function fetchV2(
 export async function testBuscaCompleta(
   nome: string,
   cpf: string,
+  email?: string,
 ): Promise<TestBuscaCompletaResult> {
   const session = await auth()
   if (!session?.user?.id) return { ok: false, error: 'Não autenticado' }
@@ -625,6 +653,7 @@ export async function testBuscaCompleta(
 
   const cpfDigits = cpf.replace(/\D/g, '')
   const cpfParam = cpfDigits.length === 11 ? cpfDigits : null
+  const emailTrim = email?.trim().toLowerCase() || null
 
   const token = process.env.ESCAVADOR_API_TOKEN
   if (!token) return { ok: false, error: 'ESCAVADOR_API_TOKEN não configurado' }
@@ -669,16 +698,22 @@ export async function testBuscaCompleta(
     p4.set('limit', '100')
     estrategias.push({ nome: 'inativos', params: p4 })
 
-    // Executa todas em paralelo
-    const resultados = await Promise.all(
-      estrategias.map(async (e) => ({ nome: e.nome, dados: await fetchV2(e.params, token) })),
-    )
+    // Executa V2 em paralelo + V1 por email (se tiver) em paralelo
+    const [resultadosV2, v1Email] = await Promise.all([
+      Promise.all(estrategias.map(async (e) => ({ nome: e.nome, dados: await fetchV2(e.params, token) }))),
+      emailTrim ? fetchV1Busca(emailTrim, token) : Promise.resolve(null),
+    ])
 
     // Estatísticas por estratégia
     const porEstrategia: Record<string, number> = {}
-    for (const r of resultados) {
+    for (const r of resultadosV2) {
       porEstrategia[r.nome] = r.dados?.items.length ?? 0
     }
+    if (emailTrim) {
+      porEstrategia['v1_email'] = v1Email?.items.length ?? 0
+    }
+
+    const resultados = resultadosV2
 
     // Consolida e dedup por CNJ
     const norm = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
@@ -741,6 +776,43 @@ export async function testBuscaCompleta(
           linkEscavador: item.id
             ? `https://www.escavador.com/processos/${item.id}`
             : `https://www.escavador.com/processos/${cnj}`,
+        })
+      }
+    }
+
+    // Adiciona processos vindos de V1 /busca (por email) que não estão na V2
+    if (v1Email && emailTrim) {
+      for (const item of v1Email.items) {
+        const texto = (item.texto as string) ?? ''
+        const cnj = extractCnj(texto)
+        if (!cnj) continue
+
+        const existente = mapaProcessos.get(cnj)
+        if (existente) {
+          if (!existente.achadoEm.includes('v1_email')) existente.achadoEm.push('v1_email')
+          continue
+        }
+
+        // Processo NOVO achado pelo email (não estava na V2)
+        const diarioSigla = (item.diario_sigla as string) ?? 'OUTROS'
+        const diarioNome = (item.diario_nome as string) ?? 'Diário Oficial'
+        const diarioData = (item.diario_data as string) ?? null
+
+        mapaProcessos.set(cnj, {
+          cnj,
+          tribunal: diarioSigla.replace(/^DJ/, 'TJ'),
+          unidade: diarioNome,
+          tipoEnvolvido: 'Perito (do Diário Oficial)',
+          decisao: 'aceito',
+          motivo: 'Encontrado no Diário Oficial V1 pelo email — ainda não cadastrado na V2',
+          dataUltimaMov: diarioData,
+          dataInicio: null,
+          status: null,
+          poloAtivo: null,
+          poloPassivo: null,
+          achadoEm: ['v1_email'],
+          cpfCadastradoNoProcesso: null,
+          linkEscavador: (item.link as string) ?? `https://www.escavador.com/processos/${cnj}`,
         })
       }
     }

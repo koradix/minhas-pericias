@@ -19,6 +19,7 @@ import {
 export default function TesteApiPage() {
   const [nome, setNome] = useState('')
   const [cpf, setCpf] = useState('')
+  const [email, setEmail] = useState('')
   const [result, setResult] = useState<TestEscavadorResult | null>(null)
   const [resultV1, setResultV1] = useState<TestV1BuscaResult | null>(null)
   const [resultV2Raw, setResultV2Raw] = useState<TestV2RawResult | null>(null)
@@ -70,7 +71,7 @@ export default function TesteApiPage() {
   function handleBuscaCompleta() {
     setResultCompleta(null)
     startCompletaTransition(async () => {
-      const res = await testBuscaCompleta(nome, cpf)
+      const res = await testBuscaCompleta(nome, cpf, email)
       setResultCompleta(res)
     })
   }
@@ -138,7 +139,7 @@ export default function TesteApiPage() {
           Marca de onde cada processo veio.
         </p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
             <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">
               Nome completo *
@@ -163,7 +164,25 @@ export default function TesteApiPage() {
               className="w-full rounded-lg border-2 border-slate-200 bg-white px-4 py-3 text-[14px] text-slate-800 focus:outline-none focus:border-lime-600 transition-all"
             />
           </div>
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">
+              Email (opcional) 🔑
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="mmbonassi@gmail.com"
+              className="w-full rounded-lg border-2 border-slate-200 bg-white px-4 py-3 text-[14px] text-slate-800 focus:outline-none focus:border-lime-600 transition-all"
+            />
+          </div>
         </div>
+
+        <p className="text-[11px] text-slate-600 bg-white/60 border border-lime-200 rounded px-3 py-2">
+          🔑 <strong>Email é crucial:</strong> muitos tribunais (ex: Meriti) publicam a nomeação no Diário Oficial
+          com o email no texto. Se preencher o email, disparamos busca V1 no Diário Oficial — aparece nomeações
+          que a V2 não indexou ainda.
+        </p>
 
         <button
           onClick={handleBuscaCompleta}
@@ -171,7 +190,7 @@ export default function TesteApiPage() {
           className="w-full flex items-center justify-center gap-3 rounded-lg bg-lime-600 hover:bg-lime-700 text-white px-4 py-5 text-[14px] font-black uppercase tracking-widest transition-all disabled:opacity-50 shadow-md"
         >
           {isCompletaPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Zap className="h-5 w-5" />}
-          {isCompletaPending ? 'Rodando 4 buscas em paralelo...' : 'BUSCAR TUDO'}
+          {isCompletaPending ? 'Rodando buscas em paralelo...' : 'BUSCAR TUDO'}
         </button>
 
         {resultCompleta && (
