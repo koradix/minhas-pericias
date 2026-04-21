@@ -109,6 +109,200 @@ export async function testBuscarProcessosEnvolvido(
   }
 }
 
+// ─── V2 /envolvido/processos RAW — SEM nenhum filtro interno ─────────────────
+
+export interface TestV2RawResult {
+  ok: boolean
+  error?: string
+  saldoAntes?: number
+  saldoDepois?: number
+
+  // Meta
+  totalProcessos?: number
+  totalPages?: number
+  query?: { nome: string; cpf: string | null }
+
+  // Todos os items crus da API (sem filtro nenhum)
+  rawItems?: unknown[]
+
+  // Items analisados: mostra por que cada um passou ou foi descartado
+  analise?: Array<{
+    numero_cnj: string
+    tribunal_sigla: string
+    tipoEnvolvido: string
+    decisao: 'aceito' | 'rejeitado_parte' | 'rejeitado_sem_cnj' | 'passou_sem_match_nome'
+    motivo: string
+    nomeEnvolvidoMatch: string | null
+    dataUltimaMov: string | null
+  }>
+
+  // Separação por decisão
+  aceitos?: unknown[]
+  rejeitados?: unknown[]
+
+  durationMs?: number
+}
+
+/** V2 Raw — chama /envolvido/processos e analisa CADA item (sem filtrar nada) */
+export async function testBuscarV2Raw(
+  nome: string,
+  cpf: string,
+): Promise<TestV2RawResult> {
+  const session = await auth()
+  if (!session?.user?.id) return { ok: false, error: 'Não autenticado' }
+
+  const nomeTrim = nome.trim()
+  if (!nomeTrim) return { ok: false, error: 'Nome é obrigatório' }
+
+  const cpfDigits = cpf.replace(/\D/g, '')
+  const cpfParam = cpfDigits.length === 11 ? cpfDigits : null
+
+  const token = process.env.ESCAVADOR_API_TOKEN
+  if (!token) return { ok: false, error: 'ESCAVADOR_API_TOKEN não configurado' }
+
+  const svc = new EscavadorService()
+  const t0 = Date.now()
+
+  try {
+    const saldoAntes = await svc.verificarSaldo()
+
+    // Chamada direta ao endpoint, sem passar pelo service (para não aplicar filtros)
+    const params = new URLSearchParams()
+    params.set('nome', nomeTrim)
+    if (cpfParam) params.set('cpf', cpfParam)
+    params.set('limit', '100')
+
+    const res = await fetch(`https://api.escavador.com/api/v2/envolvido/processos?${params.toString()}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+      },
+      cache: 'no-store',
+    })
+
+    if (!res.ok) {
+      return {
+        ok: false,
+        error: `HTTP ${res.status}: ${await res.text().catch(() => '')}`,
+        durationMs: Date.now() - t0,
+      }
+    }
+
+    const data = await res.json()
+    const items: Array<Record<string, unknown>> = data?.items ?? data?.resposta?.items ?? []
+    const total = data?.paginator?.total ?? data?.envolvido_encontrado?.quantidade_processos ?? items.length
+    const totalPages = data?.paginator?.total_pages ?? 1
+
+    // Analisar cada item: replicar a MESMA lógica do EscavadorService para saber por que foi aceito/rejeitado
+    const norm = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
+    const nomeNorm = norm(nomeTrim)
+
+    const analise: TestV2RawResult['analise'] = []
+    const aceitos: unknown[] = []
+    const rejeitados: unknown[] = []
+
+    for (const item of items) {
+      const numero_cnj = (item.numero_cnj as string) ?? ''
+      const unidade = item.unidade_origem as { tribunal_sigla?: string; nome?: string } | undefined
+      const tribunal_sigla = unidade?.tribunal_sigla ?? (item.tribunal as string) ?? 'OUTROS'
+
+      if (!numero_cnj) {
+        analise.push({
+          numero_cnj: '(sem CNJ)',
+          tribunal_sigla,
+          tipoEnvolvido: '—',
+          decisao: 'rejeitado_sem_cnj',
+          motivo: 'numero_cnj ausente no item',
+          nomeEnvolvidoMatch: null,
+          dataUltimaMov: null,
+        })
+        rejeitados.push(item)
+        continue
+      }
+
+      const fontes = (item.fontes as Array<{ envolvidos?: Array<Record<string, unknown>> }>) ?? []
+      const envolvidos = fontes[0]?.envolvidos ?? (item.envolvidos as Array<Record<string, unknown>>) ?? []
+
+      const peritoEnv = envolvidos.find((e) => {
+        const n = norm((e.nome as string) ?? '')
+        return n.includes(nomeNorm) || nomeNorm.includes(n)
+      })
+
+      const tipoEnvolvido = ((peritoEnv?.tipo_normalizado as string) ?? (peritoEnv?.tipo as string) ?? 'Envolvido')
+      const tipoUpper = tipoEnvolvido.toUpperCase()
+      const ehPerito = ['PERITO', 'PERITA', 'EXPERT', 'AUXILIAR', 'TÉCNICO', 'TECNICO'].some(t => tipoUpper.includes(t))
+      const ehParte = ['AUTOR', 'AUTORA', 'RÉU', 'REU', 'REQUERENTE', 'REQUERIDO'].some(t => tipoUpper.includes(t))
+
+      const dataUltimaMov = (item.data_ultima_movimentacao as string) ?? (item.data_inicio as string) ?? null
+
+      if (ehParte && !ehPerito) {
+        analise.push({
+          numero_cnj,
+          tribunal_sigla,
+          tipoEnvolvido,
+          decisao: 'rejeitado_parte',
+          motivo: `Descartado: tipo="${tipoEnvolvido}" bate com AUTOR/RÉU e não tem palavra-chave de perito`,
+          nomeEnvolvidoMatch: (peritoEnv?.nome as string) ?? null,
+          dataUltimaMov,
+        })
+        rejeitados.push(item)
+      } else if (!peritoEnv) {
+        // Nome não bateu com nenhum envolvido, mas ainda assim volta da API
+        analise.push({
+          numero_cnj,
+          tribunal_sigla,
+          tipoEnvolvido,
+          decisao: 'passou_sem_match_nome',
+          motivo: 'Nome não encontrou match em item.fontes[0].envolvidos — mas item veio da API',
+          nomeEnvolvidoMatch: null,
+          dataUltimaMov,
+        })
+        aceitos.push(item)
+      } else {
+        analise.push({
+          numero_cnj,
+          tribunal_sigla,
+          tipoEnvolvido,
+          decisao: 'aceito',
+          motivo: `OK: tipo="${tipoEnvolvido}" — ${ehPerito ? 'é perito' : 'não é parte'}`,
+          nomeEnvolvidoMatch: (peritoEnv.nome as string) ?? null,
+          dataUltimaMov,
+        })
+        aceitos.push(item)
+      }
+    }
+
+    const saldoDepois = await svc.verificarSaldo()
+
+    return {
+      ok: true,
+      saldoAntes: saldoAntes.saldo,
+      saldoDepois: saldoDepois.saldo,
+      totalProcessos: total,
+      totalPages,
+      query: { nome: nomeTrim, cpf: cpfParam },
+      rawItems: items,
+      analise,
+      aceitos,
+      rejeitados,
+      durationMs: Date.now() - t0,
+    }
+  } catch (err) {
+    if (err instanceof EscavadorError) {
+      return {
+        ok: false,
+        error: `EscavadorError ${err.code}: ${err.message}`,
+        durationMs: Date.now() - t0,
+      }
+    }
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : String(err),
+      durationMs: Date.now() - t0,
+    }
+  }
+}
+
 // ─── V1 /busca — Diários Oficiais (onde nomeações realmente aparecem) ───────
 
 export interface TestV1BuscaResult {

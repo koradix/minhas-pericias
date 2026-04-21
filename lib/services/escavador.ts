@@ -706,6 +706,10 @@ export class EscavadorService implements RadarProvider {
       const data_ref = item.data_ultima_movimentacao ?? item.data_inicio ?? new Date().toISOString().split('T')[0]
       const dataFormatada = data_ref.split('T')[0]
 
+      const linkCitacao = item.id
+        ? `https://www.escavador.com/processos/${item.id}`
+        : `https://www.escavador.com/processos/${item.numero_cnj}`
+
       citacoes.push({
         externalId: `v2p-${item.numero_cnj}`,
         diarioSigla: item.unidade_origem?.tribunal_sigla ?? item.tribunal ?? 'OUTROS',
@@ -713,7 +717,7 @@ export class EscavadorService implements RadarProvider {
         diarioData: dataFormatada,
         snippet,
         numeroProcesso: item.numero_cnj,
-        linkCitacao: `https://www.escavador.com/processos/${item.id}`,
+        linkCitacao,
         fonte: 'v2_tribunal',
       })
     }

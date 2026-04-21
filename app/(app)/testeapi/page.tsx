@@ -1,13 +1,15 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Loader2, Search, Wallet, FileSearch } from 'lucide-react'
+import { Loader2, Search, Wallet, FileSearch, Bug } from 'lucide-react'
 import {
   testBuscarProcessosEnvolvido,
   testVerificarSaldo,
   testBuscarV1,
+  testBuscarV2Raw,
   type TestEscavadorResult,
   type TestV1BuscaResult,
+  type TestV2RawResult,
 } from '@/lib/actions/test-escavador'
 
 export default function TesteApiPage() {
@@ -15,10 +17,12 @@ export default function TesteApiPage() {
   const [cpf, setCpf] = useState('')
   const [result, setResult] = useState<TestEscavadorResult | null>(null)
   const [resultV1, setResultV1] = useState<TestV1BuscaResult | null>(null)
+  const [resultV2Raw, setResultV2Raw] = useState<TestV2RawResult | null>(null)
   const [termoV1, setTermoV1] = useState('')
   const [saldoInfo, setSaldoInfo] = useState<{ saldo?: number; descricao?: string; error?: string } | null>(null)
   const [isPending, startTransition] = useTransition()
   const [isV1Pending, startV1Transition] = useTransition()
+  const [isV2RawPending, startV2RawTransition] = useTransition()
   const [isSaldoPending, startSaldoTransition] = useTransition()
 
   function handleBuscar() {
@@ -34,6 +38,14 @@ export default function TesteApiPage() {
     startV1Transition(async () => {
       const res = await testBuscarV1(termoV1 || nome)
       setResultV1(res)
+    })
+  }
+
+  function handleBuscarV2Raw() {
+    setResultV2Raw(null)
+    startV2RawTransition(async () => {
+      const res = await testBuscarV2Raw(nome, cpf)
+      setResultV2Raw(res)
     })
   }
 
@@ -126,6 +138,141 @@ export default function TesteApiPage() {
           {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
           Buscar processos
         </button>
+      </div>
+
+      {/* ───────── V2 RAW — SEM FILTROS (debug: ver o que está sendo rejeitado) ───────── */}
+      <div className="rounded-xl border-2 border-rose-300 bg-rose-50/30 p-6 space-y-4">
+        <div className="flex items-center gap-2">
+          <Bug className="h-4 w-4 text-rose-700" />
+          <h2 className="text-[14px] font-semibold text-slate-800">
+            🐛 V2 RAW — SEM NENHUM FILTRO (debug)
+          </h2>
+        </div>
+        <p className="text-[12px] text-slate-600">
+          Usa nome + CPF dos campos acima. Chama <code className="bg-slate-100 px-1 rounded">/v2/envolvido/processos</code> e
+          mostra <strong>TODOS os processos</strong> retornados + análise de cada um: quais passaram, quais foram rejeitados e <strong>por quê</strong>.
+          Se sua perícia está sendo cortada por algum filtro, aparece aqui na seção "Rejeitados".
+        </p>
+        <button
+          onClick={handleBuscarV2Raw}
+          disabled={isV2RawPending || !nome.trim()}
+          className="w-full flex items-center justify-center gap-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white px-4 py-3 text-[12px] font-bold uppercase tracking-widest transition-all disabled:opacity-50"
+        >
+          {isV2RawPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bug className="h-4 w-4" />}
+          Debug — Buscar V2 sem filtros
+        </button>
+
+        {resultV2Raw && (
+          <div className="space-y-4 pt-2">
+            {!resultV2Raw.ok ? (
+              <div className="rounded-lg bg-rose-50 border border-rose-200 px-4 py-3">
+                <p className="text-[13px] text-rose-800">❌ {resultV2Raw.error}</p>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="rounded-lg bg-white border border-rose-200 px-4 py-3">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Total na API</p>
+                    <p className="text-[20px] font-bold text-slate-900">{resultV2Raw.totalProcessos ?? 0}</p>
+                  </div>
+                  <div className="rounded-lg bg-emerald-50 border border-emerald-300 px-4 py-3">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-700">Aceitos</p>
+                    <p className="text-[20px] font-bold text-emerald-900">{resultV2Raw.aceitos?.length ?? 0}</p>
+                  </div>
+                  <div className="rounded-lg bg-rose-50 border border-rose-300 px-4 py-3">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-rose-700">❌ Rejeitados</p>
+                    <p className="text-[20px] font-bold text-rose-900">{resultV2Raw.rejeitados?.length ?? 0}</p>
+                  </div>
+                  <div className="rounded-lg bg-white border border-slate-200 px-4 py-3">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Tempo</p>
+                    <p className="text-[20px] font-bold text-slate-900">{resultV2Raw.durationMs}ms</p>
+                  </div>
+                </div>
+
+                {/* Análise item-por-item */}
+                <details open className="rounded-lg border-2 border-rose-400 bg-white">
+                  <summary className="cursor-pointer px-4 py-3 bg-rose-100 text-[13px] font-bold text-rose-900 hover:bg-rose-200">
+                    🔍 Análise de cada processo (por que passou/foi rejeitado)
+                  </summary>
+                  <div className="max-h-[500px] overflow-auto">
+                    <table className="w-full text-[11px]">
+                      <thead className="bg-slate-100 sticky top-0">
+                        <tr>
+                          <th className="text-left px-3 py-2 font-bold">CNJ</th>
+                          <th className="text-left px-3 py-2 font-bold">Tribunal</th>
+                          <th className="text-left px-3 py-2 font-bold">Tipo Escavador</th>
+                          <th className="text-left px-3 py-2 font-bold">Decisão</th>
+                          <th className="text-left px-3 py-2 font-bold">Motivo</th>
+                          <th className="text-left px-3 py-2 font-bold">Data</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(resultV2Raw.analise ?? []).map((a, i) => (
+                          <tr key={i} className={a.decisao === 'aceito' ? 'bg-emerald-50' : 'bg-rose-50'}>
+                            <td className="px-3 py-2 font-mono text-[10px]">{a.numero_cnj}</td>
+                            <td className="px-3 py-2">{a.tribunal_sigla}</td>
+                            <td className="px-3 py-2 font-bold">{a.tipoEnvolvido}</td>
+                            <td className="px-3 py-2">
+                              <span className={`inline-block rounded px-2 py-0.5 text-[10px] font-bold ${
+                                a.decisao === 'aceito' ? 'bg-emerald-200 text-emerald-900' :
+                                a.decisao === 'rejeitado_parte' ? 'bg-rose-200 text-rose-900' :
+                                'bg-amber-200 text-amber-900'
+                              }`}>
+                                {a.decisao}
+                              </span>
+                            </td>
+                            <td className="px-3 py-2 text-slate-600">{a.motivo}</td>
+                            <td className="px-3 py-2 text-slate-500">{a.dataUltimaMov ?? '—'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </details>
+
+                {/* Rejeitados — JSON bruto */}
+                {(resultV2Raw.rejeitados?.length ?? 0) > 0 && (
+                  <details className="rounded-lg border border-rose-200 bg-white">
+                    <summary className="cursor-pointer px-4 py-3 bg-rose-50 text-[13px] font-semibold text-rose-900 hover:bg-rose-100">
+                      ❌ JSON bruto dos {resultV2Raw.rejeitados?.length} processos REJEITADOS
+                    </summary>
+                    <pre className="overflow-auto max-h-[500px] p-4 text-[11px] font-mono text-slate-700">
+                      {JSON.stringify(resultV2Raw.rejeitados, null, 2)}
+                    </pre>
+                  </details>
+                )}
+
+                {/* Aceitos */}
+                <details className="rounded-lg border border-emerald-200 bg-white">
+                  <summary className="cursor-pointer px-4 py-3 bg-emerald-50 text-[13px] font-semibold text-emerald-900 hover:bg-emerald-100">
+                    ✅ JSON bruto dos {resultV2Raw.aceitos?.length} processos ACEITOS
+                  </summary>
+                  <pre className="overflow-auto max-h-[500px] p-4 text-[11px] font-mono text-slate-700">
+                    {JSON.stringify(resultV2Raw.aceitos, null, 2)}
+                  </pre>
+                </details>
+
+                {/* Saldo */}
+                <div className="flex items-center gap-6 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-amber-700">Saldo antes</p>
+                    <p className="text-[15px] font-bold text-amber-900">{resultV2Raw.saldoAntes}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-amber-700">Saldo depois</p>
+                    <p className="text-[15px] font-bold text-amber-900">{resultV2Raw.saldoDepois}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-amber-700">Consumido</p>
+                    <p className="text-[15px] font-bold text-amber-900">
+                      {(resultV2Raw.saldoAntes ?? 0) - (resultV2Raw.saldoDepois ?? 0)}
+                    </p>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {/* ───────── V1 /busca — DIÁRIOS OFICIAIS (onde nomeações aparecem) ───────── */}
