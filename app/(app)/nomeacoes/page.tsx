@@ -59,62 +59,59 @@ export default async function NomeacoesPage() {
         radarConfigurado={radarConfigurado}
       />
 
-      {/* ━━━━━━━━━━━━━━━━━━━━━━ NOMEAÇÕES CONFIRMADAS (V2) ━━━━━━━━━━━━━━━━━━━━━━
-          Processo já cadastrado no tribunal. Documentos disponíveis para download. */}
       {(() => {
-        const nomeacoesList = citacoes.filter((c) => c.fonte === 'v2_tribunal')
-        return nomeacoesList.length > 0 ? (
-          <div className="space-y-4">
-            <div className="flex items-center gap-3 border-l-4 border-[#a3e635] pl-4 py-2">
-              <div>
-                <p className="text-[14px] font-inter font-black uppercase tracking-[0.08em] text-slate-900">
-                  ✅ {nomeacoesList.length} nomeaç{nomeacoesList.length > 1 ? 'ões' : 'ão'} confirmada{nomeacoesList.length > 1 ? 's' : ''}
-                </p>
-                <p className="text-[11px] text-slate-500 mt-0.5">
-                  Processo cadastrado no tribunal · documentos disponíveis para download
-                </p>
-              </div>
-            </div>
-            <CitacoesList citacoes={nomeacoesList} />
-          </div>
-        ) : null
-      })()}
-
-      {/* ━━━━━━━━━━━━━━━━━━━━━━ PUBLICAÇÕES NO DIÁRIO OFICIAL ━━━━━━━━━━━━━━━━━━━━
-          Achado no DJ mas processo não cadastrado ainda.
-          Pode criar perícia manualmente, mas documentos NÃO estão disponíveis ainda. */}
-      {(() => {
-        const djList = citacoes.filter((c) => c.fonte === 'v1_email_dj' || c.fonte === 'escavador')
-        return djList.length > 0 ? (
-          <div className="space-y-4">
-            <div className="flex items-center gap-3 border-l-4 border-amber-400 pl-4 py-2">
-              <div>
-                <p className="text-[14px] font-inter font-black uppercase tracking-[0.08em] text-slate-900">
-                  📰 {djList.length} publicaç{djList.length > 1 ? 'ões' : 'ão'} no Diário Oficial
-                </p>
-                <p className="text-[11px] text-slate-500 mt-0.5">
-                  Nomeação publicada · <span className="text-amber-700 font-semibold">documentos ainda não disponíveis</span> — tribunal não atualizou o processo
-                </p>
-              </div>
-            </div>
-            <CitacoesList citacoes={djList} showCriarPericia={true} />
-          </div>
-        ) : null
-      })()}
-
-      {/* Outras fontes (manual etc) */}
-      {(() => {
-        const outros = citacoes.filter((c) =>
-          c.fonte !== 'v2_tribunal' && c.fonte !== 'v1_email_dj' && c.fonte !== 'escavador'
+        // ─── Classificação + Dedup cross-fonte por CNJ ─────────────────────
+        // Regra: V2 (tribunal cadastrado) tem prioridade.
+        // Se um CNJ já aparece na V2, NÃO mostra ele na seção de DJ.
+        const nomeacoesConfirmadas = citacoes.filter((c) => c.fonte === 'v2_tribunal')
+        const cnjsV2 = new Set(
+          nomeacoesConfirmadas.map((c) => c.numeroProcesso).filter(Boolean) as string[]
         )
-        return outros.length > 0 ? (
-          <div className="space-y-4">
-            <p className="text-[12px] font-inter font-semibold uppercase tracking-[0.08em] text-slate-500">
-              {outros.length} outra{outros.length > 1 ? 's' : ''} citaç{outros.length > 1 ? 'ões' : 'ão'}
-            </p>
-            <CitacoesList citacoes={outros} showCriarPericia={false} />
-          </div>
-        ) : null
+
+        // Tudo que não é V2 entra em "Publicações no DJ" — desde que o CNJ não esteja na V2
+        const publicacoesDJ = citacoes.filter((c) => {
+          if (c.fonte === 'v2_tribunal') return false
+          if (c.numeroProcesso && cnjsV2.has(c.numeroProcesso)) return false // dedup
+          return true
+        })
+
+        return (
+          <>
+            {/* ━━━━━━━━━━━━━━━━━━━━ NOMEAÇÕES CONFIRMADAS (V2) ━━━━━━━━━━━━━━━━━━ */}
+            {nomeacoesConfirmadas.length > 0 && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 border-l-4 border-[#a3e635] pl-4 py-2">
+                  <div>
+                    <p className="text-[14px] font-inter font-black uppercase tracking-[0.08em] text-slate-900">
+                      ✅ {nomeacoesConfirmadas.length} nomeaç{nomeacoesConfirmadas.length > 1 ? 'ões' : 'ão'} confirmada{nomeacoesConfirmadas.length > 1 ? 's' : ''}
+                    </p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Processo cadastrado no tribunal · documentos disponíveis para download
+                    </p>
+                  </div>
+                </div>
+                <CitacoesList citacoes={nomeacoesConfirmadas} showBadgeFonte={true} />
+              </div>
+            )}
+
+            {/* ━━━━━━━━━━━━━━━━━━━━ PUBLICAÇÕES NO DIÁRIO OFICIAL ━━━━━━━━━━━━━━ */}
+            {publicacoesDJ.length > 0 && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 border-l-4 border-amber-400 pl-4 py-2">
+                  <div>
+                    <p className="text-[14px] font-inter font-black uppercase tracking-[0.08em] text-slate-900">
+                      📰 {publicacoesDJ.length} publicaç{publicacoesDJ.length > 1 ? 'ões' : 'ão'} no Diário Oficial
+                    </p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Nomeação publicada · documentos ainda não estão disponíveis · você pode criar a perícia manualmente
+                    </p>
+                  </div>
+                </div>
+                <CitacoesList citacoes={publicacoesDJ} showCriarPericia={true} showBadgeFonte={false} />
+              </div>
+            )}
+          </>
+        )
       })()}
 
     </div>

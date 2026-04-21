@@ -12,11 +12,20 @@ import { cn } from '@/lib/utils'
 interface Props {
   citacoes: CitacaoSerializada[]
   showCriarPericia?: boolean
+  showBadgeFonte?: boolean  // se true, mostra badge "Docs disponíveis" ou similar
 }
 
 // ─── Single card — design system PeriLaB ─────────────────────────────────────
 
-function CitacaoCard({ citacao, showCriarPericia = true }: { citacao: CitacaoSerializada; showCriarPericia?: boolean }) {
+function CitacaoCard({
+  citacao,
+  showCriarPericia = true,
+  showBadgeFonte = false,
+}: {
+  citacao: CitacaoSerializada
+  showCriarPericia?: boolean
+  showBadgeFonte?: boolean
+}) {
   const [expanded, setExpanded] = useState(false)
   const [lida, setLida] = useState(citacao.visualizado)
   const [isPending, startTransition] = useTransition()
@@ -81,20 +90,10 @@ function CitacaoCard({ citacao, showCriarPericia = true }: { citacao: CitacaoSer
               Manual
             </span>
           )}
-          {/* Indicador de origem + capacidade de baixar docs */}
-          {citacao.fonte === 'v2_tribunal' && (
+          {/* Badge "Docs disponíveis" só aparece em V2 quando showBadgeFonte=true */}
+          {showBadgeFonte && citacao.fonte === 'v2_tribunal' && (
             <span className="text-[8px] font-black text-emerald-700 bg-emerald-50 px-1.5 py-0.5 uppercase tracking-widest border border-emerald-200">
               ✓ Docs disponíveis
-            </span>
-          )}
-          {citacao.fonte === 'v1_email_dj' && (
-            <span className="text-[8px] font-black text-amber-700 bg-amber-50 px-1.5 py-0.5 uppercase tracking-widest border border-amber-200">
-              ⏳ Achado no DJ · aguardando docs
-            </span>
-          )}
-          {citacao.fonte === 'escavador' && (
-            <span className="text-[8px] font-black text-slate-600 bg-slate-50 px-1.5 py-0.5 uppercase tracking-widest border border-slate-200">
-              Diário Oficial
             </span>
           )}
         </div>
@@ -181,7 +180,7 @@ function CitacaoCard({ citacao, showCriarPericia = true }: { citacao: CitacaoSer
 
 // ─── List ─────────────────────────────────────────────────────────────────────
 
-export function CitacoesList({ citacoes, showCriarPericia = true }: Props) {
+export function CitacoesList({ citacoes, showCriarPericia = true, showBadgeFonte = false }: Props) {
   if (citacoes.length === 0) {
     return (
       <EmptyState
@@ -207,7 +206,7 @@ export function CitacoesList({ citacoes, showCriarPericia = true }: Props) {
         </div>
       )}
       {citacoes.map((c) => (
-        <CitacaoCard key={c.id} citacao={c} showCriarPericia={showCriarPericia} />
+        <CitacaoCard key={c.id} citacao={c} showCriarPericia={showCriarPericia} showBadgeFonte={showBadgeFonte} />
       ))}
     </div>
   )
