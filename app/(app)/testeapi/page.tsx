@@ -41,10 +41,10 @@ export default function TesteApiPage() {
     })
   }
 
-  function handleBuscarV2Raw() {
+  function handleBuscarV2Raw(opts?: { semCpf?: boolean; comHomonimos?: boolean }) {
     setResultV2Raw(null)
     startV2RawTransition(async () => {
-      const res = await testBuscarV2Raw(nome, cpf)
+      const res = await testBuscarV2Raw(nome, cpf, opts)
       setResultV2Raw(res)
     })
   }
@@ -153,14 +153,35 @@ export default function TesteApiPage() {
           mostra <strong>TODOS os processos</strong> retornados + análise de cada um: quais passaram, quais foram rejeitados e <strong>por quê</strong>.
           Se sua perícia está sendo cortada por algum filtro, aparece aqui na seção "Rejeitados".
         </p>
-        <button
-          onClick={handleBuscarV2Raw}
-          disabled={isV2RawPending || !nome.trim()}
-          className="w-full flex items-center justify-center gap-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white px-4 py-3 text-[12px] font-bold uppercase tracking-widest transition-all disabled:opacity-50"
-        >
-          {isV2RawPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bug className="h-4 w-4" />}
-          Debug — Buscar V2 sem filtros
-        </button>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <button
+            onClick={() => handleBuscarV2Raw()}
+            disabled={isV2RawPending || !nome.trim()}
+            className="flex items-center justify-center gap-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white px-3 py-3 text-[11px] font-bold uppercase tracking-widest transition-all disabled:opacity-50"
+          >
+            {isV2RawPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bug className="h-4 w-4" />}
+            V2 Normal (nome + CPF)
+          </button>
+          <button
+            onClick={() => handleBuscarV2Raw({ semCpf: true })}
+            disabled={isV2RawPending || !nome.trim()}
+            className="flex items-center justify-center gap-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white px-3 py-3 text-[11px] font-bold uppercase tracking-widest transition-all disabled:opacity-50"
+          >
+            {isV2RawPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bug className="h-4 w-4" />}
+            V2 SEM CPF (só nome)
+          </button>
+          <button
+            onClick={() => handleBuscarV2Raw({ comHomonimos: true })}
+            disabled={isV2RawPending || !nome.trim()}
+            className="flex items-center justify-center gap-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white px-3 py-3 text-[11px] font-bold uppercase tracking-widest transition-all disabled:opacity-50"
+          >
+            {isV2RawPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bug className="h-4 w-4" />}
+            V2 COM HOMÔNIMOS
+          </button>
+        </div>
+        <p className="text-[11px] text-slate-500 mt-1">
+          💡 Se o "V2 Normal" não achou, tente "SEM CPF" (tribunal pode não ter seu CPF cadastrado no processo) ou "COM HOMÔNIMOS" (busca mais permissiva).
+        </p>
 
         {resultV2Raw && (
           <div className="space-y-4 pt-2">

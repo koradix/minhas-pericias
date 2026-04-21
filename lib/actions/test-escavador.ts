@@ -147,6 +147,7 @@ export interface TestV2RawResult {
 export async function testBuscarV2Raw(
   nome: string,
   cpf: string,
+  opts: { semCpf?: boolean; comHomonimos?: boolean } = {},
 ): Promise<TestV2RawResult> {
   const session = await auth()
   if (!session?.user?.id) return { ok: false, error: 'Não autenticado' }
@@ -155,7 +156,7 @@ export async function testBuscarV2Raw(
   if (!nomeTrim) return { ok: false, error: 'Nome é obrigatório' }
 
   const cpfDigits = cpf.replace(/\D/g, '')
-  const cpfParam = cpfDigits.length === 11 ? cpfDigits : null
+  const cpfParam = !opts.semCpf && cpfDigits.length === 11 ? cpfDigits : null
 
   const token = process.env.ESCAVADOR_API_TOKEN
   if (!token) return { ok: false, error: 'ESCAVADOR_API_TOKEN não configurado' }
@@ -170,6 +171,7 @@ export async function testBuscarV2Raw(
     const params = new URLSearchParams()
     params.set('nome', nomeTrim)
     if (cpfParam) params.set('cpf', cpfParam)
+    if (opts.comHomonimos) params.set('incluir_homonimos', 'true')
     params.set('limit', '100')
 
     const res = await fetch(`https://api.escavador.com/api/v2/envolvido/processos?${params.toString()}`, {
