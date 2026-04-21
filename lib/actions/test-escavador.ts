@@ -109,6 +109,126 @@ export async function testBuscarProcessosEnvolvido(
   }
 }
 
+// ─── V1 /busca — Diários Oficiais (onde nomeações realmente aparecem) ───────
+
+export interface TestV1BuscaResult {
+  ok: boolean
+  error?: string
+  saldoAntes?: number
+  saldoDepois?: number
+
+  query?: string
+  totalResultados?: number
+  totalPaginas?: number
+
+  // Itens crus da API (sem filtro de tribunal nem de nome exato)
+  rawItems?: unknown[]
+
+  // Distribuição por tribunal (DJRJ, DJSP, etc.) — ajuda identificar onde o user aparece
+  tribunalCounts?: Record<string, number>
+
+  // Items que mencionam "perito", "nomeacao", "perícia" — candidatos reais
+  candidatos?: unknown[]
+
+  durationMs?: number
+}
+
+/** Busca V1 crua — sem filtros de tribunal, sem exigir nome completo. Mostra TUDO. */
+export async function testBuscarV1(
+  termo: string,
+  opts: { comOperadores?: boolean } = {},
+): Promise<TestV1BuscaResult> {
+  const session = await auth()
+  if (!session?.user?.id) return { ok: false, error: 'Não autenticado' }
+
+  const termoTrim = termo.trim()
+  if (!termoTrim) return { ok: false, error: 'Informe nome ou CPF' }
+
+  const token = process.env.ESCAVADOR_API_TOKEN
+  if (!token) return { ok: false, error: 'ESCAVADOR_API_TOKEN não configurado' }
+
+  const svc = new EscavadorService()
+  const t0 = Date.now()
+
+  try {
+    const saldoAntes = await svc.verificarSaldo()
+
+    // Busca crua V1 — com aspas (frase exata)
+    const q = encodeURIComponent(`"${termoTrim}"`)
+    const baseUrl = `https://api.escavador.com/api/v1/busca?q=${q}&qo=d&qs=d&limit=50&page=1`
+    const url = opts.comOperadores
+      ? `${baseUrl}&utilizar_operadores_logicos=1`
+      : baseUrl
+
+    const res = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' },
+      cache: 'no-store',
+    })
+
+    if (!res.ok) {
+      return {
+        ok: false,
+        error: `HTTP ${res.status}: ${await res.text().catch(() => '')}`,
+        durationMs: Date.now() - t0,
+      }
+    }
+
+    const data = await res.json() as {
+      paginator: { total: number; total_pages?: number }
+      items: Array<{
+        id: number
+        tipo_resultado?: string
+        diario_sigla?: string
+        diario_nome?: string
+        diario_data?: string
+        texto?: string
+        link?: string
+      }>
+    }
+
+    const items = data.items ?? []
+
+    // Distribuição por tribunal
+    const tribunalCounts: Record<string, number> = {}
+    for (const item of items) {
+      const sigla = item.diario_sigla ?? '(sem sigla)'
+      tribunalCounts[sigla] = (tribunalCounts[sigla] ?? 0) + 1
+    }
+
+    // Candidatos: items que mencionam perito/perícia/nomeação no texto
+    const candidatoRegex = /per[íi]c|perito|vistori|nomea|designa|expert|laudo/i
+    const candidatos = items.filter((i) => i.texto && candidatoRegex.test(i.texto))
+
+    const saldoDepois = await svc.verificarSaldo()
+
+    return {
+      ok: true,
+      saldoAntes: saldoAntes.saldo,
+      saldoDepois: saldoDepois.saldo,
+      query: termoTrim,
+      totalResultados: data.paginator?.total ?? items.length,
+      totalPaginas: data.paginator?.total_pages ?? 1,
+      rawItems: items,
+      tribunalCounts,
+      candidatos,
+      durationMs: Date.now() - t0,
+    }
+  } catch (err) {
+    if (err instanceof EscavadorError) {
+      return {
+        ok: false,
+        error: `EscavadorError ${err.code}: ${err.message}`,
+        durationMs: Date.now() - t0,
+      }
+    }
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : String(err),
+      durationMs: Date.now() - t0,
+    }
+  }
+}
+
 // ─── Só saldo (rápido, grátis) ────────────────────────────────────────────────
 
 export async function testVerificarSaldo(): Promise<{ ok: boolean; saldo?: number; descricao?: string; error?: string }> {

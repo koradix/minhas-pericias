@@ -1,15 +1,24 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Loader2, Search, Wallet } from 'lucide-react'
-import { testBuscarProcessosEnvolvido, testVerificarSaldo, type TestEscavadorResult } from '@/lib/actions/test-escavador'
+import { Loader2, Search, Wallet, FileSearch } from 'lucide-react'
+import {
+  testBuscarProcessosEnvolvido,
+  testVerificarSaldo,
+  testBuscarV1,
+  type TestEscavadorResult,
+  type TestV1BuscaResult,
+} from '@/lib/actions/test-escavador'
 
 export default function TesteApiPage() {
   const [nome, setNome] = useState('')
   const [cpf, setCpf] = useState('')
   const [result, setResult] = useState<TestEscavadorResult | null>(null)
+  const [resultV1, setResultV1] = useState<TestV1BuscaResult | null>(null)
+  const [termoV1, setTermoV1] = useState('')
   const [saldoInfo, setSaldoInfo] = useState<{ saldo?: number; descricao?: string; error?: string } | null>(null)
   const [isPending, startTransition] = useTransition()
+  const [isV1Pending, startV1Transition] = useTransition()
   const [isSaldoPending, startSaldoTransition] = useTransition()
 
   function handleBuscar() {
@@ -17,6 +26,14 @@ export default function TesteApiPage() {
     startTransition(async () => {
       const res = await testBuscarProcessosEnvolvido(nome, cpf)
       setResult(res)
+    })
+  }
+
+  function handleBuscarV1() {
+    setResultV1(null)
+    startV1Transition(async () => {
+      const res = await testBuscarV1(termoV1 || nome)
+      setResultV1(res)
     })
   }
 
@@ -109,6 +126,130 @@ export default function TesteApiPage() {
           {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
           Buscar processos
         </button>
+      </div>
+
+      {/* ───────── V1 /busca — DIÁRIOS OFICIAIS (onde nomeações aparecem) ───────── */}
+      <div className="rounded-xl border-2 border-lime-300 bg-lime-50/30 p-6 space-y-4">
+        <div className="flex items-center gap-2">
+          <FileSearch className="h-4 w-4 text-lime-700" />
+          <h2 className="text-[14px] font-semibold text-slate-800">
+            V1 Busca em Diários Oficiais (R$ 0,03 por busca — ONDE NOMEAÇÕES APARECEM)
+          </h2>
+        </div>
+        <p className="text-[12px] text-slate-600">
+          Se sua perícia não apareceu na V2, ela provavelmente está aqui. A V1 busca em publicações
+          dos Diários Oficiais dos tribunais (onde nomeações de peritos são publicadas).
+        </p>
+        <div>
+          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 block">
+            Termo de busca (nome ou CPF) — se vazio usa o nome do campo acima
+          </label>
+          <input
+            type="text"
+            value={termoV1}
+            onChange={(e) => setTermoV1(e.target.value)}
+            placeholder="Ex: Marcus Frederico"
+            className="w-full rounded-lg border-2 border-slate-200 bg-white px-4 py-3 text-[14px] text-slate-800 focus:outline-none focus:border-lime-600 transition-all"
+          />
+        </div>
+        <button
+          onClick={handleBuscarV1}
+          disabled={isV1Pending || (!termoV1.trim() && !nome.trim())}
+          className="w-full flex items-center justify-center gap-2 rounded-lg bg-lime-600 hover:bg-lime-700 text-white px-4 py-3 text-[12px] font-bold uppercase tracking-widest transition-all disabled:opacity-50"
+        >
+          {isV1Pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSearch className="h-4 w-4" />}
+          Buscar em Diários Oficiais (V1)
+        </button>
+
+        {resultV1 && (
+          <div className="space-y-4 pt-2">
+            {!resultV1.ok ? (
+              <div className="rounded-lg bg-rose-50 border border-rose-200 px-4 py-3">
+                <p className="text-[13px] text-rose-800">❌ {resultV1.error}</p>
+                {resultV1.durationMs != null && (
+                  <p className="text-[11px] text-rose-600 mt-1">{resultV1.durationMs}ms</p>
+                )}
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="rounded-lg bg-white border border-lime-200 px-4 py-3">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Total encontrados</p>
+                    <p className="text-[20px] font-bold text-slate-900">{resultV1.totalResultados ?? 0}</p>
+                  </div>
+                  <div className="rounded-lg bg-white border border-lime-200 px-4 py-3">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Páginas</p>
+                    <p className="text-[20px] font-bold text-slate-900">{resultV1.totalPaginas ?? 0}</p>
+                  </div>
+                  <div className="rounded-lg bg-white border border-lime-200 px-4 py-3">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Candidatos (com perito/laudo)</p>
+                    <p className="text-[20px] font-bold text-lime-700">{resultV1.candidatos?.length ?? 0}</p>
+                  </div>
+                  <div className="rounded-lg bg-white border border-lime-200 px-4 py-3">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Tempo</p>
+                    <p className="text-[20px] font-bold text-slate-900">{resultV1.durationMs}ms</p>
+                  </div>
+                </div>
+
+                {/* Distribuição por tribunal */}
+                {resultV1.tribunalCounts && Object.keys(resultV1.tribunalCounts).length > 0 && (
+                  <div className="rounded-lg bg-white border border-slate-200 p-4">
+                    <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-3">
+                      Distribuição por Diário Oficial (DJ*) / Tribunal
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {Object.entries(resultV1.tribunalCounts)
+                        .sort((a, b) => b[1] - a[1])
+                        .map(([sigla, count]) => (
+                          <span key={sigla} className="text-[11px] font-mono bg-slate-100 text-slate-700 px-2 py-1 rounded">
+                            {sigla}: <strong>{count}</strong>
+                          </span>
+                        ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Saldo */}
+                <div className="flex items-center gap-6 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-amber-700">Saldo antes</p>
+                    <p className="text-[15px] font-bold text-amber-900">{resultV1.saldoAntes}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-amber-700">Saldo depois</p>
+                    <p className="text-[15px] font-bold text-amber-900">{resultV1.saldoDepois}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-amber-700">Consumido</p>
+                    <p className="text-[15px] font-bold text-amber-900">
+                      {(resultV1.saldoAntes ?? 0) - (resultV1.saldoDepois ?? 0)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Candidatos (items com perito/laudo/nomeação) */}
+                <details open className="rounded-lg border-2 border-lime-400 bg-white">
+                  <summary className="cursor-pointer px-4 py-3 bg-lime-100 text-[13px] font-bold text-lime-900 hover:bg-lime-200">
+                    🎯 CANDIDATOS — items que mencionam perito/perícia/laudo ({resultV1.candidatos?.length ?? 0})
+                  </summary>
+                  <pre className="overflow-auto max-h-[500px] p-4 text-[11px] font-mono text-slate-700">
+                    {JSON.stringify(resultV1.candidatos, null, 2)}
+                  </pre>
+                </details>
+
+                {/* Todos os items brutos */}
+                <details className="rounded-lg border border-slate-200 bg-white">
+                  <summary className="cursor-pointer px-4 py-3 bg-slate-50 text-[13px] font-semibold text-slate-800 hover:bg-slate-100">
+                    Todos os resultados brutos ({resultV1.rawItems?.length ?? 0})
+                  </summary>
+                  <pre className="overflow-auto max-h-[500px] p-4 text-[11px] font-mono text-slate-700">
+                    {JSON.stringify(resultV1.rawItems, null, 2)}
+                  </pre>
+                </details>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Resultado */}
