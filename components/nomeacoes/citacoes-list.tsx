@@ -90,10 +90,15 @@ function CitacaoCard({
               Manual
             </span>
           )}
-          {/* Badge "Docs disponíveis" só aparece em V2 quando showBadgeFonte=true */}
+          {/* Badge de fonte só aparece quando showBadgeFonte=true */}
           {showBadgeFonte && citacao.fonte === 'v2_tribunal' && (
             <span className="text-[8px] font-black text-emerald-700 bg-emerald-50 px-1.5 py-0.5 uppercase tracking-widest border border-emerald-200">
               ✓ Docs disponíveis
+            </span>
+          )}
+          {showBadgeFonte && (citacao.fonte === 'v1_email_dj' || citacao.fonte === 'escavador') && (
+            <span className="text-[8px] font-black text-amber-700 bg-amber-50 px-1.5 py-0.5 uppercase tracking-widest border border-amber-200">
+              📰 Diário Oficial
             </span>
           )}
         </div>

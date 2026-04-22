@@ -2,13 +2,13 @@ export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
 import { redirect } from 'next/navigation'
-import { Plus } from 'lucide-react'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { PageHeader } from '@/components/shared/page-header'
 import { getCitacoes } from '@/lib/data/nomeacoes'
 import { SearchProviderSwitch } from '@/components/nomeacoes/search-provider-switch'
 import { CitacoesList } from '@/components/nomeacoes/citacoes-list'
+import { dedupCitacoes, separarGrupos } from '@/lib/utils/citacao-dedup'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Nomeações' }
@@ -60,54 +60,50 @@ export default async function NomeacoesPage() {
       />
 
       {(() => {
-        // ─── Classificação + Dedup cross-fonte por CNJ ─────────────────────
-        // Regra: V2 (tribunal cadastrado) tem prioridade.
-        // Se um CNJ já aparece na V2, NÃO mostra ele na seção de DJ.
-        const nomeacoesConfirmadas = citacoes.filter((c) => c.fonte === 'v2_tribunal')
-        const cnjsV2 = new Set(
-          nomeacoesConfirmadas.map((c) => c.numeroProcesso).filter(Boolean) as string[]
-        )
+        // ─── Dedup inteligente por CNJ + comparação de partes ─────────────
+        // Agrupa duplicatas, mantém a de MAIOR FORÇA como principal:
+        //   v2_tribunal > v1_email_dj > escavador (V1 DJE nome) > manual
+        // Match: CNJ normalizado, OU (quando sem CNJ) partes do snippet
+        const nomePerito = session.user.name ?? ''
+        const grupos = dedupCitacoes(citacoes, nomePerito)
+        const { confirmadas, diarioOficial } = separarGrupos(grupos)
 
-        // Tudo que não é V2 entra em "Publicações no DJ" — desde que o CNJ não esteja na V2
-        const publicacoesDJ = citacoes.filter((c) => {
-          if (c.fonte === 'v2_tribunal') return false
-          if (c.numeroProcesso && cnjsV2.has(c.numeroProcesso)) return false // dedup
-          return true
-        })
+        const confirmadasCitacoes = confirmadas.map(g => g.principal)
+        const diarioOficialCitacoes = diarioOficial.map(g => g.principal)
 
         return (
           <>
             {/* ━━━━━━━━━━━━━━━━━━━━ NOMEAÇÕES CONFIRMADAS (V2) ━━━━━━━━━━━━━━━━━━ */}
-            {nomeacoesConfirmadas.length > 0 && (
+            {confirmadasCitacoes.length > 0 && (
               <div className="space-y-4">
                 <div className="flex items-center gap-3 border-l-4 border-[#a3e635] pl-4 py-2">
                   <div>
                     <p className="text-[14px] font-inter font-black uppercase tracking-[0.08em] text-slate-900">
-                      ✅ {nomeacoesConfirmadas.length} nomeaç{nomeacoesConfirmadas.length > 1 ? 'ões' : 'ão'} confirmada{nomeacoesConfirmadas.length > 1 ? 's' : ''}
+                      ✅ {confirmadasCitacoes.length} nomeaç{confirmadasCitacoes.length > 1 ? 'ões' : 'ão'} confirmada{confirmadasCitacoes.length > 1 ? 's' : ''}
                     </p>
                     <p className="text-[11px] text-slate-500 mt-0.5">
                       Processo cadastrado no tribunal · documentos disponíveis para download
                     </p>
                   </div>
                 </div>
-                <CitacoesList citacoes={nomeacoesConfirmadas} showBadgeFonte={true} />
+                <CitacoesList citacoes={confirmadasCitacoes} showBadgeFonte={true} />
               </div>
             )}
 
             {/* ━━━━━━━━━━━━━━━━━━━━ PUBLICAÇÕES NO DIÁRIO OFICIAL ━━━━━━━━━━━━━━ */}
-            {publicacoesDJ.length > 0 && (
+            {diarioOficialCitacoes.length > 0 && (
               <div className="space-y-4">
                 <div className="flex items-center gap-3 border-l-4 border-amber-400 pl-4 py-2">
                   <div>
                     <p className="text-[14px] font-inter font-black uppercase tracking-[0.08em] text-slate-900">
-                      📰 {publicacoesDJ.length} publicaç{publicacoesDJ.length > 1 ? 'ões' : 'ão'} no Diário Oficial
+                      📰 {diarioOficialCitacoes.length} publicaç{diarioOficialCitacoes.length > 1 ? 'ões' : 'ão'} no Diário Oficial
                     </p>
                     <p className="text-[11px] text-slate-500 mt-0.5">
                       Nomeação publicada · documentos ainda não estão disponíveis · você pode criar a perícia manualmente
                     </p>
                   </div>
                 </div>
-                <CitacoesList citacoes={publicacoesDJ} showCriarPericia={true} showBadgeFonte={false} />
+                <CitacoesList citacoes={diarioOficialCitacoes} showCriarPericia={true} showBadgeFonte={true} />
               </div>
             )}
           </>
