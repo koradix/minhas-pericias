@@ -506,15 +506,12 @@ export function CheckpointMediaPanel({
             <input ref={arquivoInputRef} type="file" accept="image/*,application/pdf,.docx,.doc,.xlsx,.xls" multiple className="hidden" onChange={handleArquivoChange} />
 
             <button
-              onClick={() => handleAbrirCamera()}
+              onClick={() => { handleFecharCamera(); setModo(null); fotoInputRef.current?.click() }}
               disabled={isPending}
-              className={cn(
-                "flex h-24 flex-col items-center justify-center bg-white transition-all disabled:opacity-50",
-                modo === 'camera' ? "bg-slate-50 ring-1 ring-inset ring-slate-200" : "hover:bg-slate-50"
-              )}
+              className="flex h-24 flex-col items-center justify-center bg-white transition-all disabled:opacity-50 hover:bg-slate-50"
             >
               <span className="text-[11px] font-bold uppercase tracking-widest text-slate-900">Câmera</span>
-              {modo === 'camera' && <span className="h-0.5 w-4 bg-[#a3e635] mt-2 animate-pulse" />}
+              <span className="text-[8px] font-semibold text-slate-400 mt-1">tirar foto</span>
             </button>
 
             <button

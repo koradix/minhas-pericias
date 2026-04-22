@@ -81,6 +81,12 @@ function RotaContent({
   checkpoints: CheckpointItem[]
 }) {
   const [checkpoints, setCheckpoints] = useState(initialCheckpoints)
+  // Sincroniza estado local quando a página re-renderiza com nova prop
+  // (ex: após criarVistoria + router.refresh)
+  useEffect(() => {
+    setCheckpoints(initialCheckpoints)
+  }, [initialCheckpoints])
+
   const hasCheckpoints = checkpoints.length > 0
   // Só 1 vistoria por perícia — se houver duplicatas, usa a primeira
   const vistoriaCheckpoint = checkpoints[0]
