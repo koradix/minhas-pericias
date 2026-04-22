@@ -8,7 +8,7 @@ import { PageHeader } from '@/components/shared/page-header'
 import { getCitacoes } from '@/lib/data/nomeacoes'
 import { SearchProviderSwitch } from '@/components/nomeacoes/search-provider-switch'
 import { CitacoesList } from '@/components/nomeacoes/citacoes-list'
-import { dedupCitacoes, separarGrupos } from '@/lib/utils/citacao-dedup'
+import { separarPorFonteSemCrossDedup } from '@/lib/utils/citacao-dedup'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Nomeações' }
@@ -60,21 +60,23 @@ export default async function NomeacoesPage() {
       />
 
       {(() => {
-        // Dedup inteligente: agrupa duplicatas e mantém a de MAIOR FORÇA
-        // v2_tribunal > v1_email_dj > escavador > manual
+        // Dedup INTERNO a cada fonte (V2 e DJ), SEM cross-dedup.
+        // Mesmo CNJ pode aparecer em ambas → duas visões complementares.
+        // Filtra apenas TJ/DJ (estaduais). Perito arquiva via "Descartar".
         const nomePerito = session.user.name ?? ''
-        const grupos = dedupCitacoes(citacoes, nomePerito)
-        const { confirmadas, diarioOficial } = separarGrupos(grupos)
+        const { confirmadas, diarioOficial } = separarPorFonteSemCrossDedup(citacoes, nomePerito)
 
-        const todasCitacoes = [
-          ...confirmadas.map(g => g.principal),
-          ...diarioOficial.map(g => g.principal),
-        ]
-
-        if (todasCitacoes.length === 0) return null
+        if (confirmadas.length === 0 && diarioOficial.length === 0) return null
 
         return (
-          <CitacoesList citacoes={todasCitacoes} showCriarPericia={true} showBadgeFonte={true} />
+          <div className="space-y-8">
+            {confirmadas.length > 0 && (
+              <CitacoesList citacoes={confirmadas} showCriarPericia={true} showBadgeFonte={true} />
+            )}
+            {diarioOficial.length > 0 && (
+              <CitacoesList citacoes={diarioOficial} showCriarPericia={true} showBadgeFonte={true} />
+            )}
+          </div>
         )
       })()}
 

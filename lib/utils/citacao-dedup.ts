@@ -191,3 +191,61 @@ export function separarGrupos(grupos: CitacaoAgrupada[]): {
 
   return { confirmadas, diarioOficial }
 }
+
+// ─── Dedup INDEPENDENTE por seção (mantém ambas visíveis) ──────────────────
+
+/**
+ * Retorna 2 listas DEDUPADAS internamente, SEM cross-dedup entre elas.
+ * Ou seja: o mesmo CNJ pode aparecer em "Nomeações V2" e "Diário Oficial",
+ * já que são fontes diferentes com informações complementares.
+ *
+ * Filtros:
+ * - Apenas tribunais estaduais (TJ*) ou diários estaduais (DJ*)
+ * - Ignora status = 'arquivada' e 'rejeitada' (peritocontrola via "Descartar")
+ *
+ * Dedup:
+ * - Dentro de cada seção, agrupa por CNJ (normalizado)
+ * - Se 2 citações V1 DJ têm mesmo CNJ, mantém a mais recente
+ */
+export function separarPorFonteSemCrossDedup(
+  citacoes: CitacaoSerializada[],
+  nomePerito: string,
+): {
+  confirmadas: CitacaoSerializada[]
+  diarioOficial: CitacaoSerializada[]
+} {
+  const ehTjOuDj = (sigla: string): boolean => {
+    const s = (sigla ?? '').toUpperCase()
+    return s.startsWith('TJ') || s.startsWith('DJ')
+  }
+
+  // Filtra: apenas estaduais + não arquivadas/rejeitadas
+  const elegiveis = citacoes.filter((c) => {
+    if (!ehTjOuDj(c.diarioSigla)) return false
+    if (c.status === 'arquivada' || c.status === 'rejeitada') return false
+    return true
+  })
+
+  // Separa por tipo de fonte
+  const v2 = elegiveis.filter((c) => c.fonte === 'v2_tribunal')
+  const dj = elegiveis.filter((c) => c.fonte !== 'v2_tribunal')
+
+  // Dedup interno V2 por CNJ
+  const v2Map = new Map<string, CitacaoSerializada>()
+  for (const c of v2) {
+    const key = normalizeCnj(c.numeroProcesso) ?? c.externalId
+    const existing = v2Map.get(key)
+    if (!existing || new Date(c.diarioData) > new Date(existing.diarioData)) {
+      v2Map.set(key, c)
+    }
+  }
+
+  // Dedup interno DJ por CNJ (ou por partes quando sem CNJ)
+  const djGrupos = dedupCitacoes(dj, nomePerito)
+  const diarioOficial = djGrupos.map((g) => g.principal)
+
+  return {
+    confirmadas: Array.from(v2Map.values()),
+    diarioOficial,
+  }
+}
