@@ -60,53 +60,21 @@ export default async function NomeacoesPage() {
       />
 
       {(() => {
-        // ─── Dedup inteligente por CNJ + comparação de partes ─────────────
-        // Agrupa duplicatas, mantém a de MAIOR FORÇA como principal:
-        //   v2_tribunal > v1_email_dj > escavador (V1 DJE nome) > manual
-        // Match: CNJ normalizado, OU (quando sem CNJ) partes do snippet
+        // Dedup inteligente: agrupa duplicatas e mantém a de MAIOR FORÇA
+        // v2_tribunal > v1_email_dj > escavador > manual
         const nomePerito = session.user.name ?? ''
         const grupos = dedupCitacoes(citacoes, nomePerito)
         const { confirmadas, diarioOficial } = separarGrupos(grupos)
 
-        const confirmadasCitacoes = confirmadas.map(g => g.principal)
-        const diarioOficialCitacoes = diarioOficial.map(g => g.principal)
+        const todasCitacoes = [
+          ...confirmadas.map(g => g.principal),
+          ...diarioOficial.map(g => g.principal),
+        ]
+
+        if (todasCitacoes.length === 0) return null
 
         return (
-          <>
-            {/* ━━━━━━━━━━━━━━━━━━━━ NOMEAÇÕES CONFIRMADAS (V2) ━━━━━━━━━━━━━━━━━━ */}
-            {confirmadasCitacoes.length > 0 && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 border-l-4 border-[#a3e635] pl-4 py-2">
-                  <div>
-                    <p className="text-[14px] font-inter font-black uppercase tracking-[0.08em] text-slate-900">
-                      ✅ {confirmadasCitacoes.length} nomeaç{confirmadasCitacoes.length > 1 ? 'ões' : 'ão'} confirmada{confirmadasCitacoes.length > 1 ? 's' : ''}
-                    </p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      Processo cadastrado no tribunal · documentos disponíveis para download
-                    </p>
-                  </div>
-                </div>
-                <CitacoesList citacoes={confirmadasCitacoes} showBadgeFonte={true} />
-              </div>
-            )}
-
-            {/* ━━━━━━━━━━━━━━━━━━━━ PUBLICAÇÕES NO DIÁRIO OFICIAL ━━━━━━━━━━━━━━ */}
-            {diarioOficialCitacoes.length > 0 && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 border-l-4 border-amber-400 pl-4 py-2">
-                  <div>
-                    <p className="text-[14px] font-inter font-black uppercase tracking-[0.08em] text-slate-900">
-                      📰 {diarioOficialCitacoes.length} publicaç{diarioOficialCitacoes.length > 1 ? 'ões' : 'ão'} no Diário Oficial
-                    </p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      Nomeação publicada · documentos ainda não estão disponíveis · você pode criar a perícia manualmente
-                    </p>
-                  </div>
-                </div>
-                <CitacoesList citacoes={diarioOficialCitacoes} showCriarPericia={true} showBadgeFonte={true} />
-              </div>
-            )}
-          </>
+          <CitacoesList citacoes={todasCitacoes} showCriarPericia={true} showBadgeFonte={true} />
         )
       })()}
 

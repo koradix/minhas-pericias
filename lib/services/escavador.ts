@@ -796,15 +796,31 @@ export class EscavadorService implements RadarProvider {
       `[Escavador] buscarPorNome: ${porTribunal.length} passaram pelo tribunal → ${comNome.length} com nome completo "${nome}"`,
     )
 
-    return comNome.map((item) => ({
-      externalId: `busca-${item.id}`,
-      diarioSigla: item.diario_sigla,
-      diarioNome: item.diario_nome,
-      diarioData: item.diario_data,
-      snippet: item.texto,
-      numeroProcesso: extrairNumeroProcesso(item.texto),
-      linkCitacao: item.link,
-    }))
+    // Extrai CNJ: primeiro do snippet; se não achar, segue link_api (igual no email)
+    const results: CitacaoResult[] = []
+    for (const item of comNome) {
+      let cnj = extrairNumeroProcesso(item.texto)
+
+      if (!cnj && (item as { link_api?: string }).link_api) {
+        const pageText = await this.fetchDiarioPageText((item as { link_api?: string }).link_api!)
+        if (pageText) {
+          cnj = this.findCnjNearSnippet(pageText, item.texto)
+        }
+      }
+
+      results.push({
+        externalId: `busca-${item.id}`,
+        diarioSigla: item.diario_sigla,
+        diarioNome: item.diario_nome,
+        diarioData: item.diario_data,
+        snippet: item.texto,
+        numeroProcesso: cnj,
+        linkCitacao: item.link,
+      })
+    }
+
+    console.log(`[Escavador] buscarPorNome: ${results.length} items, ${results.filter(r => r.numeroProcesso).length} com CNJ extraído`)
+    return results
   }
 
   // ── ENDPOINT 10 — Busca por EMAIL em diários (PAGO — R$ 0,03) ──────────────
