@@ -1191,7 +1191,35 @@ export interface TestFluxoResult {
  *
  * NÃO persiste nada no banco — apenas retorna o que seria salvo.
  */
-export async function testFluxoNomeacoes(): Promise<TestFluxoResult> {
+export async function getDadosBuscaPerfil(): Promise<{
+  nome: string
+  cpf: string
+  email: string
+}> {
+  const session = await auth()
+  if (!session?.user?.id) return { nome: '', cpf: '', email: '' }
+
+  const { prisma } = await import('@/lib/prisma')
+  const [user, peritoPerfil] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { name: true, email: true },
+    }),
+    prisma.peritoPerfil.findUnique({
+      where: { userId: session.user.id },
+      select: { cpf: true },
+    }),
+  ])
+  return {
+    nome: user?.name ?? '',
+    cpf: peritoPerfil?.cpf ?? '',
+    email: user?.email ?? '',
+  }
+}
+
+export async function testFluxoNomeacoes(
+  override?: { nome?: string; cpf?: string; email?: string }
+): Promise<TestFluxoResult> {
   const session = await auth()
   if (!session?.user?.id) {
     return {
@@ -1209,26 +1237,36 @@ export async function testFluxoNomeacoes(): Promise<TestFluxoResult> {
   const svc = new EscavadorService()
 
   try {
-    // Busca dados do perito (mesma lógica de buscarProcessosTribunais)
     const { prisma } = await import('@/lib/prisma')
-    const peritoPerfil = await prisma.peritoPerfil.findUnique({
-      where: { userId },
-      select: { cpf: true },
-    })
-    const cpfDigits = peritoPerfil?.cpf?.replace(/\D/g, '') ?? ''
-    const cpfParam = cpfDigits.length === 11 ? cpfDigits : null
 
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { name: true, email: true },
-    })
-    const nome = user?.name?.trim() ?? ''
-    const email = user?.email?.trim() ?? ''
+    // Se override veio preenchido, usa; senão cai no perfil
+    let nome = override?.nome?.trim() ?? ''
+    let email = override?.email?.trim() ?? ''
+    let cpfRaw = override?.cpf?.trim() ?? ''
+
+    if (!nome || !email || !cpfRaw) {
+      const [user, peritoPerfil] = await Promise.all([
+        prisma.user.findUnique({
+          where: { id: userId },
+          select: { name: true, email: true },
+        }),
+        prisma.peritoPerfil.findUnique({
+          where: { userId },
+          select: { cpf: true },
+        }),
+      ])
+      if (!nome) nome = user?.name?.trim() ?? ''
+      if (!email) email = user?.email?.trim() ?? ''
+      if (!cpfRaw) cpfRaw = peritoPerfil?.cpf ?? ''
+    }
+
+    const cpfDigits = cpfRaw.replace(/\D/g, '')
+    const cpfParam = cpfDigits.length === 11 ? cpfDigits : null
 
     if (!nome) {
       return {
         ok: false,
-        error: 'Nome não cadastrado',
+        error: 'Nome é obrigatório',
         v2: { paginas: 0, totalProcessos: 0, citacoes: [] },
         v1Email: { totalItems: 0, comCnjNoSnippet: 0, comCnjViaLinkApi: 0, semCnj: 0, citacoes: [] },
         confirmadas: [],

@@ -1,17 +1,33 @@
 'use client'
 
-import { useState, useTransition } from 'react'
-import { Loader2, Zap, User, Mail, CreditCard, Calendar } from 'lucide-react'
-import { testFluxoNomeacoes, type TestFluxoResult } from '@/lib/actions/test-escavador'
+import { useEffect, useState, useTransition } from 'react'
+import { Loader2, Zap, Calendar } from 'lucide-react'
+import {
+  testFluxoNomeacoes,
+  getDadosBuscaPerfil,
+  type TestFluxoResult,
+} from '@/lib/actions/test-escavador'
 
 export default function TesteApiPage() {
+  const [nome, setNome] = useState('')
+  const [cpf, setCpf] = useState('')
+  const [email, setEmail] = useState('')
+
   const [resultFluxo, setResultFluxo] = useState<TestFluxoResult | null>(null)
   const [isFluxoPending, startFluxoTransition] = useTransition()
+
+  useEffect(() => {
+    getDadosBuscaPerfil().then((d) => {
+      setNome(d.nome)
+      setCpf(d.cpf)
+      setEmail(d.email)
+    })
+  }, [])
 
   function handleTestFluxo() {
     setResultFluxo(null)
     startFluxoTransition(async () => {
-      const res = await testFluxoNomeacoes()
+      const res = await testFluxoNomeacoes({ nome, cpf, email })
       setResultFluxo(res)
     })
   }
@@ -38,10 +54,50 @@ export default function TesteApiPage() {
         </p>
       </div>
 
+      {/* ━━━━━━━━━━━━━━━━ Formulário ━━━━━━━━━━━━━━━━ */}
+      <div className="rounded-xl border-2 border-slate-200 bg-white p-5 space-y-3">
+        <div>
+          <label className="block text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-1">
+            Nome
+          </label>
+          <input
+            type="text"
+            value={nome}
+            onChange={(e) => setNome(e.target.value)}
+            placeholder="Nome completo do perito"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-[14px] text-slate-900 focus:border-indigo-500 focus:outline-none"
+          />
+        </div>
+        <div>
+          <label className="block text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-1">
+            CPF
+          </label>
+          <input
+            type="text"
+            value={cpf}
+            onChange={(e) => setCpf(e.target.value)}
+            placeholder="000.000.000-00"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-[14px] font-mono text-slate-900 focus:border-indigo-500 focus:outline-none"
+          />
+        </div>
+        <div>
+          <label className="block text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-1">
+            Email
+          </label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="email@exemplo.com"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-[14px] font-mono text-slate-900 focus:border-indigo-500 focus:outline-none"
+          />
+        </div>
+      </div>
+
       {/* Botão disparar */}
       <button
         onClick={handleTestFluxo}
-        disabled={isFluxoPending}
+        disabled={isFluxoPending || !nome.trim()}
         className="w-full flex items-center justify-center gap-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-5 text-[14px] font-black uppercase tracking-widest transition-all disabled:opacity-50 shadow-md"
       >
         {isFluxoPending
@@ -58,44 +114,12 @@ export default function TesteApiPage() {
             </div>
           ) : (
             <>
-              {/* ━━━━━━━━━━━━━━━━ Dados do perito ━━━━━━━━━━━━━━━━ */}
-              {resultFluxo.input && (
-                <div className="rounded-xl border-2 border-indigo-300 bg-indigo-50/30 p-6 space-y-3">
-                  <p className="text-[11px] font-black uppercase tracking-widest text-indigo-700">
-                    Dados usados na busca
-                  </p>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-3">
-                      <User className="h-4 w-4 text-slate-500" />
-                      <span className="text-[11px] font-bold uppercase text-slate-400 tracking-widest w-16">Nome</span>
-                      <span className="text-[14px] font-semibold text-slate-800">{resultFluxo.input.nome}</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Mail className="h-4 w-4 text-slate-500" />
-                      <span className="text-[11px] font-bold uppercase text-slate-400 tracking-widest w-16">Email</span>
-                      <span className="text-[14px] font-mono text-slate-800">
-                        {resultFluxo.input.email ?? <span className="text-slate-400 italic">(não cadastrado)</span>}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <CreditCard className="h-4 w-4 text-slate-500" />
-                      <span className="text-[11px] font-bold uppercase text-slate-400 tracking-widest w-16">CPF</span>
-                      <span className="text-[14px] font-mono text-slate-800">
-                        {resultFluxo.input.cpf ?? <span className="text-slate-400 italic">(não cadastrado)</span>}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3 pt-2 border-t border-indigo-200">
-                      <Calendar className="h-4 w-4 text-indigo-500" />
-                      <span className="text-[11px] font-bold uppercase text-indigo-500 tracking-widest w-16">Busca</span>
-                      <span className="text-[13px] font-semibold text-indigo-900">
-                        {new Date().toLocaleString('pt-BR')}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
               {/* ━━━━━━━━━━━━━━━━ Resultados ━━━━━━━━━━━━━━━━ */}
+              <div className="flex items-center gap-2 text-[12px] text-slate-500">
+                <Calendar className="h-3.5 w-3.5" />
+                Busca em {new Date().toLocaleString('pt-BR')}
+              </div>
+
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="rounded-lg bg-emerald-50 border-2 border-emerald-300 px-4 py-3">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-700">Confirmadas (V2)</p>
@@ -115,7 +139,7 @@ export default function TesteApiPage() {
                 </div>
               </div>
 
-              {/* ━━━━━━━━━━━━━━━━ Processos (com data) ━━━━━━━━━━━━━━━━ */}
+              {/* ━━━━━━━━━━━━━━━━ Processos ━━━━━━━━━━━━━━━━ */}
               {resultFluxo.confirmadas.length > 0 && (
                 <div className="rounded-lg border-2 border-emerald-400 bg-white overflow-hidden">
                   <div className="bg-emerald-100 px-4 py-3">
