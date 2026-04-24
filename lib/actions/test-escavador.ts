@@ -1131,6 +1131,236 @@ export async function testConsultarBuscaAssincrona(
   }
 }
 
+// ─── SIMULAÇÃO DO FLUXO REAL DE /nomeacoes (sem persistir) ───────────────────
+
+export interface TestFluxoResult {
+  ok: boolean
+  error?: string
+  durationMs?: number
+
+  saldoAntes?: number
+  saldoDepois?: number
+  creditosConsumidos?: number
+
+  // Inputs que seriam usados
+  input?: { nome: string; cpf: string | null; email: string | null }
+
+  // Dados brutos por rota
+  v2: {
+    paginas: number
+    totalProcessos: number
+    citacoes: Array<{
+      externalId: string
+      diarioSigla: string
+      diarioNome: string
+      diarioData: string
+      snippet: string
+      numeroProcesso: string | null
+      linkCitacao: string
+      fonte: string
+    }>
+  }
+  v1Email: {
+    totalItems: number
+    comCnjNoSnippet: number
+    comCnjViaLinkApi: number
+    semCnj: number
+    citacoes: Array<{
+      externalId: string
+      diarioSigla: string
+      diarioNome: string
+      diarioData: string
+      snippet: string
+      numeroProcesso: string | null
+      linkCitacao: string
+      fonte: string
+    }>
+  }
+
+  // Após dedup (replicando a lógica do separarPorFonteSemCrossDedup)
+  confirmadas: Array<Record<string, unknown>>
+  diarioOficial: Array<Record<string, unknown>>
+}
+
+/**
+ * Simula EXATAMENTE o que /nomeacoes faz ao clicar "buscar":
+ *   1. GET /api/v2/envolvido/processos (páginas 1..5) — custa R$ 4,50
+ *   2. GET /api/v1/busca?q="{email}" — custa R$ 0,03
+ *   3. Para cada item V1 sem CNJ no snippet, segue item.link_api (grátis)
+ *   4. Aplica separarPorFonteSemCrossDedup com filtro TJ/DJ
+ *
+ * NÃO persiste nada no banco — apenas retorna o que seria salvo.
+ */
+export async function testFluxoNomeacoes(): Promise<TestFluxoResult> {
+  const session = await auth()
+  if (!session?.user?.id) {
+    return {
+      ok: false,
+      error: 'Não autenticado',
+      v2: { paginas: 0, totalProcessos: 0, citacoes: [] },
+      v1Email: { totalItems: 0, comCnjNoSnippet: 0, comCnjViaLinkApi: 0, semCnj: 0, citacoes: [] },
+      confirmadas: [],
+      diarioOficial: [],
+    }
+  }
+
+  const userId = session.user.id
+  const t0 = Date.now()
+  const svc = new EscavadorService()
+
+  try {
+    // Busca dados do perito (mesma lógica de buscarProcessosTribunais)
+    const { prisma } = await import('@/lib/prisma')
+    const peritoPerfil = await prisma.peritoPerfil.findUnique({
+      where: { userId },
+      select: { cpf: true },
+    })
+    const cpfDigits = peritoPerfil?.cpf?.replace(/\D/g, '') ?? ''
+    const cpfParam = cpfDigits.length === 11 ? cpfDigits : null
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true, email: true },
+    })
+    const nome = user?.name?.trim() ?? ''
+    const email = user?.email?.trim() ?? ''
+
+    if (!nome) {
+      return {
+        ok: false,
+        error: 'Nome não cadastrado',
+        v2: { paginas: 0, totalProcessos: 0, citacoes: [] },
+        v1Email: { totalItems: 0, comCnjNoSnippet: 0, comCnjViaLinkApi: 0, semCnj: 0, citacoes: [] },
+        confirmadas: [],
+        diarioOficial: [],
+      }
+    }
+
+    const saldoAntes = await svc.verificarSaldo()
+
+    // ─── 1. V2 /envolvido/processos (até 5 páginas) ───
+    const v2Citacoes: Array<Record<string, unknown>> = [] // eslint-disable-line @typescript-eslint/no-explicit-any
+    let v2Paginas = 0
+    let v2Total = 0
+    try {
+      const { citacoes: pg1, totalProcessos, totalPages } = await svc.buscarProcessosEnvolvido(nome, cpfParam, 1)
+      for (const c of pg1) v2Citacoes.push({ ...c })
+      v2Paginas = 1
+      v2Total = totalProcessos
+
+      const maxPaginas = Math.min(totalPages, 5)
+      for (let pg = 2; pg <= maxPaginas; pg++) {
+        const { citacoes } = await svc.buscarProcessosEnvolvido(nome, cpfParam, pg)
+        for (const c of citacoes) v2Citacoes.push({ ...c })
+        v2Paginas = pg
+      }
+    } catch (err) {
+      console.error('[testFluxo] V2 erro:', err)
+    }
+
+    // ─── 2. V1 /busca por email (+ follow link_api) ───
+    const v1Citacoes: Array<Record<string, unknown>> = []
+    let v1ComCnjSnippet = 0
+    let v1ComCnjLinkApi = 0
+    let v1SemCnj = 0
+    if (email && email.includes('@')) {
+      try {
+        const items = await svc.buscarPorEmail(email)
+        // buscarPorEmail já tenta snippet → link_api internamente
+        for (const c of items) {
+          v1Citacoes.push({ ...c })
+          if (c.numeroProcesso) {
+            // Não temos como saber se veio do snippet ou link_api pelo shape de saída,
+            // mas podemos inferir olhando se o snippet contém o CNJ
+            const snippetHasCnj = /\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}/.test(c.snippet ?? '')
+            if (snippetHasCnj) v1ComCnjSnippet++
+            else v1ComCnjLinkApi++
+          } else {
+            v1SemCnj++
+          }
+        }
+      } catch (err) {
+        console.error('[testFluxo] V1 email erro:', err)
+      }
+    }
+
+    const saldoDepois = await svc.verificarSaldo()
+
+    // ─── 3. Aplicar dedup como em /nomeacoes ───
+    // Monta citações no formato CitacaoSerializada pra rodar separarPorFonteSemCrossDedup
+    const todasCitacoesShape = [
+      ...v2Citacoes.map((c, i) => ({
+        id: `v2-${i}`,
+        peritoId: userId,
+        externalId: c.externalId as string,
+        diarioSigla: c.diarioSigla as string,
+        diarioNome: c.diarioNome as string,
+        diarioData: (c.diarioData as string) + 'T00:00:00.000Z',
+        snippet: c.snippet as string,
+        numeroProcesso: (c.numeroProcesso as string) ?? null,
+        linkCitacao: c.linkCitacao as string,
+        visualizado: false,
+        fonte: 'v2_tribunal',
+        status: 'pendente',
+        periciaId: null,
+        criadoEm: new Date().toISOString(),
+      })),
+      ...v1Citacoes.map((c, i) => ({
+        id: `v1-${i}`,
+        peritoId: userId,
+        externalId: c.externalId as string,
+        diarioSigla: c.diarioSigla as string,
+        diarioNome: c.diarioNome as string,
+        diarioData: (c.diarioData as string) + 'T00:00:00.000Z',
+        snippet: c.snippet as string,
+        numeroProcesso: (c.numeroProcesso as string) ?? null,
+        linkCitacao: c.linkCitacao as string,
+        visualizado: false,
+        fonte: 'v1_email_dj',
+        status: 'pendente',
+        periciaId: null,
+        criadoEm: new Date().toISOString(),
+      })),
+    ]
+
+    const { separarPorFonteSemCrossDedup } = await import('@/lib/utils/citacao-dedup')
+    const { confirmadas, diarioOficial } = separarPorFonteSemCrossDedup(todasCitacoesShape, nome)
+
+    return {
+      ok: true,
+      durationMs: Date.now() - t0,
+      saldoAntes: saldoAntes.saldo,
+      saldoDepois: saldoDepois.saldo,
+      creditosConsumidos: saldoAntes.saldo - saldoDepois.saldo,
+      input: { nome, cpf: cpfParam, email: email || null },
+      v2: {
+        paginas: v2Paginas,
+        totalProcessos: v2Total,
+        citacoes: v2Citacoes as unknown as TestFluxoResult['v2']['citacoes'],
+      },
+      v1Email: {
+        totalItems: v1Citacoes.length,
+        comCnjNoSnippet: v1ComCnjSnippet,
+        comCnjViaLinkApi: v1ComCnjLinkApi,
+        semCnj: v1SemCnj,
+        citacoes: v1Citacoes as unknown as TestFluxoResult['v1Email']['citacoes'],
+      },
+      confirmadas: confirmadas as unknown as Array<Record<string, unknown>>,
+      diarioOficial: diarioOficial as unknown as Array<Record<string, unknown>>,
+    }
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : String(err),
+      durationMs: Date.now() - t0,
+      v2: { paginas: 0, totalProcessos: 0, citacoes: [] },
+      v1Email: { totalItems: 0, comCnjNoSnippet: 0, comCnjViaLinkApi: 0, semCnj: 0, citacoes: [] },
+      confirmadas: [],
+      diarioOficial: [],
+    }
+  }
+}
+
 // ─── Só saldo (rápido, grátis) ────────────────────────────────────────────────
 
 export async function testVerificarSaldo(): Promise<{ ok: boolean; saldo?: number; descricao?: string; error?: string }> {

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useEffect } from 'react'
-import { Loader2, Search, Wallet, FileSearch, Bug, Target, Zap, Rocket } from 'lucide-react'
+import { Loader2, Search, Wallet, FileSearch, Bug, Target, Zap, Rocket, Flame } from 'lucide-react'
 import {
   testBuscarProcessosEnvolvido,
   testVerificarSaldo,
@@ -12,6 +12,7 @@ import {
   testBuscaCompleta,
   testDispararBuscaAssincronaCpf,
   testConsultarBuscaAssincrona,
+  testFluxoNomeacoes,
   type TestEscavadorResult,
   type TestV1BuscaResult,
   type TestV2RawResult,
@@ -19,6 +20,7 @@ import {
   type TestBuscaCompletaResult,
   type TestAssincronaDispararResult,
   type TestAssincronaStatusResult,
+  type TestFluxoResult,
 } from '@/lib/actions/test-escavador'
 
 export default function TesteApiPage() {
@@ -47,6 +49,18 @@ export default function TesteApiPage() {
   const [isAsyncDispararPending, startAsyncDispararTransition] = useTransition()
   const [isAsyncPolling, setIsAsyncPolling] = useState(false)
   const [asyncPollCount, setAsyncPollCount] = useState(0)
+
+  // Fluxo real (mirror de /nomeacoes)
+  const [resultFluxo, setResultFluxo] = useState<TestFluxoResult | null>(null)
+  const [isFluxoPending, startFluxoTransition] = useTransition()
+
+  function handleTestFluxo() {
+    setResultFluxo(null)
+    startFluxoTransition(async () => {
+      const res = await testFluxoNomeacoes()
+      setResultFluxo(res)
+    })
+  }
 
   function handleBuscar() {
     setResult(null)
@@ -136,6 +150,127 @@ export default function TesteApiPage() {
         <p className="text-[12px] text-slate-400 mt-1">
           Página temporária — testa /v2/envolvido/processos. Exclua depois dos testes.
         </p>
+      </div>
+
+      {/* ━━━━━━━━━━━━━━━━━━━ FLUXO REAL DE /nomeacoes (mirror) ━━━━━━━━━━━━━━━━━━ */}
+      <div className="rounded-xl border-4 border-indigo-500 bg-gradient-to-br from-indigo-50 to-blue-50 p-6 space-y-4 shadow-lg">
+        <div className="flex items-center gap-2">
+          <Flame className="h-5 w-5 text-indigo-700" />
+          <h2 className="text-[16px] font-black text-slate-900 uppercase tracking-tight">
+            🔥 Simular busca de /nomeacoes
+          </h2>
+        </div>
+        <p className="text-[13px] text-slate-700">
+          Roda EXATAMENTE o que o botão de buscar nomeações faz:
+        </p>
+        <ul className="text-[12px] text-slate-700 list-disc list-inside ml-2 space-y-1">
+          <li><code className="bg-white border border-slate-200 px-1.5 py-0.5 rounded font-mono text-[11px]">GET /api/v2/envolvido/processos</code> (nome + CPF, até 5 páginas)</li>
+          <li><code className="bg-white border border-slate-200 px-1.5 py-0.5 rounded font-mono text-[11px]">GET /api/v1/busca?q=&quot;&#123;email&#125;&quot;</code> (seu email)</li>
+          <li><code className="bg-white border border-slate-200 px-1.5 py-0.5 rounded font-mono text-[11px]">GET /api/v1/diarios/&#123;id&#125;</code> (link_api de cada item sem CNJ)</li>
+          <li>Aplica dedup + filtro TJ/DJ → mostra como ficaria em /nomeacoes</li>
+        </ul>
+        <p className="text-[12px] text-indigo-700 bg-white/60 border border-indigo-200 rounded px-3 py-2">
+          ⚠️ Usa seus dados logados (nome, CPF, email) · <strong>NÃO persiste no banco</strong> · custo ~R$ 4,53
+        </p>
+
+        <button
+          onClick={handleTestFluxo}
+          disabled={isFluxoPending}
+          className="w-full flex items-center justify-center gap-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-5 text-[14px] font-black uppercase tracking-widest transition-all disabled:opacity-50 shadow-md"
+        >
+          {isFluxoPending
+            ? <><Loader2 className="h-5 w-5 animate-spin" /> Rodando fluxo real...</>
+            : <><Flame className="h-5 w-5" /> EXECUTAR FLUXO /nomeacoes</>
+          }
+        </button>
+
+        {resultFluxo && (
+          <div className="space-y-4 pt-2">
+            {!resultFluxo.ok ? (
+              <div className="rounded-lg bg-rose-50 border border-rose-200 px-4 py-3">
+                <p className="text-[13px] text-rose-800">❌ {resultFluxo.error}</p>
+              </div>
+            ) : (
+              <>
+                {/* Input usado */}
+                {resultFluxo.input && (
+                  <div className="rounded-lg bg-white border border-indigo-200 px-4 py-3 text-[12px]">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Dados usados</p>
+                    <p><strong>Nome:</strong> {resultFluxo.input.nome}</p>
+                    <p><strong>CPF:</strong> {resultFluxo.input.cpf ?? <span className="text-slate-400">(não cadastrado)</span>}</p>
+                    <p><strong>Email:</strong> {resultFluxo.input.email ?? <span className="text-slate-400">(não cadastrado)</span>}</p>
+                  </div>
+                )}
+
+                {/* Cards de resumo */}
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                  <div className="rounded-lg bg-emerald-50 border border-emerald-300 px-4 py-3">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-700">V2 (páginas)</p>
+                    <p className="text-[24px] font-black text-emerald-900">{resultFluxo.v2.paginas}</p>
+                    <p className="text-[10px] text-emerald-600">{resultFluxo.v2.totalProcessos} processos</p>
+                  </div>
+                  <div className="rounded-lg bg-amber-50 border border-amber-300 px-4 py-3">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-amber-700">V1 email (items)</p>
+                    <p className="text-[24px] font-black text-amber-900">{resultFluxo.v1Email.totalItems}</p>
+                    <p className="text-[10px] text-amber-600">
+                      snippet:{resultFluxo.v1Email.comCnjNoSnippet} · link_api:{resultFluxo.v1Email.comCnjViaLinkApi}
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-white border-2 border-emerald-400 px-4 py-3">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">✓ Confirmadas</p>
+                    <p className="text-[24px] font-black text-emerald-700">{resultFluxo.confirmadas.length}</p>
+                  </div>
+                  <div className="rounded-lg bg-white border-2 border-amber-400 px-4 py-3">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">📰 Diário Oficial</p>
+                    <p className="text-[24px] font-black text-amber-700">{resultFluxo.diarioOficial.length}</p>
+                  </div>
+                  <div className="rounded-lg bg-slate-900 text-white px-4 py-3">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Créditos</p>
+                    <p className="text-[24px] font-black">{resultFluxo.creditosConsumidos}</p>
+                    <p className="text-[10px] text-slate-400">{resultFluxo.durationMs}ms</p>
+                  </div>
+                </div>
+
+                {/* Preview de como ficaria em /nomeacoes */}
+                <details open className="rounded-lg border-2 border-emerald-400 bg-white">
+                  <summary className="cursor-pointer px-4 py-3 bg-emerald-100 text-[13px] font-bold text-emerald-900 hover:bg-emerald-200">
+                    ✅ Como apareceriam em /nomeacoes — Nomeações confirmadas ({resultFluxo.confirmadas.length})
+                  </summary>
+                  <pre className="overflow-auto max-h-[400px] p-4 text-[11px] font-mono text-slate-700">
+                    {JSON.stringify(resultFluxo.confirmadas, null, 2)}
+                  </pre>
+                </details>
+
+                <details open className="rounded-lg border-2 border-amber-400 bg-white">
+                  <summary className="cursor-pointer px-4 py-3 bg-amber-100 text-[13px] font-bold text-amber-900 hover:bg-amber-200">
+                    📰 Como apareceriam em /nomeacoes — Diário Oficial ({resultFluxo.diarioOficial.length})
+                  </summary>
+                  <pre className="overflow-auto max-h-[400px] p-4 text-[11px] font-mono text-slate-700">
+                    {JSON.stringify(resultFluxo.diarioOficial, null, 2)}
+                  </pre>
+                </details>
+
+                {/* Brutos */}
+                <details className="rounded-lg border border-slate-200 bg-white">
+                  <summary className="cursor-pointer px-4 py-3 bg-slate-50 text-[13px] font-semibold text-slate-700 hover:bg-slate-100">
+                    Brutos V2 ({resultFluxo.v2.citacoes.length})
+                  </summary>
+                  <pre className="overflow-auto max-h-[400px] p-4 text-[11px] font-mono text-slate-700">
+                    {JSON.stringify(resultFluxo.v2.citacoes, null, 2)}
+                  </pre>
+                </details>
+                <details className="rounded-lg border border-slate-200 bg-white">
+                  <summary className="cursor-pointer px-4 py-3 bg-slate-50 text-[13px] font-semibold text-slate-700 hover:bg-slate-100">
+                    Brutos V1 email ({resultFluxo.v1Email.citacoes.length})
+                  </summary>
+                  <pre className="overflow-auto max-h-[400px] p-4 text-[11px] font-mono text-slate-700">
+                    {JSON.stringify(resultFluxo.v1Email.citacoes, null, 2)}
+                  </pre>
+                </details>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Verificar saldo */}
