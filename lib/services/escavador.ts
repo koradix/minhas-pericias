@@ -706,9 +706,8 @@ export class EscavadorService implements RadarProvider {
       const data_ref = item.data_ultima_movimentacao ?? item.data_inicio ?? new Date().toISOString().split('T')[0]
       const dataFormatada = data_ref.split('T')[0]
 
-      const linkCitacao = item.id
-        ? `https://www.escavador.com/processos/${item.id}`
-        : `https://www.escavador.com/processos/${item.numero_cnj}`
+      // Usa SEMPRE o CNJ no link — item.id frequentemente não bate com URL pública
+      const linkCitacao = `https://www.escavador.com/processos/${item.numero_cnj}`
 
       citacoes.push({
         externalId: `v2p-${item.numero_cnj}`,
