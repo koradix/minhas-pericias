@@ -178,6 +178,22 @@ export function LaudoTab({
       if (vistoriaDataFormatada) notasVistoria.push(`DATA DA VISTORIA: ${vistoriaDataFormatada}`)
       if (vistoriaData?.endereco) notasVistoria.push(`ENDEREÇO DA VISTORIA: ${vistoriaData.endereco}`)
 
+      // Cap individual string fields para não estourar 4.5MB da Vercel
+      const MAX_RESUMO = 60_000
+      const MAX_TEXTO_MIDIA = 5_000
+      const resumoStr = a.resumoProcesso ? JSON.stringify(a.resumoProcesso) : null
+      const resumoCapped = resumoStr && resumoStr.length > MAX_RESUMO
+        ? resumoStr.slice(0, MAX_RESUMO) + '\n[...truncado]'
+        : resumoStr
+      const fotosCapped = fotos.map((f) => ({
+        ...f,
+        texto: f.texto && f.texto.length > MAX_TEXTO_MIDIA ? f.texto.slice(0, MAX_TEXTO_MIDIA) + '...' : f.texto,
+      }))
+      const transcricoesCapped = transcricoes.map((t) => ({
+        ...t,
+        texto: t.texto.length > MAX_TEXTO_MIDIA ? t.texto.slice(0, MAX_TEXTO_MIDIA) + '...' : t.texto,
+      }))
+
       const input: GerarLaudoInput = {
         numeroProcesso: pericia.processo ?? pericia.numero,
         tribunal: pericia.tribunal,
@@ -189,23 +205,42 @@ export function LaudoTab({
         quesitos: a.nomeacaoDespacho?.quesitos ?? [],
         peritoNome,
         peritoQualificacao: peritoFormacao,
-        resumoProcesso: a.resumoProcesso ? JSON.stringify(a.resumoProcesso) : null,
+        resumoProcesso: resumoCapped,
         areaTecnica: a.resumoProcesso?.areaTecnica ?? null,
         templateCategoria: selectedTemplate.categoria,
         templateSecoes: selectedTemplate.secoes.map((s) => ({ titulo: s.titulo, placeholder: s.conteudo || 'Preencher' })),
-        fotos,
-        transcricoes,
-        observacoesVistoria: notasVistoria.join('\n\n') || null,
+        fotos: fotosCapped,
+        transcricoes: transcricoesCapped,
+        observacoesVistoria: notasVistoria.join('\n\n').slice(0, MAX_TEXTO_MIDIA) || null,
         documentosProcesso,
+      }
+
+      const bodyStr = JSON.stringify(input)
+      if (bodyStr.length > 4_000_000) {
+        setError(`Dados muito grandes (${(bodyStr.length / 1024 / 1024).toFixed(1)}MB). Reduza descrições ou contate suporte.`)
+        return
       }
 
       const res = await fetch('/api/pericias/laudo/gerar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(input),
+        body: bodyStr,
       })
 
-      const json = await res.json()
+      const rawText = await res.text()
+      let json: { ok?: boolean; error?: string; output?: GerarLaudoOutput; model?: string }
+      try {
+        json = JSON.parse(rawText)
+      } catch {
+        if (res.status === 413) {
+          setError('Dados muito grandes para o servidor. Reduza descrições da vistoria.')
+        } else if (res.status === 504 || res.status === 408) {
+          setError('IA demorou demais para responder. Tente novamente.')
+        } else {
+          setError(`Erro ${res.status}: ${rawText.slice(0, 120)}`)
+        }
+        return
+      }
       if (!json.ok) {
         setError(json.error ?? 'Erro ao gerar laudo')
         return
