@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import {
   navigation,
@@ -52,14 +53,12 @@ export default function Sidebar({
       >
         {collapsed ? (
           <Link href="/dashboard" className="flex items-center justify-center w-10 h-10 bg-white border-2 border-slate-900 group-hover:border-[#a3e635] transition-colors">
-            <span className="text-xl font-black text-slate-900">P</span><span className="text-xl font-black text-[#a3e635]">L</span>
+            <span className="text-xl font-black text-slate-900">P</span><span className="text-xl font-black text-[#84cc16]">.</span>
           </Link>
         ) : (
           <>
             <Link href="/dashboard" className="flex items-center min-w-0">
-              <span className="text-xl font-bold text-slate-900 tracking-tight">
-                Peri<span className="text-[#a3e635]">LaB</span>
-              </span>
+              <Image src="/logo.svg" alt="Perilab" width={130} height={40} priority />
             </Link>
             <button
               onClick={onMobileClose}

@@ -1,20 +1,7 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import LoginForm from './login-form'
-
-function PeriLabLogo() {
-  return (
-    <div className="font-display leading-tight select-none">
-      <div className="text-[2rem] font-black tracking-tightest leading-none">
-        <span className="text-white">Peri</span>
-        <span className="text-[#a3e635]">LaB</span>
-      </div>
-      <div className="text-[0.6rem] font-medium tracking-[0.14em] uppercase mt-1.5 text-white/40">
-        de perito para perito
-      </div>
-    </div>
-  )
-}
 
 export default function LoginPage() {
   return (
@@ -25,12 +12,12 @@ export default function LoginPage() {
         className="hidden lg:flex lg:w-[480px] xl:w-[540px] flex-col justify-between p-12 lg:p-16 flex-shrink-0"
         style={{ background: '#0f172a' }}
       >
-        {/* Logo */}
+        {/* Logo (versão dark — tipografia inline pra manter contraste no fundo escuro) */}
         <Link href="/" className="inline-block">
-          <div className="flex items-center gap-2 mb-3">
-            <span style={{ fontFamily: 'var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif', fontWeight: 900, color: '#ffffff', fontSize: '2rem', letterSpacing: '-0.03em' }}>
-              Peri<span style={{ color: '#a3e635' }}>LaB</span>
-            </span>
+          <div className="flex items-baseline mb-3" style={{ fontFamily: 'var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif', fontWeight: 900, fontSize: '2rem', letterSpacing: '-0.03em' }}>
+            <span style={{ color: '#ffffff' }}>Peri</span>
+            <span style={{ color: '#cbd5e1' }}>lab</span>
+            <span style={{ color: '#a3e635' }}>.</span>
           </div>
         </Link>
 
@@ -79,9 +66,7 @@ export default function LoginPage() {
         {/* Logo mobile */}
         <div className="mb-12 lg:hidden w-full max-w-[400px]">
           <Link href="/">
-            <div className="text-3xl font-black tracking-tighter">
-              <span className="text-[#1f2937]">Peri</span><span className="text-[#a3e635]">LaB</span>
-            </div>
+            <Image src="/logo.svg" alt="Perilab" width={150} height={46} priority />
           </Link>
         </div>
 

@@ -622,8 +622,10 @@ export default function LandingPage() {
             <div>
               <div className="flex items-center gap-2.5 mb-3">
                 <PeriLabMark size={30} dark />
-                <span style={{ fontFamily: 'var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif', fontWeight: 700, color: '#e2e8f0', fontSize: '1.05rem', letterSpacing: '-0.02em' }}>
-                  Peri<span style={{ color: '#84cc16' }}>LaB</span>
+                <span style={{ fontFamily: 'var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif', fontWeight: 900, fontSize: '1.15rem', letterSpacing: '-0.03em' }}>
+                  <span style={{ color: '#e2e8f0' }}>Peri</span>
+                  <span style={{ color: '#94a3b8' }}>lab</span>
+                  <span style={{ color: '#84cc16' }}>.</span>
                 </span>
               </div>
             </div>
