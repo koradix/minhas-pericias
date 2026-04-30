@@ -185,12 +185,17 @@ export function LaudoTab({
       const resumoCapped = resumoStr && resumoStr.length > MAX_RESUMO
         ? resumoStr.slice(0, MAX_RESUMO) + '\n[...truncado]'
         : resumoStr
+      // IMPORTANTE: strip da URL — pode ser data URI base64 (MB cada).
+      // O server não usa a URL, só descricao/local/texto.
       const fotosCapped = fotos.map((f) => ({
-        ...f,
+        url: null,
+        descricao: f.descricao,
+        local: f.local,
+        tipo: f.tipo,
         texto: f.texto && f.texto.length > MAX_TEXTO_MIDIA ? f.texto.slice(0, MAX_TEXTO_MIDIA) + '...' : f.texto,
       }))
       const transcricoesCapped = transcricoes.map((t) => ({
-        ...t,
+        descricao: t.descricao,
         texto: t.texto.length > MAX_TEXTO_MIDIA ? t.texto.slice(0, MAX_TEXTO_MIDIA) + '...' : t.texto,
       }))
 
