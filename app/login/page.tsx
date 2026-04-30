@@ -16,8 +16,7 @@ export default function LoginPage() {
         <Link href="/" className="inline-block">
           <div className="flex items-baseline mb-3" style={{ fontFamily: 'var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif', fontWeight: 900, fontSize: '2rem', letterSpacing: '-0.03em' }}>
             <span style={{ color: '#ffffff' }}>Peri</span>
-            <span style={{ color: '#cbd5e1' }}>lab</span>
-            <span style={{ color: '#a3e635' }}>.</span>
+            <span style={{ color: '#a3e635' }}>lab.</span>
           </div>
         </Link>
 

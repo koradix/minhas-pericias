@@ -118,8 +118,7 @@ function PeriLabLogo({ dark = true }: { dark?: boolean }) {
     <div style={{ fontFamily: 'var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif', lineHeight: 1 }}>
       <div style={{ fontSize: '1.75rem', fontWeight: 900, letterSpacing: '-0.03em' }}>
         <span style={{ color: dark ? '#0f172a' : '#ffffff' }}>Peri</span>
-        <span style={{ color: dark ? '#3f5226' : '#cbd5e1' }}>lab</span>
-        <span style={{ color: '#84cc16' }}>.</span>
+        <span style={{ color: '#84cc16' }}>lab.</span>
       </div>
     </div>
   )
@@ -625,8 +624,7 @@ export default function LandingPage() {
                 <PeriLabMark size={30} dark />
                 <span style={{ fontFamily: 'var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif', fontWeight: 900, fontSize: '1.15rem', letterSpacing: '-0.03em' }}>
                   <span style={{ color: '#e2e8f0' }}>Peri</span>
-                  <span style={{ color: '#94a3b8' }}>lab</span>
-                  <span style={{ color: '#84cc16' }}>.</span>
+                  <span style={{ color: '#84cc16' }}>lab.</span>
                 </span>
               </div>
             </div>
