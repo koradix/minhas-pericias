@@ -18,7 +18,7 @@ test('landing: carrega sem erros', async ({ page }) => {
   page.on('console', msg => { if (msg.type() === 'error') errors.push(msg.text()) })
 
   await page.goto('/')
-  await expect(page).toHaveTitle(/Minhas Perícias|PeriLaB/i)
+  await expect(page).toHaveTitle(/Minhas Perícias|Perilab/i)
 
   const h1 = await page.locator('h1').first().textContent()
   console.log(`  [landing] h1: "${h1}"`)

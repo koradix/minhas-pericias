@@ -7,7 +7,7 @@ import { prisma } from '@/lib/prisma'
 import ProspeccaoClient from '@/components/prospeccao/prospeccao-client'
 import { cn } from '@/lib/utils'
 
-export const metadata = { title: 'Prospecção de Varas — PeriLaB' }
+export const metadata = { title: 'Prospecção de Varas — Perilab' }
 
 export default async function ProspeccaoPage({
   searchParams,

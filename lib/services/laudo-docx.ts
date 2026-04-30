@@ -114,7 +114,7 @@ export async function gerarLaudoDocx(input: LaudoDocxInput): Promise<Buffer> {
       spacing: { after: 80 },
       children: [
         new TextRun({
-          text: 'Template PeriLaB — Modelo Padrão',
+          text: 'Template Perilab — Modelo Padrão',
           italics: true,
           size: SIZE.CAPTION,
           font: FONT,

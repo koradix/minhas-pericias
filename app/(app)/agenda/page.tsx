@@ -6,7 +6,7 @@ import { PageHeader } from '@/components/shared/page-header'
 import { AgendaView } from '@/components/agenda/agenda-view'
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = { title: 'Agenda — PeriLaB' }
+export const metadata: Metadata = { title: 'Agenda — Perilab' }
 export const dynamic = 'force-dynamic'
 
 // ─── Workflow checkpoints → auto agenda items ─────────────────────────────────

@@ -151,7 +151,7 @@ export function ExportButtons({ titulo, conteudo }: Props) {
                     spacing: { after: 100 },
                     children: [
                       new TextRun({
-                        text: 'PeriLaB',
+                        text: 'Perilab',
                         bold: true,
                         size: 18,
                         font: FONT,

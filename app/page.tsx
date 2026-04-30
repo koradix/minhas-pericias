@@ -117,14 +117,15 @@ function PeriLabLogo({ dark = true }: { dark?: boolean }) {
   return (
     <div style={{ fontFamily: 'var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif', lineHeight: 1 }}>
       <div style={{ fontSize: '1.75rem', fontWeight: 900, letterSpacing: '-0.03em' }}>
-        <span style={{ color: dark ? '#1f2937' : 'white' }}>Peri</span>
-        <span style={{ color: '#84cc16' }}>LaB</span>
+        <span style={{ color: dark ? '#0f172a' : '#ffffff' }}>Peri</span>
+        <span style={{ color: dark ? '#3f5226' : '#cbd5e1' }}>lab</span>
+        <span style={{ color: '#84cc16' }}>.</span>
       </div>
     </div>
   )
 }
 
-/** Compact two-letter mark: P (preto/branco) + B (lime) */
+/** Compact mark: P + . (lime) */
 function PeriLabMark({ size = 32, dark = false }: { size?: number; dark?: boolean }) {
   const textColor = dark ? '#ffffff' : '#111827'
   return (
@@ -139,7 +140,7 @@ function PeriLabMark({ size = 32, dark = false }: { size?: number; dark?: boolea
       }}
     >
       <span style={{ color: textColor }}>P</span>
-      <span style={{ color: '#84cc16' }}>B</span>
+      <span style={{ color: '#84cc16' }}>.</span>
     </div>
   )
 }

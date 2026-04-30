@@ -9,7 +9,7 @@ const resend = process.env.RESEND_API_KEY
   : null
 
 // Resend free tier requires verified domain or onboarding@resend.dev
-const FROM = process.env.EMAIL_FROM ?? 'PeriLaB <onboarding@resend.dev>'
+const FROM = process.env.EMAIL_FROM ?? 'Perilab <onboarding@resend.dev>'
 
 function appUrl(): string {
   return (
@@ -34,13 +34,13 @@ export async function sendVerificationEmail(
   await resend.emails.send({
     from: FROM,
     to,
-    subject: 'Confirme seu e-mail — PeriLaB',
+    subject: 'Confirme seu e-mail — Perilab',
     html: `
       <div style="font-family:'Segoe UI',Helvetica,Arial,sans-serif;max-width:520px;margin:0 auto;padding:0;background:#ffffff">
         <!-- Header -->
         <div style="background:#0f172a;padding:32px 32px 24px;text-align:center">
           <h1 style="font-size:22px;font-weight:900;color:#a3e635;margin:0;letter-spacing:2px;text-transform:uppercase">
-            PeriLaB
+            Perilab
           </h1>
           <p style="font-size:12px;color:#94a3b8;margin:6px 0 0;letter-spacing:1px;text-transform:uppercase">
             Plataforma do Perito Judicial
@@ -50,14 +50,14 @@ export async function sendVerificationEmail(
         <!-- Body -->
         <div style="padding:36px 32px">
           <h2 style="font-size:20px;font-weight:800;color:#1f2937;margin:0 0 12px">
-            Bem-vindo ao PeriLaB!
+            Bem-vindo ao Perilab!
           </h2>
           <p style="color:#6b7280;font-size:14px;line-height:1.6;margin:0 0 8px">
             Sua conta foi criada com sucesso. Para ativar o acesso completo
             à plataforma, confirme seu endereço de e-mail clicando no botão abaixo.
           </p>
           <p style="color:#6b7280;font-size:14px;line-height:1.6;margin:0 0 28px">
-            Com o PeriLaB, você terá acesso a ferramentas para gerenciar suas
+            Com o Perilab, você terá acesso a ferramentas para gerenciar suas
             perícias, acompanhar nomeações, planejar rotas de prospecção e
             gerar propostas de honorários com inteligência artificial.
           </p>
@@ -73,7 +73,7 @@ export async function sendVerificationEmail(
           </div>
 
           <p style="color:#9ca3af;font-size:12px;line-height:1.5;margin:0 0 8px">
-            Este link expira em 24 horas. Se você não criou uma conta no PeriLaB,
+            Este link expira em 24 horas. Se você não criou uma conta no Perilab,
             pode ignorar este e-mail com segurança.
           </p>
           <p style="color:#cbd5e1;font-size:11px;line-height:1.5;margin:0">
@@ -85,7 +85,7 @@ export async function sendVerificationEmail(
         <!-- Footer -->
         <div style="background:#f8fafc;padding:20px 32px;border-top:1px solid #e2e8f0;text-align:center">
           <p style="font-size:11px;color:#94a3b8;margin:0;letter-spacing:0.5px">
-            PeriLaB — Inteligência para o Perito Judicial
+            Perilab — Inteligência para o Perito Judicial
           </p>
         </div>
       </div>

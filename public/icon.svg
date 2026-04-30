@@ -2,6 +2,6 @@
   <rect width="512" height="512" rx="96" fill="#ffffff"/>
   <rect width="512" height="512" rx="96" fill="rgba(0,0,0,0.05)"/>
   <text x="256" y="340" font-family="system-ui,sans-serif" font-size="240" font-weight="900" text-anchor="middle" letter-spacing="-10">
-    <tspan fill="#1f2937">P</tspan><tspan fill="#a3e635">L</tspan>
+    <tspan fill="#0f172a">P</tspan><tspan fill="#84cc16">.</tspan>
   </text>
 </svg>
