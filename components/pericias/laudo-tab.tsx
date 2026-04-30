@@ -299,14 +299,13 @@ export function LaudoTab({
     setIsExporting(true)
     setError(null)
     try {
-      const fotos = midias
-        .filter((m) => m.tipo === 'foto' && m.url)
-        .map((m) => ({ url: m.url!, descricao: m.descricao ?? '' }))
-
+      // Não envia fotos no body — server busca pelo periciaId pra evitar
+      // estourar o limite de 4.5MB (mídias podem ser data URIs base64).
       const res = await fetch('/api/pericias/laudo/exportar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          periciaId,
           peritoNome,
           peritoQualificacao: peritoFormacao,
           titulo: selectedTemplate ? `LAUDO PERICIAL — ${selectedTemplate.categoria.toUpperCase()}` : 'LAUDO PERICIAL',
@@ -315,13 +314,14 @@ export function LaudoTab({
           autor: analise?.autor ?? pericia.partes?.split('×')[0]?.trim(),
           reu: analise?.reu ?? pericia.partes?.split('×')[1]?.trim(),
           secoes,
-          fotos,
           documentosProcesso: documentosProcesso.map(d => ({ nome: d.nome, tipo: d.tipo })),
         }),
       })
       if (!res.ok) {
-        const json = await res.json().catch(() => ({ error: 'Erro ao exportar' }))
-        setError(json.error ?? 'Erro ao exportar DOCX')
+        const text = await res.text()
+        let parsed: { error?: string }
+        try { parsed = JSON.parse(text) } catch { parsed = { error: `Erro ${res.status}` } }
+        setError(parsed.error ?? `Erro ao exportar (${res.status})`)
         return
       }
       const blob = await res.blob()
